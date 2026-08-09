@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Електромагнітна індукція · закон Фарадея · правило Ленца · генератор · самоіндукція · трансформатор</title>
+<style>
+:root{
+  --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{background:var(--paper); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
+h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
+h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
+.tabs{display:flex; gap:6px; margin:12px 0 16px; border-bottom:1px solid var(--grid); padding-bottom:0; flex-wrap:wrap}
+.tabs button{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:8px 14px 10px; font:600 14px/1 system-ui,sans-serif; color:var(--sec); cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--ink)}
+.module{display:none}
+.module.active{display:block}
+.caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
+canvas{display:block}
+/* segmented control */
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
+  font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
+  box-shadow:inset 0 -2px 0 var(--c,#888)}
+/* icon buttons */
+.ibtn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:34px; height:30px; cursor:pointer; font-size:13px; color:var(--ink)}
+.ibtn:hover{border-color:var(--axis)}
+.btn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  padding:6px 11px; cursor:pointer; font:600 12.5px/1 system-ui,sans-serif; color:var(--ink)}
+.btn:hover{border-color:var(--axis)}
+.btn small{display:block; font-weight:400; color:var(--mut); margin-top:3px}
+/* sliders */
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin:9px 0}
+.sl>span{font-size:13px; color:var(--sec); grid-column:1/3}
+.sl input[type=range]{width:100%; accent-color:var(--ink)}
+.sl output{font-size:13px; font-variant-numeric:tabular-nums; color:var(--ink); min-width:74px; text-align:right}
+.grp[hidden]{display:none}
+/* key-value readouts */
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:5px 0; border-bottom:1px dashed var(--grid); font-size:13px}
+.kv:last-child{border-bottom:none}
+/* display:flex перебиває приховування атрибутом hidden — повертаємо його */
+.kv[hidden]{display:none}
+.kv span{color:var(--sec)}
+.kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
+  border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
+.badge[hidden]{display:none}
+.chip{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.cA{background:var(--k1)} .cB{background:var(--k2)} .cC{background:var(--k3)} .cI{background:var(--ink)}
+.formulas{font-size:12.5px; color:var(--mut); margin-top:8px; font-style:italic}
+.formulas i{font-family:Georgia,serif}
+.formulas b{color:var(--ink); font-style:normal}
+var{font-family:Georgia,serif; font-style:italic}
+/* toolbars, tables, charts — спільні для всіх модулів */
+.toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.toolbar .lbl{font-size:12.5px; color:var(--mut)}
+.toolbar .lbl b{font-variant-numeric:tabular-nums}
+table.read{width:100%; border-collapse:collapse; font-size:13.5px}
+table.read th{font:600 11.5px/1 system-ui,sans-serif; color:var(--mut); text-align:right; padding:4px 8px; border-bottom:1px solid var(--grid)}
+table.read th:first-child{text-align:left}
+table.read td{padding:5px 8px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px dashed var(--grid)}
+table.read td:first-child{text-align:left; white-space:nowrap}
+table.read td.f{color:var(--mut); font-size:12.5px; text-align:left}
+table.read td.f var{color:var(--sec)}
+table.read tr:last-child td{border-bottom:none}
+.legend{display:flex; gap:18px; font-size:12.5px; color:var(--sec); margin-bottom:8px; flex-wrap:wrap}
+.legend.sm{gap:12px; font-size:11.5px; margin-bottom:5px}
+.chartrow{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+.chartbox{position:relative}
+.chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.chartbox canvas{width:100%; height:186px}
+.tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
+  border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+.tip .th{color:var(--mut); margin-bottom:3px}
+.tip div{line-height:1.5}
+.pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
+.pgrid .scene canvas{width:100%; touch-action:none}
+.side .panel{padding:12px 14px}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.coords{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:13.5px}
+.coords .cc{font-variant-numeric:tabular-nums; white-space:nowrap}
+.coords .cc b{font-weight:600}
+.c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
+
+/* ============ сітки й полотна цієї теми ============ */
+/*gauged*/
+#m1scene{width:100%; height:420px}
+#m2scene{width:100%; height:510px}
+#m3scene{width:100%; height:430px}
+#m4scene{width:100%; height:420px}
+#m5scene{width:100%; height:430px}
+
+footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+@media (max-width:900px){
+  .chartrow,.chartrow3,.pgrid,.duo,.m1grid,.sgrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Електромагнітна індукція<small>закон Фарадея · правило Ленца · генератор · самоіндукція · трансформатор</small></h1>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-m="m1" class="active">1 · Закон Фарадея</button>
+  <button data-m="m2">2 · Правило Ленца</button>
+  <button data-m="m3">3 · Генератор</button>
+  <button data-m="m4">4 · Самоіндукція</button>
+  <button data-m="m5">5 · Трансформатор і ЛЕП</button>
+</nav>
+
+<!-- ================= МОДУЛЬ 1 ================= -->
+<section class="module active" id="m1">
+  <p class="caption">ЕРС індукції породжує не саме поле, а <b>зміна</b> магнітного потоку крізь контур:
+  <var>ε</var> = −<var>N</var>·Δ<var>Φ</var>/Δ<var>t</var>. Оскільки <var>Φ</var> = <var>BS</var>·cos <var>α</var>,
+  змінити потік можна трьома способами — індукцією, площею або кутом. Перемикач показує кожен окремо.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <span class="lbl">Що змінюємо:</span>
+          <div class="seg" id="m1mode">
+            <button data-v="B" class="active" style="--c:var(--k3)">індукцію B</button>
+            <button data-v="S" style="--c:var(--k1)">площу S</button>
+            <button data-v="a" style="--c:var(--k2)">кут α</button>
+          </div>
+          <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m1re" title="заново">↺</button>
+          <span class="lbl" id="m1t"></span>
+        </div>
+        <canvas id="m1scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Потік і ЕРС у часі</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m1cfw"><h4>потокозчеплення <var>Ψ</var> = <var>N</var><var>Φ</var>, мВб</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>Ψ = NBS·cos α</span><span><span class="chip cI"></span>поточний момент</span></div>
+            <canvas id="m1cf"></canvas></div>
+          <div class="chartbox" id="m1cew"><h4>ЕРС індукції <var>ε</var> = −Δ<var>Ψ</var>/Δ<var>t</var>, В</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>ε — швидкість зміни Ψ</span><span><span class="chip cI"></span>поточний момент</span></div>
+            <canvas id="m1ce"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span><var>B</var> — індукція зовнішнього поля<span class="badge" id="m1bB" hidden>змінюється 0…B</span><span class="badge">шкала в кадрі</span></span><b id="m1vB"></b></div>
+        <div class="kv"><span><var>S</var> — площа рамки<span class="badge" id="m1bS" hidden>змінюється ¼S…S</span><span class="badge">шкала в кадрі</span></span><b id="m1vS"></b></div>
+        <div class="grp" id="m1gA">
+          <div class="kv"><span><var>α</var> — кут між нормаллю рамки й полем<span class="badge">шкала в кадрі</span></span><b id="m1va"></b></div>
+        </div>
+        <div class="kv"><span><var>N</var> — кількість витків рамки<span class="badge">шкала в кадрі</span></span><b id="m1vN"></b></div>
+        <div class="kv"><span><var>T</var> — час одного повного циклу зміни<span class="badge">шкала в кадрі</span></span><b id="m1vT"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Миттєві величини</h3>
+        <div class="kv"><span>потік крізь один виток <var>Φ</var></span><b id="m1kPhi"></b></div>
+        <div class="kv"><span>потокозчеплення <var>Ψ</var> = <var>N</var><var>Φ</var></span><b id="m1kPsi"></b></div>
+        <div class="kv"><span>швидкість зміни потоку Δ<var>Φ</var>/Δ<var>t</var></span><b id="m1kRate"></b></div>
+        <div class="kv"><span>ЕРС індукції <var>ε</var></span><b id="m1kE"></b></div>
+        <div class="kv"><span>напрям індукційного струму</span><b id="m1kDir"></b></div>
+      </div>
+      <div class="panel">
+        <h3>За цикл</h3>
+        <div class="kv"><span>найбільша ЕРС за цикл</span><b id="m1kEmax"></b></div>
+        <div class="kv"><span>частота зміни <var>f</var> = 1/<var>T</var></span><b id="m1kF"></b></div>
+        <div class="kv"><span>найбільший потік <var>NBS</var></span><b id="m1kPmax"></b></div>
+        <div class="kv"><span>якби цикл тривав удвічі довше<span class="badge">важлива швидкість зміни</span></span><b id="m1kNo"></b></div>
+        <div class="formulas" id="m1fx"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 2 ================= -->
+<section class="module" id="m2">
+  <p class="caption">Індукційний струм завжди напрямлений так, щоб <b>протидіяти</b> причині, яка його породила.
+  Магніт, що падає крізь мідну трубку, наводить у ній струми — і вони гальмують його падіння.
+  Розріжте трубку вздовж — коло розірване, струму немає, гальмування зникає.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m2mode">
+            <button data-v="ring" class="active" style="--c:var(--k2)">одне кільце</button>
+            <button data-v="tube" style="--c:var(--k1)">суцільна трубка</button>
+            <button data-v="cut" style="--c:var(--k3)">розрізана вздовж</button>
+          </div>
+          <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m2re" title="заново">↺</button>
+          <span class="lbl" id="m2t"></span>
+          <span class="lbl" id="m2state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m2scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Потік, ЕРС і швидкість під час падіння</h3>
+        <div class="chartrow3">
+          <div class="chartbox" id="m2cfw"><h4>потік крізь кільце, мкВб</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>Φ</span></div>
+            <canvas id="m2cf"></canvas></div>
+          <div class="chartbox" id="m2cew"><h4>ЕРС у кільці, мВ</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>ε</span></div>
+            <canvas id="m2ce"></canvas></div>
+          <div class="chartbox" id="m2cvw"><h4>швидкість магніту, м/с</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>з гальмуванням</span><span><span class="chip cI"></span>вільне падіння</span></div>
+            <canvas id="m2cv"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Магніт і провідник</h3>
+        <div class="kv"><span><var>m</var> — маса магніту<span class="badge">шкала в кадрі</span></span><b id="m2vm"></b></div>
+        <div class="kv"><span><var>p</var><sub>м</sub> — магнітний момент<span class="badge">шкала в кадрі</span></span><b id="m2vmu"></b></div>
+        <div class="kv"><span><var>R</var> — радіус кільця або трубки<span class="badge">шкала в кадрі</span></span><b id="m2vR"></b></div>
+        <div class="kv"><span><var>d</var> — товщина мідної стінки<span class="badge">шкала в кадрі</span></span><b id="m2vw"></b></div>
+        <div class="kv"><span><var>L</var> — довжина ділянки падіння<span class="badge">шкала в кадрі</span></span><b id="m2vL"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Що відбувається в кільці</h3>
+        <div class="kv"><span id="m2lPhi">потік крізь кільце</span><b id="m2kPhi"></b></div>
+        <div class="kv"><span>швидкість зміни потоку Δ<var>Φ</var>/Δ<var>y</var></span><b id="m2kGrad"></b></div>
+        <div class="kv"><span id="m2lE">ЕРС у кільці</span><b id="m2kE"></b></div>
+        <div class="kv"><span>опір такого кільця</span><b id="m2kR"></b></div>
+        <div class="kv"><span>індукційний струм</span><b id="m2kI"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Сили й рух</h3>
+        <div class="kv"><span>сила гальмування</span><b id="m2kF"></b></div>
+        <div class="kv"><span>вага магніту <var>mg</var></span><b id="m2kW"></b></div>
+        <div class="kv"><span>частка гальмування від ваги</span><b id="m2kFrac"></b></div>
+        <div class="kv"><span>гранична швидкість у трубці<span class="badge">коли гальмування = вага</span></span><b id="m2kVt"></b></div>
+        <div class="kv"><span>швидкість зараз</span><b id="m2kV"></b></div>
+        <div class="kv"><span>час падіння</span><b id="m2kT"></b></div>
+        <div class="formulas" id="m2fx"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 3 ================= -->
+<section class="module" id="m3">
+  <p class="caption">Рамку обертають у магнітному полі — потік крізь неї змінюється за косинусом,
+  а ЕРС виходить синусоїдальною: <var>ε</var> = <var>ε</var><sub>0</sub>·sin <var>ωt</var>,
+  де <var>ε</var><sub>0</sub> = <var>NBSω</var>. Саме так працює будь-який електрогенератор.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <span class="lbl">Знімання струму:</span>
+          <div class="seg" id="m3mode">
+            <button data-v="ac" class="active" style="--c:var(--k2)">кільця — змінний струм</button>
+            <button data-v="dc" style="--c:var(--k1)">колектор — пульсуючий</button>
+          </div>
+          <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m3re" title="заново">↺</button>
+          <span class="lbl" id="m3t"></span>
+        </div>
+        <canvas id="m3scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Напруга й потужність</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m3cew"><h4 id="m3ceh"></h4>
+            <div class="legend sm" id="m3cel"></div><canvas id="m3ce"></canvas></div>
+          <div class="chartbox" id="m3cpw"><h4>миттєва потужність у навантаженні, Вт</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>p = ε²/R</span><span><span class="chip cI"></span>середня потужність</span></div>
+            <canvas id="m3cp"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Генератор</h3>
+        <div class="kv"><span><var>N</var> — витків у рамці<span class="badge">шкала в кадрі</span></span><b id="m3vN"></b></div>
+        <div class="kv"><span><var>B</var> — індукція поля<span class="badge">шкала в кадрі</span></span><b id="m3vB"></b></div>
+        <div class="kv"><span><var>S</var> — площа рамки<span class="badge">шкала в кадрі</span></span><b id="m3vS"></b></div>
+        <div class="kv"><span><var>n</var> — частота обертання<span class="badge">шкала в кадрі</span></span><b id="m3vn"></b></div>
+        <div class="kv"><span><var>R</var> — опір навантаження<span class="badge">шкала в кадрі</span></span><b id="m3vR"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Електричні величини</h3>
+        <div class="kv"><span>частота <var>f</var> = <var>n</var>/60</span><b id="m3kf"></b></div>
+        <div class="kv"><span>кутова швидкість <var>ω</var></span><b id="m3kw"></b></div>
+        <div class="kv"><span>амплітуда ЕРС <var>ε</var><sub>0</sub> = <var>NBSω</var></span><b id="m3ke0"></b></div>
+        <div class="kv"><span>діюче значення <var>ε</var><sub>0</sub>/√2<span class="badge">його показує вольтметр</span></span><b id="m3ked"></b></div>
+        <div class="kv"><span>середнє за модулем 2<var>ε</var><sub>0</sub>/π</span><b id="m3kea"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Струм, потужність, привід</h3>
+        <div class="kv"><span>амплітуда струму <var>ε</var><sub>0</sub>/<var>R</var></span><b id="m3ki0"></b></div>
+        <div class="kv"><span>діючий струм</span><b id="m3kid"></b></div>
+        <div class="kv"><span>середня потужність <var>ε</var><sub>0</sub>²/2<var>R</var></span><b id="m3kP"></b></div>
+        <div class="kv"><span>середній момент на валу</span><b id="m3kM"></b></div>
+        <div class="kv"><span>механічна потужність приводу<span class="badge">дорівнює електричній</span></span><b id="m3kMech"></b></div>
+        <div class="formulas" id="m3fx"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 4 ================= -->
+<section class="module" id="m4">
+  <p class="caption">Струм у котушці створює власний потік — і при його зміні котушка наводить ЕРС сама в собі.
+  Ця самоіндукція не дає струму зрости миттєво, а при розмиканні кола видає короткий сплеск напруги
+  у сотні разів більший за напругу джерела. Енергія запасена в полі: <var>W</var> = <var>LI</var>²/2.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m4mode">
+            <button data-v="close" class="active" style="--c:var(--k1)">замикання кола</button>
+            <button data-v="open" style="--c:var(--k2)">розмикання кола</button>
+          </div>
+          <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m4re" title="заново">↺</button>
+          <span class="lbl" id="m4t"></span>
+          <span class="lbl" id="m4state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m4scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Перехідний процес</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m4ciw"><h4 id="m4cih"></h4>
+            <div class="legend sm" id="m4cil"></div><canvas id="m4ci"></canvas></div>
+          <div class="chartbox" id="m4cuw"><h4 id="m4cuh"></h4>
+            <div class="legend sm" id="m4cul"></div><canvas id="m4cu"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Котушка й коло</h3>
+        <div class="kv"><span><var>N</var> — витків котушки<span class="badge">шкала в кадрі</span></span><b id="m4vN"></b></div>
+        <div class="kv"><span><var>l</var> — довжина котушки<span class="badge">шкала в кадрі</span></span><b id="m4vl"></b></div>
+        <div class="kv"><span><var>D</var> — діаметр котушки<span class="badge">шкала в кадрі</span></span><b id="m4vd"></b></div>
+        <div class="kv"><span><var>R</var> — опір кола<span class="badge">шкала в кадрі</span></span><b id="m4vR"></b></div>
+        <div class="kv"><span><var>U</var> — напруга джерела<span class="badge">шкала в кадрі</span></span><b id="m4vU"></b></div>
+        <div class="grp" id="m4gOpen" hidden>
+          <div class="kv"><span><var>R</var><sub>р</sub> — опір проміжку розриву (лампа, іскра)<span class="badge">шкала в кадрі</span></span><b id="m4vRp"></b></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Котушка</h3>
+        <div class="kv"><span>індуктивність <var>L</var> = <var>μ</var><sub>0</sub><var>N</var>²<var>S</var>/<var>l</var></span><b id="m4kL"></b></div>
+        <div class="kv"><span>стала часу <var>τ</var> = <var>L</var>/<var>R</var><span class="badge">за τ струм — 63 %</span></span><b id="m4kTau"></b></div>
+        <div class="kv"><span>усталений струм <var>I</var><sub>0</sub> = <var>U</var>/<var>R</var></span><b id="m4kI0"></b></div>
+        <div class="kv"><span>індукція всередині <var>μ</var><sub>0</sub><var>nI</var></span><b id="m4kB"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Енергія й сплеск</h3>
+        <div class="kv"><span>енергія поля <var>W</var> = <var>LI</var>²/2</span><b id="m4kW"></b></div>
+        <div class="kv"><span>густина енергії <var>B</var>²/2<var>μ</var><sub>0</sub></span><b id="m4kw"></b></div>
+        <div class="kv"><span>ЕРС самоіндукції зараз</span><b id="m4kEs"></b></div>
+        <div class="kv"><span>сплеск при розмиканні <var>I</var><sub>0</sub>(<var>R</var>+<var>R</var><sub>р</sub>)</span><b id="m4kSpark"></b></div>
+        <div class="kv"><span>у скільки разів більший за <var>U</var></span><b id="m4kRatio"></b></div>
+        <div class="formulas" id="m4fx"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 5 ================= -->
+<section class="module" id="m5">
+  <p class="caption">Змінний потік в осерді наводить ЕРС в обох обмотках однаково на кожен виток —
+  звідси <var>U</var><sub>1</sub>/<var>U</var><sub>2</sub> = <var>N</var><sub>1</sub>/<var>N</var><sub>2</sub>.
+  Саме тому електрику передають лініями під сотнями кіловольт: підвищивши напругу вдесятеро,
+  втрати в проводах зменшують у сто разів.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m5mode">
+            <button data-v="tr" class="active" style="--c:var(--k1)">трансформатор</button>
+            <button data-v="line" style="--c:var(--k3)">лінія електропередач</button>
+          </div>
+          <span class="lbl" id="m5state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m5scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3 id="m5ch">Залежності</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m5c1w"><h4 id="m5c1h"></h4>
+            <div class="legend sm" id="m5c1l"></div><canvas id="m5c1"></canvas></div>
+          <div class="chartbox" id="m5c2w"><h4 id="m5c2h"></h4>
+            <div class="legend sm" id="m5c2l"></div><canvas id="m5c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="grp" id="m5gTr">
+          <div class="kv"><span><var>U</var><sub>1</sub> — напруга на первинній обмотці<span class="badge">шкала в кадрі</span></span><b id="m5vU1"></b></div>
+          <div class="kv"><span><var>N</var><sub>1</sub> — витків первинної<span class="badge">шкала в кадрі</span></span><b id="m5vN1"></b></div>
+          <div class="kv"><span><var>N</var><sub>2</sub> — витків вторинної<span class="badge">шкала в кадрі</span></span><b id="m5vN2"></b></div>
+          <div class="kv"><span><var>R</var><sub>н</sub> — опір навантаження<span class="badge">шкала в кадрі</span></span><b id="m5vRn"></b></div>
+          <div class="kv"><span>товщина пластини осердя<span class="badge">шкала в кадрі</span></span><b id="m5vd"></b></div>
+        </div>
+        <div class="grp" id="m5gLine" hidden>
+          <div class="kv"><span><var>P</var> — передавана потужність<span class="badge">шкала в кадрі</span></span><b id="m5vP"></b></div>
+          <div class="kv"><span><var>U</var> — напруга лінії<span class="badge">шкала в кадрі</span></span><b id="m5vU"></b></div>
+          <div class="kv"><span><var>L</var> — довжина лінії<span class="badge">шкала в кадрі</span></span><b id="m5vL"></b></div>
+          <div class="kv"><span><var>S</var> — переріз проводу<span class="badge">шкала в кадрі</span></span><b id="m5vS"></b></div>
+        </div>
+      </div>
+      <div id="m5kvTr">
+        <div class="panel">
+          <h3>Трансформація</h3>
+          <div class="kv"><span>коефіцієнт <var>k</var> = <var>N</var><sub>1</sub>/<var>N</var><sub>2</sub></span><b id="m5kK"></b></div>
+          <div class="kv"><span>напруга вторинної <var>U</var><sub>2</sub></span><b id="m5kU2"></b></div>
+          <div class="kv"><span>тип трансформатора</span><b id="m5kType"></b></div>
+          <div class="kv"><span>ЕРС на один виток</span><b id="m5kTurn"></b></div>
+          <div class="kv"><span>струм вторинної <var>I</var><sub>2</sub></span><b id="m5kI2"></b></div>
+          <div class="kv"><span>струм первинної <var>I</var><sub>1</sub> = <var>I</var><sub>2</sub>/<var>k</var><span class="badge">потужність не росте</span></span><b id="m5kI1"></b></div>
+        </div>
+        <div class="panel">
+          <h3>Осердя й вихрові струми</h3>
+          <div class="kv"><span>потужність у навантаженні</span><b id="m5kP2"></b></div>
+          <div class="kv"><span>питомі втрати на вихрові струми</span><b id="m5kPe"></b></div>
+          <div class="kv"><span>втрати в осерді об'ємом 1 дм³</span><b id="m5kPfe"></b></div>
+          <div class="kv"><span>ККД (враховано лише осердя)</span><b id="m5kEff"></b></div>
+          <div class="kv"><span>якби осердя було суцільним (50 мм)<span class="badge">тому осердя шихтоване</span></span><b id="m5kSolid"></b></div>
+          <div class="formulas" id="m5fx1"></div>
+        </div>
+      </div>
+      <div id="m5kvLine" hidden>
+        <div class="panel">
+          <h3>Лінія</h3>
+          <div class="kv"><span>струм у лінії <var>I</var> = <var>P</var>/<var>U</var></span><b id="m5kI"></b></div>
+          <div class="kv"><span>опір проводів (туди й назад)</span><b id="m5kR"></b></div>
+          <div class="kv"><span>втрати <var>ΔP</var> = <var>I</var>²<var>R</var></span><b id="m5kdP"></b></div>
+          <div class="kv"><span>частка втрат</span><b id="m5kFrac"></b></div>
+          <div class="kv"><span>просідання напруги <var>IR</var></span><b id="m5kdU"></b></div>
+        </div>
+        <div class="panel">
+          <h3>Навіщо трансформатори</h3>
+          <div class="kv"><span>коефіцієнт підвищувального (з 10 кВ)</span><b id="m5kUp"></b></div>
+          <div class="kv"><span>коефіцієнт знижувального (до 380 В)</span><b id="m5kDown"></b></div>
+          <div class="kv"><span>втрати, якби передавали при 10 кВ</span><b id="m5kBad"></b></div>
+          <div class="kv"><span>виграш від підвищення напруги<span class="badge">ΔP ~ 1/U²</span></span><b id="m5kGain"></b></div>
+          <div class="formulas" id="m5fx2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Допоміжний матеріал з електродинаміки · закон електромагнітної індукції · правило Ленца · змінний струм</footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Ролі кольорів у цьому файлі (брендбук §18). Призначені один раз
+   і не міняються між вкладками:
+
+     --k1   джерело зміни: магніт, що падає, рамка, яку обертають, первинне коло з ключем
+     --k2   відгук: ЕРС індукції, індукційний струм, вторинна обмотка
+     --k3   магнітне поле B і магнітний потік Φ, а також втрати в осерді й лінії
+     --ink   результат: рівнодійна, підсумкова величина, саме тіло
+     --sec   пройдена траєкторія, штрих [2,3]
+   ===================================================================== */
+
+/* ===================== спільні утиліти ===================== */
+const $=id=>document.getElementById(id);
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+  grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',globe:'#f2f5f9',sky:'#f6f4ef'};
+const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
+const DEG=Math.PI/180;
+const G=9.8;
+
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sci(n,d=3){
+  if(!isFinite(n)||n===0) return fmt(0,d);
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  return fmt(n/Math.pow(10,e),d)+'·10'+String(e).split('').map(c=>SUP[c]||c).join('');
+}
+/* час доби в годинній мірі: 14 г 32 хв 07 с */
+function hms24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*3600);
+  if(tot>=86400) tot-=86400;
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return h+' г '+String(m).padStart(2,'0')+' хв '+String(s).padStart(2,'0')+' с';
+}
+function hm24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*60);
+  if(tot>=1440) tot-=1440;
+  return Math.floor(tot/60)+' г '+String(tot%60).padStart(2,'0')+' хв';
+}
+/* тривалість: 2 год 02 хв 00 с або 47 хв 12 с */
+function durHM(min){
+  const tot=Math.round(Math.abs(min)*60);
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return (h?h+' год '+String(m).padStart(2,'0')+' хв ':m+' хв ')+String(s).padStart(2,'0')+' с';
+}
+
+const CV={};
+function cvx(id){
+  if(CV[id]) return CV[id];
+  const c=$(id); const r=c.getBoundingClientRect();
+  if(r.width<2||r.height<2) return null;
+  const d=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
+  const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  return CV[id]={g,w:r.width,h:r.height,el:c};
+}
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];});
+
+function seg(id,cb){
+  const el=$(id);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    cb(b.dataset.v);
+  });
+}
+function slider(id,unit,dec,cb){
+  const i=$(id),o=$(id+'o');
+  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  i.addEventListener('input',()=>{show(); cb(+i.value);});
+  show();
+  return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
+}
+function txt(g,s,x,y,o={}){
+  g.fillStyle=o.color||CLR.ink;
+  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,y);
+}
+function arrow(g,x1,y1,x2,y2,color,w=2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
+  if(Math.hypot(x2-x1,y2-y1)<1.5) return;
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*L*0.6,y2-Math.sin(a)*L*0.6); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2);
+  g.lineTo(x2-L*Math.cos(a-0.44),y2-L*Math.sin(a-0.44));
+  g.lineTo(x2-L*Math.cos(a+0.44),y2-L*Math.sin(a+0.44));
+  g.closePath(); g.fill();
+}
+function pill(g,s,x,y,o={}){
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14;
+  g.fillStyle=o.bg||'rgba(252,252,251,.92)';
+  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  txt(g,s,x,y+1,{...o,align:'center'});
+}
+function dot(g,x,y,r,fill,ring){
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.fillStyle=fill; g.fill();
+  if(ring){g.strokeStyle=ring; g.lineWidth=2; g.stroke();}
+}
+function niceStep(raw){
+  if(!(raw>0)) return 1;
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+/* дуга кута навколо точки (x,y): від a1 до a2 в екранних радіанах */
+function arc(g,x,y,r,a1,a2,color,w=1.2){
+  g.strokeStyle=color; g.lineWidth=w;
+  g.beginPath(); g.arc(x,y,r,a1,a2,a2<a1); g.stroke();
+}
+/* простий лінійний графік із перехрестям-підказкою */
+function drawChart(box,opt){
+  const {g,w,h}=box;
+  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  const X=t=>L+t/opt.tMax*pw;
+  const Y=y=>T+(1-(y-opt.yMin)/(opt.yMax-opt.yMin))*ph;
+  g.clearRect(0,0,w,h);
+  g.lineWidth=1;
+  const yd=opt.yDec||0;
+  const st=niceStep((opt.yMax-opt.yMin)/4.5);
+  for(let y=Math.ceil(opt.yMin/st)*st;y<=opt.yMax+1e-9;y+=st){
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
+    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+  }
+  const xs=opt.xStep||niceStep(opt.tMax/5);
+  for(let t=0;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
+    g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
+    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+  }
+  if(opt.yMin<0&&opt.yMax>0){
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  }
+  /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
+     наїжджають то на верхню поділку, то на прямий підпис серії */
+  txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
+  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  const ends=[];
+  for(const s of opt.series){
+    if(!s.ts||s.ts.length<2) continue;
+    g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
+    g.beginPath();
+    for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
+    g.stroke(); g.setLineDash([]);
+    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    dot(g,lx,ly,3,s.color);
+    ends.push({x:lx,y:ly,label:s.label});
+  }
+  /* прямі підписи серій розводимо по вертикалі — інакше при близьких
+     значеннях вони лягають один на одного і жоден не читається */
+  ends.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<ends.length;i++)
+    if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
+  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+  if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
+    const t=(opt.hover-L)/pw*opt.tMax;
+    const s0=opt.series[0];
+    const tc=Math.min(t,s0.ts[s0.ts.length-1]);
+    const hx=X(tc);
+    g.strokeStyle=CLR.axis; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(hx+.5,T); g.lineTo(hx+.5,T+ph); g.stroke(); g.setLineDash([]);
+    const vals=[];
+    for(const s of opt.series){
+      let i=s.ts.length-1;
+      while(i>0&&s.ts[i]>tc) i--;
+      const v=s.ys[Math.min(i+(s.ts[i]<tc?1:0),s.ys.length-1)];
+      dot(g,hx,Y(v),3.5,'#fff',s.color); vals.push(v);
+    }
+    return {t:tc,vals,px:hx};
+  }
+  return null;
+}
+function makeTip(wrapId){
+  const w=$(wrapId); const d=document.createElement('div');
+  d.className='tip'; w.appendChild(d); return d;
+}
+function hover(canvasId,state){
+  const c=$(canvasId);
+  c.addEventListener('pointermove',e=>{
+    const r=c.getBoundingClientRect(); state.x=e.clientX-r.left; state.cy=e.clientY-r.top;
+  });
+  c.addEventListener('pointerleave',()=>{state.x=null;});
+}
+/* показати підказку графіка; names = [[підпис,колір],…] */
+function showTip(el,r,unit,st,names,dec){
+  if(!r){el.style.display='none'; return;}
+  el.innerHTML='<div class="th">'+(st.xlab||'t')+' = '+fmt(r.t,st.xdec==null?1:st.xdec)+' '+(st.xunit||'с')+'</div>'+
+    r.vals.map((v,i)=>'<div><span class="chip" style="background:'+names[i][1]+'"></span>'+
+      names[i][0]+' — '+fmt(v,dec==null?1:dec)+' '+unit+'</div>').join('');
+  el.style.display='block';
+  const bw=el.offsetWidth;
+  el.style.left=Math.min(r.px+14,el.parentElement.clientWidth-bw-4)+'px';
+  el.style.top=Math.max(20,(st.cy||60)-10)+'px';
+}
+/* ---------- пряме керування на сцені ---------- */
+const clamp=(v,lo,hi)=>v<lo?lo:(v>hi?hi:v);
+const snap=(v,st)=>Math.round(v/st)*st;
+/* Реєстр ручок — гачок для оснастки: харнес бере звідси список і синтетично
+   тягне кожну ручку в крайні положення кадру. Без реєстру перевірка осліпла б
+   тієї ж миті, коли керування переїхало з повзунків на полотно. */
+const GRIPS=[];
+/* Масштаб сцени рахується з фактичного розмаху (§10). Але щойно ми тягнемо
+   величину, від якої той розмах залежить, виникає контур: палець рухає
+   величину → росте розмах → падає sc → ручка тікає з-під пальця. Тому на час
+   жесту кадр заморожується: geo() віддає знімок, зроблений на pointerdown,
+   і світ не перемасштабовується посеред руху. Після відпускання масштаб
+   перепідбирається один раз. Правило §10 не порушене — воно просто не
+   застосовується 60 разів за секунду посеред жесту. */
+function frozen(st,b,calc){
+  const f=st._froz;
+  if(f&&f.w===b.w&&f.h===b.h) return f.G;
+  const G=calc(b);
+  if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
+  return G;
+}
+/* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
+   (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
+   у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
+   listFn() мусить бути чистою: її кличе і scene() (щоб намалювати ручки),
+   і цей хелпер (щоб влучити) — одна геометрія, один код, жодного дублювання. */
+function grip(id,st,listFn){
+  const c=$(id);
+  GRIPS.push({id,st,listFn});
+  const pos=e=>{const r=c.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
+  const pick=(px,py)=>{
+    let best=null,bd=1e9;
+    for(const h of listFn()){
+      const d=Math.hypot(px-h.x,py-h.y);
+      if(d<=h.r+6&&d<bd){bd=d; best=h;}
+    }
+    return best;
+  };
+  c.addEventListener('pointerdown',e=>{
+    const p=pos(e), h=pick(p[0],p[1]);
+    if(!h) return;
+    st._grab=h.id; st._over=h.id; st._froz=null;
+    if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
+    /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
+       geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
+       заморожувався б кадр, порахований уже за новим значенням, — і сцени,
+       де жест скидає час розгортки, стрибали б на першому ж дотику. */
+    listFn();
+    h.move(p[0],p[1]);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('pointermove',e=>{
+    const p=pos(e);
+    if(st._grab!=null){
+      for(const h of listFn()) if(h.id===st._grab){h.move(p[0],p[1]); break;}
+      c.style.cursor='grabbing';
+    } else {
+      const h=pick(p[0],p[1]);
+      st._over=h?h.id:null;
+      c.style.cursor=h?'grab':'';
+    }
+  });
+  const off=()=>{st._grab=null; st._froz=null; c.style.cursor=st._over?'grab':'';};
+  c.addEventListener('pointerup',off);
+  c.addEventListener('pointercancel',off);
+  c.addEventListener('pointerleave',()=>{st._over=null; if(st._grab==null) c.style.cursor='';});
+  /* Клавіатура. 298 повзунків були доступні з клавіатури, полотно саме по собі —
+     ні; без цього переїзд на сцену був би системною регресією доступності (§14).
+     Tab всередині полотна перебирає ручки, стрілки зсувають на 4 px, Shift — на 16. */
+  c.tabIndex=0;
+  c.addEventListener('keydown',e=>{
+    const L=listFn(); if(!L.length) return;
+    const k=e.key;
+    if(k==='Tab'){
+      const i=L.findIndex(h=>h.id===st._over);
+      st._over=L[(i+(e.shiftKey?-1:1)+L.length+1)%L.length].id;
+      if(e.preventDefault) e.preventDefault();
+      return;
+    }
+    const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(!d) return;
+    const h=L.filter(x=>x.id===st._over)[0]||L[0];
+    st._over=h.id;
+    const s=e.shiftKey?16:4;
+    h.move(h.x+d[0]*s,h.y+d[1]*s);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('blur',()=>{if(st._grab==null) st._over=null;});
+}
+/* Полиця зразків. Властивість речовини — коефіцієнт тертя, проникність,
+   питомий опір — не має розміру, який можна потягнути: її обирають клацанням
+   по підписаному зразку. M = {x0, y, dx}; list = [[назва, значення, підпис?], …].
+   Полиця живе на сцені поруч із тілом, а не в бічній колонці — щоб вибір
+   речовини лишався частиною креслення. */
+function shelf(g,M,list,cur,lab){
+  if(lab) txt(g,lab,M.x0-8,M.y+4,{color:CLR.mut,size:10,align:'right'});
+  list.forEach((m,i)=>{
+    const x=M.x0+i*M.dx, on=Math.abs(cur-m[1])<1e-9;
+    g.fillStyle=on?'rgba(27,175,122,.16)':'#fff';
+    g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+    g.beginPath(); g.roundRect(x+3,M.y-13,M.dx-6,26,6); g.fill(); g.stroke();
+    txt(g,m[0],x+M.dx/2,M.y-1,{color:on?CLR.ink:CLR.sec,size:10.5,bold:on,align:'center'});
+    txt(g,m[2]==null?fmt(m[1],2):m[2],x+M.dx/2,M.y+11,{color:CLR.mut,size:9.5,align:'center'});
+  });
+}
+/* Смуга керування під кресленням. Це не повзунки з бічної колонки: смуга
+   лежить у тому самому кадрі, під самою сценою, тягнеться пальцем і
+   перебирається з клавіатури нарівні з рештою ручок. Її беруть тоді, коли
+   величина не має власного розміру в кресленні (частота, кількість витків,
+   коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
+   Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
+function gpos(C,i){
+  return {x:C.x[i%2], y:C.y0+Math.floor(i/2)*C.dy};
+}
+function gaugeGrips(C,list,st){
+  return list.map((m,i)=>{
+    const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
+    return {id:m[0], x:p.x+f*C.W, y:p.y, r:8, color:m[5]||CLR.k1, hint:m[1],
+      move:(px,py)=>{
+        st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+        if(m[6]) m[6].call(st);
+      }};
+  });
+}
+function gaugeCol(g,C,list,st){
+  g.strokeStyle=CLR.grid; g.lineWidth=1;
+  g.beginPath(); g.moveTo(8,C.y0-16+.5); g.lineTo(C.x[1]+C.W+16,C.y0-16+.5); g.stroke();
+  list.forEach((m,i)=>{
+    const p=gpos(C,i), f=Math.max(0,Math.min(1,(st[m[0]]-m[2])/(m[3]-m[2])));
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(p.x,p.y+.5); g.lineTo(p.x+C.W,p.y+.5); g.stroke();
+    g.strokeStyle=m[5]||CLR.k1; g.lineWidth=3;
+    g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x+f*C.W,p.y); g.stroke();
+    txt(g,m[1],p.x-8,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
+    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+8,p.y+4,
+      {color:CLR.mut,size:10});
+  });
+}
+/* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
+   і саме за його верхівку задають температуру. Повертає екранну висоту
+   верхівки, щоб туди сіла ручка. frac ∈ [0,1]. */
+function therm(g,x,yb,H,frac,col,lab){
+  g.strokeStyle=CLR.axis; g.lineWidth=1.8;
+  g.beginPath(); g.roundRect(x-7,yb-H-6,14,H+6,7); g.stroke();
+  const fh=Math.max(0,Math.min(1,frac))*H;
+  g.fillStyle=col; g.globalAlpha=0.5;
+  g.beginPath(); g.roundRect(x-4,yb-fh,8,fh,4); g.fill(); g.globalAlpha=1;
+  dot(g,x,yb+6,9,col);
+  if(lab) txt(g,lab,x,yb+30,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+  return yb-fh;
+}
+/* pre — префікс id: у сцені може бути дві полиці (речовина тіла й речовина
+   опори), і без префікса їхні ручки мали б однакові імена */
+function shelfGrips(M,list,set,pre){
+  return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
+    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+}
+/* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
+   лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
+function drawGrip(g,h,st){
+  const on=st._over===h.id, gr=st._grab===h.id;
+  /* bare — ручкою є сам об'єкт сцени (заряд, тіло): свого кружка вона не малює,
+     інакше накрила б те, за що тягнуть */
+  if(!h.bare) dot(g,h.x,h.y,h.r,h.color,'#fff');
+  if(on||gr){
+    g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.2;
+    g.beginPath(); g.arc(h.x,h.y,h.r+4,0,7); g.stroke();
+    if(h.hint) pill(g,h.hint,h.x,h.y-h.r-12,{color:CLR.ink,size:11,bold:true});
+  }
+}
+
+/* сталі теми — звірені окремим скриптом перевірок */
+const MU0=4*Math.PI*1e-7;          /* магнітна стала, Гн/м */
+const SIG_CU=5.96e7;               /* питома провідність міді, См/м */
+const RHO_CU=1/SIG_CU;
+const RHO_AL=2.8e-8;               /* питомий опір алюмінію проводів ЛЕП, Ом·м */
+const SIG_FE=2.0e6;                /* провідність електротехнічної сталі, См/м */
+const RHO_FE=7650;                 /* густина сталі осердя, кг/м³ */
+const B_CORE=1.5;                  /* робоча амплітуда індукції в осерді, Тл */
+const F_NET=50;                    /* частота мережі, Гц */
+
+/* ---------- дрібні схемні позначки, спільні для модулів 3–5 ---------- */
+function polyLen(p){let L=0; for(let i=1;i<p.length;i++) L+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y); return L;}
+function polyAt(p,s){
+  for(let i=1;i<p.length;i++){
+    const d=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);
+    if(s<=d||i===p.length-1){const u=d?s/d:0;
+      return {x:p[i-1].x+(p[i].x-p[i-1].x)*u,y:p[i-1].y+(p[i].y-p[i-1].y)*u};}
+    s-=d;
+  }
+  return p[p.length-1];
+}
+/* рухомі крапки вздовж провідника — показують напрям і силу струму */
+function flowDots(g,p,ph,color,n){
+  const L=polyLen(p); if(!(L>0)) return;
+  for(let i=0;i<n;i++){
+    const q=polyAt(p,(((i/n+ph)%1)+1)%1*L);
+    dot(g,q.x,q.y,3,color);
+  }
+}
+function wire(g,p,color,wd){
+  g.strokeStyle=color; g.lineWidth=wd||2; g.lineJoin='round';
+  g.beginPath(); p.forEach((q,i)=>i?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y)); g.stroke();
+}
+function resistor(g,x,y,wd,ht,color,lab){
+  g.fillStyle='#fff'; g.strokeStyle=color; g.lineWidth=2;
+  g.beginPath(); g.rect(x-wd/2,y-ht/2,wd,ht); g.fill(); g.stroke();
+  if(lab) txt(g,lab,x,y+4,{color:color,size:11,bold:true,align:'center'});
+}
+/* умовне позначення котушки: n півкіл угору */
+function coilSym(g,x,y,wd,n,color,lw){
+  g.strokeStyle=color; g.lineWidth=lw||2.4; g.lineCap='round';
+  const r=wd/(2*n);
+  g.beginPath();
+  for(let i=0;i<n;i++){
+    const c=x-wd/2+r*(2*i+1);
+    g.moveTo(c-r,y); g.arc(c,y,r,Math.PI,0,false);
+  }
+  g.stroke();
+}
+
+/* ===================== МОДУЛЬ 1 · закон Фарадея ===================== */
+const M1={
+  mode:'B', B:0.5, S:200, a:0, N:10, T:2,   /* S у см², T у с */
+  t:0, playing:true,
+  hf:{x:null}, he:{x:null}, tipf:null, tipe:null,
+  Sm(){return this.S*1e-4;},
+  /* трикутна хвиля 0…1…0 з періодом T */
+  ph(t){return ((t%this.T)+this.T)%this.T/this.T;},
+  tri(t){const u=this.ph(t); return u<0.5?2*u:2-2*u;},
+  Bt(t){return this.mode==='B'?this.B*this.tri(t):this.B;},
+  St(t){return this.mode==='S'?this.Sm()*(0.25+0.75*this.tri(t)):this.Sm();},
+  At(t){return this.mode==='a'?360*this.ph(t):this.a;},
+  flux(t){return this.Bt(t)*this.St(t)*Math.cos(this.At(t)*DEG);},
+  psi(t){return this.N*this.flux(t);},
+  /* ε = −N·dΦ/dt; у режимах B і S потік змінюється лінійно, тож ЕРС стала */
+  emf(t){
+    const u=this.ph(t), s=u<0.5?1:-1;
+    if(this.mode==='B') return -this.N*this.Sm()*Math.cos(this.a*DEG)*s*2*this.B/this.T;
+    if(this.mode==='S') return -this.N*this.B*Math.cos(this.a*DEG)*s*1.5*this.Sm()/this.T;
+    return this.N*this.B*this.Sm()*(2*Math.PI/this.T)*Math.sin(2*Math.PI*u);
+  },
+  emfMax(){
+    const c=Math.abs(Math.cos(this.a*DEG));
+    if(this.mode==='B') return this.N*this.Sm()*c*2*this.B/this.T;
+    if(this.mode==='S') return this.N*this.B*c*1.5*this.Sm()/this.T;
+    return this.N*this.B*this.Sm()*2*Math.PI/this.T;
+  },
+  init(){
+    grip('m1scene',this,()=>this.grips());
+    seg('m1mode',v=>{this.mode=v; this.t=0; this.showMode();});
+    $('m1play').onclick=()=>{this.playing=!this.playing; $('m1play').textContent=this.playing?'⏸':'▶';};
+    $('m1re').onclick=()=>{this.t=0;};
+    this.tipf=makeTip('m1cfw'); this.tipe=makeTip('m1cew');
+    hover('m1cf',this.hf); hover('m1ce',this.he);
+    this.hf.xlab='t'; this.hf.xunit='с'; this.hf.xdec=2;
+    this.he.xlab='t'; this.he.xunit='с'; this.he.xdec=2;
+    this.showMode();
+  },
+  showMode(){
+    $('m1gA').hidden=this.mode==='a';
+    $('m1bB').hidden=this.mode!=='B';
+    $('m1bS').hidden=this.mode!=='S';
+  },
+  tick(dt){if(this.playing) this.t=(this.t+dt)%(2*this.T); this.render();},
+  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
+     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
+  GG:[
+    ['B','B',0.05,1.5,0.05,CLR.k1,null,'m1vB',2,'Тл'],
+    ['S','S',20,400,10,CLR.k2,null,'m1vS',0,'см²'],
+    ['a','a',0,90,5,CLR.k3,null,'m1va',0,'°'],
+    ['N','N',1,60,1,CLR.sec,null,'m1vN',0,'витків'],
+    ['T','T',0.5,4,0.1,CLR.k1,null,'m1vT',1,'с']
+  ],
+  gcol(b){const rows=Math.ceil(this.GG.length/2);
+    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
+      y0:b.h-rows*24+2};},
+  grips(){
+    const b=cvx('m1scene'); if(!b) return [];
+    return gaugeGrips(this.gcol(b),this.GG,this);
+  },
+  gdraw(){
+    const b=cvx('m1scene'); if(!b) return;
+    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    for(const hh of this.grips()) drawGrip(b.g,hh,this);
+    /* числа в бічній колонці — те саме значення, що показує шкала */
+    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+  },
+  render(){this.render0(); this.gdraw();},
+  render0(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m1scene'); if(!b) return;
+    const {g,w}=b, h=b.h-90;
+    g.clearRect(0,0,w,h);
+    const t=this.t, B=this.Bt(t), Sm=this.St(t), al=this.At(t), e=this.emf(t);
+    const cx=w*0.40, cy=h*0.56;
+    const nm={B:['змінюємо індукцію поля','поле наростає й спадає, рамка нерухома — потік змінюється разом із B'],
+      S:['змінюємо площу контуру','перемичка ковзає по рейках: площа росте й меншає, поле стале'],
+      a:['змінюємо кут','рамка обертається — потік іде за косинусом, ЕРС за синусом']}[this.mode];
+    txt(g,nm[0],12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,nm[1],12,36,{color:CLR.mut,size:10.5});
+    /* однорідне поле — горизонтальні лінії зі стрілками */
+    const rel=this.B>1e-9?B/this.B:0;
+    g.globalAlpha=0.2+0.8*rel;
+    for(let i=0;i<5;i++){
+      const yy=h*0.22+i*h*0.15;
+      g.strokeStyle=CLR.k3; g.lineWidth=1.3;
+      g.beginPath(); g.moveTo(w*0.04,yy); g.lineTo(w*0.76,yy); g.stroke();
+      arrow(g,w*0.60,yy,w*0.76,yy,CLR.k3,1.6);
+    }
+    g.globalAlpha=1;
+    txt(g,'B = '+fmt(B,3)+' Тл',w*0.04,h*0.22-8,{color:'#0d7a55',size:11,bold:true});
+    /* рамка в косокутній проєкції: X — уздовж B, Y — від глядача, Z — угору */
+    const s=Math.min(w*0.30,h*0.34)/0.15;
+    const a0=Math.sqrt(this.Sm()), bw=Sm/a0;
+    const ca=Math.cos(al*DEG), sa=Math.sin(al*DEG);
+    const ux=-sa, uy=ca, u0=-a0/2;
+    const P=(X,Y,Z)=>({x:cx+(X+0.45*Y)*s, y:cy-(Z+0.28*Y)*s});
+    const CO=(p,q)=>{const uu=u0+p*bw; return P(uu*ux,uu*uy,q*a0/2);};
+    if(this.mode==='S'){
+      const rr=u0+a0*1.3;   /* рейки виступають за найбільшу площу — інакше їх не видно */
+      const e1=P(rr*ux,rr*uy,a0/2), e2=P(rr*ux,rr*uy,-a0/2);
+      const A0=CO(0,1), D0=CO(0,-1);
+      wire(g,[A0,e1],CLR.sec,1.6); wire(g,[D0,e2],CLR.sec,1.6);
+      txt(g,'рейки',e1.x+5,e1.y-5,{color:CLR.mut,size:10.5});
+    }
+    const pts=[CO(0,1),CO(1,1),CO(1,-1),CO(0,-1)];
+    /* заливка — наочна міра потоку крізь рамку */
+    const fmax=this.B*this.Sm()||1;
+    g.fillStyle='rgba(27,175,122,'+(0.05+0.30*Math.min(1,Math.abs(B*Sm*ca)/fmax)).toFixed(3)+')';
+    g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.closePath(); g.fill();
+    g.strokeStyle=CLR.k1; g.lineWidth=2.6; g.lineJoin='round'; g.stroke();
+    if(this.mode==='S'){
+      wire(g,[pts[1],pts[2]],CLR.k1,4.5);
+      const mid={x:(pts[1].x+pts[2].x)/2,y:(pts[1].y+pts[2].y)/2};
+      const gr=this.ph(t)<0.5?1:-1;
+      /* напрям ковзання — це напрям u в екранних координатах */
+      const sux=ux+0.45*uy, suy=-0.28*uy, sl=Math.hypot(sux,suy)||1;
+      arrow(g,mid.x,mid.y,mid.x+gr*34*sux/sl,mid.y+gr*34*suy/sl,CLR.k1,2.2);
+      txt(g,'перемичка',pts[2].x+7,pts[2].y+15,{color:'#1c5cab',size:10.5,bold:true});
+    }
+    /* індукційний струм по контуру */
+    const dir=e>=0?1:-1;
+    if(Math.abs(e)>1e-6){
+      for(let i=0;i<4;i++){
+        const p1=pts[i],p2=pts[(i+1)%4];
+        const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+        const dx=(p2.x-p1.x)*dir,dy=(p2.y-p1.y)*dir,ln=Math.hypot(dx,dy)||1;
+        arrow(g,mx-dx/ln*11,my-dy/ln*11,mx+dx/ln*11,my+dy/ln*11,CLR.k2,2.2);
+      }
+    }
+    /* нормаль до площини рамки й кут між нею та полем */
+    const uc=u0+bw/2, O=P(uc*ux,uc*uy,0), Nv=P(uc*ux+0.08*ca,uc*uy+0.08*sa,0);
+    arrow(g,O.x,O.y,Nv.x,Nv.y,CLR.ink,2.2);
+    txt(g,'n',Nv.x+6,Nv.y-3,{color:CLR.ink,size:12,bold:true});
+    if(al>3&&al<357){
+      g.strokeStyle=CLR.sec; g.lineWidth=1.3; g.beginPath();
+      for(let i=0;i<=30;i++){
+        const th=al*DEG*i/30, q=P(uc*ux+0.040*Math.cos(th),uc*uy+0.040*Math.sin(th),0);
+        i?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y);
+      }
+      g.stroke();
+      /* дуга кута в косокутній проєкції стискається до центра рамки, тому
+         підпис ставимо не на дузі, а під рамкою — інакше він лягає на неї */
+      txt(g,'α = '+fmt(al,0)+'°',O.x,O.y+a0/2*s+30,{color:CLR.sec,size:11.5,bold:true,align:'center'});
+    }
+    /* стовпчики потокозчеплення та ЕРС */
+    const hh=h*0.26;
+    const bars=[[w*0.855,this.psi(t),Math.max(1e-12,this.N*this.B*this.Sm()),'Ψ',CLR.k3,'мВб',1e3,1],
+                [w*0.945,e,Math.max(1e-12,this.emfMax()),'ε',CLR.k2,'В',1,3]];
+    for(const [bx,val,mx,lab,col,un,mul,dc] of bars){
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.strokeRect(bx-11,cy-hh,22,2*hh);
+      g.strokeStyle=CLR.axis;
+      g.beginPath(); g.moveTo(bx-16,cy+0.5); g.lineTo(bx+16,cy+0.5); g.stroke();
+      const hg=Math.max(-1,Math.min(1,val/mx))*hh;
+      g.fillStyle=col; g.globalAlpha=0.8;
+      g.fillRect(bx-11,cy-Math.max(hg,0),22,Math.abs(hg)); g.globalAlpha=1;
+      txt(g,lab,bx,cy+hh+20,{color:col,size:12.5,bold:true,align:'center'});
+      txt(g,fmt(val*mul,dc)+' '+un,bx,cy+hh+34,{color:CLR.sec,size:10,align:'center'});
+    }
+  },
+  table(){
+    const t=this.t, e=this.emf(t);
+    $('m1t').innerHTML='t = <b>'+fmt(t,2)+' с</b>';
+    $('m1kPhi').textContent=fmt(this.flux(t)*1000,3)+' мВб';
+    $('m1kPsi').textContent=fmt(this.psi(t)*1000,2)+' мВб';
+    $('m1kRate').textContent=fmt(-e/this.N*1000,2)+' мВб/с';
+    $('m1kE').textContent=fmt(e,3)+' В';
+    $('m1kDir').textContent=Math.abs(e)<1e-9?'струму немає — потік сталий'
+      :(e>0?'за годинниковою стрілкою':'проти годинникової');
+    $('m1kEmax').textContent=fmt(this.emfMax(),3)+' В';
+    $('m1kF').textContent=fmt(1/this.T,2)+' Гц';
+    $('m1kPmax').textContent=fmt(this.N*this.B*this.Sm()*1000,2)+' мВб';
+    $('m1kNo').textContent=fmt(this.emfMax()/2,3)+' В';
+    const c=fmt(Math.cos(this.a*DEG),3);
+    $('m1fx').innerHTML={
+      B:'<i>ε</i> = −<i>NS</i>·cos <i>α</i>·Δ<i>B</i>/Δ<i>t</i> = −'+this.N+'·'+fmt(this.Sm(),4)+'·'+c+
+        '·'+fmt(2*this.B/this.T,3)+' = <b>'+fmt(this.emfMax(),3)+' В</b> (за модулем)',
+      S:'<i>ε</i> = −<i>NB</i>·cos <i>α</i>·Δ<i>S</i>/Δ<i>t</i> = −'+this.N+'·'+fmt(this.B,2)+'·'+c+
+        '·'+fmt(1.5*this.Sm()/this.T,4)+' = <b>'+fmt(this.emfMax(),3)+' В</b> (за модулем)',
+      a:'<i>ε</i><sub>0</sub> = <i>NBSω</i> = '+this.N+'·'+fmt(this.B,2)+'·'+fmt(this.Sm(),4)+'·'+
+        fmt(2*Math.PI/this.T,3)+' = <b>'+fmt(this.emfMax(),3)+' В</b>'}[this.mode];
+  },
+  charts(){
+    const nT=2*this.T;
+    const bf=cvx('m1cf');
+    if(bf){
+      const ts=[],ys=[];
+      for(let i=0;i<=300;i++){const t=nT*i/300; ts.push(t); ys.push(this.psi(t)*1000);}
+      let lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys);
+      if(lo>0) lo=0; if(hi<0) hi=0;
+      const pad=Math.max(0.02,(hi-lo)*0.12); lo-=pad; hi+=pad;
+      const r=drawChart(bf,{tMax:nT,yMin:lo,yMax:hi,yLab:'мВб',xLab:'t, с',yDec:1,xDec:1,
+        hover:this.hf.x,
+        series:[{ts,ys,color:CLR.k3,label:'Ψ'},
+                {ts:[this.t,this.t],ys:[lo,hi],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+      showTip(this.tipf,r,'мВб',this.hf,[['Ψ = NΦ',CLR.k3],['зараз',CLR.ink]],2);
+    }
+    const be=cvx('m1ce');
+    if(be){
+      const ts=[],ys=[];
+      for(let i=0;i<=300;i++){const t=nT*i/300; ts.push(t); ys.push(this.emf(t));}
+      const m=Math.max(1e-4,this.emfMax())*1.2;
+      const r=drawChart(be,{tMax:nT,yMin:-m,yMax:m,yLab:'В',xLab:'t, с',yDec:2,xDec:1,
+        hover:this.he.x,
+        series:[{ts,ys,color:CLR.k2,label:'ε'},
+                {ts:[this.t,this.t],ys:[-m,m],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+      showTip(this.tipe,r,'В',this.he,[['ε',CLR.k2],['зараз',CLR.ink]],3);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 2 · правило Ленца ===================== */
+const M2={
+  mode:'ring', mg:8, mu:0.5, R:8, wl:1, L:40,   /* mg у г, R і wl у мм, L у см */
+  SLOW:0.5,                                     /* падіння показуємо вдвічі повільніше */
+  y:-0.02, v:0, t:0, hold:0, playing:true, done:false,
+  ts:[], vs:[], es:[], fs:[],
+  hf:{x:null}, he:{x:null}, hv:{x:null}, tipf:null, tipe:null, tipv:null,
+  Rm(){return this.R*1e-3;},
+  wm(){return this.wl*1e-3;},
+  Lm(){return this.L*1e-2;},
+  kg(){return this.mg*1e-3;},
+  yRing(){return this.Lm()/2;},
+  /* кільце квадратного перерізу d×d із міді */
+  Rring(){return RHO_CU*2*Math.PI*this.Rm()/(this.wm()*this.wm());},
+  /* потік диполя крізь коло радіуса R на відстані y від його площини */
+  flux(y){const R=this.Rm(); return MU0*this.mu*R*R/(2*Math.pow(R*R+y*y,1.5));},
+  dflux(y){const R=this.Rm(); return -1.5*MU0*this.mu*R*R*y/Math.pow(R*R+y*y,2.5);},
+  /* найбільший градієнт потоку — при y = R/2 */
+  gradMax(){return 1.5*MU0*this.mu*Math.pow(this.Rm(),3)*0.5/Math.pow(1.25,2.5)/Math.pow(this.Rm(),5);},
+  /* коефіцієнт гальмування: F = k·v */
+  kdrag(y){
+    if(this.mode==='cut') return 0;
+    if(this.mode==='ring'){const gd=this.dflux(y-this.yRing()); return gd*gd/this.Rring();}
+    if(y<0||y>this.Lm()) return 0;
+    return 45*MU0*MU0*this.mu*this.mu*SIG_CU*this.wm()/(1024*Math.pow(this.Rm(),4));
+  },
+  vterm(){
+    if(this.mode!=='tube') return null;
+    const k=this.kdrag(this.Lm()/2);
+    return k>1e-15?this.kg()*G/k:null;
+  },
+  /* градієнт у точці, де ЕРС найбільша (для кільця — найближче до магніту) */
+  gradNow(){
+    if(this.mode==='tube') return this.gradMax();
+    return Math.abs(this.dflux(this.y-this.yRing()));
+  },
+  emf(){return this.gradNow()*Math.abs(this.v);},
+  cur(){return this.mode==='cut'?0:this.emf()/this.Rring();},
+  drag(){return this.kdrag(this.y)*Math.abs(this.v);},
+  reset(){
+    this.y=-0.02; this.v=0; this.t=0; this.hold=0; this.done=false;
+    this.ts=[0]; this.vs=[0]; this.es=[0]; this.fs=[this.flux(this.y-this.yRing())*1e6];
+  },
+  init(){
+    grip('m2scene',this,()=>this.grips());
+    seg('m2mode',v=>{this.mode=v; this.reset();});
+    $('m2play').onclick=()=>{this.playing=!this.playing; $('m2play').textContent=this.playing?'⏸':'▶';};
+    $('m2re').onclick=()=>{this.reset();};
+    this.tipf=makeTip('m2cfw'); this.tipe=makeTip('m2cew'); this.tipv=makeTip('m2cvw');
+    hover('m2cf',this.hf); hover('m2ce',this.he); hover('m2cv',this.hv);
+    for(const s of [this.hf,this.he,this.hv]){s.xlab='t'; s.xunit='с'; s.xdec=2;}
+    this.reset();
+  },
+  /* Точне просування для лінійного опору F = k·v. Пряма формула
+     v = v_гр + (v−v_гр)e^(−x) при малому x різниця величезних чисел
+     v_гр = g/k губить усі значущі цифри, тому вона переписана через
+     ряди: em1 = (1−e^(−x))/x і w1 = (1−em1)/x лишаються скінченними
+     навіть при k → 0, і жодного ділення на k не залишається. */
+  step(hh){
+    const x=this.kdrag(this.y)/this.kg()*hh;
+    let em1,w1;
+    if(x<1e-3){em1=1-x/2+x*x/6-x*x*x/24; w1=0.5-x/6+x*x/24;}
+    else{em1=(1-Math.exp(-x))/x; w1=(1-em1)/x;}
+    this.y+=G*hh*hh*w1+this.v*hh*em1;
+    this.v+=(G*hh-this.v*x)*em1;
+    this.t+=hh;
+  },
+  record(){
+    const d=this.y-this.yRing();
+    this.ts.push(this.t); this.vs.push(this.v);
+    this.es.push(-this.dflux(d)*this.v*1000);
+    this.fs.push(this.flux(d)*1e6);
+    /* сплеск ЕРС триває кілька мілісекунд — пишемо кожен підкрок,
+       а при переповненні проріджуємо вдвічі, щоб не втратити початок */
+    if(this.ts.length>1600){
+      const f=a=>a.filter((_,i)=>i%2===0);
+      this.ts=f(this.ts); this.vs=f(this.vs); this.es=f(this.es); this.fs=f(this.fs);
+    }
+  },
+  tick(dt){
+    if(this.playing){
+      if(this.done){
+        /* коротка пауза після вильоту — і дослід повторюється сам */
+        this.hold+=dt; if(this.hold>0.25) this.reset();
+      } else {
+        const n=40, hh=dt*this.SLOW/n;
+        for(let i=0;i<n;i++){
+          this.step(hh); this.record();
+          if(this.y>this.Lm()+0.06){this.done=true; break;}
+        }
+      }
+    }
+    this.render();
+  },
+  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
+     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
+  GG:[
+    ['mg','m',3,60,1,CLR.k1,function(){this.reset();},'m2vm',0,'г'],
+    ['mu','mu',0.1,2,0.05,CLR.k2,function(){this.reset();},'m2vmu',2,'А·м²'],
+    ['R','R',4,20,0.5,CLR.k3,function(){this.reset();},'m2vR',1,'мм'],
+    ['wl','w',0.2,3,0.1,CLR.sec,function(){this.reset();},'m2vw',1,'мм'],
+    ['L','L',10,80,5,CLR.k1,function(){this.reset();},'m2vL',0,'см']
+  ],
+  gcol(b){const rows=Math.ceil(this.GG.length/2);
+    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
+      y0:b.h-rows*24+2};},
+  grips(){
+    const b=cvx('m2scene'); if(!b) return [];
+    return gaugeGrips(this.gcol(b),this.GG,this);
+  },
+  gdraw(){
+    const b=cvx('m2scene'); if(!b) return;
+    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    for(const hh of this.grips()) drawGrip(b.g,hh,this);
+    /* числа в бічній колонці — те саме значення, що показує шкала */
+    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+  },
+  render(){this.render0(); this.gdraw();},
+  render0(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m2scene'); if(!b) return;
+    const {g,w}=b, h=b.h-90;
+    g.clearRect(0,0,w,h);
+    const Lm=this.Lm();
+    const nm={ring:['одне мідне кільце',CLR.k2],tube:['суцільна мідна трубка',CLR.k1],
+      cut:['трубка, розрізана вздовж',CLR.k3]}[this.mode];
+    txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
+    txt(g,'магніт падає північним полюсом униз; падіння показано вдвічі повільніше й повторюється по колу',
+      12,36,{color:CLR.mut,size:10.5});
+    /* Кадр рухається за магнітом: у кадрі вікно висотою win, масштаб по обох
+       осях однаковий, тож пропорції трубки справжні. Уся ділянка — на смузі ліворуч. */
+    const top=56, ph=h-top-34;
+    let win,yc;
+    if(this.mode==='ring'){
+      /* кадр охоплює водночас магніт і кільце: масштаб береться з їхньої
+         справжньої відстані, тож у мить прольоту камера сама «наїжджає» */
+      const d=Math.abs(this.y-this.yRing());
+      win=Math.min(Lm+0.14,Math.max(12*this.Rm(),d+10*this.Rm()));
+      yc=(this.y+this.yRing())/2;
+    } else {
+      win=Math.max(12*this.Rm(),0.05);
+      /* магніт трохи вище центра — видно, куди він летить; після вильоту
+         кадр притримуємо, щоб кінець трубки лишався в полі зору */
+      yc=Math.min(this.y+win*0.08,Lm+win*0.35);
+    }
+    const sc=ph/win, y0=yc-win/2, y1=yc+win/2;
+    const Y=y=>top+(y-y0)*sc;
+    const cx=w*0.46, rx=this.Rm()*sc, ry=Math.max(3,rx*0.30), wt=Math.max(2,this.wm()*sc);
+    /* стінки */
+    const vt=Math.max(y0,0), vb=Math.min(y1,Lm);
+    if(this.mode!=='ring'&&vb>vt){
+      g.fillStyle='rgba(82,81,78,.18)';
+      g.fillRect(cx-rx-wt,Y(vt),wt,Y(vb)-Y(vt));
+      g.fillRect(cx+rx,Y(vt),wt,Y(vb)-Y(vt));
+    }
+    /* кільця, підсвічені за силою ЕРС у кожному */
+    const rings=[];
+    if(this.mode==='ring'){if(this.yRing()>=y0&&this.yRing()<=y1) rings.push(this.yRing());}
+    else{
+      const pitch=Math.max(this.wm()*1.4,win/22);
+      for(let i=Math.max(0,Math.ceil(vt/pitch));i*pitch<=vb;i++) rings.push(i*pitch);
+    }
+    const emax=Math.max(1e-12,this.gradMax()*Math.max(0.15,Math.abs(this.v)));
+    for(const yr of rings){
+      const ei=Math.abs(this.dflux(this.y-yr)*this.v);
+      const al=this.mode==='cut'?0:Math.min(1,ei/emax);
+      g.strokeStyle=this.mode==='cut'?CLR.sec:CLR.k2;
+      g.globalAlpha=this.mode==='cut'?0.5:0.18+0.82*al;
+      g.lineWidth=this.mode==='cut'?1.4:1.2+2.6*al;
+      g.beginPath();
+      /* у розрізаної трубки проміжок дивиться на глядача — там, де й лінія розрізу */
+      if(this.mode==='cut') g.ellipse(cx,Y(yr),rx,ry,0,Math.PI*0.68,Math.PI*0.32);
+      else g.ellipse(cx,Y(yr),rx,ry,0,0,7);
+      g.stroke(); g.globalAlpha=1;
+    }
+    if(this.mode==='cut'&&vb>vt){
+      g.strokeStyle=CLR.k3; g.lineWidth=2.4; g.setLineDash([5,4]);
+      g.beginPath(); g.moveTo(cx,Y(vt)); g.lineTo(cx,Y(vb)); g.stroke(); g.setLineDash([]);
+      txt(g,'розріз розриває коло',cx+rx+wt+10,Y(vt)+16,{color:'#0d7a55',size:11,bold:true});
+    }
+    /* кільце може бути поза кадром — показуємо, у який бік воно лишилося */
+    if(this.mode==='ring'){
+      const yr=this.yRing();
+      if(yr<y0||yr>y1){
+        const up=yr<y0, yy=up?top+7:top+ph-7;
+        g.strokeStyle=CLR.k2; g.lineWidth=1.6; g.setLineDash([5,4]);
+        g.beginPath(); g.moveTo(cx-rx-wt-34,yy); g.lineTo(cx+rx+wt+34,yy); g.stroke(); g.setLineDash([]);
+        txt(g,up?'↑ кільце вище кадру':'↓ кільце нижче кадру',cx,yy+(up?-7:17),
+          {color:'#b8431a',size:10.5,bold:true,align:'center'});
+      }
+    }
+    /* краї ділянки, якщо потрапили в кадр */
+    for(const [yy,lab] of [[0,'верх ділянки'],[Lm,'низ ділянки']]){
+      if(yy<y0||yy>y1) continue;
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(cx-rx-wt-26,Y(yy)); g.lineTo(cx+rx+wt+26,Y(yy)); g.stroke(); g.setLineDash([]);
+      txt(g,lab,cx-rx-wt-30,Y(yy)+4,{color:CLR.mut,size:10,align:'right'});
+    }
+    /* магніт */
+    const mh=0.022*sc, mw=rx*1.4, my=Y(this.y);
+    g.fillStyle='rgba(42,120,214,.20)'; g.fillRect(cx-mw/2,my-mh/2,mw,mh/2);
+    g.fillStyle='rgba(82,81,78,.16)'; g.fillRect(cx-mw/2,my,mw,mh/2);
+    g.strokeStyle=CLR.k1; g.lineWidth=2; g.strokeRect(cx-mw/2,my-mh/2,mw,mh);
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(cx-mw/2,my+0.5); g.lineTo(cx+mw/2,my+0.5); g.stroke();
+    if(mh>26&&mw>14){
+      txt(g,'S',cx,my-mh/4+4,{color:CLR.sec,size:11,bold:true,align:'center'});
+      txt(g,'N',cx,my+mh/4+4,{color:'#1c5cab',size:11,bold:true,align:'center'});
+    }
+    /* сили та швидкість */
+    const fx=cx+rx+wt+50, Wt=this.kg()*G, Fd=this.drag();
+    arrow(g,fx,my,fx,my+Math.min(52,12+Wt*260),CLR.ink,2.4);
+    txt(g,'mg',fx+7,my+22,{color:CLR.ink,size:11,bold:true});
+    if(Fd>1e-6){
+      arrow(g,fx,my,fx,my-Math.min(52,12+Fd*260),CLR.k2,2.4);
+      txt(g,'F гальм',fx+7,my-20,{color:'#b8431a',size:11,bold:true});
+    }
+    if(Math.abs(this.v)>1e-4){
+      const vx=cx-rx-wt-16;
+      arrow(g,vx,my,vx,my+Math.min(44,8+this.v*16),CLR.k1,2.2);
+      txt(g,'v = '+fmt(this.v,2)+' м/с',vx-6,my+6,{color:'#1c5cab',size:11,bold:true,align:'right'});
+    }
+    /* оглядова смуга: положення магніту на всій ділянці */
+    const ox=w*0.09, oy0=top, oy1=h-40, OH=oy1-oy0;
+    const OY=y=>oy0+Math.max(0,Math.min(1,(y+0.02)/(Lm+0.10)))*OH;
+    g.fillStyle='rgba(82,81,78,.14)'; g.fillRect(ox-6,OY(0),12,OY(Lm)-OY(0));
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.strokeRect(ox-6,OY(0),12,OY(Lm)-OY(0));
+    if(this.mode==='ring'){
+      g.strokeStyle=CLR.k2; g.lineWidth=2.5;
+      g.beginPath(); g.moveTo(ox-9,OY(this.yRing())); g.lineTo(ox+9,OY(this.yRing())); g.stroke();
+    }
+    g.strokeStyle=CLR.ink; g.lineWidth=1.2;
+    g.strokeRect(ox-10,OY(y0),20,Math.max(3,OY(y1)-OY(y0)));
+    dot(g,ox,OY(this.y),4,CLR.k1,'#fff');
+    txt(g,'уся ділянка',ox,oy0-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,'0',ox+16,OY(0)+4,{color:CLR.mut,size:10});
+    txt(g,fmt(this.L,0)+' см',ox-8,OY(Lm)+15,{color:CLR.mut,size:10,align:'center'});
+    txt(g,'у кадрі '+fmt(win*100,1)+' см',w-12,h-12,{color:CLR.mut,size:10.5,align:'right'});
+    /* що саме роблять індукційні струми */
+    if(this.mode!=='cut'&&Math.abs(this.v)>1e-3){
+      const d=this.y-this.yRing();
+      if(this.mode==='tube'||Math.abs(d)<6*this.Rm()){
+        const app=this.mode==='tube'?true:d<0;
+        txt(g,app?'магніт наближається — струм відштовхує його'
+          :'магніт віддаляється — струм притягує його назад',
+          12,h-12,{color:'#b8431a',size:11.5,bold:true});
+      }
+    }
+  },
+  table(){
+    const d=this.y-this.yRing(), vt=this.vterm();
+    const Wt=this.kg()*G, Fd=this.drag();
+    $('m2t').innerHTML='t = <b>'+fmt(this.t,2)+' с</b>';
+    $('m2state').textContent=this.done?'магніт вилетів':(this.playing?'падає':'пауза');
+    $('m2lPhi').textContent=this.mode==='ring'?'потік крізь кільце зараз':'потік крізь кільце посередині';
+    $('m2lE').textContent=this.mode==='ring'?'ЕРС у кільці':'ЕРС у найактивнішому кільці';
+    $('m2kPhi').textContent=fmt(this.flux(d)*1e6,2)+' мкВб';
+    $('m2kGrad').textContent=fmt(this.gradNow()*1e4,3)+' мкВб/см';
+    $('m2kE').textContent=fmt(this.emf()*1000,3)+' мВ';
+    $('m2kR').textContent=sci(this.Rring(),3)+' Ом';
+    $('m2kI').textContent=this.mode==='cut'?'0 — коло розірване':fmt(this.cur(),2)+' А';
+    $('m2kF').textContent=fmt(Fd*1000,3)+' мН';
+    $('m2kW').textContent=fmt(Wt*1000,2)+' мН';
+    $('m2kFrac').textContent=fmt(100*Fd/Wt,1)+' %';
+    $('m2kVt').textContent=vt==null?'—':fmt(vt,3)+' м/с';
+    $('m2kV').textContent=fmt(this.v,3)+' м/с';
+    $('m2kT').textContent=fmt(this.t,2)+' с';
+    $('m2fx').innerHTML=this.mode==='tube'
+      ? '<i>F</i> = 45<i>μ</i><sub>0</sub>²<i>p</i><sub>м</sub>²<i>σd</i>·<i>v</i>/1024<i>R</i>⁴ → <i>v</i><sub>гр</sub> = <b>'+
+        (vt==null?'—':fmt(vt,3)+' м/с')+'</b>; що тонша стінка або ширша трубка — то слабше гальмування'
+      : (this.mode==='ring'
+        ? '<i>ε</i> = −Δ<i>Φ</i>/Δ<i>y</i>·<i>v</i>, <i>I</i> = <i>ε</i>/<i>R</i>, <i>F</i> = (Δ<i>Φ</i>/Δ<i>y</i>)²<i>v</i>/<i>R</i> = <b>'+
+          fmt(Fd*1000,3)+' мН</b>'
+        : 'ЕРС у розрізаному кільці така сама, але коло розірване — струму немає, отже й сили немає: <b>вільне падіння</b>');
+  },
+  /* Найбільша ЕРС, якої досягне цей дослід: градієнт потоку у найкрутішій
+     точці, помножений на швидкість прольоту повз кільце. Потрібна, щоб шкала
+     графіка була сталою від першого кадру, а не «стрибала» на початку падіння. */
+  eBound(){
+    const vff=Math.sqrt(2*G*Math.max(0.01,this.yRing()+0.02));
+    const vt=this.vterm();
+    return this.gradMax()*(vt!=null?Math.min(vff,vt*1.5):vff)*1000;
+  },
+  charts(){
+    const tM=Math.max(0.3,this.t);
+    const mk=(id,tip,ys,col,lab,unit,dec,extra,fLo,fHi)=>{
+      const bx=cvx(id); if(!bx) return;
+      let lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys);
+      const ser=[{ts:this.ts,ys,color:col,label:lab}];
+      if(extra){
+        ser.push(extra);
+        lo=Math.min(lo,Math.min.apply(null,extra.ys));
+        hi=Math.max(hi,Math.max.apply(null,extra.ys));
+      }
+      if(fLo!=null) lo=Math.min(lo,fLo);
+      if(fHi!=null) hi=Math.max(hi,fHi);
+      if(lo>0) lo=0; if(hi<0) hi=0;
+      const pad=Math.max(1e-6,(hi-lo)*0.12); lo-=pad; hi+=pad;
+      const names=[[lab,col]]; if(extra) names.push([extra.label,extra.color]);
+      const r=drawChart(bx,{tMax:tM,yMin:lo,yMax:hi,yLab:unit,xLab:'t, с',yDec:dec,xDec:2,
+        hover:this[tip[1]].x, series:ser});
+      showTip(this[tip[0]],r,unit,this[tip[1]],names,dec+1);
+    };
+    const eb=this.eBound();
+    mk('m2cf',['tipf','hf'],this.fs,CLR.k3,'Φ','мкВб',1,null,0,this.flux(0)*1e6);
+    mk('m2ce',['tipe','he'],this.es,CLR.k2,'ε','мВ',1,null,-eb,eb);
+    const ff=this.ts.map(t=>G*t);
+    mk('m2cv',['tipv','hv'],this.vs,CLR.k1,'v','м/с',2,
+      {ts:this.ts,ys:ff,color:CLR.ink,label:'вільне',dash:[4,3]});
+  }
+};
+
+/* ===================== МОДУЛЬ 3 · генератор ===================== */
+const M3={
+  mode:'ac', N:200, B:0.5, S:200, n:1500, R:50,   /* S у см², n в об/хв */
+  t:0, playing:true,
+  he:{x:null}, hp:{x:null}, tipe:null, tipp:null,
+  Sm(){return this.S*1e-4;},
+  f(){return this.n/60;},
+  w(){return 2*Math.PI*this.f();},
+  e0(){return this.N*this.B*this.Sm()*this.w();},
+  ed(){return this.e0()/Math.SQRT2;},
+  ea(){return 2*this.e0()/Math.PI;},
+  emf(ph){const e=this.e0()*Math.sin(2*Math.PI*ph); return this.mode==='dc'?Math.abs(e):e;},
+  Pavg(){return this.e0()*this.e0()/(2*this.R);},
+  Mavg(){const w=this.w(); return w>1e-9?this.Pavg()/w:0;},
+  init(){
+    grip('m3scene',this,()=>this.grips());
+    seg('m3mode',v=>{this.mode=v; this.showMode();});
+    $('m3play').onclick=()=>{this.playing=!this.playing; $('m3play').textContent=this.playing?'⏸':'▶';};
+    $('m3re').onclick=()=>{this.t=0;};
+    this.tipe=makeTip('m3cew'); this.tipp=makeTip('m3cpw');
+    hover('m3ce',this.he); hover('m3cp',this.hp);
+    this.he.xlab='t'; this.he.xunit='мс'; this.he.xdec=1;
+    this.hp.xlab='t'; this.hp.xunit='мс'; this.hp.xdec=1;
+    this.showMode();
+  },
+  showMode(){
+    const ac=this.mode==='ac';
+    $('m3ceh').textContent=ac?'ЕРС генератора, В':'ЕРС після колектора, В';
+    $('m3cel').innerHTML=ac
+      ? '<span><span class="chip cB"></span>ε = ε₀·sin ωt</span><span><span class="chip cI"></span>±діюче значення</span>'
+      : '<span><span class="chip cB"></span>ε = ε₀·|sin ωt|</span><span><span class="chip cI"></span>середнє значення</span>';
+  },
+  tick(dt){if(this.playing) this.t+=dt; this.render();},
+  /* фаза обертання: показуємо в уповільненні — один оберт за 2 с екранного часу */
+  phase(){return (this.t/2)%1;},
+  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
+     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
+  GG:[
+    ['N','N',10,500,10,CLR.k1,null,'m3vN',0,'витків'],
+    ['B','B',0.05,1.5,0.05,CLR.k2,null,'m3vB',2,'Тл'],
+    ['S','S',20,600,10,CLR.k3,null,'m3vS',0,'см²'],
+    ['n','n',150,6000,50,CLR.sec,null,'m3vn',0,'об/хв'],
+    ['R','R',1,200,1,CLR.k1,null,'m3vR',0,'Ом']
+  ],
+  gcol(b){const rows=Math.ceil(this.GG.length/2);
+    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
+      y0:b.h-rows*24+2};},
+  grips(){
+    const b=cvx('m3scene'); if(!b) return [];
+    return gaugeGrips(this.gcol(b),this.GG,this);
+  },
+  gdraw(){
+    const b=cvx('m3scene'); if(!b) return;
+    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    for(const hh of this.grips()) drawGrip(b.g,hh,this);
+    /* числа в бічній колонці — те саме значення, що показує шкала */
+    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+  },
+  render(){this.render0(); this.gdraw();},
+  render0(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w}=b, h=b.h-90, ph=this.phase();
+    g.clearRect(0,0,w,h);
+    txt(g,this.mode==='ac'?'рамка на двох контактних кільцях — струм змінного напряму'
+      :'рамка на розрізаному кільці (колекторі) — струм лише одного напряму',
+      12,20,{color:this.mode==='ac'?CLR.k2:CLR.k1,size:12.5,bold:true});
+    txt(g,'обертання показано в уповільненні: один оберт за 2 с',12,36,{color:CLR.mut,size:10.5});
+    const cx=w*0.30, cy=h*0.48;
+    /* поле */
+    g.globalAlpha=0.85;
+    for(let i=0;i<4;i++){
+      const yy=h*0.18+i*h*0.14;
+      g.strokeStyle=CLR.k3; g.lineWidth=1.3;
+      g.beginPath(); g.moveTo(w*0.04,yy); g.lineTo(w*0.52,yy); g.stroke();
+      arrow(g,w*0.41,yy,w*0.52,yy,CLR.k3,1.6);
+    }
+    g.globalAlpha=1;
+    txt(g,'B = '+fmt(this.B,2)+' Тл',w*0.04,h*0.18-8,{color:'#0d7a55',size:11,bold:true});
+    /* рамка, що обертається */
+    const al=360*ph;
+    const s=Math.min(w*0.20,h*0.32)/0.26;
+    const a0=Math.sqrt(this.Sm());
+    const ca=Math.cos(al*DEG), sa=Math.sin(al*DEG);
+    const ux=-sa, uy=ca;
+    const P=(X,Y,Z)=>({x:cx+(X+0.45*Y)*s, y:cy-(Z+0.28*Y)*s});
+    const CO=(p,q)=>P(p*a0/2*ux,p*a0/2*uy,q*a0/2);
+    const pts=[CO(1,1),CO(-1,1),CO(-1,-1),CO(1,-1)];
+    g.fillStyle='rgba(27,175,122,'+(0.05+0.28*Math.abs(ca)).toFixed(3)+')';
+    g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.closePath(); g.fill();
+    g.strokeStyle=CLR.k1; g.lineWidth=2.8; g.lineJoin='round'; g.stroke();
+    const e=this.emf(ph), e0=Math.max(1e-9,this.e0());
+    /* у самій рамці струм завжди змінного напряму; колектор перевертає лише зовнішнє коло */
+    const fdir=Math.sin(2*Math.PI*ph)>=0?1:-1;
+    const edir=this.mode==='dc'?1:fdir;
+    if(Math.abs(e)>e0*0.04){
+      for(let i=0;i<4;i++){
+        const p1=pts[i],p2=pts[(i+1)%4];
+        const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+        const dx=(p2.x-p1.x)*fdir,dy=(p2.y-p1.y)*fdir,ln=Math.hypot(dx,dy)||1;
+        arrow(g,mx-dx/ln*10,my-dy/ln*10,mx+dx/ln*10,my+dy/ln*10,CLR.k2,2.2);
+      }
+    }
+    /* вісь, кільця і щітки */
+    const ay=cy+Math.min(h*0.30,a0/2*s+46);
+    g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx,cy+a0/2*s); g.lineTo(cx,ay); g.stroke();
+    for(const off of [-9,9]){
+      g.strokeStyle=this.mode==='ac'?CLR.k2:CLR.k1; g.lineWidth=2.2;
+      g.beginPath(); g.ellipse(cx,ay+off*0.6,16,5,0,0,7); g.stroke();
+    }
+    txt(g,this.mode==='ac'?'контактні кільця':'колектор',cx,ay+24,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    /* зовнішнє коло з навантаженням: два виводи від щіток до резистора */
+    const rx=w*0.82, ry=cy, ux2=w*0.60;
+    const p1=[{x:cx+18,y:ay+6},{x:rx,y:ay+6},{x:rx,y:ry+22}];
+    const p2=[{x:rx,y:ry-22},{x:rx,y:cy-h*0.34},{x:ux2,y:cy-h*0.34},{x:ux2,y:ay-6},{x:cx+18,y:ay-6}];
+    wire(g,p1,CLR.sec,2); wire(g,p2,CLR.sec,2);
+    const inten=Math.abs(e)/e0;
+    flowDots(g,p1.concat(p2,[{x:cx+18,y:ay+6}]),edir*ph*4,CLR.k2,
+      Math.max(2,Math.round(3+9*inten)));
+    resistor(g,rx,ry,34,44,CLR.ink,'R');
+    txt(g,fmt(this.R,0)+' Ом',rx,ry+36,{color:CLR.sec,size:10.5,align:'center'});
+    /* стовпчик миттєвої ЕРС */
+    const bx=w*0.955, hh=h*0.28;
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(bx-16,cy+0.5); g.lineTo(bx+16,cy+0.5); g.stroke();
+    const hg=Math.max(-1,Math.min(1,e/e0))*hh;
+    g.fillStyle=CLR.k2; g.globalAlpha=0.8;
+    g.fillRect(bx-11,cy-Math.max(hg,0),22,Math.abs(hg)); g.globalAlpha=1;
+    txt(g,'ε',bx,cy+hh+20,{color:'#b8431a',size:12.5,bold:true,align:'center'});
+    txt(g,fmt(e,1)+' В',bx,cy+hh+34,{color:CLR.sec,size:10,align:'center'});
+  },
+  table(){
+    const e0=this.e0();
+    $('m3t').innerHTML='кут повороту <b>'+fmt(360*this.phase(),0)+'°</b>';
+    $('m3kf').textContent=fmt(this.f(),2)+' Гц';
+    $('m3kw').textContent=fmt(this.w(),1)+' рад/с';
+    $('m3ke0').textContent=fmt(e0,1)+' В';
+    $('m3ked').textContent=fmt(this.ed(),1)+' В';
+    $('m3kea').textContent=fmt(this.ea(),1)+' В';
+    $('m3ki0').textContent=fmt(e0/this.R,2)+' А';
+    $('m3kid').textContent=fmt(this.ed()/this.R,2)+' А';
+    $('m3kP').textContent=fmt(this.Pavg(),1)+' Вт';
+    $('m3kM').textContent=fmt(this.Mavg(),2)+' Н·м';
+    $('m3kMech').textContent=fmt(this.Mavg()*this.w(),1)+' Вт';
+    $('m3fx').innerHTML='<i>ε</i><sub>0</sub> = <i>NBSω</i> = '+this.N+'·'+fmt(this.B,2)+'·'+
+      fmt(this.Sm(),4)+'·'+fmt(this.w(),1)+' = <b>'+fmt(e0,1)+' В</b>; діюче '+fmt(this.ed(),1)+
+      ' В дає ту саму потужність, що й постійна напруга такої ж величини';
+  },
+  charts(){
+    const Tms=1000/Math.max(1e-6,this.f()), nT=2*Tms;
+    const e0=this.e0();
+    const be=cvx('m3ce');
+    if(be){
+      const ts=[],ys=[];
+      for(let i=0;i<=300;i++){const x=nT*i/300; ts.push(x); ys.push(this.emf(x/Tms));}
+      const lev=this.mode==='ac'?this.ed():this.ea();
+      const lo=this.mode==='ac'?-e0*1.2:-e0*0.12, hi=e0*1.2;
+      const ser=[{ts,ys,color:CLR.k2,label:'ε'},
+        {ts:[0,nT],ys:[lev,lev],color:CLR.ink,label:this.mode==='ac'?'діюче':'середнє',dash:[4,3]}];
+      if(this.mode==='ac') ser.push({ts:[0,nT],ys:[-lev,-lev],color:CLR.ink,label:'−діюче',dash:[4,3]});
+      const r=drawChart(be,{tMax:nT,yMin:lo,yMax:hi,yLab:'В',xLab:'t, мс',yDec:0,xDec:1,
+        hover:this.he.x,series:ser});
+      showTip(this.tipe,r,'В',this.he,this.mode==='ac'
+        ?[['ε',CLR.k2],['діюче',CLR.ink],['−діюче',CLR.ink]]
+        :[['ε',CLR.k2],['середнє',CLR.ink]],1);
+    }
+    const bp=cvx('m3cp');
+    if(bp){
+      const ts=[],ys=[];
+      for(let i=0;i<=300;i++){const x=nT*i/300; const ee=this.emf(x/Tms); ts.push(x); ys.push(ee*ee/this.R);}
+      const pm=e0*e0/this.R;
+      const r=drawChart(bp,{tMax:nT,yMin:0,yMax:Math.max(1e-6,pm*1.15),yLab:'Вт',xLab:'t, мс',yDec:0,xDec:1,
+        hover:this.hp.x,
+        series:[{ts,ys,color:CLR.k3,label:'p'},
+          {ts:[0,nT],ys:[this.Pavg(),this.Pavg()],color:CLR.ink,label:'середня',dash:[4,3]}]});
+      showTip(this.tipp,r,'Вт',this.hp,[['p = ε²/R',CLR.k3],['середня',CLR.ink]],1);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 4 · самоіндукція ===================== */
+const M4={
+  mode:'close', N:1000, l:20, d:4, R:10, U:12, Rp:10000,   /* l і d у см */
+  ph:0, playing:true,
+  hi:{x:null}, hu:{x:null}, tipi:null, tipu:null,
+  Sm(){return Math.PI*Math.pow(this.d*1e-2,2)/4;},
+  Lh(){return MU0*this.N*this.N*this.Sm()/(this.l*1e-2);},
+  Rtot(){return this.mode==='open'?this.R+this.Rp:this.R;},
+  tau(){return this.Lh()/this.Rtot();},
+  I0(){return this.U/this.R;},
+  TSHOW(){return 6*this.tau();},
+  It(t){const I0=this.I0(),tau=this.tau();
+    return this.mode==='close'?I0*(1-Math.exp(-t/tau)):I0*Math.exp(-t/tau);},
+  eL(t){return this.mode==='close'?this.U*Math.exp(-t/this.tau())
+    :this.I0()*this.Rtot()*Math.exp(-t/this.tau());},
+  now(){return this.ph*this.TSHOW();},
+  unit(){
+    const T=this.TSHOW();
+    if(T>=1) return {f:1,n:'с'};
+    if(T>=1e-3) return {f:1e3,n:'мс'};
+    if(T>=1e-6) return {f:1e6,n:'мкс'};
+    return {f:1e9,n:'нс'};
+  },
+  init(){
+    grip('m4scene',this,()=>this.grips());
+    seg('m4mode',v=>{this.mode=v; this.ph=0; this.showMode();});
+    $('m4play').onclick=()=>{this.playing=!this.playing; $('m4play').textContent=this.playing?'⏸':'▶';};
+    $('m4re').onclick=()=>{this.ph=0;};
+    this.tipi=makeTip('m4ciw'); this.tipu=makeTip('m4cuw');
+    hover('m4ci',this.hi); hover('m4cu',this.hu);
+    this.showMode();
+  },
+  showMode(){
+    const c=this.mode==='close';
+    $('m4gOpen').hidden=c;
+    $('m4cih').textContent=c?'струм наростає, А':'струм спадає, А';
+    $('m4cil').innerHTML='<span><span class="chip cA"></span>I(t)</span>'+
+      '<span><span class="chip cI"></span>усталений I₀ = U/R</span>';
+    $('m4cuh').textContent=c?'напруги в колі, В':'напруга на проміжку розриву, В';
+    $('m4cul').innerHTML=c
+      ? '<span><span class="chip cB"></span>ЕРС самоіндукції</span><span><span class="chip cA"></span>на резисторі</span><span><span class="chip cI"></span>сума = U</span>'
+      : '<span><span class="chip cB"></span>ЕРС самоіндукції</span><span><span class="chip cI"></span>напруга джерела для порівняння</span>';
+    const u=this.unit();
+    this.hi.xlab='t'; this.hi.xunit=u.n; this.hi.xdec=2;
+    this.hu.xlab='t'; this.hu.xunit=u.n; this.hu.xdec=2;
+  },
+  tick(dt){if(this.playing) this.ph=(this.ph+dt/2.5)%1; this.render();},
+  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
+     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
+  GG:[
+    ['N','N',100,2000,50,CLR.k1,null,'m4vN',0,'витків'],
+    ['l','l',5,40,1,CLR.k2,null,'m4vl',0,'см'],
+    ['d','d',1,8,0.5,CLR.k3,null,'m4vd',1,'см'],
+    ['R','R',1,100,1,CLR.sec,null,'m4vR',0,'Ом'],
+    ['U','U',1,24,0.5,CLR.k1,null,'m4vU',1,'В'],
+    ['Rp','Rp',100,20000,100,CLR.k2,null,'m4vRp',0,'Ом']
+  ],
+  gcol(b){const rows=Math.ceil(this.GG.length/2);
+    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
+      y0:b.h-rows*24+2};},
+  grips(){
+    const b=cvx('m4scene'); if(!b) return [];
+    return gaugeGrips(this.gcol(b),this.GG,this);
+  },
+  gdraw(){
+    const b=cvx('m4scene'); if(!b) return;
+    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    for(const hh of this.grips()) drawGrip(b.g,hh,this);
+    /* числа в бічній колонці — те саме значення, що показує шкала */
+    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+  },
+  render(){this.render0(); this.gdraw();},
+  render0(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m4scene'); if(!b) return;
+    const {g,w}=b, h=b.h-90;
+    g.clearRect(0,0,w,h);
+    const t=this.now(), I=this.It(t), I0=Math.max(1e-12,this.I0()), rel=I/I0;
+    const c=this.mode==='close';
+    txt(g,c?'ключ щойно замкнули — котушка не дає струму зрости миттєво'
+      :'ключ розмикають — котушка підтримує струм і пробиває проміжок',
+      12,20,{color:c?CLR.k1:CLR.k2,size:12.5,bold:true});
+    txt(g,'перехідний процес показано в уповільненні: увесь він триває '+
+      fmt(this.TSHOW()*this.unit().f,2)+' '+this.unit().n,12,36,{color:CLR.mut,size:10.5});
+    const x1=w*0.10, x2=w*0.66, y1=h*0.26, y2=h*0.84;
+    /* контур кола */
+    wire(g,[{x:x1,y:y1},{x:x2,y:y1}],CLR.sec,2);
+    wire(g,[{x:x2,y:y1},{x:x2,y:y2}],CLR.sec,2);
+    wire(g,[{x:x2,y:y2},{x:x1,y:y2}],CLR.sec,2);
+    wire(g,[{x:x1,y:y2},{x:x1,y:y1}],CLR.sec,2);
+    /* джерело зліва */
+    const my=(y1+y2)/2;
+    g.strokeStyle=CLR.k1; g.lineWidth=2.6;
+    g.beginPath(); g.moveTo(x1-11,my-13); g.lineTo(x1+11,my-13); g.stroke();
+    g.lineWidth=5; g.beginPath(); g.moveTo(x1-6,my-5); g.lineTo(x1+6,my-5); g.stroke();
+    g.lineWidth=2.6; g.beginPath(); g.moveTo(x1-11,my+5); g.lineTo(x1+11,my+5); g.stroke();
+    g.lineWidth=5; g.beginPath(); g.moveTo(x1-6,my+13); g.lineTo(x1+6,my+13); g.stroke();
+    txt(g,'U = '+fmt(this.U,1)+' В',x1-16,my+4,{color:'#1c5cab',size:11,bold:true,align:'right'});
+    /* ключ угорі */
+    const kx=(x1+x2)*0.36;
+    dot(g,kx-13,y1,3,CLR.sec); dot(g,kx+13,y1,3,CLR.sec);
+    g.strokeStyle=c?CLR.k1:CLR.k2; g.lineWidth=2.6;
+    g.beginPath(); g.moveTo(kx-13,y1);
+    if(c) g.lineTo(kx+13,y1); else g.lineTo(kx+9,y1-16);
+    g.stroke();
+    txt(g,c?'ключ замкнено':'ключ розімкнено',kx,y1-24,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    /* котушка праворуч */
+    g.save(); g.translate(x2,my); g.rotate(-Math.PI/2);
+    coilSym(g,0,0,Math.min(120,(y2-y1)*0.5),7,CLR.k1,2.6);
+    g.restore();
+    txt(g,'L = '+sci(this.Lh(),2)+' Гн',x2+12,my-6,{color:'#1c5cab',size:11,bold:true});
+    /* поле всередині котушки */
+    g.globalAlpha=0.2+0.8*Math.min(1,Math.abs(rel));
+    for(const off of [-8,0,8]) arrow(g,x2+off,my+26,x2+off,my-26,CLR.k3,1.6);
+    g.globalAlpha=1;
+    txt(g,'B = '+fmt(MU0*this.N/(this.l*1e-2)*I*1000,2)+' мТл',x2+12,my+12,{color:'#0d7a55',size:10.5});
+    /* резистор унизу */
+    resistor(g,(x1+x2)/2,y2,40,22,CLR.ink,'R');
+    txt(g,fmt(this.R,0)+' Ом',(x1+x2)/2,y2+22,{color:CLR.sec,size:10.5,align:'center'});
+    /* проміжок розриву */
+    if(!c){
+      const gx=(x1+x2)*0.72;
+      dot(g,gx-10,y1,3,CLR.sec); dot(g,gx+10,y1,3,CLR.sec);
+      const eL=this.eL(t), br=Math.min(1,eL/Math.max(1,this.I0()*this.Rtot()));
+      g.strokeStyle=CLR.k3; g.lineWidth=1+3*br; g.globalAlpha=0.25+0.75*br;
+      g.beginPath();
+      g.moveTo(gx-10,y1);
+      for(let i=1;i<6;i++) g.lineTo(gx-10+20*i/6,y1+(i%2?-6:6));
+      g.lineTo(gx+10,y1); g.stroke(); g.globalAlpha=1;
+      txt(g,'іскра · '+sci(eL,2)+' В',gx,y1-14,{color:'#0d7a55',size:11,bold:true,align:'center'});
+    }
+    /* струм — рухомі крапки */
+    const loop=[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}];
+    flowDots(g,loop,(this.ph*6)%1,CLR.k2,Math.max(0,Math.round(14*Math.abs(rel))));
+    /* стовпчики струму та енергії */
+    const bx=w*0.87, hh=h*0.24, by=h*0.55;
+    const bars=[[bx,Math.abs(rel),'I',CLR.k2,fmt(I,3)+' А'],
+      [bx+w*0.085,Math.min(1,I*I/(I0*I0)),'W',CLR.ink,sci(this.Lh()*I*I/2,2)+' Дж']];
+    for(const [xx,fr,lab,col,val] of bars){
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(xx-15,by+hh+0.5); g.lineTo(xx+15,by+hh+0.5); g.stroke();
+      g.fillStyle=col; g.globalAlpha=0.8;
+      g.fillRect(xx-11,by+hh-fr*hh*2,22,fr*hh*2); g.globalAlpha=1;
+      txt(g,lab,xx,by+hh+18,{color:col,size:12.5,bold:true,align:'center'});
+      txt(g,val,xx,by+hh+32,{color:CLR.sec,size:10,align:'center'});
+    }
+  },
+  table(){
+    const t=this.now(), I=this.It(t), u=this.unit();
+    const L=this.Lh(), B=MU0*this.N/(this.l*1e-2)*I;
+    $('m4t').innerHTML='t = <b>'+fmt(t*u.f,3)+' '+u.n+'</b>';
+    $('m4state').textContent=this.mode==='close'?'струм наростає до U/R':'струм спадає, енергія йде в іскру';
+    $('m4kL').textContent=sci(L,3)+' Гн';
+    $('m4kTau').textContent=fmt(this.tau()*u.f,3)+' '+u.n;
+    $('m4kI0').textContent=fmt(this.I0(),3)+' А';
+    $('m4kB').textContent=fmt(B*1000,2)+' мТл';
+    /* енергія й густина — обидві миттєві, щоб W = w·V збігалося в кожен момент */
+    $('m4kW').textContent=sci(L*I*I/2,3)+' Дж';
+    $('m4kw').textContent=fmt(B*B/(2*MU0),2)+' Дж/м³';
+    $('m4kEs').textContent=fmt(this.eL(t),2)+' В';
+    const sp=this.I0()*(this.R+this.Rp);
+    $('m4kSpark').textContent=fmt(sp,0)+' В';
+    $('m4kRatio').textContent='у '+fmt(sp/this.U,0)+' раза';
+    $('m4fx').innerHTML='<i>L</i> = <i>μ</i><sub>0</sub><i>N</i>²<i>S</i>/<i>l</i> = 4π·10⁻⁷·'+this.N+'²·'+
+      fmt(this.Sm(),5)+'/'+fmt(this.l*1e-2,2)+' = <b>'+sci(L,3)+' Гн</b>; '+
+      '<i>W</i> = <i>LI</i>²/2 = <b>'+sci(L*this.I0()*this.I0()/2,3)+' Дж</b>';
+  },
+  charts(){
+    const u=this.unit(), T=this.TSHOW()*u.f, tau=this.tau()*u.f, I0=this.I0();
+    const bi=cvx('m4ci');
+    if(bi){
+      const ts=[],ys=[];
+      for(let i=0;i<=300;i++){const x=T*i/300; ts.push(x); ys.push(this.It(x/u.f));}
+      const r=drawChart(bi,{tMax:T,yMin:0,yMax:Math.max(1e-9,I0*1.15),yLab:'А',xLab:'t, '+u.n,yDec:2,xDec:1,
+        hover:this.hi.x,
+        series:[{ts,ys,color:CLR.k1,label:'I'},
+          {ts:[0,T],ys:[I0,I0],color:CLR.ink,label:'I₀',dash:[4,3]},
+          {ts:[tau,tau],ys:[0,I0*1.15],color:CLR.sec,label:'τ',dash:[2,3]}]});
+      showTip(this.tipi,r,'А',this.hi,[['I',CLR.k1],['I₀',CLR.ink],['τ',CLR.sec]],3);
+    }
+    const bu=cvx('m4cu');
+    if(bu){
+      const ts=[],eL=[],uR=[],sm=[];
+      for(let i=0;i<=300;i++){
+        const x=T*i/300, tt=x/u.f, I=this.It(tt);
+        ts.push(x); eL.push(this.eL(tt)); uR.push(I*this.R); sm.push(this.eL(tt)+I*this.R);
+      }
+      const hi=Math.max.apply(null,eL)*1.18;
+      /* при розмиканні напруга на проміжку майже дорівнює ЕРС самоіндукції —
+         дві однакові криві нічого не додають, тому там показуємо саму ЕРС
+         поруч із напругою джерела: видно, у скільки разів сплеск більший */
+      const ser=this.mode==='close'
+        ?[{ts,ys:eL,color:CLR.k2,label:'ε'},{ts,ys:uR,color:CLR.k1,label:'U_R'},
+          {ts,ys:sm,color:CLR.ink,label:'сума',dash:[4,3]}]
+        :[{ts,ys:eL,color:CLR.k2,label:'ε'},
+          {ts:[0,T],ys:[this.U,this.U],color:CLR.ink,label:'U',dash:[4,3]}];
+      const r=drawChart(bu,{tMax:T,yMin:0,yMax:Math.max(1e-9,hi),yLab:'В',xLab:'t, '+u.n,yDec:0,xDec:1,
+        hover:this.hu.x,series:ser});
+      showTip(this.tipu,r,'В',this.hu,this.mode==='close'
+        ?[['ЕРС самоіндукції',CLR.k2],['на резисторі',CLR.k1],['сума',CLR.ink]]
+        :[['ЕРС самоіндукції',CLR.k2],['напруга джерела',CLR.ink]],1);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 5 · трансформатор і ЛЕП ===================== */
+const M5={
+  mode:'tr', U1:230, N1:1000, N2:100, Rn:20, dpl:0.35,
+  P:100, U:330, Lkm:300, S:300,
+  t:0,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  k(){return this.N1/this.N2;},
+  U2(){return this.U1/this.k();},
+  I2(){return this.U2()/this.Rn;},
+  I1(){return this.I2()/this.k();},
+  P2(){return this.U2()*this.I2();},
+  /* питомі втрати на вихрові струми в пластині товщиною d */
+  pEddy(dmm){return Math.PI*Math.PI*F_NET*F_NET*B_CORE*B_CORE*Math.pow(dmm*1e-3,2)*SIG_FE/6;},
+  Pfe(dmm){return this.pEddy(dmm)*1e-3;},          /* осердя об'ємом 1 дм³ */
+  eff(){const p=this.P2(); return p/(p+this.Pfe(this.dpl));},
+  lineI(){return this.P*1e6/(this.U*1e3);},
+  lineR(){return 2*RHO_AL*(this.Lkm*1e3)/(this.S*1e-6);},
+  dP(){const i=this.lineI(); return i*i*this.lineR();},
+  frac(){return 100*this.dP()/(this.P*1e6);},
+  init(){
+    grip('m5scene',this,()=>this.grips());
+    seg('m5mode',v=>{this.mode=v; this.showMode();});
+    this.tip1=makeTip('m5c1w'); this.tip2=makeTip('m5c2w');
+    hover('m5c1',this.h1); hover('m5c2',this.h2);
+    this.showMode();
+  },
+  showMode(){
+    const tr=this.mode==='tr';
+    $('m5gTr').hidden=!tr; $('m5gLine').hidden=tr;
+    $('m5kvTr').hidden=!tr; $('m5kvLine').hidden=tr;
+    $('m5ch').textContent=tr?'Трансформація і втрати в осерді':'Втрати в лінії';
+    $('m5c1h').textContent=tr?'напруга вторинної від числа її витків, В':'частка втрат від напруги лінії, %';
+    $('m5c2h').textContent=tr?'питомі втрати в осерді від товщини пластини, Вт/кг':'втрати від перерізу проводу, МВт';
+    $('m5c1l').innerHTML=tr
+      ? '<span><span class="chip cB"></span>U₂ = U₁N₂/N₁</span><span><span class="chip cI"></span>обране N₂</span>'
+      : '<span><span class="chip cC"></span>ΔP/P ~ 1/U²</span><span><span class="chip cI"></span>обрана U</span>';
+    $('m5c2l').innerHTML=tr
+      ? '<span><span class="chip cC"></span>p ~ d²</span><span><span class="chip cI"></span>обрана товщина</span>'
+      : '<span><span class="chip cC"></span>ΔP ~ 1/S</span><span><span class="chip cI"></span>обраний переріз</span>';
+    this.h1.xlab=tr?'N₂':'U'; this.h1.xunit=tr?'витків':'кВ'; this.h1.xdec=0;
+    this.h2.xlab=tr?'d':'S'; this.h2.xunit=tr?'мм':'мм²'; this.h2.xdec=tr?2:0;
+  },
+  tick(dt){this.t+=dt; this.render();},
+  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
+     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
+  GG:[
+    ['U1','U1',100,500,10,CLR.k1,null,'m5vU1',0,'В'],
+    ['N1','N1',100,2000,20,CLR.k2,null,'m5vN1',0,'витків'],
+    ['N2','N2',20,2000,20,CLR.k3,null,'m5vN2',0,'витків'],
+    ['Rn','Rn',1,200,1,CLR.sec,null,'m5vRn',0,'Ом'],
+    ['dpl','d',0.1,5,0.05,CLR.k1,null,'m5vd',2,'мм'],
+    ['P','P',1,500,1,CLR.k2,null,'m5vP',0,'МВт'],
+    ['U','U',10,750,10,CLR.k3,null,'m5vU',0,'кВ'],
+    ['Lkm','L',10,800,10,CLR.sec,null,'m5vL',0,'км'],
+    ['S','S',50,800,10,CLR.k1,null,'m5vS',0,'мм²']
+  ],
+  gcol(b){const rows=Math.ceil(this.GG.length/2);
+    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
+      y0:b.h-rows*24+2};},
+  grips(){
+    const b=cvx('m5scene'); if(!b) return [];
+    return gaugeGrips(this.gcol(b),this.GG,this);
+  },
+  gdraw(){
+    const b=cvx('m5scene'); if(!b) return;
+    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    for(const hh of this.grips()) drawGrip(b.g,hh,this);
+    /* числа в бічній колонці — те саме значення, що показує шкала */
+    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+  },
+  render(){this.render0(); this.gdraw();},
+  render0(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m5scene'); if(!b) return;
+    const {g,w}=b, h=b.h-90;
+    g.clearRect(0,0,w,h);
+    if(this.mode==='tr') this.sceneTr(g,w,h); else this.sceneLine(g,w,h);
+  },
+  sceneTr(g,w,h){
+    const k=this.k(), ph=(this.t*0.6)%1;
+    txt(g,k>1?'знижувальний трансформатор: витків на вторинній менше — напруга менша'
+      :(k<1?'підвищувальний трансформатор: витків на вторинній більше — напруга більша'
+      :'коефіцієнт 1 — трансформатор розділяє кола, не змінюючи напруги'),
+      12,20,{color:CLR.k1,size:12.5,bold:true});
+    txt(g,'потік в осерді спільний для обох обмоток — саме тому напруга ділиться як число витків',
+      12,36,{color:CLR.mut,size:10.5});
+    const cx=w*0.44, cy=h*0.56;
+    const cw=Math.min(w*0.34,220), ch=Math.min(h*0.56,190), leg=Math.max(16,cw*0.14);
+    /* осердя */
+    g.fillStyle='rgba(27,175,122,.10)'; g.strokeStyle=CLR.k3; g.lineWidth=2;
+    g.beginPath();
+    g.rect(cx-cw/2,cy-ch/2,cw,ch);
+    g.rect(cx-cw/2+leg,cy-ch/2+leg,cw-2*leg,ch-2*leg);
+    g.fill('evenodd'); g.stroke();
+    /* напрям потоку — стрілки по контуру осердя */
+    const s=Math.sin(2*Math.PI*ph)>=0?1:-1;
+    const mid=[{x:cx-cw/2+leg/2,y:cy},{x:cx-cw/2+leg/2,y:cy-ch/2+leg/2},
+      {x:cx+cw/2-leg/2,y:cy-ch/2+leg/2},{x:cx+cw/2-leg/2,y:cy},
+      {x:cx+cw/2-leg/2,y:cy+ch/2-leg/2},{x:cx-cw/2+leg/2,y:cy+ch/2-leg/2},{x:cx-cw/2+leg/2,y:cy}];
+    for(let i=0;i<mid.length-1;i++){
+      const p1=mid[i],p2=mid[i+1];
+      const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+      const dx=(p2.x-p1.x)*s,dy=(p2.y-p1.y)*s,ln=Math.hypot(dx,dy)||1;
+      arrow(g,mx-dx/ln*9,my-dy/ln*9,mx+dx/ln*9,my+dy/ln*9,CLR.k3,1.8);
+    }
+    txt(g,'Φ',cx,cy-ch/2+leg/2+4,{color:'#0d7a55',size:12,bold:true,align:'center'});
+    /* обмотки */
+    const nw1=Math.max(3,Math.min(9,Math.round(this.N1/220)));
+    const nw2=Math.max(3,Math.min(9,Math.round(this.N2/220)));
+    g.save(); g.translate(cx-cw/2+leg/2,cy); g.rotate(-Math.PI/2);
+    coilSym(g,0,0,ch*0.62,nw1,CLR.k1,2.6); g.restore();
+    g.save(); g.translate(cx+cw/2-leg/2,cy); g.rotate(Math.PI/2);
+    coilSym(g,0,0,ch*0.62,nw2,CLR.k2,2.6); g.restore();
+    txt(g,'N₁ = '+this.N1,cx-cw/2-14,cy-ch*0.48,{color:'#1c5cab',size:11.5,bold:true,align:'right'});
+    txt(g,fmt(this.U1,0)+' В',cx-cw/2-14,cy-ch*0.48+15,{color:CLR.sec,size:11,align:'right'});
+    txt(g,'N₂ = '+this.N2,cx+cw/2+14,cy-ch*0.48,{color:'#b8431a',size:11.5,bold:true});
+    txt(g,fmt(this.U2(),1)+' В',cx+cw/2+14,cy-ch*0.48+15,{color:CLR.sec,size:11});
+    /* підвід і навантаження */
+    const lx=Math.max(20,cx-cw/2-70), rx=Math.min(w-24,cx+cw/2+72);
+    wire(g,[{x:lx,y:cy-ch*0.30},{x:cx-cw/2-6,y:cy-ch*0.30}],CLR.k1,2);
+    wire(g,[{x:lx,y:cy+ch*0.30},{x:cx-cw/2-6,y:cy+ch*0.30}],CLR.k1,2);
+    wire(g,[{x:lx,y:cy-ch*0.30},{x:lx,y:cy+ch*0.30}],CLR.k1,2);
+    txt(g,'~',lx-4,cy+5,{color:'#1c5cab',size:16,bold:true,align:'right'});
+    wire(g,[{x:cx+cw/2+6,y:cy-ch*0.30},{x:rx,y:cy-ch*0.30},{x:rx,y:cy-14}],CLR.k2,2);
+    wire(g,[{x:rx,y:cy+14},{x:rx,y:cy+ch*0.30},{x:cx+cw/2+6,y:cy+ch*0.30}],CLR.k2,2);
+    resistor(g,rx,cy,30,28,CLR.ink,'Rн');
+    /* струми */
+    flowDots(g,[{x:lx,y:cy+ch*0.30},{x:cx-cw/2-6,y:cy+ch*0.30}],ph,CLR.k1,
+      Math.max(1,Math.min(6,Math.round(this.I1()*2))));
+    flowDots(g,[{x:cx+cw/2+6,y:cy+ch*0.30},{x:rx,y:cy+ch*0.30}],ph,CLR.k2,
+      Math.max(1,Math.min(6,Math.round(this.I2()*2))));
+    txt(g,'I₁ = '+fmt(this.I1(),2)+' А',lx,cy+ch*0.30+18,{color:'#1c5cab',size:11,bold:true});
+    txt(g,'I₂ = '+fmt(this.I2(),2)+' А',rx,cy+ch*0.30+18,{color:'#b8431a',size:11,bold:true,align:'right'});
+    txt(g,'P₁ = P₂ = '+fmt(this.P2(),1)+' Вт — трансформатор не створює енергії',
+      12,h-12,{color:CLR.sec,size:11.5,bold:true});
+  },
+  sceneLine(g,w,h){
+    const ph=(this.t*0.5)%1;
+    txt(g,'підвищувальний трансформатор на станції, знижувальний — у місті',
+      12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'струм у лінії менший у стільки ж разів, у скільки вища напруга — а втрати падають як квадрат',
+      12,36,{color:CLR.mut,size:10.5});
+    const y=h*0.46, x0=w*0.09, x1=w*0.28, x2=w*0.72, x3=w*0.91;
+    /* генератор */
+    dot(g,x0,y,20,'rgba(42,120,214,.14)',CLR.k1);
+    txt(g,'~',x0,y+7,{color:'#1c5cab',size:18,bold:true,align:'center'});
+    txt(g,'станція',x0,y+38,{color:CLR.sec,size:11,bold:true,align:'center'});
+    txt(g,'10 кВ',x0,y+52,{color:CLR.mut,size:10.5,align:'center'});
+    /* трансформатори */
+    for(const [x,lab,col] of [[x1,'↑',CLR.k1],[x2,'↓',CLR.k2]]){
+      g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=2;
+      g.beginPath(); g.rect(x-15,y-22,30,44); g.fill(); g.stroke();
+      txt(g,lab,x,y+6,{color:col,size:16,bold:true,align:'center'});
+    }
+    txt(g,'підвищує',x1,y+38,{color:CLR.sec,size:11,bold:true,align:'center'});
+    txt(g,'знижує',x2,y+38,{color:CLR.sec,size:11,bold:true,align:'center'});
+    txt(g,'380 В',x3,y+52,{color:CLR.mut,size:10.5,align:'center'});
+    /* лінія — два проводи */
+    const fr=this.frac();
+    const hot=Math.min(1,fr/40);
+    for(const off of [-13,13]){
+      g.strokeStyle=CLR.k3; g.lineWidth=2.2; g.globalAlpha=0.5+0.5*hot;
+      g.beginPath(); g.moveTo(x1+15,y+off); g.lineTo(x2-15,y+off); g.stroke(); g.globalAlpha=1;
+    }
+    /* опори */
+    for(let i=1;i<=3;i++){
+      const px=x1+(x2-x1)*i/4;
+      g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+      g.beginPath(); g.moveTo(px,y+26); g.lineTo(px,y-30); g.moveTo(px-12,y-22); g.lineTo(px+12,y-22); g.stroke();
+    }
+    flowDots(g,[{x:x1+15,y:y-13},{x:x2-15,y:y-13}],ph,CLR.k2,
+      Math.max(2,Math.min(10,Math.round(this.lineI()/120))));
+    txt(g,fmt(this.U,0)+' кВ · '+fmt(this.lineI(),0)+' А',(x1+x2)/2,y-40,
+      {color:'#0d7a55',size:12,bold:true,align:'center'});
+    /* місто */
+    g.strokeStyle=CLR.ink; g.lineWidth=1.8;
+    for(let i=0;i<3;i++){
+      const bx=x3-18+i*14, bh=18+i*9;
+      g.strokeRect(bx,y+16-bh,12,bh);
+    }
+    txt(g,'місто',x3,y+38,{color:CLR.sec,size:11,bold:true,align:'center'});
+    /* смуга втрат */
+    const by=h*0.86, bw=w*0.74, bx=w*0.13;
+    g.fillStyle='rgba(42,120,214,.16)'; g.fillRect(bx,by,bw,20);
+    g.fillStyle='rgba(235,104,52,.55)'; g.fillRect(bx,by,bw*Math.min(1,fr/100),20);
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.strokeRect(bx,by,bw,20);
+    txt(g,'втрати в проводах '+fmt(fr,1)+' % · '+fmt(this.dP()/1e6,2)+' МВт',
+      bx+6,by+14,{color:CLR.ink,size:11.5,bold:true});
+    txt(g,'дійшло '+fmt(this.P-this.dP()/1e6,1)+' МВт',bx+bw-6,by+14,
+      {color:CLR.sec,size:11.5,bold:true,align:'right'});
+  },
+  table(){
+    if(this.mode==='tr'){
+      const k=this.k();
+      $('m5state').textContent=k>1?'знижувальний, k = '+fmt(k,2):(k<1?'підвищувальний, k = '+fmt(k,3):'розділювальний');
+      $('m5kK').textContent=fmt(k,3);
+      $('m5kU2').textContent=fmt(this.U2(),1)+' В';
+      $('m5kType').textContent=k>1?'знижувальний':(k<1?'підвищувальний':'розділювальний');
+      $('m5kTurn').textContent=fmt(this.U1/this.N1,3)+' В/виток';
+      $('m5kI2').textContent=fmt(this.I2(),2)+' А';
+      $('m5kI1').textContent=fmt(this.I1(),3)+' А';
+      $('m5kP2').textContent=fmt(this.P2(),1)+' Вт';
+      $('m5kPe').textContent=fmt(this.pEddy(this.dpl)/RHO_FE,3)+' Вт/кг';
+      $('m5kPfe').textContent=fmt(this.Pfe(this.dpl),2)+' Вт';
+      $('m5kEff').textContent=fmt(100*this.eff(),1)+' %';
+      $('m5kSolid').textContent=fmt(this.Pfe(50),0)+' Вт';
+      $('m5fx1').innerHTML='<i>U</i><sub>2</sub> = <i>U</i><sub>1</sub><i>N</i><sub>2</sub>/<i>N</i><sub>1</sub> = '+
+        fmt(this.U1,0)+'·'+this.N2+'/'+this.N1+' = <b>'+fmt(this.U2(),1)+' В</b>; '+
+        'втрати на вихрові струми <i>p</i> = π²<i>f</i>²<i>B</i>²<i>d</i>²<i>σ</i>/6 ростуть як квадрат товщини пластини';
+    } else {
+      const i=this.lineI(), R=this.lineR(), dp=this.dP();
+      const bad=Math.pow(this.P*1e6/1e4,2)*R;
+      $('m5state').textContent=fmt(this.frac(),1)+' % потужності гріє проводи';
+      $('m5kI').textContent=fmt(i,0)+' А';
+      $('m5kR').textContent=fmt(R,2)+' Ом';
+      $('m5kdP').textContent=fmt(dp/1e6,2)+' МВт';
+      $('m5kFrac').textContent=fmt(this.frac(),2)+' %';
+      $('m5kdU').textContent=fmt(i*R/1000,1)+' кВ';
+      $('m5kUp').textContent=fmt(this.U/10,1);
+      $('m5kDown').textContent=fmt(this.U*1000/380,0);
+      $('m5kBad').textContent=fmt(bad/1e6,0)+' МВт';
+      $('m5kGain').textContent='у '+fmt(bad/Math.max(1e-9,dp),0)+' раза менше';
+      $('m5fx2').innerHTML='<i>I</i> = <i>P</i>/<i>U</i> = '+fmt(this.P,0)+' МВт / '+fmt(this.U,0)+
+        ' кВ = <b>'+fmt(i,0)+' А</b>; <i>ΔP</i> = <i>I</i>²<i>R</i> = <b>'+fmt(dp/1e6,2)+' МВт</b> ('+
+        fmt(this.frac(),2)+' %) — саме тому лінії роблять високовольтними';
+    }
+  },
+  charts(){
+    const b1=cvx('m5c1');
+    if(b1){
+      const ts=[],ys=[];
+      if(this.mode==='tr'){
+        for(let i=0;i<=200;i++){const n=2000*i/200; ts.push(n); ys.push(this.U1*n/this.N1);}
+        const hi=Math.max(1e-6,this.U1*2000/this.N1)*1.1;
+        const r=drawChart(b1,{tMax:2000,yMin:0,yMax:hi,yLab:'В',xLab:'N₂',yDec:0,xDec:0,xStep:400,
+          hover:this.h1.x,
+          series:[{ts,ys,color:CLR.k2,label:'U₂'},
+            {ts:[this.N2,this.N2],ys:[0,this.U2()],color:CLR.ink,label:'обране',dash:[4,3]}]});
+        showTip(this.tip1,r,'В',this.h1,[['U₂',CLR.k2],['обране N₂',CLR.ink]],1);
+      } else {
+        for(let i=0;i<=200;i++){
+          const u=10+740*i/200;
+          const f=100*Math.pow(this.P*1e6/(u*1e3),2)*this.lineR()/(this.P*1e6);
+          if(f<=100){ts.push(u); ys.push(f);}
+        }
+        const hi=ts.length?Math.max.apply(null,ys)*1.1:10;
+        const r=drawChart(b1,{tMax:750,yMin:0,yMax:Math.max(1e-6,hi),yLab:'%',xLab:'U, кВ',yDec:1,xDec:0,xStep:150,
+          hover:this.h1.x,
+          series:[{ts,ys,color:CLR.k3,label:'ΔP/P'},
+            {ts:[this.U,this.U],ys:[0,Math.min(this.frac(),hi)],color:CLR.ink,label:'обрана',dash:[4,3]}]});
+        showTip(this.tip1,r,'%',this.h1,[['ΔP/P',CLR.k3],['обрана U',CLR.ink]],2);
+      }
+    }
+    const b2=cvx('m5c2');
+    if(b2){
+      const ts=[],ys=[];
+      if(this.mode==='tr'){
+        for(let i=0;i<=200;i++){const d=5*i/200; ts.push(d); ys.push(this.pEddy(d)/RHO_FE);}
+        const hi=this.pEddy(5)/RHO_FE*1.1;
+        const r=drawChart(b2,{tMax:5,yMin:0,yMax:hi,yLab:'Вт/кг',xLab:'d, мм',yDec:0,xDec:1,xStep:1,
+          hover:this.h2.x,
+          series:[{ts,ys,color:CLR.k3,label:'p'},
+            {ts:[this.dpl,this.dpl],ys:[0,this.pEddy(this.dpl)/RHO_FE],color:CLR.ink,label:'обрана',dash:[4,3]}]});
+        showTip(this.tip2,r,'Вт/кг',this.h2,[['p',CLR.k3],['обрана d',CLR.ink]],2);
+      } else {
+        const i0=this.lineI();
+        for(let i=0;i<=200;i++){
+          const s=50+750*i/200;
+          ts.push(s); ys.push(i0*i0*2*RHO_AL*(this.Lkm*1e3)/(s*1e-6)/1e6);
+        }
+        const hi=Math.max(1e-6,ys[0]*1.1);
+        const r=drawChart(b2,{tMax:800,yMin:0,yMax:hi,yLab:'МВт',xLab:'S, мм²',yDec:1,xDec:0,xStep:200,
+          hover:this.h2.x,
+          series:[{ts,ys,color:CLR.k3,label:'ΔP'},
+            {ts:[this.S,this.S],ys:[0,this.dP()/1e6],color:CLR.ink,label:'обраний',dash:[4,3]}]});
+        showTip(this.tip2,r,'МВт',this.h2,[['ΔP',CLR.k3],['обраний S',CLR.ink]],2);
+      }
+    }
+  }
+};
+
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5};
+
+/* ===================== завантаження ===================== */
+let ACT='m1';
+function activate(id){
+  if(!MODULES[id]) return;
+  ACT=id;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.m===id));
+  document.querySelectorAll('.module').forEach(s=>s.classList.toggle('active',s.id===id));
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) activate(b.dataset.m);
+});
+for(const m of Object.values(MODULES)) m.init();
+(function(){
+  const hs=location.hash.replace('#','');
+  if(MODULES[hs]) activate(hs);
+})();
+let LAST=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
+  MODULES[ACT].tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
