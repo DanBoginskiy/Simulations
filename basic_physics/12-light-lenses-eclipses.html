@@ -1120,6 +1120,18 @@ const M2={
   gcol(b){const rows=Math.ceil(this.GG.length/2);
     return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
       y0:b.h-rows*24+2};},
+  /* Масштаб сталий (§10): по горизонталі — від найбільшої відстані до предмета
+     (d ⩽ 90 см із таблиці GG), по вертикалі — від найбільшої його висоти (h ⩽ 10 см).
+     Раніше обидва рахувалися з поточних величин разом із відстанню до зображення, а
+     вона біля d = F прямує в нескінченність: кадр стискався тим сильніше, чим ближче
+     предмет до фокуса, тож підсування предмета до фокуса виглядало нерухомістю.
+     Зображення, що пішло за кадр, — це і є правильна картинка: воно там і є. */
+  SPANX:90, SPANY:10,
+  geo(b){return frozen(this,b,bb=>{
+    const H=bb.h-90;
+    const sx=Math.min(bb.w*0.44/this.SPANX,H*0.30/this.SPANY);
+    return {cx:bb.w*0.46, cy:H*0.58, sx, S:v=>v*sx};
+  });},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1143,11 +1155,8 @@ const M2={
       12,20,{color:conv?CLR.k1:CLR.k3,size:12.5,bold:true});
     txt(g,'штрихові лінії — уявні продовження променів; там, де вони перетинаються, око бачить зображення',
       12,36,{color:CLR.mut,size:10.5});
-    const cx=w*0.46, cy=h*0.58;
-    /* масштаб з реального розкиду величин */
-    const span=Math.max(this.d,Math.abs(f==null?2*this.F:f),2*this.F)*1.15;
-    const sx=Math.min(w*0.44/span,h*0.30/Math.max(this.h,Math.abs(f==null?this.h:this.h*this.gam()),1e-6));
-    const S=v=>v*sx;
+    const Q=this.geo(b);
+    const cx=Q.cx, cy=Q.cy, sx=Q.sx, S=Q.S;
     /* вісь */
     g.strokeStyle=CLR.axis; g.lineWidth=1;
     g.beginPath(); g.moveTo(w*0.02,cy); g.lineTo(w*0.98,cy); g.stroke();
@@ -1812,7 +1821,7 @@ const M5={
     txt(g,'схема, не в масштабі',(sx+ex)/2,h*0.86,{color:CLR.mut,size:10,align:'center'});
     /* вигляд із Землі — у справжніх кутових розмірах */
     this.viewDiscs(g,w,h,this.thSun()/2,this.thMoon()/2,
-      Math.max(0,this.off()-R_EARTH)/this.demk()/DEG,'Сонце','Місяць','rgba(235,104,52,.85)','#3a3a38');
+      Math.max(0,this.off()-R_EARTH)/this.demk()/DEG,'Сонце','Місяць','rgba(235,104,52,.85)','#3a3a38',0.32);
   },
   sceneLun(g,w,h){
     const cy=h*0.46;
@@ -1835,7 +1844,7 @@ const M5={
     /* вигляд: тінь Землі та Місяць у ній, у кутовій мірі з Землі */
     const thU=2*this.rUmbE()/this.demk()/DEG/2;
     this.viewDiscs(g,w,h,thU,this.thMoon()/2,this.off()/this.demk()/DEG,
-      'тінь Землі','Місяць','rgba(11,11,11,.35)','#c9c6bd');
+      'тінь Землі','Місяць','rgba(11,11,11,.35)','#c9c6bd',1.00);
   },
   sceneOcc(g,w,h){
     const cy=h*0.52, cx=w*0.30;
@@ -1854,16 +1863,24 @@ const M5={
     g.beginPath(); g.moveTo(cx-R*2.2,yStar); g.lineTo(cx+R*2.2,yStar); g.stroke(); g.setLineDash([]);
     txt(g,'схема, не в масштабі',cx,h*0.90,{color:CLR.mut,size:10,align:'center'});
     /* вигляд у справжніх кутах */
-    this.viewDiscs(g,w,h,this.thMoon()/2,0.004,this.beta,'Місяць','зоря','#c9c6bd','#0b0b0b');
+    this.viewDiscs(g,w,h,this.thMoon()/2,0.004,this.beta,'Місяць','зоря','#c9c6bd','#0b0b0b',0.50);
   },
-  /* два диски в справжніх кутових розмірах: r1, r2 і зсув — у градусах */
-  viewDiscs(g,w,h,r1,r2,off,l1,l2,c1,c2){
+  /* два диски в справжніх кутових розмірах: r1, r2 і зсув — у градусах.
+     rref — стале поле зору в градусах (§10). Раніше масштаб підганявся під самі
+     диски, а підпис під ними обіцяв «справжні кутові розміри»: Місяць виходив
+     однаковим і в перигеї, і в апогеї, тобто зникала єдина різниця, через яку
+     затемнення буває то повним, то кільцевим. Тіло, що вийшло за поле зору,
+     притримуємо на краю й підписуємо. */
+  viewDiscs(g,w,h,r1,r2,off,l1,l2,c1,c2,rref){
     const cx=w*0.76, cy=h*0.50;
     const R=Math.min(w*0.20,h*0.34);
-    const sc=R/Math.max(r1,r2+Math.abs(off),1e-6);
+    const sc=R/rref;
+    const out=Math.abs(off)>rref;
     dot(g,cx,cy,R*1.18,'rgba(11,11,11,.05)',CLR.axis);
     dot(g,cx,cy,r1*sc,c1);
-    dot(g,cx,cy-off*sc,Math.max(1.6,r2*sc),c2);
+    dot(g,cx,cy-clamp(off,-rref,rref)*sc,Math.max(1.6,r2*sc),c2);
+    if(out) txt(g,l2+' — поза полем зору',cx,cy-R*1.18-22,
+      {color:CLR.k2,size:10.5,bold:true,align:'center'});
     g.strokeStyle=CLR.axis; g.lineWidth=1;
     g.beginPath(); g.arc(cx,cy,r1*sc,0,7); g.stroke();
     txt(g,l1,cx,cy+R*1.18+16,{color:CLR.sec,size:10.5,bold:true,align:'center'});
