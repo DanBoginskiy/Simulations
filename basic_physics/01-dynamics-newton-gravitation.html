@@ -680,6 +680,15 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
    у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
@@ -841,14 +850,19 @@ const M1={
     return {N,f,R:Math.max(0,this.F-f),a,v:a*t,s:a*t*t/2};
   },
   MU:[['лід',0.02],['сталь',0.15],['дерево',0.3],['гума',0.5]],
-  /* Кадр цілком залежить від того, що тягнуть: масштаб шляху — від прискорення,
-     довжина стрілок — від маси, положення візка — від обох. Тому geo()
-     заморожується на час жесту, інакше ручка тікала б з-під пальця. */
+  SPATH:40,                       /* видима траса, м — стала межа кадру */
+  FMAX:20, MMAX:5,                /* верхні межі ручок; звідси й беруться масштаби */
+  /* Заїзд обривається на кінці траси, а не через фіксовані T секунд. Інакше
+     довелося б розтягувати кадр під пройдений шлях — і сильніша тяга не давала б
+     на екрані нічого: візок однаково проходив би ту саму смугу пікселів. */
+  tMax(){const a=this.a(); return a>1e-9?Math.min(this.T,Math.sqrt(2*this.SPATH/a)):this.T;},
+  /* Масштаби беруться з верхніх меж діапазонів, а не з поточних значень (§10):
+     траса стала, стрілка сили — від FMAX, стрілка ваги — від MMAX. */
   geo(b){return frozen(this,b,bb=>{
-    const sTot=Math.max(1.2,this.a()*this.T*this.T/2);
-    const sc=(bb.w-150)/(sTot+1.6);
-    const k=84/Math.max(20,this.m*G,this.F);
-    return {sTot,sc,gy:bb.h-40,k,vk:Math.min(k,30/(this.m*G)),
+    const sTot=this.SPATH;
+    const sc=fitScale(bb.w,bb.h,150,0,sTot+1.6,0,0,0);
+    const k=84/Math.max(this.FMAX,this.MMAX*G);
+    return {sTot,sc,gy:bb.h-40,k,vk:30/(this.MMAX*G),
       SX:x=>60+x*sc, cx:60+this.vals(this.t).s*sc,
       bw:40+this.m*6, bh:14+this.m*4,
       mu:{y:24,x0:bb.w-4*62-6,dx:62}};
@@ -873,7 +887,7 @@ const M1={
   init(){
     grip('m1scene',this,()=>this.grips());
     $('m1play').onclick=()=>{
-      if(!this.playing&&this.t>=this.T) this.reset();
+      if(!this.playing&&this.t>=this.tMax()) this.reset();
       else {this.playing=!this.playing; this.updBtn();}
     };
     $('m1re').onclick=()=>this.reset();
@@ -887,10 +901,11 @@ const M1={
     /* поки ручку тримають, розгортка не втручається — інакше вона вирвала б
        величину з-під жесту */
     if(this._grab==null){
+      const TM=this.tMax();
       if(this.playing){
-        this.t=Math.min(this.T,this.t+dt); this.push();
-        if(this.t>=this.T){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.T){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+        this.t=Math.min(TM,this.t+dt); this.push();
+        if(this.t>=TM){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=TM){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
     }
     this.render();
   },
@@ -1277,19 +1292,23 @@ const M3={
   },
   MU:[['лід',0.02],['сталь',0.1],['дерево',0.3],['гума',0.5]],
   hgt(m){return 0.30+0.16*m;},          /* висота бруска ∝ масі */
+  ALMAX:40, FMAX:60, LAMAX:4,     /* верхні межі ручок — звідси масштаби (§10) */
   geoPair(bb){
     const al=this.al*DEG, p=this.pair(this.F);
     const a=Math.abs(p.a)*this.t*this.t/2*p.dir;
-    const WW=7, HH=WW*Math.sin(al)+2.4;
-    const sc=Math.min((bb.w-40)/WW,(bb.h-72)/HH);
+    const WW=7, HH=WW*Math.sin(this.ALMAX*DEG)+2.4;   /* найвища гірка діапазону */
+    const sc=fitScale(bb.w,bb.h,40,72,WW,HH,0,0);
     const ox=bb.w/2-a*Math.cos(al)*sc, oy=bb.h*0.62+a*Math.sin(al)*sc;
-    return {al,sc,uc:a,WW,k:76/Math.max(10,this.F,p.grav+p.f),
+    return {al,sc,uc:a,WW,k:76/this.FMAX,
       SX:(u,n)=>ox+u*Math.cos(al)*sc-n*Math.sin(al)*sc,
       SY:(u,n)=>oy-u*Math.sin(al)*sc-n*Math.cos(al)*sc,
       mu:{y:24,x0:bb.w-4*62-6,dx:62}};
   },
   geoLift(bb){
-    const yMax=Math.max(1,this.liftY(7));
+    /* Шахта має сталу висоту — ту, що відповідає найбільшому прискоренню діапазону.
+       Раніше вона підганялася під поточний підйом, тож кабіна за будь-якого la
+       проходила ту саму смугу пікселів і різниця в прискоренні була невидима. */
+    const yMax=10*this.LAMAX;
     const bh=Math.min(104,bb.h*0.42), floor=bb.h-30;
     /* кабіну малюємо сталого розміру, а метричний масштаб лишаємо шахті:
        при великому прискоренні підйом сягає сорока метрів, і кабіна,
@@ -1742,16 +1761,23 @@ const M5={
     const n=this.orb.pts.length;
     return Math.min(n-1,Math.floor(this.t/this.TSHOW*(n-1)));
   },
-  /* Масштаб кадру рахується з усієї траєкторії, а траєкторія — з тих самих
-     трьох величин, які тягнуть. Без заморожування кадру ручка тікала б
-     із-під пальця на кожному кадрі жесту. */
+  /* Кадр сталий: він розрахований на найдальшу орбіту діапазону ручки h0 —
+     геостаціонарну. Раніше масштаб брався з поточної траєкторії, тож і низька,
+     і високa орбіта займали ту саму смугу пікселів: підняти супутник із 200 км
+     на 36 000 км означало не побачити нічого. Тепер різниця висот видна одразу,
+     а рідкісні майже-втечні траєкторії просто виходять за край кадру — про це
+     сцена каже підписом, а не мовчить. */
+  MXORB:(R_E+36e6)*1.05,
   geo(b){return frozen(this,b,bb=>{
-    let mx=R_E*1.15;
-    for(const q of this.orb.pts) mx=Math.max(mx,Math.abs(q.x),Math.abs(q.y));
-    const sc=Math.min((bb.w-40)/(2.2*mx),(bb.h-56)/(2.2*mx));
+    const sc=fitScale(bb.w,bb.h,40,56,2.2*this.MXORB,2.2*this.MXORB,0,0);
     const cx=bb.w/2, cy=bb.h/2+8;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
   });},
+  /* чи вилізла траєкторія за кадр — щоб сказати про це, а не ховати */
+  offFrame(){
+    for(const q of this.orb.pts) if(Math.max(Math.abs(q.x),Math.abs(q.y))>this.MXORB) return true;
+    return false;
+  },
   Lv(){return 20+(this.v0-3)*8;},      /* довжина вектора запуску ∝ швидкості */
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
@@ -1852,6 +1878,10 @@ const M5={
       pill(g,'зіткнення з поверхнею',w/2,h-14,{color:CLR.ink,size:12,bold:true});
     }
     txt(g,o.kind,12,20,{color:o.hit?CLR.k3:(o.e<0.02?CLR.k1:CLR.k2),size:12.5,bold:true});
+    /* §10: коли траєкторія не влазить, про це кажуть, а не ховають її мовчки */
+    if(this.offFrame())
+      pill(g,'орбіта виходить за кадр — масштаб сталий, до геостаціонарної',
+        w/2,36,{color:CLR.mut,size:11,bold:true});
     txt(g,o.hit?'швидкості замало: снаряд падає, не встигнувши «промахнутися» повз Землю'
       :o.E>=0?'швидкості вистачило, щоб подолати тяжіння назавжди'
       :'снаряд весь час падає на Землю — і весь час її промахує',
