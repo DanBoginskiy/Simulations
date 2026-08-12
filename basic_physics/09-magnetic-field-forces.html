@@ -771,7 +771,9 @@ function therm(g,x,yb,H,frac,col,lab){
    опори), і без префікса їхні ручки мали б однакові імена */
 function shelfGrips(M,list,set,pre){
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
@@ -872,9 +874,12 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     const cx=bb.w*0.42, cy=bb.h*0.5;
     return {cx,cy,
+      /* Усі три масштаби — від верхньої межі 20 см із clamp() у grips(), а не від
+         поточного радіуса (§10): інакше виток і соленоїд мали б на екрані той самий
+         розмір при будь-якому R, і залежність B від R була б невидима. */
       scW:Math.min(bb.w*0.36,bb.h*0.42)/20,
-      scL:Math.min(bb.w*0.3,bb.h*0.34)/this.R,
-      scS:Math.min(bb.w*0.34,bb.h*0.3)/this.R,
+      scL:Math.min(bb.w*0.3,bb.h*0.34)/20,
+      scS:Math.min(bb.w*0.34,bb.h*0.2)/20,
       ix:bb.w*0.07, iy:bb.h-42,
       nx:bb.w*0.30, ny:bb.h-24};
   });},
@@ -893,7 +898,7 @@ const M1={
       out.push({id:'R', x:Q.cx+this.R*Q.scL, y:Q.cy, r:9, color:CLR.k1, hint:'радіус витка',
         move:px=>{this.R=clamp(snap((px-Q.cx)/Q.scL,0.5),1,20);}});
     } else {
-      out.push({id:'R', x:Q.cx, y:Q.cy-Math.min(b.h*0.2,this.R*Q.scS), r:9, color:CLR.k1,
+      out.push({id:'R', x:Q.cx, y:Q.cy-this.R*Q.scS, r:9, color:CLR.k1,
         hint:'радіус соленоїда',
         move:(px,py)=>{this.R=clamp(snap((Q.cy-py)/Q.scS,0.5),1,20);}});
       out.push({id:'n', x:Q.nx+this.n*0.05, y:Q.ny, r:8, color:CLR.k3,
@@ -959,7 +964,7 @@ const M1={
       txt(g,'центр витка',cx,cy+this.R*sc*0.32+22,{color:CLR.sec,size:11,bold:true,align:'center'});
     } else {
       const sc=Q.scS;
-      const L=Math.min(w*0.5,220), rr=Math.min(h*0.2,this.R*sc);
+      const L=Math.min(w*0.5,220), rr=this.R*sc;
       /* витків малюємо стільки, скільки їх задано на метр — за їхнім
          правим краєм і тягнуть густину намотки */
       const N=Math.max(4,Math.round(this.n/160));
@@ -1319,9 +1324,17 @@ const M3={
   rad(){const P=this.P(); return P.m*this.vperp()/(P.q*this.B);},
   per(){const P=this.P(); return 2*Math.PI*P.m/(P.q*this.B);},
   PART:[['електрон',0,'e⁻'],['протон',1,'p⁺'],['α-частинка',2,'He²⁺'],['іон',3,'важкий']],
+  /* Еталонний радіус — той, що дає ця сама частинка при v = 5·10⁶ м/с і B = 0,05 Тл.
+     До нього й кріпиться кадр (§10). Прямої верхньої межі тут узяти не можна: при
+     v ∈ [0,2;20]·10⁶ і B ∈ [0,005;0,2] радіус r = mv⊥/(qB) має розмах 4000:1, і будь-яка
+     межа лишила б інший кінець діапазону крапкою. Раніше масштаб ділився на сам радіус,
+     тож коло було однакове завжди — модуль про залежність r від v і B не показував
+     цієї залежності зовсім. Частинку обирають полицею, це режим, тож еталон має право
+     залежати від m/q. Коло, що не влазить, підписуємо, а не ховаємо. */
+  radRef(){const P=this.P(); return P.m*5e6/(P.q*0.05);},
   geo(b){return frozen(this,b,bb=>{
     const helix=this.b<88;
-    return {helix, sc:Math.min(bb.w*0.3,bb.h*0.34)/Math.max(this.rad(),1e-6),
+    return {helix, sc:Math.min(bb.w*0.22,bb.h*0.24)/this.radRef(),
       cx:bb.w*(helix?0.24:0.44), cy:bb.h*0.5,
       vx:bb.w*0.80, vy:bb.h-52, bx:bb.w*0.92, by:bb.h-52, Bh:bb.h*0.4,
       pt:{y:64,x0:bb.w-4*80-8,dx:80}};
@@ -1342,6 +1355,7 @@ const M3={
     ].concat(shelfGrips(Q.pt,this.PART,v=>{this.p=v;},'pt'));
   },
   init(){
+    grip('m3scene',this,()=>this.grips());
     $('m3play').onclick=()=>{
       this.playing=!this.playing;
       $('m3play').textContent=this.playing?'⏸':'▶';
@@ -1398,12 +1412,16 @@ const M3={
     arrow(g,px,py,px+nx/nl*40,py+ny/nl*40,CLR.k3,2.5);
     txt(g,'F',px+nx/nl*46,py+ny/nl*46+4,{color:'#0d7a55',size:12,bold:true});
     /* радіус */
+    const fits=r*sc<=Math.min(cx,cy,w-cx,h-cy);
     if(!helix){
       g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(cx,cy); g.lineTo(px,py); g.stroke(); g.setLineDash([]);
       dot(g,cx,cy,3,CLR.sec);
-      pill(g,'r = '+fmt(r*100,2)+' см',(cx+px)/2,(cy+py)/2-10,{color:CLR.sec,size:11});
+      if(fits) pill(g,'r = '+fmt(r*100,2)+' см',(cx+px)/2,(cy+py)/2-10,{color:CLR.sec,size:11});
     }
+    /* кадр сталий, тож коло справді може з нього вийти — кажемо про це прямо (§10) */
+    if(!fits) pill(g,'коло не влазить у кадр: r = '+fmt(r*100,2)+' см',w*0.5,h-26,
+      {color:CLR.sec,size:11});
     arrow(g,Q.vx,Q.vy,Q.vx,Q.vy-this.v*7,CLR.k2,2.5);
     txt(g,'v',Q.vx,Q.vy+16,{color:'#b8431a',size:10.5,bold:true,align:'center'});
     g.strokeStyle=CLR.axis; g.lineWidth=1;
@@ -1480,9 +1498,15 @@ const M4={
   hr:{x:null}, hv:{x:null}, tipr:null, tipv:null,
   vSel(){return this.E*1000/this.B1;},
   rad(A){return A*AMU*this.vSel()/(QE*this.B2);},
+  /* Еталонний радіус — той, що дає A = 20 при E = 150 кВ/м, B₁ = 0,05 Тл, B₂ = 0,3 Тл.
+     Кадр кріпиться до нього (§10). Верхньої межі діапазону тут узяти не можна:
+     r ∝ A·E/(B₁B₂) має розмах близько 10⁶:1. Раніше масштаб ділився на самі радіуси, тож
+     обидві дуги завжди були однакові: видно було лише їхнє відношення, а вплив E, B₁ і B₂
+     на розмір камери зникав повністю. */
+  RREF:20*AMU*(150e3/0.05)/(QE*0.3),
   geo(b){return frozen(this,b,bb=>{
     const r1=this.rad(this.A1), r2=this.rad(this.A2);
-    const sc=Math.min(bb.w*0.3,bb.h*0.36)/Math.max(r1,r2,1e-6);
+    const sc=Math.min(bb.w*0.3,bb.h*0.36)/this.RREF;
     return {sc,selX0:bb.w*0.08,selX1:bb.w*0.4,cy:bb.h*0.32,r1,r2,
       ex:bb.w*0.56,ey:bb.h-40,Eh:bb.h*0.42,
       b1x:bb.w*0.68,b2x:bb.w*0.80};
@@ -1507,6 +1531,7 @@ const M4={
     ];
   },
   init(){
+    grip('m4scene',this,()=>this.grips());
     $('m4play').onclick=()=>{
       this.playing=!this.playing;
       $('m4play').textContent=this.playing?'⏸':'▶';
@@ -1562,9 +1587,14 @@ const M4={
     arcOf(r1,CLR.k1,this.A1);
     arcOf(r2,CLR.k2,this.A2);
     /* детектор */
+    const det=Math.min(cyc+2*rMax*sc+30,h-16);
     g.strokeStyle=CLR.sec; g.lineWidth=3;
-    g.beginPath(); g.moveTo(cxc-6,cyc); g.lineTo(cxc-6,cyc+2*rMax*sc+30); g.stroke();
-    txt(g,'детектор',cxc-12,cyc+2*rMax*sc+44,{color:CLR.mut,size:10.5,align:'right'});
+    g.beginPath(); g.moveTo(cxc-6,cyc); g.lineTo(cxc-6,det); g.stroke();
+    if(cyc+2*rMax*sc+44<h-6)
+      txt(g,'детектор',cxc-12,cyc+2*rMax*sc+44,{color:CLR.mut,size:10.5,align:'right'});
+    /* кадр сталий, тож камера справді може з нього вийти — кажемо про це прямо (§10) */
+    else pill(g,'камера більша за кадр: слід на '+fmt(2*rMax*100,0)+' см',w*0.5,h-14,
+      {color:CLR.sec,size:11});
     /* рухомі іони */
     const u=this.t/this.TSHOW;
     for(const [r,col] of [[r1,CLR.k1],[r2,CLR.k2]]){
