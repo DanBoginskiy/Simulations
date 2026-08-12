@@ -810,6 +810,10 @@ const PATM_STD=101325;            /* нормальний атмосферний
 /* ===================== МОДУЛЬ 1 · молекули і тиск ===================== */
 const M1={
   T:300, N:120, M:28, parts:null, hits:0, hitRate:0, acc:0,
+  /* Екранних одиниць на метр за секунду. Навмисне вшестеро повільніше за колишні
+     400: при ⟨v⟩ близько 500 м/с молекули перетинали коробку кілька разів на
+     секунду й зливалися в мерехтіння, з якого не читався ні рух, ні удари. */
+  VSC:2400,
   BOX:{w:10,h:7},                                   /* умовна коробка, нм */
   hh:{x:null}, tiph:null,
   vq(){return Math.sqrt(3*RGAS*this.T/(this.M/1000));},
@@ -823,7 +827,7 @@ const M1={
   },
   build(){
     const sig=Math.sqrt(RGAS*this.T/(this.M/1000));   /* σ однієї компоненти */
-    const sc=1/400;                                    /* нм за одиницю швидкості на екрані */
+    const sc=1/this.VSC;                               /* нм за одиницю швидкості на екрані */
     this.parts=[];
     for(let i=0;i<this.N;i++){
       this.parts.push({
@@ -944,7 +948,7 @@ const M1={
        ручка, тож межа має право залежати від молярної маси. */
     const vMax=Math.sqrt(3*RGAS*1200/(this.M/1000))*2.2;
     const NB=22, bins=new Array(NB).fill(0);
-    const sc=400;                                    /* назад із екранних одиниць у м/с */
+    const sc=this.VSC;                               /* назад із екранних одиниць у м/с */
     for(const p of this.parts){
       const v=Math.hypot(p.vx,p.vy)*sc;
       const i=Math.min(NB-1,Math.floor(v/vMax*NB));
@@ -1647,7 +1651,9 @@ const M5={
   vq(){return Math.sqrt(3*RGAS*this.T/(this.M/1000));},
   GAS:[['водень',2],['гелій',4],['азот',28],['вуглекислий',44]],
   geo(b){return frozen(this,b,bb=>{
-    const HMAX=40, sc=(bb.h-70)/HMAX, gy=bb.h-34;
+    /* 100, а не 70: верх шкали висот мусить лишитися нижче двох рядків підпису
+       сцени — інакше «h, км» і поділка 40 лягають просто на них */
+    const HMAX=40, sc=(bb.h-100)/HMAX, gy=bb.h-34;
     return {HMAX,sc,gy,SY:y=>gy-y*sc,
       tx:bb.w-46,yb:gy-14,H:bb.h*0.52,
       gas:{y:26,x0:bb.w-4*74-8,dx:74}};
@@ -1705,12 +1711,15 @@ const M5={
     g.strokeStyle=CLR.k3; g.lineWidth=2; g.setLineDash([5,4]);
     g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,HS))); g.lineTo(w-16,SY(Math.min(HMAX,HS))); g.stroke();
     g.setLineDash([]);
-    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',w-20,SY(Math.min(HMAX,HS))-6,
+    /* Два підписи розведено і по висоті, і по горизонталі: рівень H і обрана висота
+       часто збігаються, а раніше обидва стояли над своїми лініями й налазили один на
+       одного — та ще й на термометр край кадру. */
+    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',w-76,SY(Math.min(HMAX,HS))+15,
       {color:'#0d7a55',size:11,bold:true,align:'right'});
     /* обрана висота */
     g.strokeStyle=CLR.k2; g.lineWidth=2.5;
     g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,this.h))); g.lineTo(w-16,SY(Math.min(HMAX,this.h))); g.stroke();
-    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),w*0.5,SY(Math.min(HMAX,this.h))-8,
+    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),150,SY(Math.min(HMAX,this.h))-9,
       {color:'#b8431a',size:11.5,bold:true});
     txt(g,B.n+': g = '+fmt(B.g,2)+' м/с², друга космічна '+fmt(B.v2,2)+' км/с',
       12,20,{color:col,size:12.5,bold:true});

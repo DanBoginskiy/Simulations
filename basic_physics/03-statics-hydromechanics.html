@@ -104,7 +104,7 @@ table.read tr:last-child td{border-bottom:none}
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
 #m1scene{width:100%; height:280px}
 #m2scene{width:100%; height:340px}
-#m3scene{width:100%; height:330px}
+#m3scene{width:100%; height:420px}
 #m4scene{width:100%; height:300px}
 #m5scene{width:100%; height:380px}
 
@@ -1182,8 +1182,17 @@ const M3={
   RL:[['бензин',700],['вода',1000],['морська',1030],['гліцерин',1260]],
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='float'){
-      const sc=(bb.h-90)/(this.DEPTH*1.35);
-      return {sc,cx:bb.w*0.5,top:40,bot:40+this.DEPTH*sc,vw:bb.w*0.46,
+      /* Вертикальний бюджет кадру. Над поверхнею мусить уміститися найбільше тіло
+         з найлегшого матеріалу (8 л пінопласту в гліцерині плаває, виступаючи на
+         92 % висоти) разом зі стрілкою сили та її підписом; під поверхнею — уся
+         глибина посудини; унизу — дві полиці зразків. Раніше над рідиною було
+         жорстких 40 px, і легке тіло просто вилазило за верх кадру. */
+      const SIDE=Math.cbrt(0.008), FRMIN=100/1260;   /* межі ручки V і полиць густин */
+      const rise=SIDE*(0.5-FRMIN);                   /* центр тіла над поверхнею, м */
+      const HEAD=124, FOOT=78;                       /* заголовок зі стрілкою та полиці */
+      const sc=(bb.h-HEAD-FOOT)/(rise+this.DEPTH);
+      const top=HEAD+rise*sc;
+      return {sc,cx:bb.w*0.5,top,bot:top+this.DEPTH*sc,vw:bb.w*0.46,
         rb:{y:bb.h-52,x0:bb.w-4*70-6,dx:70},
         rl:{y:bb.h-18,x0:bb.w-4*70-6,dx:70}};
     }
@@ -1280,7 +1289,11 @@ const M3={
     const P=this.rb*this.Vl()*G;
     const Vsub=sink?this.Vl():this.Vl()*fr;
     const Fa=this.rl*G*Vsub;
-    const k=Math.min(64,Math.max(24,P/5))/Math.max(1e-9,Math.max(P,Fa));
+    /* Сталий масштаб стрілок (§10): 0,55 px на ньютон. Раніше довжина ділилася на
+       саму силу, тож стрілки були однакові за будь-якої густини й обʼєму. Найважче
+       тіло, яке ще плаває (8 л гліцеринової густини), дає 54 px — рівно той запас,
+       який кадр лишає над поверхнею. */
+    const k=0.55;
     arrow(g,cx+bw/2+16,by+bh/2,cx+bw/2+16,by+bh/2+P*k,CLR.k3,2.5);
     txt(g,'P = '+fmt(P,1)+' Н',cx+bw/2+22,by+bh/2+P*k,{color:'#0d7a55',size:11,bold:true});
     arrow(g,cx-bw/2-16,by+bh/2,cx-bw/2-16,by+bh/2-Fa*k,CLR.k1,2.5);
