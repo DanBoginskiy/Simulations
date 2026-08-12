@@ -829,6 +829,19 @@ const M1={
     const tc=this.tc(), a=this.after();
     return t<=tc||!isFinite(tc)?{v1:this.v1,v2:this.v2}:{v1:a.u1,v2:a.u2};
   },
+  /* Кадр сталий, тож заїзд обмежує саме він, а не годинник: дослід триває, доки
+     обидва візки в кадрі, але не довше за T. Інакше сталий кадр довелося б робити
+     під найшвидший розліт (94 м за 6 с), і за типових швидкостей візки збилися б
+     докупи посеред порожнього полотна. */
+  HALF:12,
+  tMax(){
+    const lim=this.HALF-0.5;
+    for(let i=1;i<=240;i++){
+      const t=this.T*i/240, q=this.pos(t);
+      if(Math.abs(q.x1)>lim||Math.abs(q.x2)>lim) return t;
+    }
+    return this.T;
+  },
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   KK:[['пластилін',0.1],['дерево',0.4],['сталь',0.6],['гума',0.85]],
@@ -838,7 +851,7 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     let lo=-4,hi=4;
     for(let i=0;i<=40;i++){
-      const q=this.pos(this.T*i/40);
+      const q=this.pos(this.tMax()*i/40);
       lo=Math.min(lo,q.x1,q.x2); hi=Math.max(hi,q.x1,q.x2);
     }
     /* Кадр сталий — під найшвидший розліт діапазону (v ≤ 6 м/с у різні боки за
@@ -846,10 +859,15 @@ const M1={
        й швидке зіткнення виглядали однаково: візки завжди розходилися на ту саму
        ширину полотна. Самі візки малюються сталими пікселями, тож лишаються
        читними — стискається тільки відстань між ними, а це й є фізика. */
-    const SPAN=94;
+    const SPAN=2*this.HALF;
     const sc=fitScale(bb.w,bb.h,40,0,SPAN+1.4,0,hi-lo+1.4,0);
-    const SX=x=>20+(x-lo+0.7)*sc, p=this.pos(this.t);
-    return {lo,hi,sc,SX,gy:bb.h-42,x1:SX(p.x1),x2:SX(p.x2),
+    /* Початок координат стоїть так само нерухомо, як і масштаб. Раніше кадр зсувався
+       за крайніми положеннями візків (lo), а ті залежать від швидкостей — тож ручка
+       швидкості тікала з-під пальця й з-під клавіші: зміна v зсувала весь кадр разом
+       із візком, за який тягнуть. Нуль напрямної — посередині полотна. */
+    const half=(bb.w-40)/2/sc;
+    const SX=x=>bb.w/2+x*sc, p=this.pos(this.t);
+    return {lo:-half,hi:half,sc,SX,gy:bb.h-42,x1:SX(p.x1),x2:SX(p.x2),
       kk:{y:24,x0:bb.w-4*66-6,dx:66}};
   });},
   grips(){
@@ -874,7 +892,7 @@ const M1={
     seg('m1kind',v=>{this.kind=v; $('m1gK').hidden=v!=='partial'; this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1play').onclick=()=>{
-      if(!this.playing&&this.t>=this.T) this.reset();
+      if(!this.playing&&this.t>=this.tMax()) this.reset();
       else {this.playing=!this.playing; this.updBtn();}
     };
     $('m1re').onclick=()=>this.reset();
@@ -886,9 +904,9 @@ const M1={
   tick(dt){
     if(this._grab==null){
       if(this.playing){
-        this.t=Math.min(this.T,this.t+dt);
-        if(this.t>=this.T){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.T){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+        this.t=Math.min(this.tMax(),this.t+dt);
+        if(this.t>=this.tMax()){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=this.tMax()){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
     }
     this.render();
   },
@@ -940,7 +958,7 @@ const M1={
     const E0=this.m1*this.v1*this.v1/2+this.m2*this.v2*this.v2/2;
     const E1=this.m1*a.u1*a.u1/2+this.m2*a.u2*a.u2/2;
     const p0=this.m1*this.v1+this.m2*this.v2, p1=this.m1*a.u1+this.m2*a.u2;
-    $('m1t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.T,0)+' с';
+    $('m1t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.tMax(),1)+' с';
     $('m1vm1').textContent=fmt(this.m1,1)+' кг';
     $('m1vv1').textContent=fmt(this.v1,1)+' м/с';
     $('m1vm2').textContent=fmt(this.m2,1)+' кг';
@@ -958,7 +976,7 @@ const M1={
       fmt(this.m1*this.v1,2)+' + ('+fmt(this.m2*this.v2,2)+') = <b>'+fmt(p0,2)+' кг·м/с</b> — і до, і після удару';
   },
   charts(){
-    const n=Math.max(2,Math.round(this.t/this.T*140)+1);
+    const n=Math.max(2,Math.round(this.t/this.tMax()*140)+1);
     const ts=[],p1=[],p2=[],ps=[],e1=[],e2=[],es=[];
     for(let i=0;i<n;i++){
       const t=this.t*i/(n-1), v=this.vel(t);
@@ -979,14 +997,14 @@ const M1={
     const bp=cvx('m1cp');
     if(bp){
       const d=Math.max(0.5,(pHi-pLo)*0.14);
-      const r=drawChart(bp,{tMax:this.T,yMin:pLo-d,yMax:pHi+d,yLab:'кг·м/с',yDec:1,hover:this.hp.x,
+      const r=drawChart(bp,{tMax:this.tMax(),yMin:pLo-d,yMax:pHi+d,yLab:'кг·м/с',yDec:1,hover:this.hp.x,
         series:[{ts,ys:p1,color:CLR.k1,label:'p₁'},{ts,ys:p2,color:CLR.k2,label:'p₂'},
                 {ts,ys:ps,color:CLR.ink,label:'Σp'}]});
       showTip(this.tipp,r,'кг·м/с',this.hp,[['p₁',CLR.k1],['p₂',CLR.k2],['Σp',CLR.ink]],2);
     }
     const be=cvx('m1ce');
     if(be){
-      const r=drawChart(be,{tMax:this.T,yMin:-0.06*eHi,yMax:1.12*eHi,yLab:'Дж',yDec:1,hover:this.he.x,
+      const r=drawChart(be,{tMax:this.tMax(),yMin:-0.06*eHi,yMax:1.12*eHi,yLab:'Дж',yDec:1,hover:this.he.x,
         series:[{ts,ys:e1,color:CLR.k1,label:'E₁'},{ts,ys:e2,color:CLR.k2,label:'E₂'},
                 {ts,ys:es,color:CLR.ink,label:'ΣE'}]});
       showTip(this.tipe,r,'Дж',this.he,[['E₁',CLR.k1],['E₂',CLR.k2],['ΣE',CLR.ink]],2);
