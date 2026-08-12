@@ -854,10 +854,17 @@ const M1={
      і беруть пальцем: горизонталь дає обʼєм, вертикаль — температуру. */
   geo(b){return frozen(this,b,bb=>{
     const E=this.E(), s2=E.s2;
-    const L=44,R=44,T=48,B=52, pw=bb.w-L-R, ph=bb.h-T-B;
-    const Vlo=Math.min(this.V1,s2.V)*0.6, Vhi=Math.max(this.V1,s2.V)*1.25;
+    /* T = 64, а не 48: кадр сталий, тож верхня поділка тепер завжди стоїть рівно вгорі —
+       підпису осі треба власний рядок над нею, і він не має налізти на текст сцени */
+    const L=44,R=44,T=64,B=52, pw=bb.w-L-R, ph=bb.h-T-B;
+    /* Осі діаграми сталі (§10). Раніше вони підганялися під самі стани, тож процес
+       завжди займав ту саму площу екрана: тягнеш стан 2 — а картинка не змінюється.
+       Обʼєм: V₁ ∈ [5;40] л, k ∈ [0,4;3] дають щонайбільше 120 л, але проєктною межею
+       взято 80 — при 120 типовий процес був би смужкою. Тиск p = νRT/V при
+       ν ∈ [0,1;2] має розмах близько 3500:1, тож і тут межа проєктна; стан, що вийшов
+       за неї, лишається взятним — його ручку притиснуто до краю кадру. */
+    const Vlo=0, Vhi=80, pHi=500;
     const p1=this.p(this.V1,this.T1), p2=this.p(s2.V,s2.T);
-    const pHi=Math.max(p1,p2)*1.2;
     return {L,R,T,B,Vlo,Vhi,pHi,p1,p2,s2,
       SX:V=>L+(V-Vlo)/(Vhi-Vlo)*pw, SY:p=>T+(1-p/pHi)*ph,
       iV:px=>(px-L)/pw*(Vhi-Vlo)+Vlo, iP:py=>(1-(py-T)/ph)*pHi,
@@ -866,14 +873,16 @@ const M1={
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.geo(b), s2=Q.s2;
+    /* стан, що вийшов за сталий кадр, лишається взятним: ручку притискаємо до краю */
+    const gx=V=>clamp(Q.SX(V),Q.L,b.w-Q.R), gy=p=>clamp(Q.SY(p),Q.T,b.h-Q.B);
     return [
-      {id:'s1', x:Q.SX(this.V1), y:Q.SY(Q.p1), r:9, color:CLR.k1,
+      {id:'s1', x:gx(this.V1), y:gy(Q.p1), r:9, color:CLR.k1,
        hint:'стан 1: обʼєм і температура',
        move:(px,py)=>{
          this.V1=clamp(snap(Q.iV(px),1),5,40);
          const p=Math.max(1,Q.iP(py));
          this.T1=clamp(snap(p*this.V1/(this.nu*RGAS),10),200,600);}},
-      {id:'s2', x:Q.SX(s2.V), y:Q.SY(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
+      {id:'s2', x:gx(s2.V), y:gy(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
        move:(px,py)=>{
          if(this.proc==='iso_v')
            this.kk=clamp(snap(Math.max(1,Q.iP(py))/Q.p1,0.05),0.4,3);
@@ -913,8 +922,10 @@ const M1={
       g.beginPath(); g.moveTo(SX(V)+.5,T); g.lineTo(SX(V)+.5,h-B); g.stroke();
       txt(g,fmt(V,0),SX(V),h-B+16,{color:CLR.mut,size:9.5,align:'center'});
     }
-    txt(g,'p, кПа',L-34,T+4,{color:CLR.mut,size:10.5});
-    txt(g,'V, л',w-R+6,h-B+16,{color:CLR.mut,size:10.5});
+    /* підписи осей відсунуто від крайніх поділок: кадр сталий, тож верхня поділка
+       тепер завжди стоїть рівно вгорі, а права — рівно праворуч */
+    txt(g,'p, кПа',L-34,T-10,{color:CLR.mut,size:10.5});
+    txt(g,'V, л',w-R+6,h-B+30,{color:CLR.mut,size:10.5});
     /* площа під кривою = робота */
     const N=60, pts=[];
     for(let i=0;i<=N;i++){
