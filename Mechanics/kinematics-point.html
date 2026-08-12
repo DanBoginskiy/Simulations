@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кінематика матеріальної точки · швидкість, прискорення, симетрії</title>
+<style>
+:root{
+  --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{background:var(--paper); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
+h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
+h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
+.tabs{display:flex; gap:6px; margin:12px 0 16px; border-bottom:1px solid var(--grid); padding-bottom:0}
+.tabs button{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:8px 14px 10px; font:600 14px/1 system-ui,sans-serif; color:var(--sec); cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--ink)}
+.module{display:none}
+.module.active{display:block}
+.caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
+canvas{display:block}
+/* segmented control */
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
+  font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
+  box-shadow:inset 0 -2px 0 var(--c,#888)}
+/* buttons */
+.ibtn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:34px; height:30px; cursor:pointer; font-size:13px; color:var(--ink)}
+.ibtn:hover{border-color:var(--axis)}
+.btn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  padding:6px 11px; cursor:pointer; font:600 12.5px/1 system-ui,sans-serif; color:var(--ink)}
+.btn:hover{border-color:var(--axis)}
+.btn small{display:block; font-weight:400; color:var(--mut); margin-top:3px}
+.btn.on{border-color:var(--axis); background:color-mix(in srgb, var(--ink) 7%, #fff);
+  box-shadow:inset 0 -2px 0 var(--ink)}
+/* sliders */
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin:9px 0}
+.sl>span{font-size:13px; color:var(--sec); grid-column:1/3}
+.sl input[type=range]{width:100%; accent-color:var(--ink)}
+.sl output{font-size:13px; font-variant-numeric:tabular-nums; color:var(--ink); min-width:74px; text-align:right}
+/* key-value readouts */
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:5px 0; border-bottom:1px dashed var(--grid); font-size:13px}
+.kv:last-child{border-bottom:none}
+.kv span{color:var(--sec)}
+.kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
+  border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
+.badge[hidden]{display:none}
+.chip{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.cV{background:var(--k1)} .cT{background:var(--k2)} .cN{background:var(--k3)} .cA{background:var(--ink)}
+.formulas{font-size:12.5px; color:var(--mut); margin-top:8px; font-style:italic}
+.formulas i{font-family:Georgia,serif}
+var{font-family:Georgia,serif; font-style:italic}
+var.vec{font-weight:700}
+/* layout blocks */
+.toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.toolbar .lbl{font-size:12.5px; color:var(--mut)}
+.m1grid{display:grid; grid-template-columns:330px 1fr; gap:14px}
+#m1scene{width:100%; height:236px}
+#m2scene{width:100%; height:300px}
+.legend{display:flex; gap:18px; font-size:12.5px; color:var(--sec); margin-bottom:8px; flex-wrap:wrap}
+.chartrow{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.trio{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+.chartbox{position:relative}
+.chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.chartbox canvas{width:100%; height:190px}
+.trio .chartbox canvas{height:172px}
+.tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
+  border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+.tip .th{color:var(--mut); margin-bottom:3px}
+.tip div{line-height:1.5}
+/* tables */
+table.read{width:100%; border-collapse:collapse; font-size:13.5px}
+table.read th{font:600 11.5px/1 system-ui,sans-serif; color:var(--mut); text-align:right; padding:4px 8px; border-bottom:1px solid var(--grid)}
+table.read th:first-child{text-align:left}
+table.read td{padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px dashed var(--grid)}
+table.read td:first-child{text-align:left; white-space:nowrap}
+table.read td.f{color:var(--mut); font-size:12.5px; text-align:left}
+table.read td.f var{color:var(--sec)}
+table.read tr:last-child td{border-bottom:none}
+table.sym{width:100%; border-collapse:collapse; font-size:12.5px}
+table.sym th{font:600 11px/1 system-ui,sans-serif; color:var(--mut); text-align:left; padding:4px 6px; border-bottom:1px solid var(--grid)}
+table.sym td{padding:7px 6px; border-bottom:1px dashed var(--grid); vertical-align:baseline; color:var(--sec)}
+table.sym td.q{color:var(--ink)}
+table.sym td.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink); font-weight:600}
+table.sym td.st{text-align:center; width:30px; font-weight:700; font-size:14px}
+table.sym tr:last-child td{border-bottom:none}
+.c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
+/* module 3 */
+.m3wrap{display:grid; grid-template-columns:176px 1fr; gap:14px; align-items:start}
+.m3nav{display:flex; flex-direction:column; gap:6px; position:sticky; top:12px}
+.m3nav button{appearance:none; text-align:left; border:1px solid var(--line); background:var(--card);
+  border-radius:9px; padding:9px 11px; cursor:pointer; font:600 13px/1.25 system-ui,sans-serif; color:var(--sec)}
+.m3nav button small{display:block; font-weight:400; font-size:11.5px; color:var(--mut); margin-top:2px}
+.m3nav button.active{color:var(--ink); border-color:var(--axis); box-shadow:inset 3px 0 0 var(--ink)}
+.m3pane{display:none}
+.m3pane.active{display:block}
+.pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
+.pgrid .scene canvas{width:100%; touch-action:none}
+.side .panel{padding:12px 14px}
+.dg{width:100%; height:172px}
+footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+@media (max-width:900px){
+  .m1grid,.chartrow,.trio,.pgrid{grid-template-columns:1fr}
+  .m3wrap{grid-template-columns:1fr}
+  .m3nav{flex-direction:row; flex-wrap:wrap; position:static}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Кінематика матеріальної точки<small>швидкість, прискорення, середнє і миттєве, симетрії</small></h1>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-m="m1" class="active">1 · Види руху</button>
+  <button data-m="m2">2 · Середнє і миттєве</button>
+  <button data-m="m3">3 · Складний рух</button>
+  <button data-m="m4">4 · Симетрії і збереження</button>
+</nav>
+
+<!-- ================= МОДУЛЬ 1 · види руху ================= -->
+<section class="module active" id="m1">
+  <p class="caption">Чотири рухи, які відрізняються лише тим, як поводиться вектор швидкості.
+  <var class="vec">v</var> = d<var class="vec">r</var>/d<var>t</var>, &nbsp;
+  <var class="vec">a</var> = d<var class="vec">v</var>/d<var>t</var> = <var>a</var><sub>τ</sub><var class="vec">τ</var> + <var>a</var><sub>n</sub><var class="vec">n</var>.
+  Напівжирний курсив — вектор, звичайний — скаляр.</p>
+
+  <div class="panel">
+    <div class="toolbar">
+      <span class="lbl">Рух:</span>
+      <div class="seg" id="m1mode">
+        <button data-v="uni" class="active" style="--c:var(--ink)">рівномірний</button>
+        <button data-v="acc" style="--c:var(--ink)">рівноприскорений</button>
+        <button data-v="cir" style="--c:var(--ink)">по колу</button>
+        <button data-v="bal" style="--c:var(--ink)">балістичний</button>
+      </div>
+      <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
+      <button class="ibtn" id="m1re" title="спочатку">↺</button>
+      <span class="lbl" id="m1t" style="font-variant-numeric:tabular-nums"></span>
+    </div>
+    <canvas id="m1scene" aria-label="сцена руху матеріальної точки"></canvas>
+    <div class="legend" style="margin:10px 0 0">
+      <span><span class="chip cV"></span><var class="vec">v</var> — миттєва швидкість</span>
+      <span><span class="chip cA"></span><var class="vec">a</var> — повне прискорення</span>
+      <span><span class="chip cT"></span><var class="vec">a</var><sub>τ</sub> — дотичне (змінює модуль <var>v</var>)</span>
+      <span><span class="chip cN"></span><var class="vec">a</var><sub>n</sub> — нормальне (змінює напрям <var class="vec">v</var>)</span>
+    </div>
+  </div>
+
+  <div class="m1grid">
+    <div class="side">
+      <div class="panel">
+        <h3>Параметри</h3>
+        <label class="sl"><span><var>v</var><sub>0</sub> — початкова швидкість (рівномірний, рівноприскорений, балістичний)</span>
+          <input type="range" id="m1v0" min="1" max="15" step="0.5" value="5"><output id="m1v0o"></output></label>
+        <label class="sl"><span><var>a</var> — прискорення вздовж прямої (рівноприскорений)</span>
+          <input type="range" id="m1a" min="-4" max="6" step="0.5" value="2"><output id="m1ao"></output></label>
+        <label class="sl"><span><var>R</var> — радіус кола (коловий)</span>
+          <input type="range" id="m1R" min="1.5" max="8" step="0.5" value="4"><output id="m1Ro"></output></label>
+        <label class="sl"><span><var>ω</var> — кутова швидкість (коловий)</span>
+          <input type="range" id="m1om" min="0.4" max="3" step="0.05" value="1.25"><output id="m1omo"></output></label>
+        <label class="sl"><span><var>α</var><sub>0</sub> — кут кидання до горизонту (балістичний)</span>
+          <input type="range" id="m1al" min="10" max="80" step="1" value="45"><output id="m1alo"></output></label>
+        <div class="formulas" id="m1law"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h3>Миттєві значення</h3>
+        <table class="read">
+          <tr><th>величина</th><th>формула</th><th>значення</th></tr>
+          <tr><td><var>v</var><sub>x</sub>, <var>v</var><sub>y</sub></td><td class="f">проєкції <var class="vec">v</var></td><td id="m1rv"></td></tr>
+          <tr><td>|<var class="vec">v</var>|</td><td class="f">√(<var>v</var><sub>x</sub>² + <var>v</var><sub>y</sub>²)</td><td id="m1rsp"></td></tr>
+          <tr><td><var>a</var><sub>τ</sub></td><td class="f"><var class="vec">a</var>·<var class="vec">τ</var> = d<var>v</var>/d<var>t</var></td><td id="m1rat"></td></tr>
+          <tr><td><var>a</var><sub>n</sub></td><td class="f"><var>v</var>²/<var>R</var><sub>кр</sub></td><td id="m1ran"></td></tr>
+          <tr><td>|<var class="vec">a</var>|</td><td class="f">√(<var>a</var><sub>τ</sub>² + <var>a</var><sub>n</sub>²)</td><td id="m1ram"></td></tr>
+          <tr><td><var>R</var><sub>кр</sub></td><td class="f"><var>v</var>²/<var>a</var><sub>n</sub> — радіус кривини</td><td id="m1rrc"></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="chip cV"></span>|<var class="vec">v</var>|</span>
+    <span><span class="chip cT"></span><var>a</var><sub>τ</sub></span>
+    <span><span class="chip cN"></span><var>a</var><sub>n</sub></span>
+  </div>
+  <div class="chartrow">
+    <div class="chartbox" id="m1cvw"><h4>модуль швидкості |<var class="vec">v</var>|(<var>t</var>)</h4><canvas id="m1cv"></canvas></div>
+    <div class="chartbox" id="m1caw"><h4>складові прискорення <var>a</var><sub>τ</sub>(<var>t</var>), <var>a</var><sub>n</sub>(<var>t</var>)</h4><canvas id="m1ca"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <h3>Вхідні дані та константи (за нормальних умов)</h3>
+    <table class="read">
+      <tr><th>величина</th><th>позначення</th><th>значення</th><th>одиниця</th><th>де</th></tr>
+      <tr><td>початкова швидкість</td><td class="f"><var>v</var><sub>0</sub></td><td>5,0</td><td>м/с</td><td>М1, М2</td></tr>
+      <tr><td>прискорення вздовж прямої</td><td class="f"><var>a</var></td><td>2,0</td><td>м/с²</td><td>М1, М2</td></tr>
+      <tr><td>радіус кола</td><td class="f"><var>R</var></td><td>4,0</td><td>м</td><td>М1, М2</td></tr>
+      <tr><td>кутова швидкість</td><td class="f"><var>ω</var></td><td>1,25</td><td>рад/с</td><td>М1, М2</td></tr>
+      <tr><td>прискорення вільного падіння</td><td class="f"><var>g</var></td><td>9,81</td><td>м/с²</td><td>М1, М3, М4</td></tr>
+      <tr><td>кут кидання</td><td class="f"><var>α</var><sub>0</sub></td><td>45</td><td>°</td><td>М1, М2</td></tr>
+      <tr><td>вікно усереднення</td><td class="f"><var>Δt</var></td><td>1,0</td><td>с</td><td>М2</td></tr>
+      <tr><td>маса точки</td><td class="f"><var>m</var></td><td>1,0</td><td>кг</td><td>М3б, М4</td></tr>
+      <tr><td>висота спуску гірок</td><td class="f"><var>h</var><sub>0</sub></td><td>12,5</td><td>м</td><td>М3б</td></tr>
+      <tr><td>радіус петлі</td><td class="f"><var>R</var><sub>п</sub></td><td>4,0</td><td>м</td><td>М3б</td></tr>
+      <tr><td>крок інтегрування</td><td class="f"><var>h</var></td><td>0,002</td><td>с</td><td>М3, М4</td></tr>
+    </table>
+    <div class="formulas">самоузгодженість: <i>ω·R</i> = 1,25 · 4 = 5,0 м/с = <i>v</i><sub>0</sub>; &nbsp;
+      <i>a</i><sub>n</sub> = <i>ω</i>²<i>R</i> = 6,25 м/с²; &nbsp; <i>T</i> = 2π/<i>ω</i> = 5,03 с</div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 2 · середнє і миттєве ================= -->
+<section class="module" id="m2">
+  <p class="caption">Середнє значення належить <b>інтервалу</b>, миттєве — <b>точці</b>.
+  Зменшуйте <var>Δt</var> — січна повертається в дотичну, і ⟨<var class="vec">v</var>⟩ → <var class="vec">v</var>(<var>t</var><sub>1</sub>).
+  Це і є означення похідної, показане рухом.</p>
+
+  <div class="m1grid">
+    <div class="side">
+      <div class="panel">
+        <h3>Інтервал усереднення</h3>
+        <div class="toolbar" style="margin-bottom:12px">
+          <div class="seg" id="m2mode">
+            <button data-v="uni" style="--c:var(--ink)">прямий</button>
+            <button data-v="acc" style="--c:var(--ink)">приск.</button>
+            <button data-v="cir" class="active" style="--c:var(--ink)">коло</button>
+            <button data-v="bal" style="--c:var(--ink)">кидок</button>
+          </div>
+        </div>
+        <label class="sl"><span><var>t</var><sub>1</sub> — початок інтервалу</span>
+          <input type="range" id="m2t1" min="0" max="5" step="0.01" value="0.6"><output id="m2t1o"></output></label>
+        <label class="sl"><span><var>Δt</var> — ширина інтервалу усереднення</span>
+          <input type="range" id="m2dt" min="0.02" max="5" step="0.01" value="1"><output id="m2dto"></output></label>
+        <div class="toolbar" style="margin:10px 0 0">
+          <button class="btn" id="m2full">повний оберт<small><var>Δt</var> = <var>T</var></small></button>
+          <button class="btn" id="m2lim">границя<small><var>Δt</var> → 0,02 с</small></button>
+        </div>
+        <div class="formulas" id="m2law"></div>
+      </div>
+      <div class="panel">
+        <h3>Порівняння</h3>
+        <div class="kv"><span><span class="chip cT"></span>⟨<var class="vec">v</var>⟩ = Δ<var class="vec">r</var>/<var>Δt</var> — середня за переміщенням</span><b id="m2avv"></b></div>
+        <div class="kv"><span><span class="chip cN"></span>⟨<var>v</var>⟩ = Δ<var>s</var>/<var>Δt</var> — середня шляхова</span><b id="m2avs"></b></div>
+        <div class="kv"><span><span class="chip cV"></span><var>v</var>(<var>t</var><sub>1</sub>) — миттєва</span><b id="m2inst"></b></div>
+        <div class="kv"><span>кут між ⟨<var class="vec">v</var>⟩ і <var class="vec">v</var>(<var>t</var><sub>1</sub>)</span><b id="m2ang"></b></div>
+        <div class="kv"><span>|Δ<var class="vec">r</var>| ≤ Δ<var>s</var><span class="badge" id="m2bad">завжди</span></span><b id="m2ineq"></b></div>
+        <div class="kv"><span>⟨<var class="vec">a</var>⟩ = Δ<var class="vec">v</var>/<var>Δt</var> — середнє прискорення</span><b id="m2ava"></b></div>
+        <div class="kv"><span>|<var class="vec">a</var>(<var>t</var><sub>1</sub>)| — миттєве прискорення</span><b id="m2insta"></b></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <canvas id="m2scene" style="width:100%; height:300px"></canvas>
+        <div class="legend" style="margin:10px 0 0">
+          <span><span class="chip cV"></span>дотична — <var class="vec">v</var>(<var>t</var><sub>1</sub>)</span>
+          <span><span class="chip cT"></span>хорда Δ<var class="vec">r</var> та ⟨<var class="vec">v</var>⟩</span>
+          <span><span class="chip cN"></span>дуга Δ<var>s</var> — пройдений шлях</span>
+        </div>
+        <div class="formulas" id="m2sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chartrow">
+    <div class="chartbox" id="m2cxw"><h4>координата <var>x</var>(<var>t</var>) — нахил січної = ⟨<var>v</var><sub>x</sub>⟩, нахил дотичної = <var>v</var><sub>x</sub>(<var>t</var><sub>1</sub>)</h4><canvas id="m2cx"></canvas></div>
+    <div class="chartbox" id="m2csw"><h4>шлях <var>s</var>(<var>t</var>) — нахил січної = ⟨<var>v</var>⟩, нахил дотичної = |<var class="vec">v</var>(<var>t</var><sub>1</sub>)|</h4><canvas id="m2cs"></canvas></div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 3 · складний рух ================= -->
+<section class="module" id="m3">
+  <p class="caption">Той самий апарат — <var class="vec">a</var> = <var>a</var><sub>τ</sub><var class="vec">τ</var> + <var>a</var><sub>n</sub><var class="vec">n</var> —
+  працює на будь-якій траєкторії. На стиках ділянок кривина стрибає, разом із нею стрибає і <var>a</var><sub>n</sub>.</p>
+  <div class="m3wrap">
+    <nav class="m3nav" id="m3nav">
+      <button data-p="a" class="active">Складена траєкторія<small>різкі повороти, вигини, зміна кривини</small></button>
+      <button data-p="b">Американські гірки<small>той самий рух у реальному прикладі</small></button>
+    </nav>
+    <div>
+      <!-- 3а -->
+      <div class="m3pane active" id="m3a">
+        <div class="pgrid">
+          <div class="scene"><div class="panel">
+            <div class="toolbar">
+              <button class="ibtn" id="m3aPlay" title="пуск / пауза">⏸</button>
+              <button class="ibtn" id="m3aRe" title="спочатку">↺</button>
+              <span class="lbl" id="m3aT" style="font-variant-numeric:tabular-nums"></span>
+              <span class="lbl">вид згори · картинг на трасі</span>
+            </div>
+            <canvas id="m3aS" style="height:330px"></canvas>
+            <div class="legend" style="margin:10px 0 0">
+              <span><span class="chip cV"></span><var class="vec">v</var></span>
+              <span><span class="chip cT"></span><var class="vec">a</var><sub>τ</sub></span>
+              <span><span class="chip cN"></span><var class="vec">a</var><sub>n</sub></span>
+              <span><span class="chip cA"></span><var class="vec">a</var></span>
+              <span style="color:var(--mut)">тонке коло — стичне коло радіуса <var>R</var><sub>кр</sub></span>
+            </div>
+          </div></div>
+          <div class="side">
+            <div class="panel">
+              <h3>Годограф швидкості</h3>
+              <canvas class="dg" id="m3aH"></canvas>
+              <div class="formulas">кінець вектора <i>v</i> при спільному початку; пряма ділянка дає промінь, дуга сталої швидкості — дугу кола</div>
+            </div>
+            <div class="panel">
+              <div class="kv"><span>|<var class="vec">v</var>|</span><b id="m3aV"></b></div>
+              <div class="kv"><span><var>a</var><sub>τ</sub> = d<var>v</var>/d<var>t</var></span><b id="m3aAt"></b></div>
+              <div class="kv"><span><var>a</var><sub>n</sub> = <var>v</var>²/<var>R</var><sub>кр</sub></span><b id="m3aAn"></b></div>
+              <div class="kv"><span>|<var class="vec">a</var>|</span><b id="m3aAm"></b></div>
+              <div class="kv"><span><var>R</var><sub>кр</sub> — радіус кривини</span><b id="m3aRc"></b></div>
+              <div class="kv"><span>ділянка траси</span><b id="m3aSeg"></b></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><span class="chip cV"></span>|<var class="vec">v</var>|</span>
+          <span><span class="chip cT"></span><var>a</var><sub>τ</sub></span>
+          <span><span class="chip cN"></span><var>a</var><sub>n</sub></span>
+        </div>
+        <div class="chartrow">
+          <div class="chartbox" id="m3acvw"><h4>модуль швидкості |<var class="vec">v</var>|(<var>t</var>)</h4><canvas id="m3acv"></canvas></div>
+          <div class="chartbox" id="m3acaw"><h4>складові прискорення — сходинки на стиках ділянок</h4><canvas id="m3aca"></canvas></div>
+        </div>
+      </div>
+
+      <!-- 3б -->
+      <div class="m3pane" id="m3b">
+        <div class="pgrid">
+          <div class="scene"><div class="panel">
+            <div class="toolbar">
+              <button class="ibtn" id="m3bPlay" title="пуск / пауза">⏸</button>
+              <button class="ibtn" id="m3bRe" title="спочатку">↺</button>
+              <span class="lbl" id="m3bT" style="font-variant-numeric:tabular-nums"></span>
+              <span class="lbl">вид збоку · рух без тертя</span>
+            </div>
+            <canvas id="m3bS" style="height:330px"></canvas>
+            <div class="legend" style="margin:10px 0 0">
+              <span><span class="chip cV"></span><var class="vec">v</var></span>
+              <span><span class="chip cT"></span><var class="vec">a</var><sub>τ</sub></span>
+              <span><span class="chip cN"></span><var class="vec">a</var><sub>n</sub></span>
+              <span style="color:var(--mut)">штрих — рівень початкової енергії</span>
+            </div>
+          </div></div>
+          <div class="side">
+            <div class="panel">
+              <h3>Керування</h3>
+              <label class="sl"><span><var>h</var><sub>0</sub> — висота спуску над найнижчою точкою</span>
+                <input type="range" id="m3bh" min="9" max="18" step="0.5" value="12.5"><output id="m3bho"></output></label>
+              <div class="formulas"><i>v</i>(<i>s</i>) = √(<i>v</i><sub>0</sub>² + 2<i>g</i>(<i>y</i><sub>0</sub> − <i>y</i>)) — реакція рейок ⊥ <i>v</i>, роботи не виконує</div>
+            </div>
+            <div class="panel">
+              <div class="kv"><span>висота <var>y</var></span><b id="m3bY"></b></div>
+              <div class="kv"><span>|<var class="vec">v</var>|</span><b id="m3bV"></b></div>
+              <div class="kv"><span><var>a</var><sub>τ</sub> = −<var>g</var>·<var>τ</var><sub>y</sub></span><b id="m3bAt"></b></div>
+              <div class="kv"><span><var>a</var><sub>n</sub> = <var>v</var>²/<var>R</var><sub>кр</sub></span><b id="m3bAn"></b></div>
+              <div class="kv"><span>перевантаження <var>n</var> = <var>N</var>/(<var>mg</var>)</span><b id="m3bN"></b></div>
+              <div class="kv"><span><var>E</var> = <var>T</var> + <var>U</var><span class="badge">стала</span></span><b id="m3bE"></b></div>
+            </div>
+            <div class="panel">
+              <h3>Умова проходження петлі</h3>
+              <div class="kv"><span><var>v</var><sub>верх</sub>² ≥ <var>g R</var><sub>п</sub></span><b id="m3bLoop"></b></div>
+              <div class="kv"><span><var>n</var><sub>верх</sub> = <var>v</var><sub>верх</sub>²/(<var>gR</var><sub>п</sub>) − 1</span><b id="m3bNt"></b></div>
+              <div class="kv"><span><var>n</var><sub>низ</sub> = <var>v</var><sub>низ</sub>²/(<var>gR</var><sub>п</sub>) + 1</span><b id="m3bNb"></b></div>
+              <div class="formulas">для <b>колової</b> петлі різниця <i>n</i><sub>низ</sub> − <i>n</i><sub>верх</sub> = 6 незалежно від <i>h</i><sub>0</sub> і <i>R</i><sub>п</sub> — саме тому справжні петлі роблять не круглими, а клотоїдними</div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><span class="chip cA"></span><var>E</var> — повна</span>
+          <span><span class="chip cV"></span><var>T</var> — кінетична</span>
+          <span><span class="chip cT"></span><var>U</var> = <var>mgy</var> — потенціальна</span>
+        </div>
+        <div class="chartrow">
+          <div class="chartbox" id="m3bcew"><h4>енергія (<var>m</var> = 1 кг), Дж — <var>E</var> стала за побудовою</h4><canvas id="m3bce"></canvas></div>
+          <div class="chartbox" id="m3bcnw"><h4>перевантаження <var>n</var>(<var>t</var>) — від'ємне на горбі («невагомість»)</h4><canvas id="m3bcn"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 4 · симетрії і збереження ================= -->
+<section class="module" id="m4">
+  <p class="caption">Теорема Нетер: кожній неперервній симетрії задачі відповідає збережна величина.
+  Перемикайте сценарій — симетрії ламаються по черзі, і разом із ними зникають закони збереження.
+  Щоб величини <var class="vec">p</var>, <var>L</var><sub>z</sub>, <var>E</var> мали сенс, уводимо масу <var>m</var> = 1 кг
+  (тоді числа імпульсу збігаються з числами швидкості).</p>
+
+  <div class="pgrid">
+    <div class="scene"><div class="panel">
+      <div class="toolbar">
+        <span class="lbl">Сценарій:</span>
+        <div class="seg" id="m4sc">
+          <button data-v="free" class="active" style="--c:var(--ink)">вільний рух</button>
+          <button data-v="unif" style="--c:var(--ink)">однорідне поле</button>
+          <button data-v="centr" style="--c:var(--ink)">центральне поле</button>
+          <button data-v="track" style="--c:var(--ink)">гірки (в'язь)</button>
+        </div>
+        <button class="ibtn" id="m4Re" title="спочатку">↺</button>
+        <span class="lbl" id="m4T" style="font-variant-numeric:tabular-nums"></span>
+      </div>
+      <canvas id="m4S" style="height:340px"></canvas>
+      <div class="legend" style="margin:10px 0 0">
+        <span><span class="chip cV"></span><var class="vec">p</var> = <var>m</var><var class="vec">v</var></span>
+        <span style="color:var(--mut)">суцільні осі — поточні, штрихові — вихідні</span>
+      </div>
+    </div></div>
+    <div class="side">
+      <div class="panel">
+        <h3>Перевірка інваріантності</h3>
+        <div class="toolbar" style="gap:8px">
+          <button class="btn" id="m4bShift">зсув <var>O</var><small><var class="vec">a</var> = (6; 3) м</small></button>
+          <button class="btn" id="m4bRot">поворот осей<small><var>δ</var> = 30°</small></button>
+          <button class="btn" id="m4bTime">зсув <var>t</var><sub>0</sub><small><var>τ</var> = +2 с</small></button>
+        </div>
+        <div class="formulas" id="m4note"></div>
+      </div>
+      <div class="panel">
+        <div class="kv"><span><var>x</var>, <var>y</var></span><b id="m4r"></b></div>
+        <div class="kv"><span><var>p</var><sub>x</sub>, <var>p</var><sub>y</sub></span><b id="m4p"></b></div>
+        <div class="kv"><span>|<var class="vec">p</var>|</span><b id="m4pm"></b></div>
+        <div class="kv"><span><var>L</var><sub>z</sub> = <var>m</var>(<var>x v</var><sub>y</sub> − <var>y v</var><sub>x</sub>)</span><b id="m4L"></b></div>
+        <div class="kv"><span><var>T</var> = <var>mv</var>²/2</span><b id="m4Ek"></b></div>
+        <div class="kv"><span><var>U</var></span><b id="m4U"></b></div>
+        <div class="kv"><span><var>E</var> = <var>T</var> + <var>U</var></span><b id="m4E"></b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Симетрія → закон збереження</h3>
+    <table class="sym" id="m4tab">
+      <tr><th>симетрія задачі</th><th>перетворення</th><th>збережна величина</th><th style="text-align:right">значення</th><th></th></tr>
+      <tr>
+        <td>однорідність простору вздовж <var>x</var></td><td><var>x</var> → <var>x</var> + <var>a</var></td>
+        <td class="q"><var>p</var><sub>x</sub> = <var>mv</var><sub>x</sub></td><td class="n" id="m4spx"></td><td class="st" id="m4stpx"></td>
+      </tr>
+      <tr>
+        <td>однорідність простору вздовж <var>y</var></td><td><var>y</var> → <var>y</var> + <var>a</var></td>
+        <td class="q"><var>p</var><sub>y</sub> = <var>mv</var><sub>y</sub></td><td class="n" id="m4spy"></td><td class="st" id="m4stpy"></td>
+      </tr>
+      <tr>
+        <td>ізотропність простору (поворот)</td><td><var>φ</var> → <var>φ</var> + <var>δ</var></td>
+        <td class="q"><var>L</var><sub>z</sub> = <var>m</var>(<var>x v</var><sub>y</sub> − <var>y v</var><sub>x</sub>)</td><td class="n" id="m4sL"></td><td class="st" id="m4stL"></td>
+      </tr>
+      <tr>
+        <td>однорідність часу</td><td><var>t</var> → <var>t</var> + <var>τ</var></td>
+        <td class="q"><var>E</var> = <var>mv</var>²/2 + <var>U</var></td><td class="n" id="m4sE"></td><td class="st" id="m4stE"></td>
+      </tr>
+    </table>
+    <div class="formulas" id="m4why"></div>
+  </div>
+
+  <div class="legend">
+    <span><span class="chip cV"></span><var>p</var><sub>x</sub></span>
+    <span><span class="chip cT"></span><var>p</var><sub>y</sub></span>
+    <span><span class="chip cN"></span><var>L</var><sub>z</sub></span>
+    <span><span class="chip cA"></span><var>E</var></span>
+  </div>
+  <div class="trio">
+    <div class="chartbox" id="m4cpw"><h4>імпульс <var>p</var><sub>x</sub>, <var>p</var><sub>y</sub> — кг·м/с</h4><canvas id="m4cp"></canvas></div>
+    <div class="chartbox" id="m4clw"><h4>момент імпульсу <var>L</var><sub>z</sub> — кг·м²/с</h4><canvas id="m4cl"></canvas></div>
+    <div class="chartbox" id="m4cew"><h4>енергія <var>E</var>, <var>T</var>, <var>U</var> — Дж</h4><canvas id="m4ce"></canvas></div>
+  </div>
+</section>
+
+<footer>Допоміжний матеріал з механіки · кінематика матеріальної точки · середнє і миттєве · симетрії та закони збереження</footer>
+</div>
+<script>
+'use strict';
+/* ===================== спільні утиліти ===================== */
+const $=id=>document.getElementById(id);
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+  grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',water:'#e2edfa',drop:'#86b6ef'};
+const fmt=(n,d=1)=>{
+  if(!isFinite(n)) return '∞';
+  return (+n).toFixed(d).replace('.',',').replace('-','−');
+};
+const DEG=Math.PI/180;
+const G=9.81;
+
+const CV={};
+function cvx(id){
+  if(CV[id]) return CV[id];
+  const c=$(id); const r=c.getBoundingClientRect();
+  if(r.width<2||r.height<2) return null;
+  const d=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
+  const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  return CV[id]={g,w:r.width,h:r.height,el:c};
+}
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];});
+
+function seg(id,cb){
+  const el=$(id);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    cb(b.dataset.v);
+  });
+}
+function slider(id,unit,dec,cb){
+  const i=$(id),o=$(id+'o');
+  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?' '+unit:'');};
+  i.addEventListener('input',()=>{show(); cb(+i.value);});
+  show();
+}
+/* програмна зміна повзунка: значення і підпис не мають розходитись */
+function setSeg(id,v){
+  $(id).querySelectorAll('button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));
+}
+function setSl(id,val,unit,dec){
+  const i=$(id),o=$(id+'o');
+  i.value=val; o.textContent=fmt(+i.value,dec)+(unit?' '+unit:'');
+  return +i.value;
+}
+function txt(g,s,x,y,o={}){
+  g.fillStyle=o.color||CLR.ink;
+  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,y);
+}
+function arrow(g,x1,y1,x2,y2,color,w=2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
+  if(Math.hypot(x2-x1,y2-y1)<1.2) return;
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*L*0.6,y2-Math.sin(a)*L*0.6); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2);
+  g.lineTo(x2-L*Math.cos(a-0.44),y2-L*Math.sin(a-0.44));
+  g.lineTo(x2-L*Math.cos(a+0.44),y2-L*Math.sin(a+0.44));
+  g.closePath(); g.fill();
+}
+function pill(g,s,x,y,o={}){
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14;
+  g.fillStyle=o.bg||'rgba(252,252,251,.92)';
+  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  txt(g,s,x,y+1,{...o,align:'center'});
+}
+function dot(g,x,y,r,fill,ring){
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.fillStyle=fill; g.fill();
+  if(ring){g.strokeStyle=ring; g.lineWidth=2; g.stroke();}
+}
+function niceStep(raw){
+  if(!(raw>0)) return 1;
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+/* межі осі значень: рахуються з усього прогону, а не з поточного кадру — інакше графік «дихає» */
+function span(vals,padFrac,withZero){
+  const v=vals.filter(x=>isFinite(x));
+  if(!v.length) return {lo:-1,hi:1};
+  let lo=Math.min(...v), hi=Math.max(...v);
+  if(withZero){lo=Math.min(lo,0); hi=Math.max(hi,0);}
+  if(hi-lo<1e-6){const c=(hi+lo)/2; lo=c-0.5; hi=c+0.5;}
+  const d=(hi-lo)*(padFrac||0.12);
+  return {lo:lo-d, hi:hi+d};
+}
+/* простий лінійний графік із перехрестям-підказкою */
+function drawChart(box,opt){
+  const {g,w,h}=box;
+  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  const X=t=>L+t/opt.tMax*pw;
+  const Y=y=>T+(1-(y-opt.yMin)/(opt.yMax-opt.yMin))*ph;
+  g.clearRect(0,0,w,h);
+  g.lineWidth=1;
+  const st=niceStep((opt.yMax-opt.yMin)/4.5);
+  const dec=st>=1?0:(st>=0.1?1:2);
+  for(let y=Math.ceil(opt.yMin/st)*st;y<=opt.yMax+1e-9;y+=st){
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
+    txt(g,fmt(y,dec),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+  }
+  const ts=opt.tStep||niceStep(opt.tMax/4.5);
+  const tdec=ts>=1?0:(ts>=0.1?1:2);
+  for(let t=0;t<=opt.tMax+1e-9;t+=ts){
+    g.strokeStyle=t===0?CLR.axis:CLR.grid;
+    g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
+    txt(g,fmt(t,tdec),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+  }
+  if(opt.yMin<0&&opt.yMax>0){
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  }
+  txt(g,opt.yLab,L-34,T+2,{color:CLR.mut,size:10.5});
+  txt(g,'t, с',w-R+8,h-10,{color:CLR.mut,size:10.5});
+  const usedY=[];
+  for(const s of opt.series){
+    if(s.ts.length<2) continue;
+    g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.beginPath();
+    for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
+    g.stroke();
+    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    dot(g,lx,ly,3,s.color);
+    // підпис біля кінця лінії; якщо криві збіглися — розводимо підписи, щоб не злипались
+    let ty=ly+4;
+    while(usedY.some(u=>Math.abs(u-ty)<11)) ty+=12;
+    usedY.push(ty);
+    txt(g,s.label,lx+7,ty,{color:CLR.ink,size:11,bold:true});
+  }
+  if(opt.after){
+    g.save(); g.beginPath(); g.rect(L,T,pw,ph); g.clip();
+    opt.after(g,X,Y,{L,R,T,B,pw,ph});
+    g.restore();
+  }
+  if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0]&&opt.series[0].ts.length>1){
+    const t=(opt.hover-L)/pw*opt.tMax;
+    const s0=opt.series[0];
+    const tc=Math.min(t,s0.ts[s0.ts.length-1]);
+    const hx=X(tc);
+    g.strokeStyle=CLR.axis; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(hx+.5,T); g.lineTo(hx+.5,T+ph); g.stroke(); g.setLineDash([]);
+    const vals=[];
+    for(const s of opt.series){
+      let i=s.ts.length-1;
+      while(i>0&&s.ts[i]>tc) i--;
+      const v=s.ys[Math.min(i+(s.ts[i]<tc?1:0), s.ys.length-1)];
+      dot(g,hx,Y(v),3.5,'#fff',s.color); vals.push(v);
+    }
+    return {t:tc,vals,px:hx};
+  }
+  return null;
+}
+function makeTip(wrapId){
+  const w=$(wrapId); const d=document.createElement('div');
+  d.className='tip'; w.appendChild(d); return d;
+}
+function hover(canvasId,state){
+  const c=$(canvasId);
+  c.addEventListener('pointermove',e=>{
+    const r=c.getBoundingClientRect(); state.x=e.clientX-r.left; state.cy=e.clientY-r.top;
+  });
+  c.addEventListener('pointerleave',()=>{state.x=null;});
+}
+function showTip(el,r,names,unit,st,dec){
+  if(!r){el.style.display='none'; return;}
+  el.innerHTML='<div class="th">t = '+fmt(r.t)+' с</div>'+
+    r.vals.map((v,i)=>'<div><span class="chip" style="background:'+names[i][1]+'"></span>'+
+      names[i][0]+' — '+fmt(v,dec==null?2:dec)+' '+unit+'</div>').join('');
+  el.style.display='block';
+  const bw=el.offsetWidth;
+  el.style.left=Math.min(r.px+14,el.parentElement.clientWidth-bw-4)+'px';
+  el.style.top=Math.max(20,(st.cy||60)-10)+'px';
+}
+
+/* ===================== рушій траси ===================== */
+/* примітив: {len, P(u), T(u), K(u)} — точка, одиничний дотичний, кривина зі знаком (+ ліворуч) */
+function segLine(x0,y0,x1,y1){
+  const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),tx=dx/L,ty=dy/L;
+  return {len:L, kind:'пряма',
+    P:u=>({x:x0+tx*u, y:y0+ty*u}), T:()=>({x:tx,y:ty}), K:()=>0};
+}
+function segArc(cx,cy,R,th0,dth){
+  const sg=Math.sign(dth)||1;
+  return {len:Math.abs(dth)*R, kind:'дуга R = '+fmt(R,1)+' м',
+    P:u=>{const th=th0+sg*u/R; return {x:cx+R*Math.cos(th), y:cy+R*Math.sin(th)};},
+    T:u=>{const th=th0+sg*u/R; return {x:-sg*Math.sin(th), y:sg*Math.cos(th)};},
+    K:()=>sg/R};
+}
+/* «черепашка»: рухаємось уперед і повертаємо — стики автоматично C¹-неперервні */
+function builder(x,y,hdDeg){
+  return {x,y,hd:hdDeg*DEG,segs:[],
+    line(L){
+      const x1=this.x+L*Math.cos(this.hd), y1=this.y+L*Math.sin(this.hd);
+      this.segs.push(segLine(this.x,this.y,x1,y1)); this.x=x1; this.y=y1; return this;
+    },
+    turn(R,deg){
+      const tu=deg*DEG, sg=Math.sign(tu)||1;
+      const cx=this.x-sg*R*Math.sin(this.hd), cy=this.y+sg*R*Math.cos(this.hd);
+      const th0=Math.atan2(this.y-cy,this.x-cx), th1=th0+tu;
+      this.segs.push(segArc(cx,cy,R,th0,tu));
+      this.x=cx+R*Math.cos(th1); this.y=cy+R*Math.sin(th1); this.hd+=tu; return this;
+    },
+    build(){return makeTrack(this.segs);}
+  };
+}
+function makeTrack(segs){
+  const cum=[0]; let L=0;
+  for(const s of segs){L+=s.len; cum.push(L);}
+  const poly=[]; const N=1400;
+  const tr={segs,cum,len:L,poly,
+    at(s){
+      s=Math.max(0,Math.min(L,s));
+      let i=0; while(i<segs.length-1&&s>cum[i+1]) i++;
+      const sg=segs[i],u=s-cum[i];
+      return {p:sg.P(u), t:sg.T(u), k:sg.K(u), i, kind:sg.kind};
+    }};
+  for(let i=0;i<=N;i++) poly.push(tr.at(L*i/N).p);
+  let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+  for(const p of poly){xmin=Math.min(xmin,p.x);xmax=Math.max(xmax,p.x);ymin=Math.min(ymin,p.y);ymax=Math.max(ymax,p.y);}
+  tr.box={xmin,xmax,ymin,ymax};
+  return tr;
+}
+/* профіль швидкості заданий вузлами (s, v); між вузлами лінійна v² ⇒ a_τ = const на ділянці */
+function profAt(nodes,s){
+  let i=0; while(i<nodes.length-2&&s>nodes[i+1][0]) i++;
+  const s0=nodes[i][0],v0=nodes[i][1],s1=nodes[i+1][0],v1=nodes[i+1][1];
+  const w0=v0*v0,w1=v1*v1,ds=Math.max(1e-6,s1-s0);
+  const f=Math.max(0,Math.min(1,(s-s0)/ds));
+  return {v:Math.sqrt(Math.max(0.04,w0+(w1-w0)*f)), at:(w1-w0)/(2*ds)};
+}
+/* камера: масштаб рахується з фактичного розмаху і однаковий по обох осях */
+function camera(box,w,h,pad){
+  const p=pad||30;
+  const sc=Math.min((w-2*p)/Math.max(0.5,box.xmax-box.xmin),(h-2*p)/Math.max(0.5,box.ymax-box.ymin));
+  const ox=(w-(box.xmax-box.xmin)*sc)/2-box.xmin*sc;
+  const oy=(h+(box.ymax-box.ymin)*sc)/2+box.ymin*sc;
+  return {sc, SX:x=>ox+x*sc, SY:y=>oy-y*sc};
+}
+/* сітка сцени у фізичних координатах */
+function sceneGrid(g,cam,box,w,h){
+  const st=cam.sc>26?1:cam.sc>13?2:cam.sc>6?5:10;
+  g.lineWidth=1; g.strokeStyle=CLR.grid;
+  for(let x=Math.ceil(box.xmin/st)*st;x<=box.xmax;x+=st){
+    const px=cam.SX(x); if(px<2||px>w-2) continue;
+    g.beginPath(); g.moveTo(px+.5,0); g.lineTo(px+.5,h); g.stroke();
+  }
+  for(let y=Math.ceil(box.ymin/st)*st;y<=box.ymax;y+=st){
+    const py=cam.SY(y); if(py<2||py>h-2) continue;
+    g.beginPath(); g.moveTo(0,py+.5); g.lineTo(w,py+.5); g.stroke();
+  }
+  txt(g,'клітинка '+st+' м',w-10,h-8,{color:CLR.mut,size:9.5,align:'right'});
+}
+function polyPath(g,pts,cam,color,wd,dash){
+  g.strokeStyle=color; g.lineWidth=wd; g.lineJoin='round'; g.lineCap='round';
+  if(dash) g.setLineDash(dash);
+  g.beginPath();
+  for(let i=0;i<pts.length;i++){const px=cam.SX(pts[i].x),py=cam.SY(pts[i].y); i?g.lineTo(px,py):g.moveTo(px,py);}
+  g.stroke(); g.setLineDash([]);
+}
+/* дві рядки-підпис у кутку сцени: що це і що з нього видно */
+function caption(g,w,line1,line2,color){
+  txt(g,line1,12,20,{color:color||CLR.ink,size:12.5,bold:true});
+  txt(g,line2,12,36,{color:CLR.mut,size:10.5});
+}
+
+/* ===================== спільні моделі руху (М1, М2) ===================== */
+const PAR={v0:5,a:2,R:4,om:1.25,al:45};
+const MO={
+  uni:{name:'рівномірний прямолінійний',
+    note:'a = 0 — вектор v сталий і за модулем, і за напрямом',
+    law:'<i>r</i> = <i>r</i><sub>0</sub> + <i>v</i><sub>0</sub><i>t</i>, &nbsp; <i>a</i> = 0',
+    T:p=>4,
+    r:(t,p)=>({x:-9+p.v0*t,y:0}),
+    v:(t,p)=>({x:p.v0,y:0}),
+    ac:()=>({x:0,y:0})},
+  acc:{name:'рівноприскорений прямолінійний',
+    note:'a ∥ v — змінюється лише модуль швидкості, траєкторія лишається прямою',
+    law:'<i>x</i> = <i>x</i><sub>0</sub> + <i>v</i><sub>0</sub><i>t</i> + <i>at</i>²/2, &nbsp; <i>v</i> = <i>v</i><sub>0</sub> + <i>at</i>',
+    T:p=>4,
+    r:(t,p)=>({x:-9+p.v0*t+0.5*p.a*t*t,y:0}),
+    v:(t,p)=>({x:p.v0+p.a*t,y:0}),
+    ac:(t,p)=>({x:p.a,y:0})},
+  cir:{name:'рівномірний по колу',
+    note:'|v| стала, але напрям змінюється — тому a = aₙ ≠ 0',
+    law:'<i>x</i> = <i>R</i>cos <i>ωt</i>, &nbsp; <i>y</i> = <i>R</i>sin <i>ωt</i>, &nbsp; <i>v</i> = <i>ωR</i>, &nbsp; <i>a</i><sub>n</sub> = <i>ω</i>²<i>R</i>',
+    T:p=>2*Math.PI/p.om,
+    r:(t,p)=>({x:p.R*Math.cos(p.om*t),y:p.R*Math.sin(p.om*t)}),
+    v:(t,p)=>({x:-p.om*p.R*Math.sin(p.om*t),y:p.om*p.R*Math.cos(p.om*t)}),
+    ac:(t,p)=>({x:-p.om*p.om*p.R*Math.cos(p.om*t),y:-p.om*p.om*p.R*Math.sin(p.om*t)})},
+  bal:{name:'балістичний (парабола)',
+    note:'a = g стале, але його розклад на дотичну й нормальну складові змінюється вздовж траєкторії',
+    law:'<i>x</i> = <i>v</i><sub>0</sub>cos <i>α</i><sub>0</sub>·<i>t</i>, &nbsp; <i>y</i> = <i>v</i><sub>0</sub>sin <i>α</i><sub>0</sub>·<i>t</i> − <i>gt</i>²/2',
+    T:p=>2*p.v0*Math.sin(p.al*DEG)/G,
+    r:(t,p)=>({x:p.v0*Math.cos(p.al*DEG)*t,y:p.v0*Math.sin(p.al*DEG)*t-0.5*G*t*t}),
+    v:(t,p)=>({x:p.v0*Math.cos(p.al*DEG),y:p.v0*Math.sin(p.al*DEG)-G*t}),
+    ac:()=>({x:0,y:-G})}
+};
+/* розклад прискорення на дотичну й нормальну складові */
+function kin(m,t,p){
+  const r=m.r(t,p),v=m.v(t,p),a=m.ac(t,p);
+  const sp=Math.hypot(v.x,v.y);
+  const tx=sp>1e-9?v.x/sp:1, ty=sp>1e-9?v.y/sp:0;
+  const nx=-ty, ny=tx;
+  const at=a.x*tx+a.y*ty, an=a.x*nx+a.y*ny, am=Math.hypot(a.x,a.y);
+  return {r,v,a,sp,tx,ty,nx,ny,at,an,am,
+    Rc:Math.abs(an)>1e-9?sp*sp/Math.abs(an):Infinity};
+}
+function traj(m,p,n){
+  const T=m.T(p),out=[];
+  for(let i=0;i<=n;i++) out.push(m.r(T*i/n,p));
+  return out;
+}
+function boxOf(pts,mrg){
+  let xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+  for(const q of pts){xmin=Math.min(xmin,q.x);xmax=Math.max(xmax,q.x);ymin=Math.min(ymin,q.y);ymax=Math.max(ymax,q.y);}
+  const m=mrg||0.12, dx=Math.max(1,(xmax-xmin))*m, dy=Math.max(1,(ymax-ymin))*m;
+  return {xmin:xmin-dx,xmax:xmax+dx,ymin:ymin-dy,ymax:ymax+dy};
+}
+
+/* ===================== МОДУЛЬ 1 · види руху ===================== */
+const M1={
+  mode:'uni', t:0, playing:true, p:Object.assign({},PAR),
+  hist:{ts:[],sp:[],at:[],an:[]},
+  hv:{x:null},ha:{x:null},tipv:null,tipa:null,
+  init(){
+    seg('m1mode',v=>{this.mode=v; this.reset();});
+    slider('m1v0','м/с',1,v=>{this.p.v0=v; this.reset();});
+    slider('m1a','м/с²',1,v=>{this.p.a=v; this.reset();});
+    slider('m1R','м',1,v=>{this.p.R=v; this.reset();});
+    slider('m1om','рад/с',2,v=>{this.p.om=v; this.reset();});
+    slider('m1al','°',0,v=>{this.p.al=v; this.reset();});
+    $('m1play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
+    $('m1re').onclick=()=>this.reset();
+    this.tipv=makeTip('m1cvw'); this.tipa=makeTip('m1caw');
+    hover('m1cv',this.hv); hover('m1ca',this.ha);
+    this.reset();
+  },
+  updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
+  reset(){this.t=0; this.hist={ts:[],sp:[],at:[],an:[]}; this.playing=true; this.updBtn();},
+  m(){return MO[this.mode];},
+  tick(dt){
+    const m=this.m(),T=m.T(this.p);
+    if(this.playing){
+      this.t+=dt;
+      if(this.t>=T){this.t=0; this.hist={ts:[],sp:[],at:[],an:[]};}
+      const k=kin(m,this.t,this.p),h=this.hist;
+      h.ts.push(this.t); h.sp.push(k.sp); h.at.push(k.at); h.an.push(Math.abs(k.an));
+    }
+    this.render();
+  },
+  render(){
+    const m=this.m(),p=this.p,T=m.T(p),k=kin(m,this.t,p);
+    this.scene(m,p,T,k);
+    this.readout(k,T);
+    this.charts(m,p,T);
+  },
+  scene(m,p,T,k){
+    const b=cvx('m1scene'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    const pts=traj(m,p,300);
+    const box=boxOf(pts,0.18);
+    const cam=camera(box,w,h,42);
+    sceneGrid(g,cam,box,w,h);
+    // траєкторія належить тілу, а не системі — тому нейтральний колір
+    polyPath(g,pts,cam,CLR.sec,1.5,[2,3]);
+    // масштаби векторів беруться з максимумів усього прогону — стрілки не «дихають»
+    let vmax=1e-6,amax=1e-6;
+    for(let i=0;i<=200;i++){
+      const q=kin(m,T*i/200,p);
+      vmax=Math.max(vmax,q.sp); amax=Math.max(amax,q.am);
+    }
+    const kv=58/vmax, ka=58/amax;
+    const px=cam.SX(k.r.x), py=cam.SY(k.r.y);
+    // прискорення: складові кольорами, рівнодійна — чорна (добудова паралелограма штрихами)
+    const atx=k.at*k.tx*ka, aty=-k.at*k.ty*ka;
+    const anx=k.an*k.nx*ka, any=-k.an*k.ny*ka;
+    if(k.am>1e-6){
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath();
+      g.moveTo(px+atx,py+aty); g.lineTo(px+atx+anx,py+aty+any);
+      g.moveTo(px+anx,py+any); g.lineTo(px+atx+anx,py+aty+any);
+      g.stroke(); g.setLineDash([]);
+      arrow(g,px,py,px+atx+anx,py+aty+any,CLR.ink,2.4);
+      if(Math.abs(k.at)>1e-6) arrow(g,px,py,px+atx,py+aty,CLR.k2,2);
+      if(Math.abs(k.an)>1e-6) arrow(g,px,py,px+anx,py+any,CLR.k3,2);
+      pill(g,'a = '+fmt(k.am,2)+' м/с²',px+atx+anx,py+aty+any-14,{color:CLR.ink,size:11,bold:true});
+    }
+    arrow(g,px,py,px+k.v.x*kv,py-k.v.y*kv,CLR.k1,2.4);
+    pill(g,'v = '+fmt(k.sp,2)+' м/с',px+k.v.x*kv,py-k.v.y*kv-14,{color:CLR.k1,size:11,bold:true});
+    dot(g,px,py,6,CLR.ink,'#fff');
+    caption(g,w,m.name,m.note,CLR.ink);
+    $('m1t').textContent='t = '+fmt(this.t,2)+' с  ·  T = '+fmt(T,2)+' с';
+    $('m1law').innerHTML=m.law;
+  },
+  readout(k,T){
+    $('m1rv').textContent=fmt(k.v.x,2)+' ; '+fmt(k.v.y,2)+' м/с';
+    $('m1rsp').textContent=fmt(k.sp,2)+' м/с';
+    $('m1rat').textContent=fmt(k.at,2)+' м/с²';
+    $('m1ran').textContent=fmt(Math.abs(k.an),2)+' м/с²';
+    $('m1ram').textContent=fmt(k.am,2)+' м/с²';
+    $('m1rrc').textContent=isFinite(k.Rc)?fmt(k.Rc,2)+' м':'∞ (пряма)';
+  },
+  charts(m,p,T){
+    const sp=[],at=[],an=[];
+    for(let i=0;i<=200;i++){const q=kin(m,T*i/200,p); sp.push(q.sp); at.push(q.at); an.push(Math.abs(q.an));}
+    const bv=cvx('m1cv');
+    if(bv){
+      const s=span(sp,0.15,true);
+      const r=drawChart(bv,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'м/с',hover:this.hv.x,
+        series:[{ts:this.hist.ts,ys:this.hist.sp,color:CLR.k1,label:'|v|'}]});
+      showTip(this.tipv,r,[['|v|',CLR.k1]],'м/с',this.hv,2);
+    }
+    const ba=cvx('m1ca');
+    if(ba){
+      const s=span(at.concat(an),0.15,true);
+      const r=drawChart(ba,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'м/с²',hover:this.ha.x,
+        series:[{ts:this.hist.ts,ys:this.hist.at,color:CLR.k2,label:'aτ'},
+                {ts:this.hist.ts,ys:this.hist.an,color:CLR.k3,label:'an'}]});
+      showTip(this.tipa,r,[['aτ',CLR.k2],['an',CLR.k3]],'м/с²',this.ha,2);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 2 · середнє і миттєве ===================== */
+const M2={
+  mode:'cir', t1:0.6, dt:1, p:Object.assign({},PAR),
+  hx:{x:null},hs:{x:null},tipx:null,tips:null,
+  init(){
+    seg('m2mode',v=>{this.mode=v; this.fit(true);});
+    slider('m2t1','с',2,v=>{this.t1=v; this.fit(false);});
+    slider('m2dt','с',2,v=>{this.dt=v; this.fit(false);});
+    $('m2full').onclick=()=>{this.t1=0; this.dt=this.T(); this.fit(false);};
+    $('m2lim').onclick=()=>{this.dt=0.02; this.fit(false);};
+    this.tipx=makeTip('m2cxw'); this.tips=makeTip('m2csw');
+    hover('m2cx',this.hx); hover('m2cs',this.hs);
+    this.fit(true);
+  },
+  m(){return MO[this.mode];},
+  T(){return this.m().T(this.p);},
+  /* t₁ + Δt не має вилазити за кінець сценарію — синхронізуємо обидва повзунки */
+  fit(newMode){
+    const T=this.T();
+    $('m2t1').max=T.toFixed(2); $('m2dt').max=T.toFixed(2);
+    if(newMode){this.dt=Math.min(1,T*0.3); this.t1=T*0.12;}
+    this.dt=Math.max(0.02,Math.min(this.dt,T));
+    this.t1=Math.max(0,Math.min(this.t1,T-this.dt));
+    setSl('m2t1',this.t1,'с',2); setSl('m2dt',this.dt,'с',2);
+    $('m2full').querySelector('small').innerHTML='<var>Δt</var> = <var>T</var> = '+fmt(T,2)+' с';
+  },
+  /* шлях уздовж траєкторії — формула Сімпсона по |v| */
+  path(t1,t2){
+    const m=this.m(),n=400,h=(t2-t1)/n;
+    if(h<=0) return 0;
+    let s=0;
+    for(let i=0;i<=n;i++){
+      const v=m.v(t1+i*h,this.p),sp=Math.hypot(v.x,v.y);
+      s+=sp*(i===0||i===n?1:(i%2?4:2));
+    }
+    return s*h/3;
+  },
+  tick(){this.render();},
+  render(){
+    const m=this.m(),p=this.p,T=this.T();
+    const t1=this.t1,t2=Math.min(T,t1+this.dt),dt=Math.max(1e-6,t2-t1);
+    const k1=kin(m,t1,p),k2=kin(m,t2,p);
+    const dr={x:k2.r.x-k1.r.x,y:k2.r.y-k1.r.y};
+    const dv={x:k2.v.x-k1.v.x,y:k2.v.y-k1.v.y};
+    const avv={x:dr.x/dt,y:dr.y/dt};
+    const ds=this.path(t1,t2);
+    const avs=ds/dt;
+    const ava={x:dv.x/dt,y:dv.y/dt};
+    const avm=Math.hypot(avv.x,avv.y);
+    let ang=0;
+    if(avm>1e-9&&k1.sp>1e-9){
+      const c=(avv.x*k1.v.x+avv.y*k1.v.y)/(avm*k1.sp);
+      ang=Math.acos(Math.max(-1,Math.min(1,c)))/DEG;
+    }
+    this.scene(m,p,T,t1,t2,k1,k2,avv,ds);
+    $('m2avv').textContent=fmt(avv.x,2)+' ; '+fmt(avv.y,2)+' → |⟨v⟩| = '+fmt(avm,2)+' м/с';
+    $('m2avs').textContent=fmt(avs,2)+' м/с';
+    $('m2inst').textContent=fmt(k1.sp,2)+' м/с';
+    $('m2ang').textContent=avm>1e-6?fmt(ang,1)+' °':'— (⟨v⟩ = 0)';
+    $('m2ineq').textContent=fmt(Math.hypot(dr.x,dr.y),2)+' ≤ '+fmt(ds,2)+' м';
+    $('m2ava').textContent=fmt(Math.hypot(ava.x,ava.y),2)+' м/с²';
+    $('m2insta').textContent=fmt(k1.am,2)+' м/с²';
+    $('m2law').innerHTML=m.law;
+    $('m2sub').innerHTML='⟨<i>v</i>⟩ = Δ<i>r</i>/Δ<i>t</i> = ('+fmt(dr.x,2)+'; '+fmt(dr.y,2)+') / '+fmt(dt,2)+
+      ' = <b>'+fmt(avm,2)+' м/с</b>, &nbsp; ⟨<i>v</i>⟩<sub>шлях</sub> = '+fmt(ds,2)+' / '+fmt(dt,2)+
+      ' = <b>'+fmt(avs,2)+' м/с</b>, &nbsp; миттєва <i>v</i>('+fmt(t1,2)+') = <b>'+fmt(k1.sp,2)+' м/с</b>';
+    this.charts(m,p,T,t1,t2,k1,avv,avs,ds);
+  },
+  scene(m,p,T,t1,t2,k1,k2,avv,ds){
+    const b=cvx('m2scene'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    const pts=traj(m,p,300),box=boxOf(pts,0.2),cam=camera(box,w,h,44);
+    sceneGrid(g,cam,box,w,h);
+    polyPath(g,pts,cam,CLR.sec,1.5,[2,3]);
+    // пройдений за Δt шлях — товста дуга; це і є Δs
+    const arc=[]; const n=120;
+    for(let i=0;i<=n;i++) arc.push(m.r(t1+(t2-t1)*i/n,p));
+    polyPath(g,arc,cam,CLR.k3,3.5);
+    const p1={x:cam.SX(k1.r.x),y:cam.SY(k1.r.y)},p2={x:cam.SX(k2.r.x),y:cam.SY(k2.r.y)};
+    // хорда Δr — допоміжна геометрія
+    g.strokeStyle=CLR.k2; g.lineWidth=1.4; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(p1.x,p1.y); g.lineTo(p2.x,p2.y); g.stroke(); g.setLineDash([]);
+    // обидві швидкості — з однієї точки й в одному масштабі, інакше їх не порівняти
+    let vmax=1e-6;
+    for(let i=0;i<=200;i++){const q=m.v(T*i/200,p); vmax=Math.max(vmax,Math.hypot(q.x,q.y));}
+    const kv=62/vmax;
+    arrow(g,p1.x,p1.y,p1.x+avv.x*kv,p1.y-avv.y*kv,CLR.k2,2.4);
+    arrow(g,p1.x,p1.y,p1.x+k1.v.x*kv,p1.y-k1.v.y*kv,CLR.k1,2.4);
+    // підписи короткі: числа вже стоять у панелі порівняння, а стрілки часто майже збігаються
+    pill(g,'⟨v⟩',p1.x+avv.x*kv,p1.y-avv.y*kv-15,{color:CLR.k2,size:11,bold:true});
+    pill(g,'v(t₁)',p1.x+k1.v.x*kv,p1.y-k1.v.y*kv+25,{color:CLR.k1,size:11,bold:true});
+    dot(g,p2.x,p2.y,5,CLR.mut,'#fff');
+    dot(g,p1.x,p1.y,6,CLR.ink,'#fff');
+    // мітки часу відносимо назад/уперед уздовж руху, щоб не лізли під стрілки
+    pill(g,'t₁ = '+fmt(t1,2)+' с',p1.x-k1.tx*22,p1.y+k1.ty*22+5,{color:CLR.ink,size:10.5,bold:true});
+    pill(g,'t₂ = '+fmt(t2,2)+' с',p2.x+k2.tx*22,p2.y-k2.ty*22+5,{color:CLR.mut,size:10.5,bold:true});
+    caption(g,w,m.name,'Δt = '+fmt(t2-t1,2)+' с · Δs = '+fmt(ds,2)+' м',CLR.ink);
+  },
+  charts(m,p,T,t1,t2,k1,avv,avs,ds){
+    // повні криві за весь сценарій — межі осей не залежать від поточного кадру
+    const ts=[],xs=[],ss=[];
+    const n=240; let acc=0,prev=0;
+    for(let i=0;i<=n;i++){
+      const t=T*i/n,r=m.r(t,p),v=m.v(t,p),sp=Math.hypot(v.x,v.y);
+      if(i>0) acc+=(prev+sp)/2*(T/n);
+      prev=sp; ts.push(t); xs.push(r.x); ss.push(acc);
+    }
+    const sAt=tt=>{const f=tt/T*n; const i=Math.max(0,Math.min(n-1,Math.floor(f))); return ss[i]+(ss[i+1]-ss[i])*(f-i);};
+    const bx=cvx('m2cx');
+    if(bx){
+      const s=span(xs,0.15,false);
+      const r=drawChart(bx,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'x, м',hover:this.hx.x,
+        series:[{ts,ys:xs,color:CLR.sec,label:'x'}],
+        after:(g,X,Y)=>{
+          const x1=m.r(t1,p).x,x2=m.r(t2,p).x,vx1=m.v(t1,p).x;
+          // січна через (t₁, t₂) і дотична в t₁ — при Δt → 0 вони зливаються
+          g.strokeStyle=CLR.k2; g.lineWidth=2; g.setLineDash([3,3]);
+          g.beginPath(); g.moveTo(X(t1),Y(x1)); g.lineTo(X(t2),Y(x2)); g.stroke(); g.setLineDash([]);
+          const L=Math.max(T*0.16,(t2-t1)*0.7);
+          g.strokeStyle=CLR.k1; g.lineWidth=2; g.beginPath();
+          g.moveTo(X(Math.max(0,t1-L)),Y(x1-vx1*Math.min(L,t1)));
+          g.lineTo(X(Math.min(T,t1+L)),Y(x1+vx1*Math.min(L,T-t1)));
+          g.stroke();
+          dot(g,X(t1),Y(x1),4,'#fff',CLR.ink);
+          dot(g,X(t2),Y(x2),3.5,'#fff',CLR.k2);
+        }});
+      showTip(this.tipx,r,[['x',CLR.sec]],'м',this.hx,2);
+    }
+    const bs=cvx('m2cs');
+    if(bs){
+      const s=span(ss,0.15,true);
+      const r=drawChart(bs,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'s, м',hover:this.hs.x,
+        series:[{ts,ys:ss,color:CLR.sec,label:'s'}],
+        after:(g,X,Y)=>{
+          const s1=sAt(t1),s2=sAt(t2),sp1=k1.sp;
+          g.strokeStyle=CLR.k3; g.lineWidth=2; g.setLineDash([3,3]);
+          g.beginPath(); g.moveTo(X(t1),Y(s1)); g.lineTo(X(t2),Y(s2)); g.stroke(); g.setLineDash([]);
+          const L=Math.max(T*0.16,(t2-t1)*0.7);
+          g.strokeStyle=CLR.k1; g.lineWidth=2; g.beginPath();
+          g.moveTo(X(Math.max(0,t1-L)),Y(s1-sp1*Math.min(L,t1)));
+          g.lineTo(X(Math.min(T,t1+L)),Y(s1+sp1*Math.min(L,T-t1)));
+          g.stroke();
+          dot(g,X(t1),Y(s1),4,'#fff',CLR.ink);
+          dot(g,X(t2),Y(s2),3.5,'#fff',CLR.k3);
+        }});
+      showTip(this.tips,r,[['s',CLR.sec]],'м',this.hs,2);
+    }
+  }
+};
+
+/* ===================== траси ===================== */
+/* складена траса (вид згори): пряма → різкий поворот → пряма → різкий поворот →
+   пряма → S-вигин → пряма → дуже різкий поворот → пряма */
+function buildKart(){
+  const b=builder(0,0,0);
+  b.line(9).turn(1.8,100).line(7).turn(2.2,-150).line(5)
+   .turn(4.5,80).turn(4.5,-80).line(6).turn(1.5,-120).line(8);
+  const tr=b.build(),c=tr.cum;
+  tr.prof=[[0,3],[c[1]-3,7],[c[1],4],[c[2],4],[c[2]+4,7],[c[3],4.5],[c[4],4.5],
+    [c[4]+2.5,6.5],[c[5],5],[c[7],5],[c[7]+3,7],[c[8],3.5],[c[9],3.5],[c[9]+5,6],[tr.len,4]];
+  return tr;
+}
+/* американські гірки (вид збоку). Спуск будується так, щоб найнижча точка траси завжди
+   лежала на y = 1,5 м, а перепад від старту до неї дорівнював рівно h₀ */
+const RLOOP=4, VSTART=2;
+function buildCoaster(h0){
+  const c75=Math.cos(75*DEG), s75=Math.sin(75*DEG);
+  const D=(h0-9*(1-c75))/s75;               // довжина прямого спуску з умови перепаду h₀
+  const b=builder(0,h0+1.5,0);
+  b.line(4).turn(5,-75).line(Math.max(0.2,D)).turn(4,75);   // спуск, низ на y = 1,5
+  b.line(2.5).turn(RLOOP,360).line(4);                      // вертикальна петля
+  b.turn(7,40).line(1.2).turn(7,-80).line(1.2).turn(7,40);  // «верблюжий горб»
+  b.line(3).turn(6,50);
+  b.line(Math.max(0.5,(h0+0.5-b.y)/Math.sin(50*DEG)));      // викат на 1 м нижче старту
+  const tr=b.build();
+  tr.h0=h0; tr.y0=h0+1.5; tr.yBot=1.5;
+  tr.vAt=y=>Math.sqrt(Math.max(0.04,VSTART*VSTART+2*G*(tr.y0-y)));
+  return tr;
+}
+/* час повного проходу траси: інтегруємо ds/dt = v(s) фіксованим підкроком */
+function runTime(vOf,L){
+  let s=0,t=0; const h=0.002;
+  while(s<L&&t<600){const v1=vOf(s); s+=vOf(Math.min(L,s+v1*h/2))*h; t+=h;}
+  return t;
+}
+/* просування вздовж траси за час dt (метод середньої точки, підкрок 0,002 с) */
+function advance(s,dt,vOf,L){
+  let rem=dt; const h=0.002;
+  while(rem>1e-9&&s<L){
+    const st=Math.min(h,rem);
+    const v1=vOf(s);
+    s+=vOf(Math.min(L,s+v1*st/2))*st;
+    rem-=st;
+  }
+  return Math.min(s,L);
+}
+
+/* ===================== МОДУЛЬ 3а · складена траєкторія ===================== */
+const M3A={
+  tr:null, s:0, t:0, tEnd:0, playing:true, phase:'run', waitT:0,
+  hist:{ts:[],sp:[],at:[],an:[]}, hodo:[],
+  hv:{x:null},ha:{x:null},tipv:null,tipa:null,
+  init(){
+    this.tr=buildKart();
+    this.vOf=s=>profAt(this.tr.prof,s).v;
+    this.tEnd=runTime(this.vOf,this.tr.len);
+    $('m3aPlay').onclick=()=>{this.playing=!this.playing; this.updBtn();};
+    $('m3aRe').onclick=()=>this.reset();
+    this.tipv=makeTip('m3acvw'); this.tipa=makeTip('m3acaw');
+    hover('m3acv',this.hv); hover('m3aca',this.ha);
+    this.reset();
+  },
+  updBtn(){$('m3aPlay').textContent=this.playing?'⏸':'▶';},
+  reset(){this.s=0; this.t=0; this.phase='run'; this.waitT=0;
+    this.hist={ts:[],sp:[],at:[],an:[]}; this.hodo=[]; this.playing=true; this.updBtn();},
+  state(){
+    const a=this.tr.at(this.s), pr=profAt(this.tr.prof,this.s);
+    const an=pr.v*pr.v*a.k;
+    return {p:a.p,t:a.t,k:a.k,kind:a.kind,v:pr.v,at:pr.at,an,
+      am:Math.hypot(pr.at,an), Rc:Math.abs(a.k)>1e-9?1/Math.abs(a.k):Infinity};
+  },
+  tick(dt){
+    if(this.playing){
+      if(this.phase==='run'){
+        this.s=advance(this.s,dt,this.vOf,this.tr.len); this.t+=dt;
+        const q=this.state(),h=this.hist;
+        h.ts.push(this.t); h.sp.push(q.v); h.at.push(q.at); h.an.push(Math.abs(q.an));
+        this.hodo.push({x:q.v*q.t.x,y:q.v*q.t.y});
+        if(this.s>=this.tr.len) this.phase='wait';
+      } else {this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+    }
+    this.render();
+  },
+  render(){
+    const q=this.state();
+    this.scene(q); this.hodograph(q); this.readout(q); this.charts();
+  },
+  scene(q){
+    const b=cvx('m3aS'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    const bx=this.tr.box;
+    const box={xmin:bx.xmin-3,xmax:bx.xmax+3,ymin:bx.ymin-3,ymax:bx.ymax+3};
+    const cam=camera(box,w,h,26);
+    sceneGrid(g,cam,box,w,h);
+    polyPath(g,this.tr.poly,cam,CLR.axis,4.5);          // полотно траси
+    polyPath(g,this.tr.poly,cam,CLR.paper,2.2);
+    // пройдена частина — траєкторія тіла
+    const n=Math.max(1,Math.round(this.s/this.tr.len*1400));
+    polyPath(g,this.tr.poly.slice(0,n+1),cam,CLR.sec,2,[2,3]);
+    const px=cam.SX(q.p.x),py=cam.SY(q.p.y);
+    // стичне коло: наочно показує, наскільки крута ця ділянка
+    if(isFinite(q.Rc)&&q.Rc*cam.sc<2200){
+      // центр кривини лежить на нормалі: r + (1/κ)·n
+      const nx=-q.t.y,ny=q.t.x,sg=Math.sign(q.k)||1;
+      const cx=cam.SX(q.p.x+sg*q.Rc*nx),cy=cam.SY(q.p.y+sg*q.Rc*ny);
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.arc(cx,cy,q.Rc*cam.sc,0,7); g.stroke(); g.setLineDash([]);
+      dot(g,cx,cy,2.5,CLR.axis);
+    }
+    const kv=52/8, ka=52/9;
+    const nx=-q.t.y,ny=q.t.x;
+    const atx=q.at*q.t.x*ka, aty=-q.at*q.t.y*ka;
+    const anx=q.an*nx*ka, any=-q.an*ny*ka;
+    if(q.am>1e-6){
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath();
+      g.moveTo(px+atx,py+aty); g.lineTo(px+atx+anx,py+aty+any);
+      g.moveTo(px+anx,py+any); g.lineTo(px+atx+anx,py+aty+any);
+      g.stroke(); g.setLineDash([]);
+      arrow(g,px,py,px+atx+anx,py+aty+any,CLR.ink,2.4);
+      arrow(g,px,py,px+atx,py+aty,CLR.k2,2);
+      arrow(g,px,py,px+anx,py+any,CLR.k3,2);
+    }
+    arrow(g,px,py,px+q.v*q.t.x*kv,py-q.v*q.t.y*kv,CLR.k1,2.4);
+    dot(g,px,py,6,CLR.ink,'#fff');
+    pill(g,'v = '+fmt(q.v,1)+' м/с · aₙ = '+fmt(Math.abs(q.an),1)+' м/с²',px,py-24,{color:CLR.ink,size:11,bold:true});
+    caption(g,w,'Складена траєкторія',
+      'на стику ділянок кривина стрибає — разом із нею стрибає й aₙ = v²/R',CLR.ink);
+    $('m3aT').textContent='t = '+fmt(this.t,2)+' с  ·  s = '+fmt(this.s,1)+' / '+fmt(this.tr.len,1)+' м';
+  },
+  hodograph(q){
+    const b=cvx('m3aH'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    const sc=Math.min(w,h)/2/8.5, cx=w/2, cy=h/2;
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    for(let r=2;r<=8;r+=2){g.beginPath(); g.arc(cx,cy,r*sc,0,7); g.stroke();}
+    g.strokeStyle=CLR.axis;
+    g.beginPath(); g.moveTo(8,cy+.5); g.lineTo(w-8,cy+.5); g.moveTo(cx+.5,6); g.lineTo(cx+.5,h-6); g.stroke();
+    txt(g,'vₓ',w-10,cy-5,{color:CLR.mut,size:9.5,align:'right'});
+    txt(g,'v_y',cx+5,12,{color:CLR.mut,size:9.5});
+    txt(g,'коло 8 м/с',10,h-8,{color:CLR.mut,size:9.5});
+    if(this.hodo.length>1){
+      g.strokeStyle=CLR.sec; g.lineWidth=1.6; g.lineJoin='round'; g.beginPath();
+      for(let i=0;i<this.hodo.length;i++){
+        const X=cx+this.hodo[i].x*sc, Y=cy-this.hodo[i].y*sc;
+        i?g.lineTo(X,Y):g.moveTo(X,Y);
+      }
+      g.stroke();
+    }
+    arrow(g,cx,cy,cx+q.v*q.t.x*sc,cy-q.v*q.t.y*sc,CLR.k1,2.2);
+  },
+  readout(q){
+    $('m3aV').textContent=fmt(q.v,2)+' м/с';
+    $('m3aAt').textContent=fmt(q.at,2)+' м/с²';
+    $('m3aAn').textContent=fmt(Math.abs(q.an),2)+' м/с²';
+    $('m3aAm').textContent=fmt(q.am,2)+' м/с²';
+    $('m3aRc').textContent=isFinite(q.Rc)?fmt(q.Rc,2)+' м':'∞ (пряма)';
+    $('m3aSeg').textContent=q.kind;
+  },
+  charts(){
+    const T=this.tEnd;
+    const bv=cvx('m3acv');
+    if(bv){
+      const r=drawChart(bv,{tMax:T,yMin:0,yMax:8.5,yLab:'м/с',hover:this.hv.x,
+        series:[{ts:this.hist.ts,ys:this.hist.sp,color:CLR.k1,label:'|v|'}]});
+      showTip(this.tipv,r,[['|v|',CLR.k1]],'м/с',this.hv,2);
+    }
+    const ba=cvx('m3aca');
+    if(ba){
+      const r=drawChart(ba,{tMax:T,yMin:-7,yMax:11,yLab:'м/с²',hover:this.ha.x,
+        series:[{ts:this.hist.ts,ys:this.hist.at,color:CLR.k2,label:'aτ'},
+                {ts:this.hist.ts,ys:this.hist.an,color:CLR.k3,label:'an'}]});
+      showTip(this.tipa,r,[['aτ',CLR.k2],['an',CLR.k3]],'м/с²',this.ha,2);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 3б · американські гірки ===================== */
+const M3B={
+  h0:12.5, tr:null, s:0, t:0, tEnd:0, playing:true, phase:'run', waitT:0,
+  hist:{ts:[],E:[],T:[],U:[],n:[]},
+  he:{x:null},hn:{x:null},tipe:null,tipn:null,
+  init(){
+    slider('m3bh','м',1,v=>{this.h0=v; this.build(); this.reset();});
+    $('m3bPlay').onclick=()=>{this.playing=!this.playing; this.updBtn();};
+    $('m3bRe').onclick=()=>this.reset();
+    this.tipe=makeTip('m3bcew'); this.tipn=makeTip('m3bcnw');
+    hover('m3bce',this.he); hover('m3bcn',this.hn);
+    this.build(); this.reset();
+  },
+  build(){
+    this.tr=buildCoaster(this.h0);
+    this.vOf=s=>this.tr.vAt(this.tr.at(s).p.y);
+    this.tEnd=runTime(this.vOf,this.tr.len);
+  },
+  updBtn(){$('m3bPlay').textContent=this.playing?'⏸':'▶';},
+  reset(){this.s=0; this.t=0; this.phase='run'; this.waitT=0;
+    this.hist={ts:[],E:[],T:[],U:[],n:[]}; this.playing=true; this.updBtn();},
+  state(){
+    const a=this.tr.at(this.s), v=this.tr.vAt(a.p.y);
+    const at=-G*a.t.y;                       // проєкція g на дотичну — точна, без диференціювання
+    const an=v*v*a.k;
+    return {p:a.p,t:a.t,k:a.k,v,at,an,am:Math.hypot(at,an),
+      Rc:Math.abs(a.k)>1e-9?1/Math.abs(a.k):Infinity,
+      n:an/G+a.t.x, Ek:v*v/2, U:G*a.p.y};
+  },
+  tick(dt){
+    if(this.playing){
+      if(this.phase==='run'){
+        this.s=advance(this.s,dt,this.vOf,this.tr.len); this.t+=dt;
+        const q=this.state(),h=this.hist;
+        h.ts.push(this.t); h.E.push(q.Ek+q.U); h.T.push(q.Ek); h.U.push(q.U); h.n.push(q.n);
+        if(this.s>=this.tr.len) this.phase='wait';
+      } else {this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+    }
+    this.render();
+  },
+  render(){
+    const q=this.state();
+    this.scene(q); this.readout(q); this.charts();
+  },
+  scene(q){
+    const b=cvx('m3bS'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    const bx=this.tr.box;
+    const box={xmin:bx.xmin-3,xmax:bx.xmax+3,ymin:-1,ymax:bx.ymax+2.5};
+    const cam=camera(box,w,h,24);
+    sceneGrid(g,cam,box,w,h);
+    // ґрунт малюється через SY, а не «до краю полотна» — інакше він поїде при зміні масштабу
+    g.fillStyle=CLR.ground; g.fillRect(0,cam.SY(0),w,Math.max(0,h-cam.SY(0)));
+    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(0,cam.SY(0)+.5); g.lineTo(w,cam.SY(0)+.5); g.stroke();
+    // рівень повної енергії: вище вагонетка піднятись не може
+    const yE=this.tr.y0+VSTART*VSTART/(2*G);
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(0,cam.SY(yE)+.5); g.lineTo(w,cam.SY(yE)+.5); g.stroke(); g.setLineDash([]);
+    txt(g,'рівень E/mg = '+fmt(yE,2)+' м — вище не підніметься',w-10,cam.SY(yE)-6,{color:CLR.mut,size:10,align:'right'});
+    polyPath(g,this.tr.poly,cam,CLR.axis,4.5);
+    polyPath(g,this.tr.poly,cam,CLR.paper,2.2);
+    const n=Math.max(1,Math.round(this.s/this.tr.len*1400));
+    polyPath(g,this.tr.poly.slice(0,n+1),cam,CLR.sec,2,[2,3]);
+    const px=cam.SX(q.p.x),py=cam.SY(q.p.y);
+    const kv=52/22, ka=52/60;
+    const nx=-q.t.y,ny=q.t.x;
+    arrow(g,px,py,px+q.at*q.t.x*ka,py-q.at*q.t.y*ka,CLR.k2,2);
+    arrow(g,px,py,px+q.an*nx*ka,py-q.an*ny*ka,CLR.k3,2);
+    arrow(g,px,py,px+q.v*q.t.x*kv,py-q.v*q.t.y*kv,CLR.k1,2.4);
+    dot(g,px,py,6,CLR.ink,'#fff');
+    pill(g,'v = '+fmt(q.v,1)+' м/с · n = '+fmt(q.n,2),px,py-24,{color:CLR.ink,size:11,bold:true});
+    caption(g,w,'Американські гірки · h₀ = '+fmt(this.h0,1)+' м',
+      'реакція рейок ⊥ v ⇒ роботи не виконує ⇒ E = T + U стала',CLR.ink);
+    $('m3bT').textContent='t = '+fmt(this.t,2)+' с  ·  s = '+fmt(this.s,1)+' / '+fmt(this.tr.len,1)+' м';
+  },
+  readout(q){
+    $('m3bY').textContent=fmt(q.p.y,2)+' м';
+    $('m3bV').textContent=fmt(q.v,2)+' м/с';
+    $('m3bAt').textContent=fmt(q.at,2)+' м/с²';
+    $('m3bAn').textContent=fmt(Math.abs(q.an),2)+' м/с²';
+    $('m3bN').textContent=fmt(q.n,2);
+    $('m3bE').textContent=fmt(q.Ek+q.U,2)+' Дж';
+    // умова петлі рахується з точних формул, а не з поточного кадру
+    const vt2=VSTART*VSTART+2*G*(this.h0-2*RLOOP);
+    const vb2=VSTART*VSTART+2*G*this.h0;
+    const nt=vt2/(G*RLOOP)-1, nb=vb2/(G*RLOOP)+1;
+    $('m3bLoop').textContent=fmt(vt2,1)+' ≥ '+fmt(G*RLOOP,1)+'  '+(vt2>=G*RLOOP?'✓':'✗');
+    $('m3bNt').textContent=fmt(nt,2);
+    $('m3bNb').textContent=fmt(nb,2);
+  },
+  charts(){
+    const T=this.tEnd, Etot=VSTART*VSTART/2+G*this.tr.y0;
+    const be=cvx('m3bce');
+    if(be){
+      const r=drawChart(be,{tMax:T,yMin:-Etot*0.08,yMax:Etot*1.12,yLab:'Дж',hover:this.he.x,
+        series:[{ts:this.hist.ts,ys:this.hist.E,color:CLR.ink,label:'E'},
+                {ts:this.hist.ts,ys:this.hist.T,color:CLR.k1,label:'T'},
+                {ts:this.hist.ts,ys:this.hist.U,color:CLR.k2,label:'U'}]});
+      showTip(this.tipe,r,[['E',CLR.ink],['T',CLR.k1],['U',CLR.k2]],'Дж',this.he,2);
+    }
+    const bn=cvx('m3bcn');
+    if(bn){
+      const r=drawChart(bn,{tMax:T,yMin:-4,yMax:Math.max(9,this.h0/2+2.5),yLab:'n',hover:this.hn.x,
+        series:[{ts:this.hist.ts,ys:this.hist.n,color:CLR.k3,label:'n'}]});
+      showTip(this.tipn,r,[['n',CLR.k3]],'',this.hn,2);
+    }
+  }
+};
+
+const M3={
+  pane:'a', sub:{a:M3A,b:M3B},
+  init(){
+    $('m3nav').addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(b) this.show(b.dataset.p);
+    });
+    for(const s of Object.values(this.sub)) s.init();
+  },
+  show(p){
+    if(!this.sub[p]) return;
+    this.pane=p;
+    document.querySelectorAll('#m3nav button').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+    document.querySelectorAll('.m3pane').forEach(el=>el.classList.toggle('active',el.id==='m3'+p));
+  },
+  tick(dt){this.sub[this.pane].tick(dt);}
+};
+
+/* ===================== МОДУЛЬ 4 · симетрії і збереження ===================== */
+const MU=45;                                  // μ = GM для центрального поля, м³/с²
+const M4SC={
+  free:{name:'вільний рух', T:8,
+    note:'сил немає: простір однорідний і ізотропний, час однорідний — зберігається все',
+    why:'Жодна точка й жоден напрям простору не виділені, час теж однорідний. Тому сталі всі чотири величини: <i>p</i><sub>x</sub>, <i>p</i><sub>y</sub>, <i>L</i><sub>z</sub>, <i>E</i>.',
+    start:()=>({r:{x:-11,y:-5},v:{x:3,y:0.8}}),
+    step:(st,dt)=>{st.r.x+=st.v.x*dt; st.r.y+=st.v.y*dt;},
+    U:()=>0},
+  unif:{name:'однорідне поле g', T:2*12/G,
+    note:'поле однакове в усіх точках, але виділяє напрям — уздовж x симетрія є, уздовж y немає',
+    why:'Зсув уздовж <i>x</i> нічого не змінює ⇒ <i>p</i><sub>x</sub> = const. Зсув уздовж <i>y</i> змінює потенціальну енергію ⇒ <i>p</i><sub>y</sub> ≠ const. Виділений напрям <i>g</i> ламає ізотропність ⇒ <i>L</i><sub>z</sub> ≠ const. Поле не залежить від часу ⇒ <i>E</i> = const.',
+    start:()=>({r:{x:-7,y:0},v:{x:6,y:12}}),
+    step:(st,dt)=>{st.r.x+=st.v.x*dt; st.r.y+=st.v.y*dt-0.5*G*dt*dt; st.v.y-=G*dt;},
+    U:r=>G*r.y},
+  centr:{name:'центральне поле', T:13.93,
+    note:'поле залежить лише від відстані до центра — є ізотропність, немає однорідності',
+    why:'Силовий центр виділяє точку ⇒ <i>p</i> ≠ const. Але жоден <b>напрям</b> не виділений: поворот навколо центра нічого не змінює ⇒ <i>L</i><sub>z</sub> = const. Поле не залежить від часу ⇒ <i>E</i> = const. Якщо зсунути початок координат із силового центра, поворотна симетрія навколо нового <i>O</i> зникає — і <i>L</i><sub>z</sub> перестає зберігатись.',
+    start:()=>({r:{x:9,y:0},v:{x:0,y:1.6}}),
+    step:(st,dt)=>{                            // симплектичний Verlet: E не дрейфує, L_z точний
+      const A=r=>{const r2=r.x*r.x+r.y*r.y,rr=Math.sqrt(r2),f=-MU/(r2*rr); return {x:f*r.x,y:f*r.y};};
+      const a1=A(st.r);
+      st.r.x+=st.v.x*dt+0.5*a1.x*dt*dt; st.r.y+=st.v.y*dt+0.5*a1.y*dt*dt;
+      const a2=A(st.r);
+      st.v.x+=0.5*(a1.x+a2.x)*dt; st.v.y+=0.5*(a1.y+a2.y)*dt;
+    },
+    U:r=>-MU/Math.max(0.2,Math.hypot(r.x,r.y))},
+  track:{name:'гірки (в\'язь)', T:0,
+    note:'рейки виділяють і точки, і напрями — лишається тільки однорідність часу',
+    why:'В\'язь (рейки) прив\'язана до конкретних точок простору ⇒ ані зсув, ані поворот не є симетрією: <i>p</i> ≠ const, <i>L</i><sub>z</sub> ≠ const. Але форма рейок не змінюється з часом, а реакція ⊥ <i>v</i> ⇒ <i>E</i> = const.',
+    start:()=>null, step:null, U:r=>G*r.y}
+};
+const M4={
+  sc:'free', t:0, shift:false, rot:false, tsh:false,
+  st:null, s:0, tr:null, phase:'run', waitT:0,
+  hist:{ts:[],px:[],py:[],L:[],E:[],T:[],U:[]}, trail:[], cons:null, pref:1,
+  hp:{x:null},hl:{x:null},he:{x:null},tipp:null,tipl:null,tipe:null,
+  init(){
+    this.tr=buildCoaster(12.5);
+    this.vOf=s=>this.tr.vAt(this.tr.at(s).p.y);
+    M4SC.track.T=runTime(this.vOf,this.tr.len);
+    seg('m4sc',v=>{this.sc=v; this.reset();});
+    $('m4Re').onclick=()=>this.reset();
+    // перемикання перетворення змінює значення — щоб не змішувати два прогони, починаємо заново
+    $('m4bShift').onclick=()=>{this.shift=!this.shift; this.sync(); this.reset();};
+    $('m4bRot').onclick=()=>{this.rot=!this.rot; this.sync(); this.reset();};
+    $('m4bTime').onclick=()=>{this.tsh=!this.tsh; this.sync(); this.reset();};
+    this.tipp=makeTip('m4cpw'); this.tipl=makeTip('m4clw'); this.tipe=makeTip('m4cew');
+    hover('m4cp',this.hp); hover('m4cl',this.hl); hover('m4ce',this.he);
+    this.sync(); this.reset();
+  },
+  sync(){
+    $('m4bShift').classList.toggle('on',this.shift);
+    $('m4bRot').classList.toggle('on',this.rot);
+    $('m4bTime').classList.toggle('on',this.tsh);
+    const n=[];
+    if(this.shift) n.push('<b>зсув O</b>: <i>p</i> та <i>E</i> не змінились; <i>L</i><sub>z</sub> змінилась на −(<i>a</i> × <i>p</i>)<sub>z</sub>.');
+    if(this.rot) n.push('<b>поворот осей</b>: <i>p</i><sub>x</sub> і <i>p</i><sub>y</sub> змінились, а |<i>p</i>|, <i>L</i><sub>z</sub> та <i>E</i> — ні.');
+    if(this.tsh) n.push('<b>зсув t</b><sub>0</sub>: не змінилось нічого, крім показника годинника.');
+    $('m4note').innerHTML=n.length?n.join(' '):'осі у вихідному положенні — натисніть кнопку, щоб перевірити інваріантність';
+  },
+  reset(){
+    this.t=0; this.phase='run'; this.waitT=0; this.trail=[];
+    this.hist={ts:[],px:[],py:[],L:[],E:[],T:[],U:[]};
+    if(this.sc==='track'){this.s=0; this.st=null;}
+    else{const s=M4SC[this.sc].start(); this.st={r:{x:s.r.x,y:s.r.y},v:{x:s.v.x,y:s.v.y}};}
+    this.pref=this.computePref();
+    this.cons=this.scanConserved();
+    $('m4why').innerHTML=M4SC[this.sc].why;
+  },
+  phys(){
+    if(this.sc==='track'){
+      const a=this.tr.at(this.s), v=this.tr.vAt(a.p.y);
+      return {r:a.p, v:{x:v*a.t.x,y:v*a.t.y}};
+    }
+    return this.st;
+  },
+  /* поточні координати спостерігача: спершу новий початок, потім поворот осей */
+  disp(r,v){
+    let x=r.x,y=r.y,vx=v.x,vy=v.y;
+    if(this.shift){x-=6; y-=3;}
+    if(this.rot){
+      const c=Math.cos(-30*DEG),s=Math.sin(-30*DEG);
+      const X=x*c-y*s, Y=x*s+y*c, VX=vx*c-vy*s, VY=vx*s+vy*c;
+      x=X; y=Y; vx=VX; vy=VY;
+    }
+    return {x,y,vx,vy};
+  },
+  quant(){
+    const ph=this.phys(), d=this.disp(ph.r,ph.v);
+    const Ek=(d.vx*d.vx+d.vy*d.vy)/2;          // m = 1 кг
+    const U=M4SC[this.sc].U(ph.r);             // U — фізичний скаляр, від вибору осей не залежить
+    return {d, px:d.vx, py:d.vy, L:d.x*d.vy-d.y*d.vx, T:Ek, U, E:Ek+U, r:ph.r, v:ph.v};
+  },
+  tick(dt){
+    const S=M4SC[this.sc];
+    if(this.phase==='run'){
+      const h=0.002; let rem=dt;
+      if(this.sc==='track') this.s=advance(this.s,dt,this.vOf,this.tr.len);
+      else while(rem>1e-9){const st=Math.min(h,rem); S.step(this.st,st); rem-=st;}
+      this.t+=dt;
+      const q=this.quant(),hh=this.hist;
+      hh.ts.push(this.t); hh.px.push(q.px); hh.py.push(q.py); hh.L.push(q.L);
+      hh.E.push(q.E); hh.T.push(q.T); hh.U.push(q.U);
+      this.trail.push({x:q.d.x,y:q.d.y});
+      const done=this.sc==='track'?this.s>=this.tr.len:this.t>=S.T;
+      if(done) this.phase='wait';
+    } else {this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+    this.render();
+  },
+  /* Сталість вимірюється, а не декларується — і саме за ВЕСЬ сценарій, а не за той час,
+     що вже минув: інакше на початку прогону величина, яка ще не встигла змінитись,
+     помилково позначалась би як збережна. */
+  scanConserved(){
+    const ex={};
+    const add=q=>{
+      for(const k of ['px','py','L','E']){
+        if(!ex[k]) ex[k]={lo:q[k],hi:q[k],ref:Math.abs(q[k])};
+        else{
+          ex[k].lo=Math.min(ex[k].lo,q[k]); ex[k].hi=Math.max(ex[k].hi,q[k]);
+          ex[k].ref=Math.max(ex[k].ref,Math.abs(q[k]));
+        }
+      }
+    };
+    const Q=(r,v)=>{
+      const d=this.disp(r,v);
+      return {px:d.vx,py:d.vy,L:d.x*d.vy-d.y*d.vx,
+        E:(d.vx*d.vx+d.vy*d.vy)/2+M4SC[this.sc].U(r)};
+    };
+    if(this.sc==='track'){
+      for(let i=0;i<=900;i++){
+        const a=this.tr.at(this.tr.len*i/900), v=this.tr.vAt(a.p.y);
+        add(Q(a.p,{x:v*a.t.x,y:v*a.t.y}));
+      }
+    } else {
+      const S=M4SC[this.sc],s=S.start();
+      const st={r:{x:s.r.x,y:s.r.y},v:{x:s.v.x,y:s.v.y}};
+      const n=8000,h=S.T/n;
+      for(let i=0;i<=n;i++){add(Q(st.r,st.v)); S.step(st,h);}
+    }
+    const out={};
+    for(const k of ['px','py','L','E'])
+      out[k]=(ex[k].hi-ex[k].lo)<=2e-3*Math.max(ex[k].ref,1e-6);
+    return out;
+  },
+  isConst(k){return this.cons?this.cons[k]:true;},
+  render(){
+    const q=this.quant();
+    this.scene(q); this.readout(q); this.charts();
+  },
+  scene(q){
+    const b=cvx('m4S'); if(!b) return;
+    const {g,w,h}=b;
+    g.clearRect(0,0,w,h); g.fillStyle=CLR.paper; g.fillRect(0,0,w,h);
+    // кадр рахується з усієї траєкторії сценарію в поточних осях — щоб нічого не зникало
+    const ref=this.refPts();
+    const box=boxOf(ref,0.16);
+    const cam=camera(box,w,h,30);
+    sceneGrid(g,cam,box,w,h);
+    if(this.sc==='track'){
+      const tp=this.tr.poly.map(p=>{const d=this.disp(p,{x:0,y:0}); return {x:d.x,y:d.y};});
+      polyPath(g,tp,cam,CLR.axis,3.5);
+      polyPath(g,tp,cam,CLR.paper,1.6);
+    }
+    if(this.sc==='centr'){
+      const c=this.disp({x:0,y:0},{x:0,y:0});
+      dot(g,cam.SX(c.x),cam.SY(c.y),7,CLR.mut,'#fff');
+      // ліворуч: центр збігається з початком вихідних осей, а ті йдуть праворуч
+      txt(g,'силовий центр',cam.SX(c.x)-14,cam.SY(c.y)+4,{color:CLR.mut,size:10.5,align:'right'});
+    }
+    // вихідні осі — привид (у поточному зображенні), осі спостерігача — суцільні
+    const moved=this.shift||this.rot;
+    if(moved){
+      const oOld=this.disp({x:0,y:0},{x:0,y:0});
+      this.axes(g,cam,{x:oOld.x,y:oOld.y},this.rot?-30:0,CLR.axis,1.5,[3,3],'');
+    }
+    this.axes(g,cam,{x:0,y:0},0,CLR.ink,moved?3:2,null,moved?'′':'');
+    if(this.trail.length>1) polyPath(g,this.trail,cam,CLR.sec,2,[2,3]);
+    const px=cam.SX(q.d.x),py=cam.SY(q.d.y);
+    const pm=Math.hypot(q.px,q.py);
+    const kv=56/this.pref;
+    arrow(g,px,py,px+q.px*kv,py-q.py*kv,CLR.k1,2.4);
+    pill(g,'p = '+fmt(pm,2)+' кг·м/с',px+q.px*kv,py-q.py*kv-14,{color:CLR.k1,size:11,bold:true});
+    dot(g,px,py,6,CLR.ink,'#fff');
+    caption(g,w,M4SC[this.sc].name,M4SC[this.sc].note,CLR.ink);
+    $('m4T').textContent='t = '+fmt(this.t+(this.tsh?2:0),2)+' с'+(this.tsh?'  (зсув t₀ = +2 с)':'');
+  },
+  /* осі будуються у фізичних координатах і йдуть через SX/SY — інакше кут на екрані
+     не дорівнював би куту повороту осей */
+  axes(g,cam,o,thDeg,color,wd,dash,pr){
+    const Lw=54/cam.sc, th=thDeg*DEG;
+    const ox=cam.SX(o.x), oy=cam.SY(o.y);
+    const xt={x:o.x+Lw*Math.cos(th), y:o.y+Lw*Math.sin(th)};
+    const yt={x:o.x-Lw*Math.sin(th), y:o.y+Lw*Math.cos(th)};
+    g.setLineDash(dash||[]);
+    arrow(g,ox,oy,cam.SX(xt.x),cam.SY(xt.y),color,wd);
+    arrow(g,ox,oy,cam.SX(yt.x),cam.SY(yt.y),color,wd);
+    g.setLineDash([]);
+    txt(g,'x'+pr,cam.SX(xt.x)+5,cam.SY(xt.y)+12,{color,size:11,bold:true});
+    txt(g,'y'+pr,cam.SX(yt.x)+6,cam.SY(yt.y)-5,{color,size:11,bold:true});
+    txt(g,'O'+pr,ox-13,oy+14,{color,size:11,bold:true});
+  },
+  refPts(){
+    // опорні точки кадру: траєкторія сценарію + початок координат
+    const out=[{x:0,y:0}];
+    if(this.sc==='track'){
+      for(let i=0;i<this.tr.poly.length;i+=20){
+        const d=this.disp(this.tr.poly[i],{x:0,y:0}); out.push({x:d.x,y:d.y});
+      }
+    } else {
+      const S=M4SC[this.sc], s=S.start();
+      const st={r:{x:s.r.x,y:s.r.y},v:{x:s.v.x,y:s.v.y}};
+      const n=260,h=S.T/n;
+      for(let i=0;i<=n;i++){
+        const d=this.disp(st.r,st.v); out.push({x:d.x,y:d.y});
+        for(let j=0;j<8;j++) S.step(st,h/8);
+      }
+    }
+    if(this.shift||this.rot){const d=this.disp({x:0,y:0},{x:0,y:0}); out.push({x:d.x,y:d.y});}
+    return out;
+  },
+  /* масштаб стрілки імпульсу береться з усього прогону, а не з поточного кадру */
+  computePref(){
+    if(this.sc==='track'){
+      let m=1e-3;
+      for(let i=0;i<this.tr.poly.length;i+=10) m=Math.max(m,this.tr.vAt(this.tr.poly[i].y));
+      return m;
+    }
+    const S=M4SC[this.sc],s=S.start();
+    const st={r:{x:s.r.x,y:s.r.y},v:{x:s.v.x,y:s.v.y}};
+    const n=2000,h=S.T/n; let m=1e-3;
+    for(let i=0;i<=n;i++){m=Math.max(m,Math.hypot(st.v.x,st.v.y)); S.step(st,h);}
+    return m;
+  },
+  readout(q){
+    $('m4r').textContent=fmt(q.d.x,2)+' ; '+fmt(q.d.y,2)+' м';
+    $('m4p').textContent=fmt(q.px,2)+' ; '+fmt(q.py,2)+' кг·м/с';
+    $('m4pm').textContent=fmt(Math.hypot(q.px,q.py),2)+' кг·м/с';
+    $('m4L').textContent=fmt(q.L,2)+' кг·м²/с';
+    $('m4Ek').textContent=fmt(q.T,2)+' Дж';
+    $('m4U').textContent=fmt(q.U,2)+' Дж';
+    $('m4E').textContent=fmt(q.E,2)+' Дж';
+    const rows=[['px','m4spx','m4stpx'],['py','m4spy','m4stpy'],['L','m4sL','m4stL'],['E','m4sE','m4stE']];
+    for(const [k,vid,sid] of rows){
+      $(vid).textContent=fmt(q[k],2);
+      const ok=this.isConst(k), c=$(sid);
+      c.textContent=ok?'✓':'✗';
+      c.style.color=ok?CLR.ink:CLR.mut;
+      c.title=ok?'зберігається':'не зберігається';
+    }
+  },
+  charts(){
+    const T=M4SC[this.sc].T,h=this.hist;
+    const bp=cvx('m4cp');
+    if(bp){
+      const s=span(h.px.concat(h.py),0.15,true);
+      const r=drawChart(bp,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'кг·м/с',hover:this.hp.x,
+        series:[{ts:h.ts,ys:h.px,color:CLR.k1,label:'px'},{ts:h.ts,ys:h.py,color:CLR.k2,label:'py'}]});
+      showTip(this.tipp,r,[['px',CLR.k1],['py',CLR.k2]],'кг·м/с',this.hp,2);
+    }
+    const bl=cvx('m4cl');
+    if(bl){
+      const s=span(h.L,0.15,true);
+      const r=drawChart(bl,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'кг·м²/с',hover:this.hl.x,
+        series:[{ts:h.ts,ys:h.L,color:CLR.k3,label:'Lz'}]});
+      showTip(this.tipl,r,[['Lz',CLR.k3]],'кг·м²/с',this.hl,2);
+    }
+    const be=cvx('m4ce');
+    if(be){
+      const s=span(h.E.concat(h.T).concat(h.U),0.15,true);
+      const r=drawChart(be,{tMax:T,yMin:s.lo,yMax:s.hi,yLab:'Дж',hover:this.he.x,
+        series:[{ts:h.ts,ys:h.E,color:CLR.ink,label:'E'},
+                {ts:h.ts,ys:h.T,color:CLR.k1,label:'T'},
+                {ts:h.ts,ys:h.U,color:CLR.k2,label:'U'}]});
+      showTip(this.tipe,r,[['E',CLR.ink],['T',CLR.k1],['U',CLR.k2]],'Дж',this.he,2);
+    }
+  }
+};
+
+/* ===================== запуск ===================== */
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4};
+let ACT='m1';
+function activate(id){
+  ACT=id;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.m===id));
+  document.querySelectorAll('.module').forEach(s=>s.classList.toggle('active',s.id===id));
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) activate(b.dataset.m);
+});
+for(const m of Object.values(MODULES)) m.init();
+
+let LAST=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
+  MODULES[ACT].tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* хеш-навігація для посилань у конспекті: #m2, #m3b, #m1-cir, #m4-centr */
+(function(){
+  const hs=location.hash.replace('#','');
+  if(!hs) return;
+  const [mod,sub]=hs.split('-');
+  if(mod.startsWith('m3')){activate('m3'); if(mod.length>2) M3.show(mod[2]);}
+  else if(mod==='m1'||mod==='m2'||mod==='m4') activate(mod);
+  if(!sub) return;
+  if(mod==='m1'&&MO[sub]){setSeg('m1mode',sub); M1.mode=sub; M1.reset();}
+  if(mod==='m2'&&MO[sub]){setSeg('m2mode',sub); M2.mode=sub; M2.fit(true);}
+  if(mod==='m4'&&M4SC[sub]){setSeg('m4sc',sub); M4.sc=sub; M4.reset();}
+})();
+</script>
+</body>
+</html>
