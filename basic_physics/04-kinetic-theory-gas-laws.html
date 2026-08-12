@@ -102,7 +102,7 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:300px}
+#m1scene{width:100%; height:330px}
 #m1hist{width:100%; height:186px}
 #m2scene{width:100%; height:300px}
 #m3scene{width:100%; height:290px}
@@ -647,6 +647,15 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
    у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
@@ -774,7 +783,9 @@ function therm(g,x,yb,H,frac,col,lab){
    опори), і без префікса їхні ручки мали б однакові імена */
 function shelfGrips(M,list,set,pre){
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
@@ -799,6 +810,10 @@ const PATM_STD=101325;            /* нормальний атмосферний
 /* ===================== МОДУЛЬ 1 · молекули і тиск ===================== */
 const M1={
   T:300, N:120, M:28, parts:null, hits:0, hitRate:0, acc:0,
+  /* Екранних одиниць на метр за секунду. Навмисне вшестеро повільніше за колишні
+     400: при ⟨v⟩ близько 500 м/с молекули перетинали коробку кілька разів на
+     секунду й зливалися в мерехтіння, з якого не читався ні рух, ні удари. */
+  VSC:2400,
   BOX:{w:10,h:7},                                   /* умовна коробка, нм */
   hh:{x:null}, tiph:null,
   vq(){return Math.sqrt(3*RGAS*this.T/(this.M/1000));},
@@ -812,7 +827,7 @@ const M1={
   },
   build(){
     const sig=Math.sqrt(RGAS*this.T/(this.M/1000));   /* σ однієї компоненти */
-    const sc=1/400;                                    /* нм за одиницю швидкості на екрані */
+    const sc=1/this.VSC;                               /* нм за одиницю швидкості на екрані */
     this.parts=[];
     for(let i=0;i<this.N;i++){
       this.parts.push({
@@ -894,7 +909,16 @@ const M1={
     txt(g,'T = '+fmt(this.T,0)+' K · '+this.N+' молекул',12,20,{color:CLR.k3,size:12.5,bold:true});
     txt(g,'кожен удар об праву стінку передає їй імпульс — сума ударів і є тиском',
       12,36,{color:CLR.mut,size:10.5});
-    txt(g,'⟨v²⟩ ½ = '+fmt(vq,0)+' м/с',ox,h-10,{color:CLR.mut,size:10.5});
+    txt(g,'⟨v²⟩ ½ = '+fmt(vq,0)+' м/с',ox,oy-8,{color:CLR.mut,size:10.5});
+    /* Що означає колір кружка. Без цього підпису синій кружок читається як «інший
+       газ», хоча молекули тут усі однакові — різний лише момент їхнього життя. */
+    /* у два рядки: одним він налазив на полицю газів праворуч */
+    const ly=oy+this.BOX.h*sc+16;
+    dot(g,ox+6,ly-4,3,CLR.k2);
+    txt(g,'помаранчева — летить вільно',ox+16,ly,{color:CLR.mut,size:10.5});
+    dot(g,ox+6,ly+13,4.5,CLR.k1);
+    txt(g,'синя — щойно вдарилася об праву стінку: ці удари й створюють тиск',
+      ox+16,ly+17,{color:CLR.mut,size:10.5});
     /* прилади: термометр і лічильник молекул */
     therm(g,Q.tx,Q.yb,Q.H,(this.T-50)/1150,CLR.k2,'T');
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
@@ -926,9 +950,14 @@ const M1={
   },
   hist(){
     const b=cvx('m1hist'); if(!b||!this.parts) return;
-    const vq=this.vq(), vMax=vq*2.6;
+    /* Вісь швидкостей стала для обраного газу (§10): межу рахуємо з T = 1200 K — верхньої
+       межі clamp() у grips(). Раніше vMax брався з поточної ⟨v²⟩, тож нагрівання розсувало
+       шкалу рівно настільки ж, наскільки розсувало розподіл, і ширшання розподілу —
+       головне, що показує модуль, — було непомітне. Газ обирають полицею, це режим, а не
+       ручка, тож межа має право залежати від молярної маси. */
+    const vMax=Math.sqrt(3*RGAS*1200/(this.M/1000))*2.2;
     const NB=22, bins=new Array(NB).fill(0);
-    const sc=400;                                    /* назад із екранних одиниць у м/с */
+    const sc=this.VSC;                               /* назад із екранних одиниць у м/с */
     for(const p of this.parts){
       const v=Math.hypot(p.vx,p.vy)*sc;
       const i=Math.min(NB-1,Math.floor(v/vMax*NB));
@@ -947,7 +976,10 @@ const M1={
       ys.push(bins[i]/Math.max(1,this.N)*100);
       yt.push(th[i]/thSum*100);
     }
-    const hi=Math.max(6,...ys,...yt);
+    /* Висоту беремо з теоретичної кривої, а не з вибірки: інакше діаграма тремтить
+       від випадковості кидків. Частка в стовпчику — наслідок нормування на 100 %,
+       не фізична величина, тож їй дозволено підлаштовуватися під ширину розподілу. */
+    const hi=Math.max(6,...yt)*1.15;
     const r=drawChart(b,{tMax:vMax,yMin:-0.05*hi,yMax:1.15*hi,yLab:'%',xLab:'v, м/с',
       xStep:niceStep(vMax/5),hover:this.hh.x,
       series:[{ts,ys,color:CLR.k2,label:'модель'},{ts,ys:yt,color:CLR.k1,label:'Максвелл',dash:[4,3]},
@@ -982,19 +1014,24 @@ const M2={
   u(){return this.t/this.TSHOW;},
   reset(){this.t=0; this.playing=true; $('m2play').textContent='⏸';},
   cw(){return 80+this.nu*90;},        /* ширина циліндра ∝ кількості речовини */
+  /* Верхні межі стовпчиків сталі й залежать лише від процесу (§10). Раніше вони бралися
+     з поточного стану, тож найвищий стовпчик завжди впирався в стелю: тягнеш його вгору —
+     а він стоїть на місці. Межі прямо заданих величин — із clamp() у grips(): c ∈ [20;100],
+     span ∈ [1,2;4]. Похідна величина (p в ізотермі й ізохорі, V в ізобарі) залежить ще й від
+     ν ∈ [0,1;2] і має розмах близько 400:1 — для неї взято проєктну межу, а вихід за межу
+     позначається вістрям на стовпчику; число над стовпчиком завжди справжнє. */
+  BMAX:{iso_t:{p:500,V:40,T:500}, iso_p:{p:200,V:40,T:600}, iso_v:{p:300,V:50,T:600}},
   geo(b){return frozen(this,b,bb=>{
-    const s0=this.st(0), s1=this.st(1);
-    const ch=bb.h-90, cy=bb.h*0.5+10;
-    return {ch,cy,cx:bb.w*0.32,bx:bb.w*0.66,
-      Vmax:Math.max(s0.V,s1.V),pmax:Math.max(s0.p,s1.p),Tmax:Math.max(s0.T,s1.T)};
+    const ch=bb.h-90, cy=bb.h*0.5+10, M=this.BMAX[this.proc];
+    return {ch,cy,cx:bb.w*0.32,bx:bb.w*0.66,Vmax:M.V,pmax:M.p,Tmax:M.T};
   });},
   /* висота стовпчика величини у стовпчиковій діаграмі та зворотне до неї */
   barH(Q,val,vmax){return (Q.ch-10)*Math.min(1,val/vmax)*0.9;},
   barV(Q,py,vmax){return (Q.cy+Q.ch/2-py)/((Q.ch-10)*0.9)*vmax;},
   /* яка величина стала, а яка найдужче змінюється — те й тягнуть */
   bars(Q){
-    return {p:{x:Q.bx,max:Q.pmax*1.1},V:{x:Q.bx+72,max:Q.Vmax*1.1},
-      T:{x:Q.bx+144,max:Q.Tmax*1.1}};
+    return {p:{x:Q.bx,max:Q.pmax},V:{x:Q.bx+72,max:Q.Vmax},
+      T:{x:Q.bx+144,max:Q.Tmax}};
   },
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
@@ -1051,7 +1088,7 @@ const M2={
     const cx=Q.cx, cy=Q.cy;
     g.clearRect(0,0,w,h);
     /* циліндр: висота стовпа газу пропорційна обʼєму */
-    const colH=ch*s.V/Vmax*0.86;
+    const colH=ch*Math.min(1,s.V/Vmax)*0.86;
     g.fillStyle='rgba(235,104,52,.08)';
     g.fillRect(cx-cw/2,cy+ch/2-colH,cw,colH);
     g.strokeStyle=CLR.axis; g.lineWidth=2;
@@ -1074,17 +1111,23 @@ const M2={
     }
     /* стовпчики величин */
     const bar=(x,val,vmax,col,lab,unit,dec)=>{
-      const bh=(ch-10)*Math.min(1,val/vmax)*0.9;
+      const bh=(ch-10)*Math.min(1,val/vmax)*0.9, top=cy+ch/2-bh;
       g.fillStyle=col; g.globalAlpha=0.18;
-      g.fillRect(x-16,cy+ch/2-bh,32,bh); g.globalAlpha=1;
-      g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x-16,cy+ch/2-bh,32,bh);
+      g.fillRect(x-16,top,32,bh); g.globalAlpha=1;
+      g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x-16,top,32,bh);
+      /* величина вийшла за верхню межу кадру — вістря замість зникнення (§10) */
+      if(val>vmax){
+        g.fillStyle=col; g.beginPath();
+        g.moveTo(x,top+3); g.lineTo(x-7,top+14); g.lineTo(x+7,top+14);
+        g.closePath(); g.fill();
+      }
       txt(g,lab,x,cy+ch/2+16,{color:CLR.sec,size:11,bold:true,align:'center'});
-      txt(g,fmt(val,dec)+' '+unit,x,cy+ch/2-bh-8,{color:CLR.ink,size:11,bold:true,align:'center'});
+      txt(g,fmt(val,dec)+' '+unit,x,top-8,{color:CLR.ink,size:11,bold:true,align:'center'});
     };
     const bx=Q.bx;
-    bar(bx,s.p,pmax*1.1,CLR.k1,'p','кПа',0);
-    bar(bx+72,s.V,Vmax*1.1,CLR.k2,'V','л',1);
-    bar(bx+144,s.T,Tmax*1.1,CLR.k3,'T','K',0);
+    bar(bx,s.p,pmax,CLR.k1,'p','кПа',0);
+    bar(bx+72,s.V,Vmax,CLR.k2,'V','л',1);
+    bar(bx+144,s.T,Tmax,CLR.k3,'T','K',0);
     /* рівень, до якого дійде процес — його і тягнуть */
     const B=this.bars(Q);
     const spk=this.proc==='iso_t'?['V',s1.V]:['T',s1.T];
@@ -1162,10 +1205,15 @@ const M3={
   cw(){return 60+this.nu*50;},        /* ширина циліндра ∝ кількості речовини */
   /* Мініатюрна діаграма p–V просто на сцені: два стани — це дві точки, які
      беруть пальцем. Чотири повзунки зникають разом із нею. */
+  /* Межі сцени сталі (§10). p і V задають ручки s1/s2 напряму, тож їхні верхні межі —
+     точно ті, що в clamp() у grips(). T = pV/(νR), і при ν ∈ [0,1;3] його розмах сягає
+     3000:1; для термометра взято проєктну межу, а вихід за неї позначено вістрям. */
+  PMAX:400, VMAX:60, TMAX:2500,
   geo(b){return frozen(this,b,bb=>{
     const ch=bb.h-84, cy=bb.h*0.5+8;
     const dl=bb.w*0.60, dr=bb.w-24, dt=34, db=bb.h-46;
     return {ch,cy,cx:bb.w*0.24,tx:bb.w*0.46,
+      Vmax:this.VMAX,pmax:this.PMAX,Tmax:this.TMAX,
       dl,dr,dt,db,
       DX:V=>dl+(V-5)/55*(dr-dl), DY:p=>db-(p-50)/350*(db-dt),
       iV:px=>(px-dl)/(dr-dl)*55+5, iP:py=>(db-py)/(db-dt)*350+50};
@@ -1204,12 +1252,11 @@ const M3={
   scene(){
     const b=cvx('m3scene'); if(!b) return;
     const {g,w,h}=b, s=this.st(this.u()), Q=this.geo(b);
-    const Vmax=Math.max(this.V1,this.V2), pmax=Math.max(this.p1,this.p2);
-    const Tmax=Math.max(this.st(0).T,this.st(1).T,s.T);
+    const Vmax=Q.Vmax, pmax=Q.pmax, Tmax=Q.Tmax;
     const cw=this.cw(), ch=Q.ch;
     const cx=Q.cx, cy=Q.cy;
     g.clearRect(0,0,w,h);
-    const colH=ch*s.V/Vmax*0.9;
+    const colH=ch*Math.min(1,s.V/Vmax)*0.9;
     g.fillStyle='rgba(235,104,52,.08)'; g.fillRect(cx-cw/2,cy+ch/2-colH,cw,colH);
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.beginPath(); g.moveTo(cx-cw/2,cy-ch/2-12); g.lineTo(cx-cw/2,cy+ch/2);
@@ -1218,16 +1265,22 @@ const M3={
     g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.k2; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-cw/2+2,py-12,cw-4,12,2); g.fill(); g.stroke();
     /* сила на поршень пропорційна тиску */
-    const fl=Math.min(64,s.p/Math.max(1,pmax)*64);
+    const fl=64*Math.min(1,s.p/pmax);
     arrow(g,cx,py-16-fl,cx,py-16,CLR.k1,3);
     txt(g,'p = '+fmt(s.p,0)+' кПа',cx,py-22-fl,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
     /* термометр */
     const tx=Q.tx, th=ch*0.9;
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.beginPath(); g.roundRect(tx-9,cy+ch/2-th,18,th,9); g.stroke();
-    const fill=th*Math.min(1,s.T/Math.max(1,Tmax));
+    const fill=th*Math.min(1,s.T/Tmax);
     g.fillStyle='rgba(27,175,122,.5)';
     g.beginPath(); g.roundRect(tx-6,cy+ch/2-fill,12,fill,6); g.fill();
+    /* T вийшла за верх шкали — вістря замість мовчазного упирання в стелю (§10) */
+    if(s.T>Tmax){
+      const ty=cy+ch/2-fill;
+      g.fillStyle=CLR.k3; g.beginPath();
+      g.moveTo(tx,ty+2); g.lineTo(tx-6,ty+12); g.lineTo(tx+6,ty+12); g.closePath(); g.fill();
+    }
     dot(g,tx,cy+ch/2,13,'rgba(27,175,122,.6)');
     txt(g,'T = '+fmt(s.T,0)+' K',tx,cy+ch/2+30,{color:'#0d7a55',size:11.5,bold:true,align:'center'});
     txt(g,'V = '+fmt(s.V,1)+' л',cx,cy+ch/2+30,{color:'#b8431a',size:11.5,bold:true,align:'center'});
@@ -1342,7 +1395,7 @@ const M4={
   bskw(){return 20+this.mk*0.09;},            /* кошик ∝ масі спорядження */
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='tank'){
-      const cy=bb.h*0.55, bh=bb.h*0.52;
+      const cy=bb.h*0.52, bh=bb.h*0.50;
       return {cx:bb.w*0.30,cy,bh,mx:bb.w*0.72,my:cy-10,R:Math.min(64,bb.h*0.2),
         tx:bb.w*0.50,yb:cy+bh/2-6,H:bh-24};
     }
@@ -1350,7 +1403,9 @@ const M4={
     const payload=this.lift().F/G-this.mk;
     const cy=bb.h*0.42+(payload>0?-6:8);
     return {cx:bb.w*0.42,cy,R,
-      inx:bb.w*0.14,outx:bb.w-52,yb:bb.h-40,H:bb.h*0.5};
+      /* yb вище на 20 px: підпис значення стоїть на yb + 46, і з bb.h − 40
+         він опинявся нижче краю полотна — тобто зникав зовсім */
+      inx:bb.w*0.14,outx:bb.w-52,yb:bb.h-62,H:bb.h*0.46};
   });},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
@@ -1415,8 +1470,10 @@ const M4={
     g.strokeStyle=over?CLR.k2:CLR.k1; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-bw/2,cy-bh/2,bw,bh,14); g.fill(); g.stroke();
     g.beginPath(); g.roundRect(cx-14,cy-bh/2-20,28,22,4); g.stroke();
-    /* молекули: більше руху при вищій температурі */
-    const n=34;
+    /* Молекул стільки, скільки в балоні газу: обʼєм не міняє тиску (закон Шарля
+       залишає його залежним лише від температури), зате міняє кількість речовини —
+       і саме це тепер видно в кадрі, а не лише в таблиці. */
+    const n=Math.max(8,Math.round(6+this.Vt*0.6));
     for(let i=0;i<n;i++){
       const a=(i*79)%1000/1000, q=(i*137)%1000/1000;
       const amp=2+8*(this.tC+273)/423;
@@ -1459,6 +1516,9 @@ const M4={
       {color:over?CLR.k2:CLR.k3,size:12.5,bold:true});
     txt(g,'нагрівання на 100 K піднімає тиск приблизно на третину — тому балони не лишають на сонці',
       12,36,{color:CLR.mut,size:10.5});
+    /* найчастіше запитання до цієї сцени: чому ширший балон нічого не міняє */
+    txt(g,'ширший балон вміщає більше газу, але тиску не міняє: за сталого обʼєму він залежить лише від T',
+      12,h-10,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   sceneBalloon(){
@@ -1495,7 +1555,11 @@ const M4={
     g.beginPath(); g.roundRect(cx-bkw/2,by,bkw,24,3); g.fill(); g.stroke();
     txt(g,fmt(this.mk,0)+' кг',cx,by+40,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     /* сили */
-    const k=Math.min(80,Math.max(30,L.F/200))/Math.max(1e-9,L.F);
+    /* Спільний сталий масштаб обох стрілок (§10): 110 px — найбільша вага, яка тут можлива
+       (оболонка 600 кг плюс 4000 м³ повітря при 20 °C, тобто 53,2 кН). Раніше довжина
+       нормувалася на саму силу, тож стрілка F не змінювалася зовсім, хай як тягни
+       температуру чи обʼєм, а вага виглядала сумірною з підйомною силою. */
+    const k=110/53200;
     arrow(g,cx-R-24,cy,cx-R-24,cy-L.F*k,CLR.k1,3);
     txt(g,'F = '+fmt(L.F,0)+' Н',cx-R-30,cy-L.F*k-6,{color:'#1c5cab',size:11.5,bold:true,align:'right'});
     const W=(L.min+this.mk)*G;
@@ -1603,7 +1667,9 @@ const M5={
   vq(){return Math.sqrt(3*RGAS*this.T/(this.M/1000));},
   GAS:[['водень',2],['гелій',4],['азот',28],['вуглекислий',44]],
   geo(b){return frozen(this,b,bb=>{
-    const HMAX=40, sc=(bb.h-70)/HMAX, gy=bb.h-34;
+    /* 100, а не 70: верх шкали висот мусить лишитися нижче двох рядків підпису
+       сцени — інакше «h, км» і поділка 40 лягають просто на них */
+    const HMAX=40, sc=(bb.h-100)/HMAX, gy=bb.h-34;
     return {HMAX,sc,gy,SY:y=>gy-y*sc,
       tx:bb.w-46,yb:gy-14,H:bb.h*0.52,
       gas:{y:26,x0:bb.w-4*74-8,dx:74}};
@@ -1661,12 +1727,15 @@ const M5={
     g.strokeStyle=CLR.k3; g.lineWidth=2; g.setLineDash([5,4]);
     g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,HS))); g.lineTo(w-16,SY(Math.min(HMAX,HS))); g.stroke();
     g.setLineDash([]);
-    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',w-20,SY(Math.min(HMAX,HS))-6,
+    /* Два підписи розведено і по висоті, і по горизонталі: рівень H і обрана висота
+       часто збігаються, а раніше обидва стояли над своїми лініями й налазили один на
+       одного — та ще й на термометр край кадру. */
+    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',w-76,SY(Math.min(HMAX,HS))+15,
       {color:'#0d7a55',size:11,bold:true,align:'right'});
     /* обрана висота */
     g.strokeStyle=CLR.k2; g.lineWidth=2.5;
     g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,this.h))); g.lineTo(w-16,SY(Math.min(HMAX,this.h))); g.stroke();
-    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),w*0.5,SY(Math.min(HMAX,this.h))-8,
+    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),150,SY(Math.min(HMAX,this.h))-9,
       {color:'#b8431a',size:11.5,bold:true});
     txt(g,B.n+': g = '+fmt(B.g,2)+' м/с², друга космічна '+fmt(B.v2,2)+' км/с',
       12,20,{color:col,size:12.5,bold:true});

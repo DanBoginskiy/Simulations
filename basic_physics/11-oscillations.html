@@ -662,6 +662,15 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
    у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
@@ -796,7 +805,9 @@ function therm(g,x,yb,H,frac,col,lab){
    опори), і без префікса їхні ручки мали б однакові імена */
 function shelfGrips(M,list,set,pre){
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
@@ -1086,6 +1097,14 @@ const M2={
   gcol(b){const rows=Math.ceil(this.GG.length/2);
     return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
       y0:b.h-rows*24+2};},
+  /* Масштаб сталий (§10) і кріпиться до найдовшого маятника з таблиці GG — 2 м.
+     Раніше він ділився на саму довжину, тож маятник будь-якої довжини мав на екрані
+     той самий розмір: модуль про T = 2π√(l/g) не показував, що змінюється саме l. */
+  LMAX:2.00,
+  geo(b){return frozen(this,b,bb=>{
+    const H=bb.h-90;
+    return {cx:bb.w*0.44, cy:H*0.16, sc:Math.min(bb.w*0.30,H*0.62)/this.LMAX};
+  });},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1108,8 +1127,8 @@ const M2={
       12,20,{color:CLR.k1,size:12.5,bold:true});
     txt(g,'повертає маятник лише дотична складова тяжіння mg·sin θ — і саме її замінюють на mgθ',
       12,36,{color:CLR.mut,size:10.5});
-    const cx=w*0.44, cy=h*0.16;
-    const sc=Math.min(w*0.30,h*0.62)/Math.max(0.3,this.lm());
+    const Q=this.geo(b);
+    const cx=Q.cx, cy=Q.cy, sc=Q.sc;
     const L=this.lm()*sc;
     hatch(g,cx-38,cy,76,true,CLR.sec);
     /* дуга розмаху */
@@ -1608,6 +1627,17 @@ const M5={
   gcol(b){const rows=Math.ceil(this.GG.length/2);
     return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
       y0:b.h-rows*24+2};},
+  /* Еталонна амплітуда — резонансна при типових значеннях цього застосунку (тих самих,
+     що ставить перемикач). До неї й кріпиться кадр (§10). Раніше масштаб ділився на
+     поточну найбільшу амплітуду, тож підведення частоти до резонансу не змінювало на
+     екрані нічого: амплітуда росла вдесятеро — і рівно вдесятеро дрібнішав масштаб.
+     Тобто модуль про резонанс не показував резонансу. Прямої межі діапазону взяти не
+     можна: при b → 0,05 і f₀ → 0,2 Гц амплітуда сягає десятків метрів. */
+  AREF:{radio:0.53, bridge:0.22, car:0.025},
+  geo(b){return frozen(this,b,bb=>{
+    const H=bb.h-90, AR=this.AREF[this.use];
+    return {AR, sc:Math.min(bb.w*0.20,H*0.26)/AR, cy:H*0.52, wx:bb.w*0.06};
+  });},
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1632,25 +1662,28 @@ const M5={
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     txt(g,'один період зовнішньої сили показано за 1,6 с; зміщення відстає від сили на кут φ',
       12,36,{color:CLR.mut,size:10.5});
-    /* масштаб — від найбільшої амплітуди, якої ця система може досягти:
-       за великого тертя піка немає, і найбільша амплітуда — на нульовій частоті */
-    const Amax=Math.max(this.amp(this.wr()),this.amp(0),A,1e-9);
-    const cy=h*0.52, wx=w*0.06, sc=Math.min(w*0.20,h*0.26)/Amax;
-    const cx0=wx+Amax*sc+50;
+    const Q=this.geo(b);
+    const cy=Q.cy, wx=Q.wx, sc=Q.sc, AR=Q.AR;
+    const cx0=wx+AR*sc+50;
     hatch(g,wx,cy-30,60,false,CLR.sec);
     g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.moveTo(wx,cy+30); g.lineTo(cx0+Amax*sc+56,cy+30); g.stroke();
-    const x=A*Math.cos(u-ph);
-    const bx=cx0+x*sc;
+    g.beginPath(); g.moveTo(wx,cy+30); g.lineTo(cx0+AR*sc+56,cy+30); g.stroke();
+    /* кадр сталий, тож розгойдане тіло справді може з нього вийти: притримуємо його
+       на краю й підписуємо справжній розмах, а не мовчки стискаємо картинку (§10) */
+    const xLim=(w-40-cx0)/sc;
+    const x=A*Math.cos(u-ph), over=Math.abs(x)>xLim;
+    const bx=cx0+clamp(x,-xLim,xLim)*sc;
     spring(g,wx,cy,bx-14,cy,9,8,CLR.k1,2.2);
     g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.k1; g.lineWidth=2.2;
     g.beginPath(); g.roundRect(bx-14,cy-16,28,32,4); g.fill(); g.stroke();
     /* межі усталених коливань */
     for(const s of [-1,1]){
       g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([2,3]);
-      g.beginPath(); g.moveTo(cx0+s*A*sc,cy-30); g.lineTo(cx0+s*A*sc,cy+30); g.stroke(); g.setLineDash([]);
+      const mx=cx0+s*Math.min(A,xLim)*sc;
+      g.beginPath(); g.moveTo(mx,cy-30); g.lineTo(mx,cy+30); g.stroke(); g.setLineDash([]);
     }
-    txt(g,'A = '+fmt(A*100,2)+' см',cx0,cy+48,{color:CLR.ink,size:11.5,bold:true,align:'center'});
+    txt(g,'A = '+fmt(A*100,2)+' см'+(over?' — розмах більший за кадр':''),
+      cx0,cy+48,{color:over?CLR.k2:CLR.ink,size:11.5,bold:true,align:'center'});
     /* змушувальна сила */
     const F=this.F*Math.cos(u);
     arrow(g,bx,cy-30,bx+F/Math.max(1e-9,this.F)*46,cy-30,CLR.k3,2.6);

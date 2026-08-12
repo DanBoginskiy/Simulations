@@ -653,6 +653,15 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
    у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
@@ -780,7 +789,9 @@ function therm(g,x,yb,H,frac,col,lab){
    опори), і без префікса їхні ручки мали б однакові імена */
 function shelfGrips(M,list,set,pre){
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
@@ -843,10 +854,26 @@ const M1={
      і беруть пальцем: горизонталь дає обʼєм, вертикаль — температуру. */
   geo(b){return frozen(this,b,bb=>{
     const E=this.E(), s2=E.s2;
-    const L=44,R=44,T=48,B=52, pw=bb.w-L-R, ph=bb.h-T-B;
-    const Vlo=Math.min(this.V1,s2.V)*0.6, Vhi=Math.max(this.V1,s2.V)*1.25;
+    /* T = 64, а не 48: кадр сталий, тож верхня поділка тепер завжди стоїть рівно вгорі —
+       підпису осі треба власний рядок над нею, і він не має налізти на текст сцени */
+    const L=44,R=44,T=64,B=52, pw=bb.w-L-R, ph=bb.h-T-B;
+    /* Осі діаграми сталі (§10). Раніше вони підганялися під самі стани, тож процес
+       завжди займав ту саму площу екрана: тягнеш стан 2 — а картинка не змінюється.
+       Обʼєм: V₁ ∈ [5;40] л, k ∈ [0,4;3] дають щонайбільше 120 л, але проєктною межею
+       взято 80 — при 120 типовий процес був би смужкою. Тиск p = νRT/V при
+       ν ∈ [0,1;2] має розмах близько 3500:1, тож і тут межа проєктна; стан, що вийшов
+       за неї, лишається взятним — його ручку притиснуто до краю кадру. */
     const p1=this.p(this.V1,this.T1), p2=this.p(s2.V,s2.T);
-    const pHi=Math.max(p1,p2)*1.2;
+    /* Запобіжник §10: осі стоять на проєктних межах, а якщо процес усе-таки за них
+       вийшов — а p = νRT/V при ν до 2 моль сягає тисяч кілопаскалів, — кадр один раз
+       розсувається під нього. Мовчки обрізати криву не можна: студент вирішив би,
+       що процес обірвався. */
+    let vTop=Math.max(this.V1,s2.V), pTop=Math.max(p1,p2);
+    for(let i=0;i<=20;i++){
+      const V=this.pathV(i/20);
+      vTop=Math.max(vTop,V); pTop=Math.max(pTop,this.p(V,this.pathT(V)));
+    }
+    const Vlo=0, Vhi=Math.max(80,vTop*1.08), pHi=Math.max(500,pTop*1.08);
     return {L,R,T,B,Vlo,Vhi,pHi,p1,p2,s2,
       SX:V=>L+(V-Vlo)/(Vhi-Vlo)*pw, SY:p=>T+(1-p/pHi)*ph,
       iV:px=>(px-L)/pw*(Vhi-Vlo)+Vlo, iP:py=>(1-(py-T)/ph)*pHi,
@@ -855,14 +882,16 @@ const M1={
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.geo(b), s2=Q.s2;
+    /* стан, що вийшов за сталий кадр, лишається взятним: ручку притискаємо до краю */
+    const gx=V=>clamp(Q.SX(V),Q.L,b.w-Q.R), gy=p=>clamp(Q.SY(p),Q.T,b.h-Q.B);
     return [
-      {id:'s1', x:Q.SX(this.V1), y:Q.SY(Q.p1), r:9, color:CLR.k1,
+      {id:'s1', x:gx(this.V1), y:gy(Q.p1), r:9, color:CLR.k1,
        hint:'стан 1: обʼєм і температура',
        move:(px,py)=>{
          this.V1=clamp(snap(Q.iV(px),1),5,40);
          const p=Math.max(1,Q.iP(py));
          this.T1=clamp(snap(p*this.V1/(this.nu*RGAS),10),200,600);}},
-      {id:'s2', x:Q.SX(s2.V), y:Q.SY(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
+      {id:'s2', x:gx(s2.V), y:gy(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
        move:(px,py)=>{
          if(this.proc==='iso_v')
            this.kk=clamp(snap(Math.max(1,Q.iP(py))/Q.p1,0.05),0.4,3);
@@ -902,8 +931,10 @@ const M1={
       g.beginPath(); g.moveTo(SX(V)+.5,T); g.lineTo(SX(V)+.5,h-B); g.stroke();
       txt(g,fmt(V,0),SX(V),h-B+16,{color:CLR.mut,size:9.5,align:'center'});
     }
-    txt(g,'p, кПа',L-34,T+4,{color:CLR.mut,size:10.5});
-    txt(g,'V, л',w-R+6,h-B+16,{color:CLR.mut,size:10.5});
+    /* підписи осей відсунуто від крайніх поділок: кадр сталий, тож верхня поділка
+       тепер завжди стоїть рівно вгорі, а права — рівно праворуч */
+    txt(g,'p, кПа',L-34,T-10,{color:CLR.mut,size:10.5});
+    txt(g,'V, л',w-R+6,h-B+30,{color:CLR.mut,size:10.5});
     /* площа під кривою = робота */
     const N=60, pts=[];
     for(let i=0;i<=N;i++){
@@ -1382,17 +1413,59 @@ const M3={
     /* потоки енергії: нагрівник → машина → холодильник */
     const F=this.geo(b), bw=F.bw, cx=F.cx;
     const hy=F.hy, my=F.my, cy=F.cy;
-    const box=(y,col,lab,sub,ww)=>{
-      const bb2=ww||bw;
-      g.fillStyle=col==='h'?'rgba(235,104,52,.10)':col==='c'?'rgba(42,120,214,.10)':'rgba(11,11,11,.05)';
-      g.strokeStyle=col==='h'?CLR.k2:col==='c'?CLR.k1:CLR.sec; g.lineWidth=2;
-      g.beginPath(); g.roundRect(cx-bb2,y-24,2*bb2,48,6); g.fill(); g.stroke();
-      txt(g,lab,cx,y-2,{color:CLR.ink,size:12.5,bold:true,align:'center'});
-      txt(g,sub,cx,y+16,{color:CLR.mut,size:10.5,align:'center'});
-    };
-    box(hy,'h','нагрівник',fmt(this.Th,0)+' K');
-    box(my,'m','теплова машина','ККД '+fmt(100*Q.eta,1)+' %',this.mbw(F));
-    box(cy,'c','холодильник',fmt(this.Tc,0)+' K');
+    /* Замість трьох однакових прямокутників — упізнавані апарати: топка з полумʼям,
+       циліндр із поршнем і маховиком, радіатор із ребрами. Точки, за які беруться
+       ручки (права стінка машини, вісь термометрів), лишилися ті самі. */
+    const mw=this.mbw(F);
+    /* топка нагрівника */
+    g.fillStyle='rgba(235,104,52,.10)'; g.strokeStyle=CLR.k2; g.lineWidth=2;
+    g.beginPath(); g.roundRect(cx-bw,hy-22,2*bw,46,6); g.fill(); g.stroke();
+    g.strokeStyle=CLR.k2; g.lineWidth=1.4;
+    g.beginPath(); g.moveTo(cx-bw+10,hy+10); g.lineTo(cx+bw-10,hy+10); g.stroke();
+    g.fillStyle='rgba(235,104,52,.5)';
+    const nf=Math.max(3,Math.round(bw/16));
+    for(let i=0;i<nf;i++){
+      const fx=cx-bw+16+i*(2*bw-32)/(nf-1||1), fh=9+5*Math.abs(Math.sin(this.t*4+i));
+      g.beginPath(); g.moveTo(fx-5,hy+10);
+      g.quadraticCurveTo(fx,hy+10-fh*1.7,fx+5,hy+10); g.closePath(); g.fill();
+    }
+    txt(g,'топка нагрівника',cx,hy-30,{color:'#b8431a',size:11.5,bold:true,align:'center'});
+    txt(g,fmt(this.Th,0)+' K',cx,hy+38,{color:CLR.mut,size:10.5,align:'center'});
+    /* машина: циліндр із поршнем і маховиком; поршень іде за обʼємом циклу */
+    const n=this.nodes();
+    const vLo=Math.min(n.V1,n.V2,n.V3,n.V4), vHi=Math.max(n.V1,n.V2,n.V3,n.V4);
+    const fr=(s.V-vLo)/Math.max(1e-9,vHi-vLo);
+    const cyl0=cx-mw, cyl1=cx+mw-30, fwx=cx+mw-14;
+    const hot=s.leg===0||s.leg===3;
+    g.fillStyle='rgba(11,11,11,.04)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.roundRect(cyl0,my-22,cyl1-cyl0,44,4); g.fill(); g.stroke();
+    const pxn=cyl0+10+(cyl1-cyl0-26)*fr;
+    g.fillStyle=hot?'rgba(235,104,52,.16)':'rgba(42,120,214,.16)';
+    g.fillRect(cyl0+3,my-19,pxn-cyl0-3,38);
+    g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=hot?CLR.k2:CLR.k1; g.lineWidth=2.5;
+    g.beginPath(); g.roundRect(pxn,my-19,11,38,2); g.fill(); g.stroke();
+    g.strokeStyle=CLR.sec; g.lineWidth=2.5;
+    g.beginPath(); g.moveTo(pxn+11,my); g.lineTo(fwx,my); g.stroke();
+    g.fillStyle='rgba(11,11,11,.05)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.arc(fwx,my,13,0,7); g.fill(); g.stroke();
+    const ang=this.t/this.TSHOW*2*Math.PI;
+    g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(fwx,my);
+    g.lineTo(fwx+9*Math.cos(ang),my+9*Math.sin(ang)); g.stroke();
+    txt(g,'машина · η = '+fmt(100*Q.eta,1)+' %',cx,my-30,
+      {color:CLR.ink,size:12,bold:true,align:'center'});
+    /* холодильник: радіатор із ребрами */
+    g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.roundRect(cx-bw,cy-20,2*bw,40,4); g.fill(); g.stroke();
+    g.strokeStyle=CLR.k1; g.lineWidth=1.2;
+    g.beginPath();
+    for(let i=1;i<=9;i++){
+      const rx=cx-bw+i*(2*bw)/10;
+      g.moveTo(rx,cy-16); g.lineTo(rx,cy+16);
+    }
+    g.stroke();
+    txt(g,'радіатор холодильника',cx,cy-28,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    txt(g,fmt(this.Tc,0)+' K',cx,cy+34,{color:CLR.mut,size:10.5,align:'center'});
     /* термометри обох резервуарів */
     therm(g,F.tx,F.hy+30,F.th,(this.Th-350)/850,CLR.k2,'Tн');
     therm(g,F.tx,F.cy+30,F.th,(this.Tc-200)/140,CLR.k1,'Tх');
@@ -1401,10 +1474,12 @@ const M3={
     txt(g,'V₂/V₁ = '+fmt(this.r,1),cx-bw,my+58,{color:'#0d7a55',size:10.5,bold:true});
     /* товщина стрілок пропорційна енергії */
     const k=Math.min(26,Math.max(3,Q.Qh/260));
-    arrow(g,cx-40,hy+26,cx-40,my-26,CLR.k3,k*0.6);
-    txt(g,'Qн = '+fmt(Q.Qh,0)+' Дж',cx-52,(hy+my)/2,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
-    arrow(g,cx+40,my+26,cx+40,cy-26,CLR.k3,Math.max(1.5,k*0.6*Q.Qc/Math.max(1,Q.Qh)));
-    txt(g,'Qх = '+fmt(Q.Qc,0)+' Дж',cx+52,(my+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
+    /* стрілки теплоти виносимо за підпис машини, інакше вістря впирається в текст */
+    const xq=Math.max(80,mw*0.6);
+    arrow(g,cx-xq,hy+30,cx-xq,my-26,CLR.k3,k*0.6);
+    txt(g,'Qн = '+fmt(Q.Qh,0)+' Дж',cx-xq-12,(hy+my)/2,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
+    arrow(g,cx+xq,my+26,cx+xq,cy-24,CLR.k3,Math.max(1.5,k*0.6*Q.Qc/Math.max(1,Q.Qh)));
+    txt(g,'Qх = '+fmt(Q.Qc,0)+' Дж',cx+xq+12,(my+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
     arrow(g,cx+bw,my,cx+bw+Math.min(120,w*0.16),my,CLR.k1,Math.max(2,k*0.6*Q.A/Math.max(1,Q.Qh)));
     txt(g,'A = '+fmt(Q.A,0)+' Дж',cx+bw+Math.min(120,w*0.16)+8,my+4,
       {color:'#1c5cab',size:11.5,bold:true});
@@ -1674,7 +1749,9 @@ const M5={
   QQ:[['проста',0.3],['звичайна',0.5],['добра',0.7],['найкраща',0.9]],
   geo(b){return frozen(this,b,bb=>{
     const bw=Math.min(150,bb.w*0.2);
-    return {bw,cx:bb.w*0.5,cy:bb.h*0.5,coldY:bb.h-70,hotY:52,
+    /* 76, а не 52: конденсатор — суцільний блок, і на 52 він підлазив під другий
+       рядок підпису сцени */
+    return {bw,cx:bb.w*0.5,cy:bb.h*0.5,coldY:bb.h-70,hotY:76,
       tx:bb.w*0.5-bw-40, th:bb.h*0.15,
       qq:{y:bb.h-18,x0:bb.w-4*72-8,dx:72}};
   });},
@@ -1710,25 +1787,54 @@ const M5={
     const Y=this.geo(b);
     const cx=Y.cx, bw=Y.bw;
     const cy=Y.cy, coldY=Y.coldY, hotY=Y.hotY;
-    const box=(y,col,lab,sub)=>{
-      g.fillStyle=col==='h'?'rgba(235,104,52,.10)':'rgba(42,120,214,.10)';
-      g.strokeStyle=col==='h'?CLR.k2:CLR.k1; g.lineWidth=2;
-      g.beginPath(); g.roundRect(cx-bw,y-24,2*bw,48,6); g.fill(); g.stroke();
-      txt(g,lab,cx,y-2,{color:CLR.ink,size:12.5,bold:true,align:'center'});
-      txt(g,sub,cx,y+16,{color:CLR.mut,size:10.5,align:'center'});
+    /* Замість трьох однакових прямокутників — вузли справжньої холодильної машини:
+       конденсатор із ребрами вгорі, компресор посередині, випарник унизу. Точки,
+       за які беруться ручки (вісь термометрів, стрілка потужності), ті самі. */
+    const mw=bw*0.62;
+    const coil=(y,col,fill,lab,sub)=>{
+      g.fillStyle=fill; g.strokeStyle=col; g.lineWidth=2;
+      g.beginPath(); g.roundRect(cx-bw,y-22,2*bw,44,5); g.fill(); g.stroke();
+      const rows=3, x0=cx-bw+14, x1=cx+bw-14, y0=y-13, dy=13;
+      /* ребра теплообмінника */
+      g.strokeStyle=col; g.lineWidth=1; g.globalAlpha=0.45; g.beginPath();
+      for(let i=1;i<12;i++){const fx=x0+i*(x1-x0)/12; g.moveTo(fx,y-17); g.lineTo(fx,y+17);}
+      g.stroke(); g.globalAlpha=1;
+      /* сам змійовик: труби й U-подібні коліна по черзі з обох боків */
+      g.lineWidth=2.4; g.beginPath();
+      for(let r=0;r<rows;r++){const yy=y0+r*dy; g.moveTo(x0,yy); g.lineTo(x1,yy);}
+      for(let r=0;r<rows-1;r++){
+        const yy=y0+r*dy, right=r%2===0;
+        const sx=right?x1:x0, d=right?9:-9;
+        g.moveTo(sx,yy); g.quadraticCurveTo(sx+d,yy+dy/2,sx,yy+dy);
+      }
+      g.stroke();
+      /* підпис одним рядком і з того боку, де немає ні заголовка сцени, ні полиці */
+      txt(g,lab,cx,sub,{color:col===CLR.k2?'#b8431a':'#1c5cab',size:11.5,bold:true,align:'center'});
     };
-    box(hotY,'h',f?'кухня — сюди йде тепло':'кімната — сюди йде тепло',fmt(this.th,0)+' °C');
-    g.fillStyle='rgba(11,11,11,.05)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
-    g.beginPath(); g.roundRect(cx-bw,cy-26,2*bw,52,6); g.fill(); g.stroke();
-    txt(g,f?'холодильник':'тепловий насос',cx,cy-2,{color:CLR.ink,size:12.5,bold:true,align:'center'});
-    txt(g,'коефіцієнт '+fmt(this.cop(),2),cx,cy+16,{color:CLR.mut,size:10.5,align:'center'});
-    box(coldY,'c',f?'камера — звідси забираємо тепло':'вулиця — звідси забираємо тепло',fmt(this.tc,0)+' °C');
+    coil(hotY,CLR.k2,'rgba(235,104,52,.10)',
+      'конденсатор · '+(f?'кухня':'кімната')+', '+fmt(this.th,0)+' °C',hotY+36);
+    /* компресор: корпус, вал і два патрубки */
+    g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.roundRect(cx-mw,cy-24,2*mw,48,16); g.fill(); g.stroke();
+    g.lineWidth=1.8;
+    g.beginPath(); g.arc(cx,cy,13,0,7); g.stroke();
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+9,cy-9); g.stroke();
+    g.lineWidth=2.4;
+    g.beginPath();
+    g.moveTo(cx-mw,cy-12); g.lineTo(cx-mw-16,cy-12);
+    g.moveTo(cx+mw,cy-12); g.lineTo(cx+mw+16,cy-12); g.stroke();
+    txt(g,'компресор',cx,cy-32,{color:CLR.ink,size:12,bold:true,align:'center'});
+    txt(g,'коефіцієнт '+fmt(this.cop(),2),cx,cy+38,{color:CLR.mut,size:10.5,align:'center'});
+    coil(coldY,CLR.k1,'rgba(42,120,214,.10)',
+      'випарник · '+(f?'камера':'вулиця')+', '+fmt(this.tc,0)+' °C',coldY-30);
     const mx=Math.max(F.Qh,1);
     const kw=q=>Math.max(2,Math.min(24,q/mx*22));
-    arrow(g,cx-46,coldY-26,cx-46,cy+28,CLR.k3,kw(F.Qc));
-    txt(g,'Qх = '+fmt(F.Qc,0)+' Вт',cx-58,(coldY+cy)/2,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
-    arrow(g,cx+46,cy-28,cx+46,hotY+26,CLR.k3,kw(F.Qh));
-    txt(g,'Qг = '+fmt(F.Qh,0)+' Вт',cx+58,(hotY+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
+    /* стрілки теплоти виносимо за підписи вузлів, інакше вістря впирається в текст */
+    const xq=Math.max(96,mw+34);
+    arrow(g,cx-xq,coldY-26,cx-xq,cy+28,CLR.k3,kw(F.Qc));
+    txt(g,'Qх = '+fmt(F.Qc,0)+' Вт',cx-xq-12,(coldY+cy)/2,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
+    arrow(g,cx+xq,cy-28,cx+xq,hotY+26,CLR.k3,kw(F.Qh));
+    txt(g,'Qг = '+fmt(F.Qh,0)+' Вт',cx+xq+12,(hotY+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
     arrow(g,cx+bw+20+this.P*0.06,cy,cx+bw,cy,CLR.k1,kw(F.A));
     txt(g,'P = '+fmt(F.A,0)+' Вт',cx+bw+26+this.P*0.06,cy+4,
       {color:'#1c5cab',size:11.5,bold:true});

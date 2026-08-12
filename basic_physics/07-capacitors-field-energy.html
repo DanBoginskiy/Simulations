@@ -124,7 +124,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <button data-m="m2">2 · Зʼєднання конденсаторів</button>
   <button data-m="m3">3 · Енергія поля</button>
   <button data-m="m4">4 · Коло RC</button>
-  <button data-m="m5">5 · Спалах і дефібрилятор</button>
+  <button data-m="m5">5 · Зварювання і дефібрилятор</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -365,15 +365,15 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
   <p class="caption">Конденсатор нічого не додає до енергії — він лише накопичує її повільно
-  й віддає за мілісекунди. Саме тому спалах фотоапарата живиться від маленької батарейки,
-  а дефібрилятор дає імпульс потужністю в мегавати.</p>
+  й віддає за мілісекунди. Саме тому апарат точкового зварювання живиться від звичайної
+  розетки, а дефібрилятор дає імпульс потужністю в мегавати.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
           <div class="seg" id="m5dev">
-            <button data-v="flash" class="active" style="--c:var(--k1)">фотоспалах</button>
+            <button data-v="weld" class="active" style="--c:var(--k1)">точкове зварювання</button>
             <button data-v="defib" style="--c:var(--k2)">дефібрилятор</button>
           </div>
           <button class="ibtn" id="m5play" title="пуск / пауза">⏸</button>
@@ -408,7 +408,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>заряд на пластинах</span><b id="m5kq"></b></div>
         <div class="kv"><span>час накопичення при <var>P</var><sub>зар</sub></span><b id="m5kTch"></b></div>
         <div class="kv"><span>стала часу розряду <var>τ</var> = <var>RC</var></span><b id="m5kTau"></b></div>
-        <div class="kv"><span>тривалість спалаху ≈ 3<var>τ</var></span><b id="m5kTdis"></b></div>
+        <div class="kv"><span>тривалість імпульсу ≈ 3<var>τ</var></span><b id="m5kTdis"></b></div>
       </div>
       <div class="panel">
         <h3>Потужність</h3>
@@ -644,6 +644,15 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
    у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
@@ -771,7 +780,9 @@ function therm(g,x,yb,H,frac,col,lab){
    опори), і без префікса їхні ручки мали б однакові імена */
 function shelfGrips(M,list,set,pre){
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
@@ -1434,12 +1445,12 @@ const M4={
     /* резистор */
     g.fillStyle='#fff'; g.strokeStyle=CLR.k1; g.lineWidth=2;
     g.beginPath(); g.roundRect(L.rx-rw,yT-9,2*rw,18,3); g.fill(); g.stroke();
-    txt(g,fmt(this.R,0)+' кОм',L.rx,yT-16,{color:'#1c5cab',size:11,bold:true,align:'center'});
+    pill(g,fmt(this.R,0)+' кОм',L.rx,yT-16,{color:'#1c5cab',size:11,bold:true});
     /* конденсатор */
     g.strokeStyle=CLR.k3; g.lineWidth=3;
     g.beginPath(); g.moveTo(x1-cl,yB-8); g.lineTo(x1+cl,yB-8);
     g.moveTo(x1-cl,yB+8); g.lineTo(x1+cl,yB+8); g.stroke();
-    txt(g,fmt(this.C,0)+' мкФ',x1,yB+30,{color:'#0d7a55',size:11,bold:true,align:'center'});
+    pill(g,fmt(this.C,0)+' мкФ',x1,yB+30,{color:'#0d7a55',size:11,bold:true});
     /* Джерело малюємо завжди: при розряджанні воно закорочене перемичкою, але
        саме ним конденсатор зарядили до U — і саме за його пластину цю напругу
        задають. Раніше в режимі розряду джерела на сцені не було зовсім. */
@@ -1448,7 +1459,7 @@ const M4={
     g.beginPath(); g.moveTo(x0-bl,ym-6); g.lineTo(x0+bl,ym-6); g.stroke();
     g.lineWidth=1.6;
     g.beginPath(); g.moveTo(x0-6,ym+6); g.lineTo(x0+6,ym+6); g.stroke();
-    txt(g,fmt(this.U,1)+' В',x0,ym+26,{color:ch?CLR.sec:CLR.mut,size:11,bold:true,align:'center'});
+    pill(g,fmt(this.U,1)+' В',x0,ym+26,{color:ch?CLR.sec:CLR.mut,size:11,bold:true});
     if(!ch){
       g.strokeStyle=CLR.k2; g.lineWidth=1.8;
       g.beginPath();
@@ -1475,7 +1486,9 @@ const M4={
       g.fillRect(x-20,h*0.16+bh-fh,40,fh);
       g.strokeStyle=col==='b'?CLR.k2:CLR.k1; g.lineWidth=2;
       g.strokeRect(x-20,h*0.16+bh-fh,40,fh);
-      txt(g,fmt(val,dec)+' '+unit,x,h*0.16+bh-fh-8,{color:CLR.ink,size:11,bold:true,align:'center'});
+      /* число на підкладці: смуга стоїть усередині кола, і без неї напис лягав
+         просто на провід */
+      pill(g,fmt(val,dec)+' '+unit,x,h*0.16+bh-fh-8,{color:CLR.ink,size:11,bold:true});
       txt(g,lab,x,h*0.16+bh+16,{color:CLR.mut,size:10.5,align:'center'});
     };
     bar(w*0.28,'U на C',Uc,this.U,'b','В',2);
@@ -1544,7 +1557,7 @@ const M4={
 
 /* ===================== МОДУЛЬ 5 · спалах і дефібрилятор ===================== */
 const M5={
-  dev:'flash', C:150, U:330, R:20, P:3,      /* мкФ, В, Ом, Вт */
+  dev:'weld', C:150, U:330, R:20, P:3,      /* мкФ, В, Ом, Вт */
   TSHOW:10, t:0, playing:true,
   hw:{x:null}, hp:{x:null}, tipw:null, tipp:null,
   W(){return this.C*1e-6*this.U*this.U/2;},
@@ -1581,7 +1594,7 @@ const M5={
   init(){
     seg('m5dev',v=>{
       this.dev=v; this.t=0;
-      const d=v==='flash'?[150,330,20,3]:[50,3000,50,20];
+      const d=v==='weld'?[150,330,20,3]:[50,3000,50,20];
       this.C=d[0]; this.U=d[1]; this.R=d[2]; this.P=d[3];
     });
     grip('m5scene',this,()=>this.grips());
@@ -1610,7 +1623,7 @@ const M5={
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w,h}=b, lv=this.level(), fire=this.phase()==='fire';
-    const flash=this.dev==='flash';
+    const weld=this.dev==='weld';
     g.clearRect(0,0,w,h);
     /* джерело: висота коробки ∝ потужності */
     const L=this.lay(b), bx=L.bx, by=L.by, bh=this.bh();
@@ -1634,36 +1647,64 @@ const M5={
         {color:'#1c5cab',size:10.5,bold:true,align:'center'});
     }
     /* навантаження: проміжок між електродами ∝ опору — довша дуга, більший опір */
-    const lx=L.lx, gp=this.gp(), Rl=Math.max(flash?26:30,gp/2+14);
-    if(flash){
-      g.strokeStyle=fire?CLR.k2:CLR.axis; g.lineWidth=2.5;
-      g.beginPath(); g.arc(lx,by,Rl,0,7); g.stroke();
+    const lx=L.lx, gp=this.gp(), Rl=Math.max(weld?30:34,gp/2+16);
+    if(weld){
+      /* Кліщі точкового зварювання: два мідні електроди стискають два листи,
+         і вся енергія йде в зварну точку між ними за мілісекунди. */
+      g.strokeStyle=CLR.sec; g.lineWidth=2;
+      g.beginPath();
+      g.moveTo(lx-Rl-6,by-6); g.lineTo(lx-Rl-6,by+6);
+      g.lineTo(lx+Rl+6,by+6); g.lineTo(lx+Rl+6,by-6); g.stroke();
+      g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+      g.beginPath(); g.rect(lx-Rl-2,by-6,2*Rl+4,6); g.fill(); g.stroke();
+      g.beginPath(); g.rect(lx-Rl-2,by,2*Rl+4,6); g.fill(); g.stroke();
+      /* конічні електроди зверху й знизу */
+      for(const sg of [-1,1]){
+        g.fillStyle='rgba(235,104,52,.14)'; g.strokeStyle=fire?CLR.k2:CLR.sec; g.lineWidth=2;
+        g.beginPath();
+        g.moveTo(lx-9,by+sg*(gp/2+30)); g.lineTo(lx+9,by+sg*(gp/2+30));
+        g.lineTo(lx+4,by+sg*(gp/2+6)); g.lineTo(lx-4,by+sg*(gp/2+6));
+        g.closePath(); g.fill(); g.stroke();
+      }
       if(fire){
-        dot(g,lx,by,Rl-2,'rgba(235,104,52,'+(0.15+0.5*lv)+')');
-        for(let i=0;i<12;i++){
-          const a=2*Math.PI*i/12;
-          g.strokeStyle='rgba(235,104,52,'+(0.2+0.6*lv)+')'; g.lineWidth=2;
+        dot(g,lx,by,4+9*lv,'rgba(235,104,52,'+(0.25+0.6*lv)+')');
+        for(let i=0;i<10;i++){
+          const a=Math.PI*(i/9)-Math.PI/2, r0=8+10*lv;
+          g.strokeStyle='rgba(235,104,52,'+(0.2+0.6*lv)+')'; g.lineWidth=1.6;
           g.beginPath();
-          g.moveTo(lx+Math.cos(a)*(Rl+4),by+Math.sin(a)*(Rl+4));
-          g.lineTo(lx+Math.cos(a)*(Rl+8+26*lv),by+Math.sin(a)*(Rl+8+26*lv)); g.stroke();
+          g.moveTo(lx+Math.cos(a)*r0,by+Math.sin(a)*r0*0.5);
+          g.lineTo(lx+Math.cos(a)*(r0+16*lv),by+Math.sin(a)*(r0+16*lv)*0.5); g.stroke();
         }
       }
-      txt(g,'лампа-спалах',lx,by+Rl+42,{color:CLR.mut,size:10.5,align:'center'});
+      txt(g,'кліщі точкового зварювання',lx,by+Rl+52,{color:CLR.mut,size:10.5,align:'center'});
     } else {
-      g.strokeStyle=fire?CLR.k2:CLR.axis; g.lineWidth=2.5;
-      g.beginPath(); g.roundRect(lx-Rl,by-22,2*Rl,44,6); g.stroke();
-      if(fire){
-        g.fillStyle='rgba(235,104,52,'+(0.1+0.4*lv)+')';
-        g.beginPath(); g.roundRect(lx-Rl+2,by-20,2*Rl-4,40,5); g.fill();
+      /* Дефібрилятор: два справжні електроди-«праски» з руків'ями на грудній клітці. */
+      g.strokeStyle=CLR.grid; g.lineWidth=1.6;
+      g.beginPath(); g.ellipse(lx,by,Rl+26,Rl+14,0,0,7); g.stroke();
+      txt(g,'грудна клітка',lx,by+Rl+18,{color:CLR.grid,size:9.5,align:'center'});
+      for(const sg of [-1,1]){
+        const ex=lx+sg*(gp/2+13);
+        g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=fire?CLR.k2:CLR.sec; g.lineWidth=2.2;
+        g.beginPath(); g.roundRect(ex-11,by-15,22,30,4); g.fill(); g.stroke();
+        g.lineWidth=3;
+        g.beginPath(); g.moveTo(ex,by-15); g.lineTo(ex+sg*7,by-32); g.stroke();
+        g.beginPath(); g.roundRect(ex+sg*3,by-40,sg>0?14:-14,10,4); g.stroke();
+        if(fire){
+          g.fillStyle='rgba(235,104,52,'+(0.15+0.5*lv)+')';
+          g.beginPath(); g.roundRect(ex-9,by-13,18,26,3); g.fill();
+        }
       }
-      txt(g,'електроди',lx,by+Rl+42,{color:CLR.mut,size:10.5,align:'center'});
+      if(fire){
+        for(let i=0;i<7;i++){
+          const yy=by-12+i*4;
+          g.strokeStyle='rgba(235,104,52,'+(0.25+0.55*lv)+')'; g.lineWidth=1.6;
+          g.beginPath();
+          g.moveTo(lx-gp/2+2,yy); g.lineTo(lx,yy+(i%2?3:-3)); g.lineTo(lx+gp/2-2,yy); g.stroke();
+        }
+      }
+      txt(g,'електроди дефібрилятора',lx,by+Rl+52,{color:CLR.mut,size:10.5,align:'center'});
     }
-    /* самі електроди: відстань між ними і є те, що тягнуть */
-    g.strokeStyle=CLR.ink; g.lineWidth=2.5;
-    g.beginPath();
-    g.moveTo(lx-gp/2,by-9); g.lineTo(lx-gp/2,by+9);
-    g.moveTo(lx+gp/2,by-9); g.lineTo(lx+gp/2,by+9); g.stroke();
-    txt(g,fmt(this.R,0)+' Ом',lx,by+Rl+58,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    txt(g,fmt(this.R,0)+' Ом',lx,by+Rl+68,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     if(fire){
       arrow(g,cx+cw/2+8,by,lx-Rl-8,by,CLR.k2,4);
       txt(g,'швидко: '+fmt(3*this.tau()*1000,1)+' мс',(cx+lx)/2,by-16,
