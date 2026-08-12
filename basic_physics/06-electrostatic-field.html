@@ -137,7 +137,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <span class="lbl">Перетягуйте пробний заряд; кільця навколо зарядів задають їхню величину</span>
+          <span class="lbl">Перетягуйте пробний заряд по полю; величини зарядів — на шкалах праворуч</span>
           <span class="lbl" id="m1state" style="font-weight:600"></span>
         </div>
         <canvas id="m1scene"></canvas>
@@ -361,6 +361,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Гроза</h3>
+        <div class="kv"><span><var>U</var> — напруга хмара–земля<span class="badge">шкала в кадрі</span></span><b id="m5vU"></b></div>
+        <div class="kv"><span><var>H</var> — висота хмари<span class="badge">сама хмара</span></span><b id="m5vH"></b></div>
+        <div class="kv"><span><var>h</var> — висота блискавковідводу<span class="badge">вершина щогли</span></span><b id="m5vh"></b></div>
+        <div class="kv"><span><var>R</var> — радіус заокруглення вістря<span class="badge">шкала в кадрі</span></span><b id="m5vR"></b></div>
       </div>
       <div class="panel">
         <h3>Поле</h3>
@@ -775,24 +779,24 @@ const M1={
   /* полиця середовищ: ε — властивість речовини, а не розмір, тож її обирають
      клацанням по зразку, а не тягнуть. Комірки живуть унизу сцени. */
   med(b){const y=b.h-24, x0=b.w*0.58; return {y,x0,dx:62};},
+  /* Заряд не має власного розміру в кресленні: кільце навколо нього — образ величини,
+     а не ручка за неї. Самі величини задають шкалами (§19: саме той випадок, для
+     якого смуга й лишалася дозволеною). Знак теж задається шкалою — вона переходить
+     через нуль. */
+  GG:[['Q','Q',-20,20,0.5,CLR.k1],['q','q',-2,2,0.1,CLR.sec]],
+  gcol(b){return {x0:b.w*0.83, dx:46, yb:b.h-58, H:Math.min(150,b.h*0.44)};},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const G=this.geo(b), M=this.med(b);
     const rm=(Math.min(b.w-G.cx,G.cy)-30)/G.sc;
     const out=[
-      {id:'Q', x:G.cx+this.Rq(this.Q), y:G.cy, r:7, color:CLR.sec, hint:'величина заряду',
-       move:px=>{const d=px-G.cx, m=Math.max(0,(Math.abs(d)-18)/2.6);
-         this.Q=(d<0?-1:1)*clamp(snap(m,0.5),0,20);}},
       {id:'probe', x:G.cx+this.r*G.sc*Math.cos(this.ang), y:G.cy+this.r*G.sc*Math.sin(this.ang),
        r:11, bare:true, color:CLR.ink, hint:'пробний заряд',
        move:(px,py)=>{const dx=px-G.cx, dy=py-G.cy;
          this.r=clamp(snap(Math.hypot(dx,dy)/G.sc,0.02),0.1,Math.max(0.12,rm));
          if(Math.hypot(dx,dy)>4) this.ang=Math.atan2(dy,dx);}}
     ];
-    const px=G.cx+this.r*G.sc*Math.cos(this.ang), py=G.cy+this.r*G.sc*Math.sin(this.ang);
-    out.push({id:'q', x:px+this.Rq(this.q)*0.7, y:py, r:6, color:CLR.sec, hint:'пробний заряд q',
-      move:p=>{const d=p-px, m=Math.max(0,(Math.abs(d)-13)/9);
-        this.q=(d<0?-1:1)*clamp(snap(m,0.1),0,2);}});
+    out.push(...gaugeGrips(this.gcol(b),this.GG,this));
     out.push(...shelfGrips(M,this.MED,v=>{this.eps=v;}));
     return out;
   },
@@ -866,8 +870,9 @@ const M1={
     /* полиця середовищ */
     const M=this.med(b);
     shelf(g,M,this.MED,this.eps,'середовище');
+    gaugeCol(g,this.gcol(b),this.GG,this);
     for(const hh of this.grips()) drawGrip(g,hh,this);
-    txt(g,'тягніть пробний заряд по полю · кільця задають величини зарядів',
+    txt(g,'тягніть пробний заряд по полю · величини Q і q задають шкали праворуч',
       12,h-40,{color:CLR.mut,size:10.5});
   },
   table(){
@@ -1022,26 +1027,34 @@ const M2={
     /* еквіпотенціалі: сітку потенціалу рахуємо один раз, далі шукаємо
        перетини рівнів — інакше 8 рівнів × 90² викликів поля з'їдають кадр */
     if(this.show!=='lines'){
-      const N=54, x0=-1.6, step=3.2/N;
+      const N=72, x0=-1.6, step=3.2/N;
       const grid=new Float64Array((N+1)*(N+1));
       for(let i=0;i<=N;i++)
         for(let j=0;j<=N;j++)
-          grid[i*(N+1)+j]=this.field(x0+i*step,x0+j*step).ph/1000;
-      g.strokeStyle='rgba(235,104,52,.40)'; g.lineWidth=1.2;
+          grid[i*(N+1)+j]=this.field(x0+i*step,x0+j*step).ph;   /* вольти */
+      /* Рівні — у вольтах, а не в кіловольтах: заряд у кілька нанокулонів дає
+         в цьому кадрі сотні вольт, тож старі рівні ±5…40 кВ не перетиналися
+         ніде й жодної лінії не з'являлося. Драбина геометрична, щоб згущення
+         ліній біля заряду читалося як зростання поля. */
+      const LV=[50,100,200,400,800,1600];
+      g.strokeStyle='rgba(235,104,52,.55)'; g.lineWidth=1.3;
       g.beginPath();
-      for(const L of [-40,-20,-10,-5,5,10,20,40]){
+      for(const s0 of [-1,1]) for(const lv of LV){
+        const L=s0*lv;
         for(let i=0;i<N;i++){
           for(let j=0;j<N;j++){
-            const a=grid[i*(N+1)+j], bb=grid[(i+1)*(N+1)+j], cc=grid[i*(N+1)+j+1];
+            const v00=grid[i*(N+1)+j],     v10=grid[(i+1)*(N+1)+j],
+                  v01=grid[i*(N+1)+j+1],   v11=grid[(i+1)*(N+1)+j+1];
             const x=x0+i*step, y=x0+j*step;
-            if((a-L)*(bb-L)<0){
-              const t=(L-a)/(bb-a);
-              g.moveTo(SX(x+step*t),SY(y)); g.lineTo(SX(x+step*t)+1.4,SY(y));
-            }
-            if((a-L)*(cc-L)<0){
-              const t=(L-a)/(cc-a);
-              g.moveTo(SX(x),SY(y+step*t)); g.lineTo(SX(x),SY(y+step*t)-1.4);
-            }
+            /* маршируючі квадрати: у комірці з'єднуємо точки перетину рівня
+               на її ребрах — так виходить суцільна лінія, а не рисочка */
+            const pt=[];
+            if((v00-L)*(v10-L)<0) pt.push([x+step*(L-v00)/(v10-v00),y]);
+            if((v01-L)*(v11-L)<0) pt.push([x+step*(L-v01)/(v11-v01),y+step]);
+            if((v00-L)*(v01-L)<0) pt.push([x,y+step*(L-v00)/(v01-v00)]);
+            if((v10-L)*(v11-L)<0) pt.push([x+step,y+step*(L-v10)/(v11-v10)]);
+            if(pt.length>=2){g.moveTo(SX(pt[0][0]),SY(pt[0][1])); g.lineTo(SX(pt[1][0]),SY(pt[1][1]));}
+            if(pt.length===4){g.moveTo(SX(pt[2][0]),SY(pt[2][1])); g.lineTo(SX(pt[3][0]),SY(pt[3][1]));}
           }
         }
       }
@@ -1297,16 +1310,16 @@ const M4={
       /* правий край тіла: ширина — це і є те, що тягнемо */
       {id:'w', x:G.cx+this.wd*G.sc/2, y:G.cy, r:9, color:CLR.k3, hint:'ширина тіла',
        move:px=>{this.wd=clamp(snap(2*(px-G.cx)/G.sc,0.02),0.2,0.8);}},
-      /* наконечник стрілки зовнішнього поля задає його величину */
-      {id:'E0', x:60+this.E0*4, y:G.cy-bh/2-40, r:8, color:CLR.k1, hint:'зовнішнє поле E₀',
-       move:px=>{this.E0=clamp(snap((px-60)/4,1),1,40);}}
     ];
-    if(this.mat==='diel')
-      out.push({id:'eps', x:G.cx-this.wd*G.sc/2-14-this.eps*3, y:G.cy+bh*0.32, r:7,
-        color:CLR.k2, hint:'проникність речовини',
-        move:px=>{this.eps=clamp(snap((G.cx-this.wd*G.sc/2-14-px)/3,0.5),1,20);}});
+    /* Напруженість зовнішнього поля й проникність речовини власного розміру в
+       кресленні не мають: стрілка та відступ були лише образами величин. Задають
+       їх шкалами (§19). */
+    out.push(...gaugeGrips(this.gcol(b),this.mat==='diel'?this.GGD:this.GG,this));
     return out;
   },
+  GG:[['E0','E₀',1,40,1,CLR.k1]],
+  GGD:[['E0','E₀',1,40,1,CLR.k1],['eps','ε',1,20,0.5,CLR.k2]],
+  gcol(b){return {x0:56, dx:48, yb:b.h-24, H:Math.min(110,b.h*0.30)};},
   Ein(){
     if(this.mat==='cond') return 0;
     if(this.mat==='none') return this.E0*1000;
@@ -1391,6 +1404,7 @@ const M4={
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
     pill(g,'E = '+fmt(Ein/1000,2)+' кВ/м',cx,cy+bh/2+24,
       {color:inside?CLR.ink:CLR.k1,size:12,bold:true});
+    gaugeCol(g,this.gcol(b),this.mat==='diel'?this.GGD:this.GG,this);
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
@@ -1464,19 +1478,18 @@ const M5={
     return [
       /* напруга хмара–земля не має розміру на кресленні, зате має носія:
          тягнемо ручку на хмарі — густішає її заряд */
-      {id:'U', x:b.w*0.10+this.U*0.9, y:G.SY(this.H)+30, r:8, color:CLR.k2,
-       hint:'напруга хмара–земля',
-       move:px=>{this.U=clamp(snap((px-b.w*0.10)/0.9,5),10,300);}},
       {id:'H', x:b.w*0.66, y:G.SY(this.H), r:9, color:CLR.sec, hint:'висота хмари',
        move:(px,py)=>{this.H=clamp(snap(G.iY(py),50),200,2000);}},
+      /* Щогла тепер сягає половини кадру — тисячі метрів. Це вже не побутовий
+         блискавковідвід, а межа, на якій видно, як підсилення росте з висотою;
+         вище хмари її не пускаємо. */
       {id:'h', x:b.w*0.46, y:G.SY(this.h), r:9, color:CLR.k1, hint:'висота блискавковідводу',
-       move:(px,py)=>{this.h=clamp(snap(G.iY(py),1),5,120);}},
-      /* радіус заокруглення вістря: тягнемо вбік від щогли */
-      {id:'R', x:b.w*0.46+16+this.R*1.6, y:G.SY(this.h)-16, r:7, color:CLR.k2,
-       hint:'радіус заокруглення вістря',
-       move:px=>{this.R=clamp(snap((px-b.w*0.46-16)/1.6,0.5),0.5,60);}}
-    ];
+       move:(px,py)=>{this.h=clamp(snap(G.iY(py),1),5,Math.min(G.HH/2,this.H*0.9));}}
+    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
+  /* Напруга й радіус вістря власного розміру в кресленні не мають — задають їх шкалами. */
+  GG:[['U','U',10,300,5,CLR.k2],['R','R',0.5,60,0.5,CLR.k2]],
+  gcol(b){return {x0:b.w*0.05, dx:44, yb:b.h-52, H:Math.min(110,b.h*0.28)};},
   /* підсилення поля на вершині витягнутого тіла ≈ 1 + 2h/R_екв, обмежуємо розумною межею */
   gain(){return Math.min(20000,1+this.h/(this.R/1000));},
   Etip(){return this.E0()*this.gain();},
@@ -1561,9 +1574,14 @@ const M5={
       12,20,{color:fires?CLR.k2:CLR.k1,size:12.5,bold:true});
     txt(g,'на вістрі заряд збирається густіше, тому поле там у десятки разів сильніше за середнє',
       12,36,{color:CLR.mut,size:10.5});
+    gaugeCol(g,this.gcol(b),this.GG,this);
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
+    $('m5vU').textContent=fmt(this.U,0)+' десятків кВ';
+    $('m5vH').textContent=fmt(this.H,0)+' м';
+    $('m5vh').textContent=fmt(this.h,0)+' м';
+    $('m5vR').textContent=fmt(this.R,1)+' мм';
     const E0=this.E0(), Et=this.Etip();
     $('m5state').textContent='';
     $('m5kE0').textContent=fmt(E0/1000,2)+' кВ/м';
@@ -1596,11 +1614,11 @@ const M5={
     if(bh){
       const ts=[],ys=[];
       for(let i=0;i<=60;i++){
-        const hh=5+115*i/60; ts.push(hh);
+        const hh=5+995*i/60; ts.push(hh);
         ys.push(Math.min(9000,this.E0()*Math.min(20000,1+hh/(this.R/1000))/1000));
       }
       const hi=Math.max(...ys)*1.12;
-      const r=drawChart(bh,{tMax:120,yMin:0,yMax:hi,yLab:'кВ/м',xLab:'h, м',xStep:20,
+      const r=drawChart(bh,{tMax:1000,yMin:0,yMax:hi,yLab:'кВ/м',xLab:'h, м',xStep:200,
         hover:this.hh.x,
         series:[{ts,ys,color:CLR.k2,label:'E'},
                 {ts:[this.h,this.h],ys:[0,this.Etip()/1000],color:CLR.ink,label:'h',dash:[4,3]}]});
