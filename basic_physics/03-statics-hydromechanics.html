@@ -1003,7 +1003,11 @@ const M2={
      живим, інакше платформа не поверталася б за пальцем. */
   geo(b){return frozen(this,b,bb=>{
     const st=this.state();
-    const W=2.6, sc=Math.min((bb.w-60)/W,(bb.h-80)/(W*Math.sin(60*DEG)+this.h+0.6));
+    /* висота кадру — під найвище тіло діапазону (h ≤ 2 м), а не під поточне:
+       інакше низький брусок і високий займали однакову частку полотна, і сенс
+       відношення висоти до ширини основи зникав саме там, де він головний */
+    const W=2.6, HMAX=2;
+    const sc=fitScale(bb.w,bb.h,60,80,W,W*Math.sin(60*DEG)+HMAX+0.6,0,0);
     let tilt=0;
     if(st==='перекидається') tilt=Math.min(0.6,(this.al-this.aTip())*DEG*2.2);
     const slide=st==='ковзає'?Math.min(0.9,(this.al-this.aSlip())*0.03):0;
@@ -1181,7 +1185,11 @@ const M3={
         rb:{y:bb.h-52,x0:bb.w-4*70-6,dx:70},
         rl:{y:bb.h-18,x0:bb.w-4*70-6,dx:70}};
     }
-    const sc=(bb.w-140)/(this.d1+this.d2+18);
+    /* Кадр під найбільші поршні діапазону (d₁ ≤ 8 см, d₂ ≤ 40 см). Раніше масштаб
+       ділився на суму діаметрів — тих самих, які тягнуть, — тож прес із будь-яким
+       передавальним відношенням виглядав однаково. */
+    const D1MAX=8, D2MAX=40;
+    const sc=fitScale(bb.w,bb.h,140,0,D1MAX+D2MAX+18,0,0,0);
     return {sc,cy:bb.h*0.62,x1:90+this.d1*sc/2,x2:bb.w-90-this.d2*sc/2};
   });},
   grips(){
