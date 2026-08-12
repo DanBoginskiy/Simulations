@@ -1254,6 +1254,8 @@ const M3={
   /* якір стрілки газу: біля сопла, але не лівіше за край кадру — інакше
      на початку розгону і стрілка, і підпис ішли б за полотно */
   gxa(px){return Math.max(px-16*this.rs(),120+this.u*0.024);},
+  /* бак усередині корпуса — спільна геометрія для малювання й для ручки */
+  tank(px){const r=this.rs(); return {x0:px-12*r, L:26*r, h:9*r};},
   geo(b){return frozen(this,b,bb=>{
     const s=this.steps, k=this.step();
     let x=0; for(let i=0;i<k;i++) x+=s.v[i]*this.TSHOW/this.N;
@@ -1269,12 +1271,12 @@ const M3={
   grips(){
     const b=cvx('m3scene'); if(!b) return [];
     const Q=this.geo(b), rs=this.rs(), px=Q.px, cy=Q.cy;
-    const bx0=px-14*rs, bL=44*rs;
+    const T=this.tank(px), bx0=T.x0, bL=T.L;
     return [
       {id:'M0', x:px+34*rs, y:cy, r:8, color:CLR.k1, hint:'стартова маса ракети',
        move:mx=>{this.M0=clamp(snap(((mx-px)/34-0.8)*1200,50),200,2000); this.reset();}},
       /* смуга палива в баку: її довжина і є часткою палива */
-      {id:'frac', x:bx0+bL*this.frac, y:cy+4*rs, r:7, color:CLR.k3, hint:'частка палива',
+      {id:'frac', x:bx0+bL*this.frac, y:cy, r:7, color:CLR.k3, hint:'частка палива',
        move:mx=>{this.frac=clamp(snap((mx-bx0)/bL,0.05),0.1,0.9); this.reset();}},
       {id:'u', x:this.gxa(px)-this.u*0.024, y:cy+40, r:8, color:CLR.k3,
        hint:'швидкість витікання газу',
@@ -1326,26 +1328,49 @@ const M3={
       if(gx<-10) continue;
       dot(g,gx,cy+((i*29)%13)-6,3.2,'rgba(27,175,122,.55)');
     }
-    /* ракета: її розмір — стартова маса */
-    const px=Q.px;
+    /* Ракета — суцільний силует: сопло, корпус, ніс і стабілізатори одним контуром.
+       Раніше це був трикутник із двома розімкненими «вусами» й баком, що вилазив
+       у ніс; читалося як довільна ламана, а не як ракета. Розмір — стартова маса. */
+    const px=Q.px, R=rs, hb=9*R, bodyL=px-16*R, bodyR=px+16*R, noz=px-26*R;
     g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=CLR.k1; g.lineWidth=2;
     g.beginPath();
-    g.moveTo(px+34*rs,cy); g.lineTo(px-16*rs,cy-13*rs); g.lineTo(px-16*rs,cy+13*rs);
+    g.moveTo(px+34*R,cy);
+    g.lineTo(bodyR,cy-hb); g.lineTo(bodyL,cy-hb);
+    g.lineTo(noz,cy-11*R); g.lineTo(noz,cy+11*R);
+    g.lineTo(bodyL,cy+hb); g.lineTo(bodyR,cy+hb);
     g.closePath(); g.fill(); g.stroke();
+    /* стабілізатори */
     g.beginPath();
-    g.moveTo(px-16*rs,cy-13*rs); g.lineTo(px-28*rs,cy-22*rs); g.lineTo(px-16*rs,cy-4*rs);
-    g.moveTo(px-16*rs,cy+13*rs); g.lineTo(px-28*rs,cy+22*rs); g.lineTo(px-16*rs,cy+4*rs);
-    g.stroke();
-    /* бак: залита частина — частка палива, що лишилася на старті */
-    const bx0=px-14*rs, bL=44*rs;
+    for(const sgn of [-1,1]){
+      g.moveTo(px-3*R,cy+sgn*hb); g.lineTo(px-16*R,cy+sgn*16*R); g.lineTo(px-16*R,cy+sgn*hb);
+      g.closePath();
+    }
+    g.fill(); g.stroke();
+    /* шви корпуса — щоб ніс і сопло відділялися від бака */
+    g.lineWidth=1.2;
+    g.beginPath();
+    g.moveTo(bodyL,cy-hb); g.lineTo(bodyL,cy+hb);
+    g.moveTo(bodyR,cy-hb); g.lineTo(bodyR,cy+hb); g.stroke();
+    /* бак: рамка — увесь бак, штрих — задана частка палива, заливка — скільки
+       його лишилося зараз. Раніше заливка стояла нерухомо весь політ. */
+    const T=this.tank(px), left=this.frac*(1-k/this.N);
     g.strokeStyle=CLR.k3; g.lineWidth=1.2;
-    g.strokeRect(bx0,cy-1*rs,bL,10*rs);
-    g.fillStyle='rgba(27,175,122,.28)';
-    g.fillRect(bx0,cy-1*rs,bL*this.frac,10*rs);
+    g.strokeRect(T.x0,cy-T.h/2,T.L,T.h);
+    g.fillStyle='rgba(27,175,122,.30)';
+    g.fillRect(T.x0,cy-T.h/2,T.L*left,T.h);
+    g.strokeStyle='rgba(27,175,122,.75)'; g.lineWidth=1.6;
+    g.beginPath();
+    g.moveTo(T.x0+T.L*this.frac,cy-T.h/2-4); g.lineTo(T.x0+T.L*this.frac,cy+T.h/2+4);
+    g.stroke();
+    /* смолоскип: два вкладені язики, довжина пульсує */
     if(k<this.N&&this.t>0.05){
-      g.fillStyle='rgba(27,175,122,.35)';
-      g.beginPath(); g.moveTo(px-16*rs,cy-7); g.lineTo(px-46-14*Math.abs(Math.sin(this.t*9)),cy);
-      g.lineTo(px-16*rs,cy+7); g.closePath(); g.fill();
+      const fl=40+22*Math.abs(Math.sin(this.t*9));
+      g.fillStyle='rgba(27,175,122,.28)';
+      g.beginPath(); g.moveTo(noz,cy-8*R); g.lineTo(noz-fl,cy); g.lineTo(noz,cy+8*R);
+      g.closePath(); g.fill();
+      g.fillStyle='rgba(235,104,52,.45)';
+      g.beginPath(); g.moveTo(noz,cy-4*R); g.lineTo(noz-fl*0.5,cy); g.lineTo(noz,cy+4*R);
+      g.closePath(); g.fill();
     }
     arrow(g,px+36*rs+12,cy,px+36*rs+12+Math.min(96,vNow/Math.max(1,vEnd)*96),cy,CLR.k2,2.5);
     txt(g,'v = '+fmt(vNow,0)+' м/с',px+40*rs+12,cy-12*rs,{color:'#b8431a',size:11.5,bold:true});

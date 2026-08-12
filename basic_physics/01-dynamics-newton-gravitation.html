@@ -104,7 +104,7 @@ table.read tr:last-child td{border-bottom:none}
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
 #m1scene{width:100%; height:250px}
 #m2scene{width:100%; height:330px}
-#m3scene{width:100%; height:400px}
+#m3scene{width:100%; height:560px}
 #m4scene{width:100%; height:340px}
 #m5scene{width:100%; height:600px}
 #m1diag,#m3diag{width:100%; height:170px}
@@ -1082,7 +1082,7 @@ const M2={
     ];
   },
   init(){
-    seg('m2body',v=>{this.body=v;});
+    seg('m2body',v=>{this.body=v; this.reset();});
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
@@ -1298,17 +1298,23 @@ const M3={
   hgt(m){return 0.30+0.16*m;},          /* висота бруска ∝ масі */
   ALMAX:40, FMAX:60, LAMAX:4,     /* верхні межі ручок — звідси масштаби (§10) */
   geoPair(bb){
-    const al=this.al*DEG, p=this.pair(this.F);
-    const a=Math.abs(p.a)*this.t*this.t/2*p.dir;
-    /* Видима ділянка траси — 4,5 м, а не 7: кадр має вмістити найкрутіший нахил
-       діапазону, тож світовий прямокутник майже квадратний, а полотно широке.
-       Що довша ділянка, то дрібніші бруски; камера й так їде за ними. */
-    const WW=4.5, HH=WW*Math.sin(this.ALMAX*DEG)+2.4;
+    const al=this.al*DEG;
+    /* Видима ділянка траси — 7,5 м; запасу 1,6 м над площиною вистачає найважчому
+       бруску разом із підписом. Кадр мусить умістити найкрутіший нахил діапазону,
+       тому світовий прямокутник високий, а полотно широке: ширину заповнює саме
+       довжина ділянки. */
+    const WW=7.5, HH=WW*Math.sin(this.ALMAX*DEG)+1.6;
     const sc=fitScale(bb.w,bb.h,40,72,WW,HH,0,0);
-    const ox=bb.w/2-a*Math.cos(al)*sc, oy=bb.h*0.62+a*Math.sin(al)*sc;
-    return {al,sc,uc:a,WW,k:76/this.FMAX,
-      SX:(u,n)=>ox+u*Math.cos(al)*sc-n*Math.sin(al)*sc,
-      SY:(u,n)=>oy-u*Math.sin(al)*sc-n*Math.cos(al)*sc,
+    const cx0=bb.w/2, cy0=bb.h*0.62;
+    /* Зсув камери береться в мить малювання, а не заморожується разом із кадром.
+       Кожна ручка кличе reset(), t стає нулем — і замороженим зсувом бруски
+       виносило за поле. Масштаб і кут при цьому лишаються сталими. */
+    const uc=()=>{const p=this.pair(this.F); return Math.abs(p.a)*this.t*this.t/2*p.dir;};
+    const ox=()=>cx0-uc()*Math.cos(al)*sc, oy=()=>cy0+uc()*Math.sin(al)*sc;
+    return {al,sc,WW,k:76/this.FMAX,
+      get uc(){return uc();},
+      SX:(u,n)=>ox()+u*Math.cos(al)*sc-n*Math.sin(al)*sc,
+      SY:(u,n)=>oy()-u*Math.sin(al)*sc-n*Math.cos(al)*sc,
       mu:{y:24,x0:bb.w-4*62-6,dx:62}};
   },
   geoLift(bb){
@@ -1915,9 +1921,11 @@ const M5={
     }
     txt(g,o.kind,12,20,{color:o.hit?CLR.k3:(o.e<0.02?CLR.k1:CLR.k2),size:12.5,bold:true});
     /* §10: коли траєкторія не влазить, про це кажуть, а не ховають її мовчки */
+    /* власний рядок під двома заголовковими: раніше цей напис лягав і на назву
+       траєкторії, і на підпис під нею */
     if(this.offFrame())
-      pill(g,'орбіта виходить за кадр — масштаб сталий, до геостаціонарної',
-        w/2,36,{color:CLR.mut,size:11,bold:true});
+      pill(g,'орбіта не влазить у кадр — оберіть інший випадок угорі',
+        w/2,62,{color:CLR.mut,size:11,bold:true});
     txt(g,o.hit?'швидкості замало: снаряд падає, не встигнувши «промахнутися» повз Землю'
       :o.E>=0?'швидкості вистачило, щоб подолати тяжіння назавжди'
       :'снаряд весь час падає на Землю — і весь час її промахує',
