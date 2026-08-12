@@ -383,9 +383,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
-  <p class="caption">Баштовий кран — це важіль у чистому вигляді. Вантаж створює перекидний момент
-  відносно переднього ребра опори, противага й власна вага крана — утримувальний.
-  Що далі виліт стріли, то менший вантаж можна підняти.</p>
+  <p class="caption">Баштовий кран — це важіль у чистому вигляді, і перекинутися він може на два боки. Уперед його тягне вантаж — тим сильніше, що далі виліт стріли. Назад тягне противага, і цей бік стає небезпечним, коли вантаж малий, стріла підтягнута близько або основа вузька. Стійкість крана — гірший із двох боків.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -422,20 +420,28 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>b</var> — півширина опорної основи<span class="badge">ребро основи</span></span><b id="m5vb"></b></div>
       </div>
       <div class="panel">
-        <h3>Моменти відносно переднього ребра</h3>
+        <h3>Уперед: через переднє ребро</h3>
         <div class="kv"><span><span class="chip cB"></span>перекидний <var>mg</var>(<var>d</var> − <var>b</var>)</span><b id="m5kMo"></b></div>
         <div class="kv"><span><span class="chip cA"></span>від противаги <var>M</var><sub>п</sub><var>g</var>(<var>a</var> + <var>b</var>)</span><b id="m5kMc"></b></div>
         <div class="kv"><span><span class="chip cA"></span>від власної ваги крана</span><b id="m5kMt"></b></div>
         <div class="kv"><span>утримувальний разом</span><b id="m5kMh"></b></div>
-        <div class="kv"><span>коефіцієнт стійкості <var>k</var></span><b id="m5kK"></b></div>
-        <div class="kv"><span>висновок</span><b id="m5kVerd"></b></div>
+        <div class="kv"><span>коефіцієнт <var>k</var><sub>уперед</sub></span><b id="m5kK"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Назад: через заднє ребро</h3>
+        <div class="kv"><span><span class="chip cA"></span>перекидний <var>M</var><sub>п</sub><var>g</var>(<var>a</var> − <var>b</var>)</span><b id="m5kMoB"></b></div>
+        <div class="kv"><span><span class="chip cB"></span>утримує вантаж <var>mg</var>(<var>d</var> + <var>b</var>)</span><b id="m5kMhL"></b></div>
+        <div class="kv"><span>утримувальний разом із вагою крана</span><b id="m5kMhB"></b></div>
+        <div class="kv"><span>коефіцієнт <var>k</var><sub>назад</sub></span><b id="m5kKB"></b></div>
+        <div class="kv"><span>висновок<span class="badge">гірший із двох боків</span></span><b id="m5kVerd"></b></div>
       </div>
       <div class="panel">
         <h3>Межі</h3>
         <div class="kv"><span>найбільший вантаж на цьому вильоті</span><b id="m5kMax"></b></div>
+        <div class="kv"><span>найменший вантаж, щоб противага не перекинула</span><b id="m5kMin"></b></div>
         <div class="kv"><span>найбільший безпечний виліт для цього вантажу</span><b id="m5kDmax"></b></div>
         <div class="kv"><span>сумарний тиск на основу</span><b id="m5kN"></b></div>
-        <div class="formulas">противага працює на плечі (<i>a</i> + <i>b</i>), вантаж — на плечі (<i>d</i> − <i>b</i>)</div>
+        <div class="formulas">уперед противага працює на плечі (<i>a</i> + <i>b</i>), а вантаж перекидає на плечі (<i>d</i> − <i>b</i>); назад навпаки — перекидає противага на плечі (<i>a</i> − <i>b</i>), а вантаж утримує на плечі (<i>d</i> + <i>b</i>)</div>
       </div>
     </div>
   </div>
@@ -1682,12 +1688,29 @@ const M4={
 const M5={
   d:18, m:3, Mc:14, a:7, b:3, Mt:20,          /* маси в тоннах */
   hm:{x:null}, hk:{x:null}, tipm:null, tipk:null,
+  /* Перекидання вперед — навколо переднього ребра основи (+b): перекидає вантаж,
+     утримують противага й власна вага крана. */
   Mover(d,m){return Math.max(0,m*1000*G*(d-this.b));},
   Mhold(){return (this.Mc*(this.a+this.b)+this.Mt*this.b)*1000*G;},
-  k(d,m){const o=this.Mover(d,m); return o<1?Infinity:this.Mhold()/o;},
+  kF(d,m){const o=this.Mover(d,m); return o<1?Infinity:this.Mhold()/o;},
+  /* Перекидання назад — навколо заднього ребра (−b). Тут ролі міняються: перекидає
+     сама противага на плечі (a − b), а утримують башта й вантаж на плечі (d + b).
+     Цей бік стає небезпечним якраз тоді, коли вантаж малий, стріла підтягнута
+     близько або основа вузька — тобто в порожнього крана. */
+  MoverB(){return Math.max(0,this.Mc*1000*G*(this.a-this.b));},
+  MholdB(d,m){return (this.Mt*this.b+m*(d+this.b))*1000*G;},
+  kB(d,m){const o=this.MoverB(); return o<1?Infinity:this.MholdB(d,m)/o;},
+  /* стійкість крана — гірший із двох боків */
+  k(d,m){return Math.min(this.kF(d,m),this.kB(d,m));},
+  back(d,m){return this.kB(d,m)<this.kF(d,m);},
   mMax(d){
     const arm=d-this.b;
     return arm<=0.05?Infinity:this.Mhold()/(KST*1000*G*arm);
+  },
+  /* найменший вантаж, за якого противага ще не перекине кран назад */
+  mMin(d){
+    const need=KST*this.Mc*(this.a-this.b)-this.Mt*this.b;   /* у тонно-метрах */
+    return need<=0?0:need/(d+this.b);
   },
   bs(){return 8+this.m*1.6;},        /* розмір вантажу ∝ його масі */
   cs(){return 9+this.Mc*0.85;},      /* розмір противаги ∝ її масі */
@@ -1744,8 +1767,11 @@ const M5={
     /* основа */
     g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
     g.beginPath(); g.roundRect(SX(-this.b),gy-14,2*this.b*sc,14,2); g.fill(); g.stroke();
+    /* обидва ребра — кран може перекинутися і вперед вантажем, і назад противагою */
     dot(g,SX(this.b),gy,4.5,CLR.k2);
-    txt(g,'ребро перекидання',SX(this.b)+10,gy-22,{color:'#b8431a',size:10,bold:true});
+    dot(g,SX(-this.b),gy,4.5,CLR.k1);
+    txt(g,'переднє ребро',SX(this.b)+10,gy-22,{color:'#b8431a',size:10,bold:true});
+    txt(g,'заднє ребро',SX(-this.b)-10,gy-22,{color:'#1c5cab',size:10,bold:true,align:'right'});
     /* башта і стріла */
     g.strokeStyle=CLR.sec; g.lineWidth=3;
     g.beginPath(); g.moveTo(SX(0),gy-14); g.lineTo(SX(0),SY(jibY)); g.stroke();
@@ -1779,11 +1805,21 @@ const M5={
     g.beginPath(); g.moveTo(SX(-this.a),armY+34); g.lineTo(SX(this.b),armY+34); g.stroke();
     pill(g,'a + b = '+fmt(this.a+this.b,1)+' м',(SX(-this.a)+SX(this.b))/2,armY+54,
       {color:'#1c5cab',size:11,bold:true});
-    const k=this.k(this.d,this.m);
-    const ok=k>=KST;
-    txt(g,ok?'кран стійкий: k = '+fmt(k,2):'НЕБЕЗПЕЧНО: k = '+fmt(k,2)+' < 1,40',12,20,
-      {color:ok?CLR.k1:CLR.k2,size:12.5,bold:true});
-    txt(g,'усі моменти беремо відносно переднього ребра опори — саме навколо нього кран перекинувся б',
+    /* плече, на якому противага перекидає кран назад */
+    g.strokeStyle=CLR.k1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(SX(-this.a),armY+68); g.lineTo(SX(-this.b),armY+68); g.stroke();
+    g.setLineDash([]);
+    pill(g,'a − b = '+fmt(this.a-this.b,1)+' м',(SX(-this.a)+SX(-this.b))/2,armY+88,
+      {color:'#1c5cab',size:11,bold:true});
+    const kF=this.kF(this.d,this.m), kB=this.kB(this.d,this.m);
+    const k=Math.min(kF,kB), bad=kB<kF, ok=k>=KST;
+    /* стрілка на тому ребрі, навколо якого кран піде першим */
+    const eg=bad?SX(-this.b):SX(this.b), dir=bad?-1:1;
+    arc(g,eg,gy,26,bad?Math.PI:0,bad?Math.PI*1.35:-Math.PI*0.35,ok?CLR.grid:CLR.k2,ok?1.4:2.4);
+    txt(g,ok?'кран стійкий: k = '+fmt(k,2)+(bad?' (критичний бік — задній)':' (критичний бік — передній)')
+          :'НЕБЕЗПЕЧНО: k = '+fmt(k,2)+' < 1,40 — перекинеться '+(bad?'назад, через противагу':'уперед, через вантаж'),
+      12,20,{color:ok?CLR.k1:CLR.k2,size:12.5,bold:true});
+    txt(g,'моменти рахуємо відносно обох ребер: уперед перекидає вантаж, назад — противага',
       12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,'тягніть вантаж уздовж стріли, противагу — у другий бік, ребро — це край основи',
@@ -1791,7 +1827,8 @@ const M5={
   },
   table(){
     const Mo=this.Mover(this.d,this.m), Mh=this.Mhold();
-    const k=this.k(this.d,this.m);
+    const MoB=this.MoverB(), MhB=this.MholdB(this.d,this.m);
+    const kF=this.kF(this.d,this.m), kB=this.kB(this.d,this.m), k=Math.min(kF,kB);
     $('m5state').textContent='';
     $('m5vd').textContent=fmt(this.d,1)+' м';
     $('m5vm').textContent=fmt(this.m,1)+' т';
@@ -1802,10 +1839,16 @@ const M5={
     $('m5kMc').textContent=fmt(this.Mc*(this.a+this.b)*1000*G/1000,1)+' кН·м';
     $('m5kMt').textContent=fmt(this.Mt*this.b*1000*G/1000,1)+' кН·м';
     $('m5kMh').textContent=fmt(Mh/1000,1)+' кН·м';
-    $('m5kK').textContent=isFinite(k)?fmt(k,2):'вантаж усередині основи';
-    $('m5kVerd').textContent=k>=KST?'у межах норми':'перевантаження';
-    const mm=this.mMax(this.d);
+    $('m5kK').textContent=isFinite(kF)?fmt(kF,2):'вантаж усередині основи';
+    $('m5kMoB').textContent=fmt(MoB/1000,1)+' кН·м';
+    $('m5kMhL').textContent=fmt(this.m*(this.d+this.b)*1000*G/1000,1)+' кН·м';
+    $('m5kMhB').textContent=fmt(MhB/1000,1)+' кН·м';
+    $('m5kKB').textContent=isFinite(kB)?fmt(kB,2):'противага всередині основи';
+    $('m5kVerd').textContent=k>=KST?'у межах норми'
+      :(kB<kF?'противага перекине назад':'вантаж перекине вперед');
+    const mm=this.mMax(this.d), mn=this.mMin(this.d);
     $('m5kMax').textContent=isFinite(mm)?fmt(mm,2)+' т':'обмежене лише міцністю';
+    $('m5kMin').textContent=mn<=0?'кран стійкий і порожнім':fmt(mn,2)+' т';
     const dm=this.b+Mh/(KST*1000*G*Math.max(0.05,this.m));
     $('m5kDmax').textContent=fmt(Math.min(60,dm),1)+' м';
     $('m5kN').textContent=fmt((this.m+this.Mc+this.Mt)*1000*G/1000,1)+' кН';
