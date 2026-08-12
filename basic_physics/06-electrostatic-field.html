@@ -1116,8 +1116,12 @@ const M3={
      Без frozen() кадр перемасштабовувався б на кожному кроці жесту
      і ручка тікала б з-під пальця. */
   geo(b){return frozen(this,b,bb=>{
-    const span=Math.max(this.r2*1.25,this.bow*1.6+0.2);
-    const sc=Math.min((bb.w-140)/(span+0.25),(bb.h-70)/(2*Math.max(0.35,this.bow)+0.5));
+    /* Кадр під крайні значення діапазону (r₂ ≤ 1,4; вигин ≤ 1,2), а не під поточні.
+       Раніше і масштаб, і те, що тягнуть, були однією й тією ж величиною: дуга
+       виглядала однаково за будь-якого вигину, змінювалися лише підписи осей. */
+    const R2MAX=1.4, BOWMAX=1.2;
+    const span=Math.max(R2MAX*1.25,BOWMAX*1.6+0.2);
+    const sc=fitScale(bb.w,bb.h,140,70,span+0.25,2*BOWMAX+0.5,0,0);
     const cx=bb.w*0.16, cy=bb.h*0.62;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc,iX:p=>(p-cx)/sc,iY:p=>(cy-p)/sc};
   });},
@@ -1447,7 +1451,9 @@ const M5={
   hr:{x:null}, hh:{x:null}, tipr:null, tiph:null,
   E0(){return this.U*1e4/this.H;},                     /* В/м, U задано в десятках кВ */
   geo(b){return frozen(this,b,bb=>{
-    const HH=Math.max(this.H,this.h*1.6), sc=(bb.h-70)/HH, gy=bb.h-34;
+    /* висота кадру — під найвищу хмару діапазону (H ≤ 2000 м), інакше хмара на
+       200 м і на 2000 м висіли б на тій самій висоті полотна */
+    const HH=2000, sc=fitScale(bb.w,bb.h,0,70,0,HH,0,0), gy=bb.h-34;
     return {sc,gy,HH,SY:y=>gy-y*sc,iY:p=>(gy-p)/sc};
   });},
   grips(){
