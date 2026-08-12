@@ -309,7 +309,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     </div>
     <div class="side">
       <div class="panel">
-        <h3>Керування</h3>
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span><var>E</var><sub>0</sub> — зовнішнє поле<span class="badge">смуга в кадрі</span></span><b id="m4vE0"></b></div>
+        <div class="kv"><span><var>d</var> — ширина тіла<span class="badge">правий край тіла</span></span><b id="m4vwd"></b></div>
+        <div class="kv" id="m4vew"><span><var>ε</var> — проникність речовини<span class="badge">смуга в кадрі</span></span><b id="m4veps"></b></div>
       </div>
       <div class="panel">
         <h3>Поле всередині тіла</h3>
@@ -1314,12 +1317,31 @@ const M4={
     /* Напруженість зовнішнього поля й проникність речовини власного розміру в
        кресленні не мають: стрілка та відступ були лише образами величин. Задають
        їх шкалами (§19). */
-    out.push(...gaugeGrips(this.gcol(b),this.mat==='diel'?this.GGD:this.GG,this));
+    out.push(...this.gbarGrips(this.gcol(b),this.mat==='diel'?this.GGD:this.GG));
     return out;
   },
-  GG:[['E0','E₀',1,40,1,CLR.k1]],
-  GGD:[['E0','E₀',1,40,1,CLR.k1],['eps','ε',1,20,0.5,CLR.k2]],
-  gcol(b){return {x0:56, dx:48, yb:b.h-24, H:Math.min(110,b.h*0.30)};},
+  GG:[['E0','E₀, кВ/м',1,40,1,CLR.k1]],
+  GGD:[['E0','E₀, кВ/м',1,40,1,CLR.k1],['eps','ε',1,20,0.5,CLR.k2]],
+  gcol(b){return {x:96, W:Math.min(240,b.w*0.30), y0:b.h-40, dy:24};},
+  /* Смуга лежить горизонтально: поле в цьому модулі напрямлене вздовж осі x,
+     і величина, яку задають, зростає в той самий бік, що й стрілки поля. */
+  gbar(g,C,list){
+    list.forEach((m,i)=>{
+      const y=C.y0+i*C.dy;
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(C.x,y-8,C.W,16,4); g.stroke();
+      const f=Math.max(0,Math.min(1,(this[m[0]]-m[2])/(m[3]-m[2])));
+      g.fillStyle=m[5]||CLR.k1; g.globalAlpha=0.32;
+      g.fillRect(C.x+3,y-5,f*(C.W-6),10); g.globalAlpha=1;
+      txt(g,m[1],C.x-10,y+4,{color:CLR.sec,size:9.5,bold:true,align:'right'});
+    });
+  },
+  gbarGrips(C,list){
+    return list.map((m,i)=>({id:m[0],
+      x:C.x+3+(this[m[0]]-m[2])/(m[3]-m[2])*(C.W-6), y:C.y0+i*C.dy, r:8,
+      color:m[5]||CLR.k1, hint:m[1],
+      move:px=>{this[m[0]]=clamp(snap((px-C.x-3)/(C.W-6)*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);}}));
+  },
   Ein(){
     if(this.mat==='cond') return 0;
     if(this.mat==='none') return this.E0*1000;
@@ -1404,10 +1426,14 @@ const M4={
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
     pill(g,'E = '+fmt(Ein/1000,2)+' кВ/м',cx,cy+bh/2+24,
       {color:inside?CLR.ink:CLR.k1,size:12,bold:true});
-    gaugeCol(g,this.gcol(b),this.mat==='diel'?this.GGD:this.GG,this);
+    this.gbar(g,this.gcol(b),this.mat==='diel'?this.GGD:this.GG);
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
+    $('m4vE0').textContent=fmt(this.E0,0)+' кВ/м';
+    $('m4vwd').textContent=fmt(this.wd,2)+' м';
+    $('m4veps').textContent=fmt(this.eps,1);
+    $('m4vew').hidden=this.mat!=='diel';
     const E0=this.E0*1000, Ein=this.Ein();
     $('m4state').textContent='';
     $('m4kE0').textContent=fmt(this.E0,1)+' кВ/м';

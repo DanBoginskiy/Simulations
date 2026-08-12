@@ -102,7 +102,7 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:300px}
+#m1scene{width:100%; height:330px}
 #m1hist{width:100%; height:186px}
 #m2scene{width:100%; height:300px}
 #m3scene{width:100%; height:290px}
@@ -909,15 +909,16 @@ const M1={
     txt(g,'T = '+fmt(this.T,0)+' K · '+this.N+' молекул',12,20,{color:CLR.k3,size:12.5,bold:true});
     txt(g,'кожен удар об праву стінку передає їй імпульс — сума ударів і є тиском',
       12,36,{color:CLR.mut,size:10.5});
-    txt(g,'⟨v²⟩ ½ = '+fmt(vq,0)+' м/с',ox,h-10,{color:CLR.mut,size:10.5});
+    txt(g,'⟨v²⟩ ½ = '+fmt(vq,0)+' м/с',ox,oy-8,{color:CLR.mut,size:10.5});
     /* Що означає колір кружка. Без цього підпису синій кружок читається як «інший
        газ», хоча молекули тут усі однакові — різний лише момент їхнього життя. */
-    const ly=oy+this.BOX.h*sc+18;
+    /* у два рядки: одним він налазив на полицю газів праворуч */
+    const ly=oy+this.BOX.h*sc+16;
     dot(g,ox+6,ly-4,3,CLR.k2);
-    txt(g,'летить вільно',ox+16,ly,{color:CLR.mut,size:10.5});
-    dot(g,ox+124,ly-4,4.5,CLR.k1);
-    txt(g,'щойно вдарилася об праву стінку — саме ці удари й створюють тиск',
-      ox+134,ly,{color:CLR.mut,size:10.5});
+    txt(g,'помаранчева — летить вільно',ox+16,ly,{color:CLR.mut,size:10.5});
+    dot(g,ox+6,ly+13,4.5,CLR.k1);
+    txt(g,'синя — щойно вдарилася об праву стінку: ці удари й створюють тиск',
+      ox+16,ly+17,{color:CLR.mut,size:10.5});
     /* прилади: термометр і лічильник молекул */
     therm(g,Q.tx,Q.yb,Q.H,(this.T-50)/1150,CLR.k2,'T');
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
@@ -1394,7 +1395,7 @@ const M4={
   bskw(){return 20+this.mk*0.09;},            /* кошик ∝ масі спорядження */
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='tank'){
-      const cy=bb.h*0.55, bh=bb.h*0.52;
+      const cy=bb.h*0.52, bh=bb.h*0.50;
       return {cx:bb.w*0.30,cy,bh,mx:bb.w*0.72,my:cy-10,R:Math.min(64,bb.h*0.2),
         tx:bb.w*0.50,yb:cy+bh/2-6,H:bh-24};
     }
@@ -1402,7 +1403,9 @@ const M4={
     const payload=this.lift().F/G-this.mk;
     const cy=bb.h*0.42+(payload>0?-6:8);
     return {cx:bb.w*0.42,cy,R,
-      inx:bb.w*0.14,outx:bb.w-52,yb:bb.h-40,H:bb.h*0.5};
+      /* yb вище на 20 px: підпис значення стоїть на yb + 46, і з bb.h − 40
+         він опинявся нижче краю полотна — тобто зникав зовсім */
+      inx:bb.w*0.14,outx:bb.w-52,yb:bb.h-62,H:bb.h*0.46};
   });},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
@@ -1467,8 +1470,10 @@ const M4={
     g.strokeStyle=over?CLR.k2:CLR.k1; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-bw/2,cy-bh/2,bw,bh,14); g.fill(); g.stroke();
     g.beginPath(); g.roundRect(cx-14,cy-bh/2-20,28,22,4); g.stroke();
-    /* молекули: більше руху при вищій температурі */
-    const n=34;
+    /* Молекул стільки, скільки в балоні газу: обʼєм не міняє тиску (закон Шарля
+       залишає його залежним лише від температури), зате міняє кількість речовини —
+       і саме це тепер видно в кадрі, а не лише в таблиці. */
+    const n=Math.max(8,Math.round(6+this.Vt*0.6));
     for(let i=0;i<n;i++){
       const a=(i*79)%1000/1000, q=(i*137)%1000/1000;
       const amp=2+8*(this.tC+273)/423;
@@ -1511,6 +1516,9 @@ const M4={
       {color:over?CLR.k2:CLR.k3,size:12.5,bold:true});
     txt(g,'нагрівання на 100 K піднімає тиск приблизно на третину — тому балони не лишають на сонці',
       12,36,{color:CLR.mut,size:10.5});
+    /* найчастіше запитання до цієї сцени: чому ширший балон нічого не міняє */
+    txt(g,'ширший балон вміщає більше газу, але тиску не міняє: за сталого обʼєму він залежить лише від T',
+      12,h-10,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   sceneBalloon(){
