@@ -104,9 +104,9 @@ table.read tr:last-child td{border-bottom:none}
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
 #m1scene{width:100%; height:250px}
 #m2scene{width:100%; height:330px}
-#m3scene{width:100%; height:240px}
+#m3scene{width:100%; height:400px}
 #m4scene{width:100%; height:340px}
-#m5scene{width:100%; height:400px}
+#m5scene{width:100%; height:600px}
 #m1diag,#m3diag{width:100%; height:170px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
@@ -405,6 +405,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
+          <span class="lbl">Орбіта:</span>
+          <div class="seg" id="m5orb">
+            <button data-v="low" class="on">колова</button>
+            <button data-v="geo">геостаціонарна</button>
+            <button data-v="esc">відліт</button>
+          </div>
           <button class="ibtn" id="m5play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m5re" title="запустити знову">↺</button>
           <span class="lbl" id="m5t"></span>
@@ -434,11 +440,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>v</var><sub>0</sub> — початкова швидкість відносно центра Землі<span class="badge">довжина стрілки</span></span><b id="m5vv"></b></div>
         <div class="kv"><span><var>h</var><sub>0</sub> — висота точки запуску над поверхнею<span class="badge">точка запуску</span></span><b id="m5vh"></b></div>
         <div class="kv"><span><var>β</var> — кут швидкості до горизонту в точці запуску<span class="badge">напрям стрілки</span></span><b id="m5vb"></b></div>
-        <div class="toolbar" style="margin:8px 0 0">
-          <button class="btn" id="m5p1">колова<small>першa космічна</small></button>
-          <button class="btn" id="m5p2">геостаціонарна<small>період — доба</small></button>
-          <button class="btn" id="m5p3">відліт<small>друга космічна</small></button>
-        </div>
       </div>
       <div class="panel">
         <h3>Орбіта</h3>
@@ -1033,7 +1034,8 @@ const BODIES=[
   {k:'rod', n:'стрижень', f:'m(2R)²/12',c:m=>1/3,   col:'ink'}
 ];
 const M2={
-  body:'hoop', F:4, r:0.4, m:2, R:0.4, T:6, t:0, playing:true, waitT:0,
+  body:'hoop', F:1, r:0.4, m:2, R:0.4, T:6, t:0, playing:true, waitT:0,
+  FMAX:2,                 /* верхня межа сили; з неї ж рахується довжина стрілки */
   hist:null, hw:{x:null}, he:{x:null}, tipw:null, tipe:null,
   M(){return this.F*Math.min(this.r,this.R);},
   I(k){return BODIES.find(b=>b.k===(k||this.body)).c()*this.m*this.R*this.R;},
@@ -1054,7 +1056,7 @@ const M2={
     const sc=Math.min(bb.w*0.3,(bb.h-64)*0.42)/0.5;
     const phi=this.eps()*this.t*this.t/2;
     return {cx:bb.w/2, cy:bb.h/2+8, sc, phi, ax:-phi,
-      kF:Math.min(this.R*sc*1.3,84)/10};
+      kF:Math.min(this.R*sc*1.3,84)/this.FMAX};
   });},
   side(){return 14+20*Math.sqrt(this.m);},   /* площа бруска — маса тіла */
   grips(){
@@ -1072,7 +1074,7 @@ const M2={
        move:(mx,my)=>{this.r=clamp(snap(Math.hypot(mx-Q.cx,my-Q.cy)/sc,0.01),0.05,this.R);
          this.reset();}},
       {id:'F', x:px+tx*this.F*Q.kF, y:py+ty*this.F*Q.kF, r:8, color:CLR.k1, hint:'сила',
-       move:(mx,my)=>{this.F=clamp(snap(((mx-px)*tx+(my-py)*ty)/Q.kF,0.5),0.5,10);
+       move:(mx,my)=>{this.F=clamp(snap(((mx-px)*tx+(my-py)*ty)/Q.kF,0.1),0,this.FMAX);
          this.reset();}},
       {id:'m', x:24+sd, y:b.h-16-sd, r:8, color:CLR.k2, hint:'маса тіла',
        move:mx=>{this.m=clamp(snap(Math.pow(Math.max(0,(mx-24-14))/20,2),0.1),0.5,5);
@@ -1210,12 +1212,12 @@ const M2={
     }
     const be=cvx('m2ce');
     if(be){
-      const MM=10*0.5, I=this.I();
+      const MM=this.FMAX*0.5, I=this.I();   /* найбільший момент: F_max на плечі R_max */
       const ts=[],ys=[];
       for(let i=0;i<=40;i++){const M=MM*i/40; ts.push(M); ys.push(M/I);}
       const eMax=Math.max(1,MM/I);
       const r=drawChart(be,{tMax:MM,yMin:-0.05*eMax,yMax:1.12*eMax,yLab:'рад/с²',xLab:'M, Н·м',
-        xStep:1,hover:this.he.x,
+        xStep:0.2,hover:this.he.x,
         series:[{ts,ys,color:CLR.k1,label:'ε'},
                 {ts:[this.M(),this.M()],ys:[-0.05*eMax,this.eps()],color:CLR.ink,label:'M',dash:[4,3]}]});
       showTip(this.tipe,r,'рад/с²',this.he,[['ε',CLR.k1],['поточний M',CLR.ink]],2);
@@ -1298,7 +1300,10 @@ const M3={
   geoPair(bb){
     const al=this.al*DEG, p=this.pair(this.F);
     const a=Math.abs(p.a)*this.t*this.t/2*p.dir;
-    const WW=7, HH=WW*Math.sin(this.ALMAX*DEG)+2.4;   /* найвища гірка діапазону */
+    /* Видима ділянка траси — 4,5 м, а не 7: кадр має вмістити найкрутіший нахил
+       діапазону, тож світовий прямокутник майже квадратний, а полотно широке.
+       Що довша ділянка, то дрібніші бруски; камера й так їде за ними. */
+    const WW=4.5, HH=WW*Math.sin(this.ALMAX*DEG)+2.4;
     const sc=fitScale(bb.w,bb.h,40,72,WW,HH,0,0);
     const ox=bb.w/2-a*Math.cos(al)*sc, oy=bb.h*0.62+a*Math.sin(al)*sc;
     return {al,sc,uc:a,WW,k:76/this.FMAX,
@@ -1605,20 +1610,26 @@ const M4={
   gAt(h){const p=this.P(); return GRAV*p.M/Math.pow(p.R*(1+h),2);},
   vCirc(h){const p=this.P(); return Math.sqrt(GRAV*p.M/(p.R*(1+h)));},
   Rm(){return 26+this.m*0.10;},        /* радіус кільця ∝ масі тіла */
+  HMAX:5,        /* верхня межа висоти з clamp() у grips(), у радіусах планети */
+  /* Кадр вміщує найдальше положення тіла — 1 + HMAX радіусів — і від поточної висоти
+     не залежить (§10). Раніше і масштаб, і центр планети їхали разом із h: поки ручку
+     тримали, frozen() тримав кадр нерухомо, тіло стояло на місці, а вся картинка
+     стрибала аж на відпусканні. Тому положення тіла bx рахується ПОЗА frozen() —
+     воно й має рухатися за пальцем у реальному часі. */
   geo(b){return frozen(this,b,bb=>{
-    const sc=Math.min((bb.w-130)/(2.4+this.h),(bb.h-96)/2.5);
-    const cx=bb.w*0.5-(this.h*sc)/2;
-    return {sc,cx,cy:bb.h/2+6,rp:sc,bx:cx+(1+this.h)*sc};
+    const sc=Math.min((bb.w-130)/(2+this.HMAX),(bb.h-96)/2.5);
+    return {sc,cx:sc+26,cy:bb.h/2+6,rp:sc};
   });},
+  bxOf(Q){return Q.cx+(1+this.h)*Q.sc;},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
     const Q=this.geo(b);
     return [
       /* саме тіло і є ручкою: віддаляєш його від планети — росте r */
-      {id:'h', x:Q.bx, y:Q.cy, r:10, bare:true, color:CLR.ink,
+      {id:'h', x:this.bxOf(Q), y:Q.cy, r:10, bare:true, color:CLR.ink,
        hint:'висота над поверхнею',
-       move:px=>{this.h=clamp(snap((px-Q.cx)/Q.sc-1,0.05),0,5);}},
-      {id:'m', x:Q.bx, y:Q.cy-this.Rm(), r:7, color:CLR.sec, hint:'маса тіла',
+       move:px=>{this.h=clamp(snap((px-Q.cx)/Q.sc-1,0.05),0,this.HMAX);}},
+      {id:'m', x:this.bxOf(Q), y:Q.cy-this.Rm(), r:7, color:CLR.sec, hint:'маса тіла',
        move:(px,py)=>{this.m=clamp(snap((Q.cy-py-26)/0.10,1),1,200);}}
     ];
   },
@@ -1636,7 +1647,7 @@ const M4={
     const b=cvx('m4scene'); if(!b) return;
     const {g,w,h}=b,p=this.P(),col=CLR[p.col],Q=this.geo(b);
     /* кадр: планета радіуса 1 плюс тіло на відстані 1+h — усе в радіусах R */
-    const sc=Q.sc, cx=Q.cx, cy=Q.cy, rp=Q.rp, bx=Q.bx;
+    const sc=Q.sc, cx=Q.cx, cy=Q.cy, rp=Q.rp, bx=this.bxOf(Q);
     g.clearRect(0,0,w,h);
     /* планета */
     dot(g,cx,cy,rp,'rgba(42,120,214,.08)');
@@ -1651,7 +1662,9 @@ const M4={
     /* відстань r = R + h */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(cx,cy); g.lineTo(bx,cy); g.stroke(); g.setLineDash([]);
-    pill(g,'r = '+fmt(1+this.h,2)+' R',(cx+bx)/2,cy-30,{color:CLR.sec,size:11});
+    /* підпис r — праворуч від тіла, у вільному полі: при малій висоті середина
+       відрізка припадає на саму планету, і напис ліг би на неї */
+    pill(g,'r = '+fmt(1+this.h,2)+' R',bx+this.Rm()+40,cy-26,{color:CLR.sec,size:11});
     if(this.h>0.03){
       g.strokeStyle=CLR.k2; g.lineWidth=2;
       g.beginPath(); g.moveTo(cx+rp,cy+52); g.lineTo(bx,cy+52); g.stroke();
@@ -1671,7 +1684,7 @@ const M4={
     dot(g,bx,cy,7,CLR.ink,'#fff');
     txt(g,fmt(this.m,0)+' кг',bx,cy-Rm-12,{color:CLR.ink,size:11,bold:true,align:'center'});
     arrow(g,bx,cy,bx-len,cy,CLR.k3,3);
-    txt(g,Ftxt,bx-len-6,cy-9,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
+    txt(g,Ftxt,bx-len-6,cy+16,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
     arrow(g,cx+rp,cy+24,cx+rp+len,cy+24,CLR.k3,3);
     txt(g,'та сама F діє на планету',cx+rp+2,cy+40,{color:'#0d7a55',size:10.5});
     txt(g,'тяжіння спадає як 1/r²',12,20,{color:CLR.k3,size:12.5,bold:true});
@@ -1723,7 +1736,9 @@ const M4={
 
 /* ===================== МОДУЛЬ 5 · супутники й орбіти ===================== */
 const M5={
-  v0:7.9, h0:300, beta:0,
+  v0:6.9, h0:2000, beta:0,
+  HMIN:2000,     /* найнижча точка запуску, км: нижче вона зливається з поверхнею */
+  view:'low',    /* обраний випадок — від нього кадр */
   t:0, playing:true, waitT:0, TSHOW:12,
   orb:null, hr:{x:null}, hv:{x:null}, tipr:null, tipv:null,
   /* повний розрахунок траєкторії за поточними параметрами:
@@ -1769,7 +1784,13 @@ const M5={
      на 36 000 км означало не побачити нічого. Тепер різниця висот видна одразу,
      а рідкісні майже-втечні траєкторії просто виходять за край кадру — про це
      сцена каже підписом, а не мовчить. */
-  MXORB:(R_E+36e6)*1.05,
+  /* Кадр підбирається під обраний випадок, а не під поточну траєкторію: перемикач
+     угорі — це режим, і масштабу дозволено залежати саме від нього (§10). Один кадр
+     на всі три випадки означав би, що низька орбіта — кільце завтовшки з лінію
+     навколо крихітної Землі. Усередині режиму масштаб стоїть нерухомо, а траєкторія,
+     що з нього вийшла, підписана. */
+  MX:{low:(R_E+3e6)*1.3, geo:(R_E+36e6)*1.05, esc:12*R_E},
+  get MXORB(){return this.MX[this.view];},
   geo(b){return frozen(this,b,bb=>{
     const sc=fitScale(bb.w,bb.h,40,56,2.2*this.MXORB,2.2*this.MXORB,0,0);
     const cx=bb.w/2, cy=bb.h/2+8;
@@ -1788,7 +1809,7 @@ const M5={
     const bt=this.beta*DEG, L=this.Lv();
     return [
       {id:'h0', x:lx, y:ly, r:9, bare:true, color:CLR.k1, hint:'висота точки запуску',
-       move:px=>{this.h0=clamp(snap(((px-Q.cx)/Q.sc-R_E)/1e3,100),200,36000); this.reset();}},
+       move:px=>{this.h0=clamp(snap(((px-Q.cx)/Q.sc-R_E)/1e3,100),this.HMIN,36000); this.reset();}},
       /* один вектор задає і модуль швидкості, і кут: саме так його й ставлять */
       {id:'v', x:lx+Math.sin(bt)*L, y:ly-Math.cos(bt)*L, r:8, color:CLR.k2,
        hint:'швидкість запуску та її напрям',
@@ -1803,9 +1824,13 @@ const M5={
     grip('m5scene',this,()=>this.grips());
     const preset=(h,vv,bb)=>{this.h0=h; this.beta=bb; this.v0=vv; this.reset();};
     /* швидкості пресетів обчислені з μ і радіуса, а не вписані «на око» */
-    $('m5p1').onclick=()=>preset(300,Math.round(Math.sqrt(MU_E/(R_E+3e5))/10)/100,0);
-    $('m5p2').onclick=()=>preset(35800,Math.round(Math.sqrt(MU_E/(R_E+3.58e7))/10)/100,0);
-    $('m5p3').onclick=()=>preset(300,Math.round(Math.sqrt(2*MU_E/(R_E+3e5))/10)/100+0.05,0);
+    const rOf=km=>R_E+km*1e3;
+    seg('m5orb',v=>{
+      this.view=v;
+      if(v==='low')      preset(this.HMIN,Math.round(Math.sqrt(MU_E/rOf(this.HMIN))/10)/100,0);
+      else if(v==='geo') preset(35800,Math.round(Math.sqrt(MU_E/rOf(35800))/10)/100,0);
+      else               preset(this.HMIN,Math.round(Math.sqrt(2*MU_E/rOf(this.HMIN))/10)/100+0.05,0);
+    });
     $('m5play').onclick=()=>{
       if(!this.playing&&this.t>=this.TSHOW) this.reset();
       else {this.playing=!this.playing; this.updBtn();}
@@ -1859,10 +1884,16 @@ const M5={
     const bt=this.beta*DEG, LA=this.Lv();
     const vex=lx+Math.sin(bt)*LA, vey=ly-Math.cos(bt)*LA;
     arrow(g,lx,ly,vex,vey,CLR.k1,2);
-    txt(g,fmt(this.v0,2)+' км/с · '+fmt(this.beta,0)+'°',vex+(Math.sin(bt)<0?-8:8),vey-6,
-      {color:'#1c5cab',size:10.5,bold:true,align:Math.sin(bt)<0?'right':'left'});
     dot(g,lx,ly,5,'#fff',CLR.k1);
-    txt(g,'запуск',lx+9,ly+14,{color:'#1c5cab',size:10.5,bold:true});
+    /* На початку заїзду й на кожному витку супутник стоїть у точці запуску, і тоді
+       чотири підписи лягають один на одного. Стрілку лишаємо — вона ручка, — а числа
+       ховаємо: те саме кажуть підписи самого супутника, і кажуть точніше. */
+    const nearStart=Math.hypot(SX(P.x)-lx,SY(P.y)-ly)<30;
+    if(!nearStart){
+      txt(g,fmt(this.v0,2)+' км/с · '+fmt(this.beta,0)+'°',vex+(Math.sin(bt)<0?-8:8),vey-6,
+        {color:'#1c5cab',size:10.5,bold:true,align:Math.sin(bt)<0?'right':'left'});
+      txt(g,'запуск',lx+9,ly+14,{color:'#1c5cab',size:10.5,bold:true});
+    }
     /* супутник, його швидкість і сила тяжіння */
     const px=SX(P.x), py=SY(P.y);
     const vx=(o.pts[Math.min(i+1,o.pts.length-1)].x-o.pts[Math.max(i-1,0)].x);
@@ -1872,9 +1903,12 @@ const M5={
     txt(g,'v = '+fmt(P.v/1e3,2)+' км/с',px+vx/vl*58,py-vy/vl*58-4,
       {color:'#b8431a',size:11.5,bold:true,align:vx<0?'right':'left'});
     const gl=Math.hypot(P.x,P.y)||1;
-    arrow(g,px,py,px-P.x/gl*40,py+P.y/gl*40,CLR.k3,2.5);
-    txt(g,'тяжіння',px-P.x/gl*46,py+P.y/gl*46+10,
-      {color:'#0d7a55',size:10.5,bold:true,align:P.x>0?'right':'left'});
+    const gdx=-P.x/gl, gdy=P.y/gl;
+    arrow(g,px,py,px+gdx*40,py+gdy*40,CLR.k3,2.5);
+    /* підпис збоку від стрілки: вістря дивиться в центр Землі, і напис у його
+       кінці лягав би просто на кулю */
+    txt(g,'тяжіння',px+gdx*20-gdy*17,py+gdy*20+gdx*17+4,
+      {color:'#0d7a55',size:10.5,bold:true,align:'center'});
     dot(g,px,py,6,CLR.ink,'#fff');
     if(o.hit&&i>=o.pts.length-1){
       pill(g,'зіткнення з поверхнею',w/2,h-14,{color:CLR.ink,size:12,bold:true});
