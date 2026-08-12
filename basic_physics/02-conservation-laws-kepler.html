@@ -839,7 +839,13 @@ const M1={
       const q=this.pos(this.T*i/40);
       lo=Math.min(lo,q.x1,q.x2); hi=Math.max(hi,q.x1,q.x2);
     }
-    const sc=(bb.w-40)/(hi-lo+1.4);
+    /* Кадр сталий — під найшвидший розліт діапазону (v ≤ 6 м/с у різні боки за
+       T = 6 с дає ≈93 м). Раніше масштаб брався з поточного розльоту, тож повільне
+       й швидке зіткнення виглядали однаково: візки завжди розходилися на ту саму
+       ширину полотна. Самі візки малюються сталими пікселями, тож лишаються
+       читними — стискається тільки відстань між ними, а це й є фізика. */
+    const SPAN=94;
+    const sc=fitScale(bb.w,bb.h,40,0,SPAN+1.4,0,hi-lo+1.4,0);
     const SX=x=>20+(x-lo+0.7)*sc, p=this.pos(this.t);
     return {lo,hi,sc,SX,gy:bb.h-42,x1:SX(p.x1),x2:SX(p.x2),
       kk:{y:24,x0:bb.w-4*66-6,dx:66}};
@@ -1054,11 +1060,11 @@ const M2={
   MU:[['лід',0],['сталь',0.05],['дерево',0.15],['гума',0.3]],
   BALL:[['пінопласт',0.05],['дерево',0.2],['скло',0.5],['сталь',1]],
   geo(b){return frozen(this,b,bb=>{
-    const S=this.S();
-    let xMax=0,yMax=0;
-    for(let k=0;k<=120;k++){const q=this.xy(S*k/120); xMax=Math.max(xMax,q.x); yMax=Math.max(yMax,q.y);}
-    yMax=Math.max(yMax,this.h0);
-    const sc=Math.min((bb.w-50)/(xMax+0.8),(bb.h-72)/(yMax+0.7));
+    /* Кадр розрахований на найбільшу гірку діапазону (h0 ≤ 5 м, R ≤ 1,2 м), а не
+       на поточну. Інакше низька гірка й висока займали ту саму висоту полотна
+       і зміна h0 нічого не показувала. */
+    const XMAX=11.0, YMAX=5.0;
+    const sc=fitScale(bb.w,bb.h,50,72,XMAX+0.8,YMAX+0.7,0,0);
     const ox=25, oy=bb.h-30;
     const q=this.xy(this.path.s[this.idx()]);
     return {sc,ox,oy, SX:x=>ox+x*sc, SY:y=>oy-y*sc,
@@ -1232,9 +1238,11 @@ const M3={
     const s=this.steps, k=this.step();
     let x=0; for(let i=0;i<k;i++) x+=s.v[i]*this.TSHOW/this.N;
     x+=s.v[k]*(this.t-k*this.TSHOW/this.N);
-    let xMax=0; for(let i=0;i<this.N;i++) xMax+=s.v[i]*this.TSHOW/this.N;
-    xMax=Math.max(1,xMax);
-    const sc=(bb.w-150)/(xMax*1.1+1);
+    /* Траса стала — розрахована на найдальший політ діапазону (≈28,6 км при
+       M₀ = 200 кг, частці палива 0,9 і u = 4 км/с). За типових значень ракета
+       проходить близько третини кадру, тож приріст швидкості нарешті видно. */
+    const xMax=28600;
+    const sc=fitScale(bb.w,bb.h,150,0,xMax*1.1+1,0,0,0);
     return {sc,xMax,cy:bb.h*0.46,SX:q=>60+q*sc,px:60+x*sc,
       comb:{x0:24,y:bb.h-22}};
   });},
@@ -1417,7 +1425,9 @@ const M4={
   updBtn(){$('m4play').textContent=this.playing?'⏸':'▶';},
   phase(){return this.t<1.2?'fly':'swing';},
   geo(b){return frozen(this,b,bb=>{
-    const sc=Math.min((bb.w-160)/(2.6*this.L),(bb.h-90)/(this.L*1.5));
+    /* найдовший підвіс діапазону (L ≤ 2 м) — кадр під нього, а не під поточний */
+    const LMAX=2;
+    const sc=fitScale(bb.w,bb.h,160,90,2.6*LMAX,1.5*LMAX,0,0);
     const px=bb.w*0.52, py=34, th=this.th();
     return {sc,px,py,th, bx:px+this.L*sc*Math.sin(th), by:py+this.L*sc*Math.cos(th),
       gx0:px-this.L*sc*1.05-40, gy0:py+this.L*sc};
@@ -1613,8 +1623,11 @@ const M5={
      e = (rа − rп)/(rа + rп). Саме так її й будують — двома точками
      на великій осі, а не двома абстрактними числами. */
   geo(b){return frozen(this,b,bb=>{
-    const a=this.a, e=this.e, bq=a*Math.sqrt(1-e*e);
-    const sc=Math.min((bb.w-70)/(2*a+0.6),(bb.h-70)/(2*bq+0.6));
+    const a=this.a, e=this.e;
+    /* Кадр під найбільшу орбіту діапазону (a ≤ 5). Півширина максимальна при a = 5,
+       піввисота a√(1−e²) — там само при e = 0, тож обидві межі дає той самий a. */
+    const AMAX=5;
+    const sc=fitScale(bb.w,bb.h,70,70,2*AMAX+0.6,2*AMAX+0.6,0,0);
     const cx=bb.w/2+a*e*sc, cy=bb.h/2+6;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
   });},
