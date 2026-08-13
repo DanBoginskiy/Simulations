@@ -690,6 +690,10 @@ function grip(id,st,listFn){
       const d=Math.hypot(px-h.x,py-h.y);
       if(d<=h.r+6&&d<bd){bd=d; best=h;}
     }
+    /* у ручку діаметром 16 px влучити важко. Якщо схибили — приймаємо дотик
+       у межах доріжки шкали: ручка стрибає під палець. Ручки на самій сцені
+       зони hit не мають, тож їх це не зачіпає. */
+    if(!best) for(const h of listFn()) if(h.hit&&h.hit(px,py)){best=h; break;}
     return best;
   };
   c.addEventListener('pointerdown',e=>{
@@ -766,12 +770,26 @@ function shelf(g,M,list,cur,lab){
    коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
    Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
 function gpos(C,i){
-  return {x:C.x[i%2], y:C.y0+Math.floor(i/2)*C.dy};
+  return {x:C.x[i%C.cols], y:C.y0+Math.floor(i/C.cols)*C.dy};
+}
+/* Розкладка смуги. Скільки полотна вона з'їдає — рахується з кількості шкал,
+   а не з наперед узятих 90 px: при п'яти рядах смуга лізла на сцену, а нижче
+   межі чистки сцени не чистив ніхто, тож ручка лишала за собою всі свої
+   попередні положення. Тепер сцена малює вище gtop, смуга — нижче, і кожна
+   чистить рівно свою частину. На вузькому екрані дві колонки не влазять —
+   смуга стає одноколонковою. */
+function gcolOf(b,n){
+  const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
+  const gtop=b.h-(n?rows*24+28:0);
+  const W=two?b.w*0.5-150:Math.max(80,b.w-170);
+  return {W, x:two?[80,b.w*0.5+80]:[80,80], cols, dy:24, rows, gtop,
+    w:b.w, h:b.h, y0:gtop+22};
 }
 function gaugeGrips(C,list,st){
   return list.map((m,i)=>{
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:8, color:m[5]||CLR.k1, hint:m[1],
+      hit:(px,py)=>px>=p.x-12&&px<=p.x+C.W+12&&Math.abs(py-p.y)<=11,
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);
@@ -779,15 +797,18 @@ function gaugeGrips(C,list,st){
   });
 }
 function gaugeCol(g,C,list,st){
+  g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+  if(!list.length) return;
   g.strokeStyle=CLR.grid; g.lineWidth=1;
-  g.beginPath(); g.moveTo(8,C.y0-16+.5); g.lineTo(C.x[1]+C.W+16,C.y0-16+.5); g.stroke();
+  g.beginPath(); g.moveTo(8,C.y0-16+.5);
+  g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.y0-16+.5); g.stroke();
   list.forEach((m,i)=>{
     const p=gpos(C,i), f=Math.max(0,Math.min(1,(st[m[0]]-m[2])/(m[3]-m[2])));
     g.strokeStyle=CLR.axis; g.lineWidth=1;
     g.beginPath(); g.moveTo(p.x,p.y+.5); g.lineTo(p.x+C.W,p.y+.5); g.stroke();
     g.strokeStyle=m[5]||CLR.k1; g.lineWidth=3;
     g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x+f*C.W,p.y); g.stroke();
-    txt(g,m[1],p.x-8,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
+    txt(g,m[1],p.x-13,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
     txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+8,p.y+4,
       {color:CLR.mut,size:10});
   });
@@ -903,9 +924,7 @@ const M1={
     ['a1','a1',0,89,1,CLR.k3,null,'m1va1',0,'°'],
     ['d','d',1,40,1,CLR.sec,null,'m1vd',0,'мм']
   ],
-  gcol(b){const rows=Math.ceil(this.GG.length/2);
-    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
-      y0:b.h-rows*24+2};},
+  gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -921,7 +940,7 @@ const M1={
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m1scene'); if(!b) return;
-    const {g,w}=b, h=b.h-90;
+    const {g,w}=b, h=this.gcol(b).gtop;
     g.clearRect(0,0,w,h);
     const a2=this.a2(), tir=a2==null;
     const nm={edge:['промінь на межі двох середовищ',CLR.k3],
@@ -1117,9 +1136,7 @@ const M2={
     ['d','d',3,90,1,CLR.k2,null,'m2vd',0,'см'],
     ['h','h',1,10,0.5,CLR.k3,null,'m2vh',1,'см']
   ],
-  gcol(b){const rows=Math.ceil(this.GG.length/2);
-    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
-      y0:b.h-rows*24+2};},
+  gcol(b){return gcolOf(b,this.GG.length);},
   /* Масштаб сталий (§10): по горизонталі — від найбільшої відстані до предмета
      (d ⩽ 90 см із таблиці GG), по вертикалі — від найбільшої його висоти (h ⩽ 10 см).
      Раніше обидва рахувалися з поточних величин разом із відстанню до зображення, а
@@ -1147,7 +1164,7 @@ const M2={
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
-    const {g,w}=b, h=b.h-90;
+    const {g,w}=b, h=this.gcol(b).gtop;
     g.clearRect(0,0,w,h);
     const F=this.Fs(), f=this.f(), conv=this.kind==='conv';
     txt(g,conv?'збиральна лінза: паралельні промені сходяться у фокусі'
@@ -1344,9 +1361,7 @@ const M3={
     ['Foc','Foc',5,40,1,CLR.k2,null,'m3vFoc',0,'мм'],
     ['tub','tub',100,250,10,CLR.k3,null,'m3vtub',0,'мм']
   ],
-  gcol(b){const rows=Math.ceil(this.GG.length/2);
-    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
-      y0:b.h-rows*24+2};},
+  gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m3scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1362,7 +1377,7 @@ const M3={
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m3scene'); if(!b) return;
-    const {g,w}=b, h=b.h-90;
+    const {g,w}=b, h=this.gcol(b).gtop;
     g.clearRect(0,0,w,h);
     if(this.mode==='eye') this.sceneEye(g,w,h); else this.sceneInst(g,w,h);
   },
@@ -1570,9 +1585,7 @@ const M4={
     ['lam','lam',400,700,10,CLR.sec,null,'m4vlam',0,'нм'],
     ['rho','rho',0.2,10,0.1,CLR.k1,null,'m4vrho',1,'″']
   ],
-  gcol(b){const rows=Math.ceil(this.GG.length/2);
-    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
-      y0:b.h-rows*24+2};},
+  gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1588,7 +1601,7 @@ const M4={
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m4scene'); if(!b) return;
-    const {g,w}=b, h=b.h-90, refr=this.kind==='refr';
+    const {g,w}=b, h=this.gcol(b).gtop, refr=this.kind==='refr';
     g.clearRect(0,0,w,h);
     txt(g,refr?'рефрактор: об’єктив — лінза, промені заломлюються'
       :'рефлектор: об’єктив — увігнуте дзеркало, промені відбиваються',
@@ -1770,9 +1783,7 @@ const M5={
     ['des','des',147,152,0.1,CLR.k2,null,'m5vdes',1,'млн км'],
     ['beta','b',0,1.6,0.02,CLR.k3,null,'m5vb',2,'°']
   ],
-  gcol(b){const rows=Math.ceil(this.GG.length/2);
-    return {W:b.w*0.5-146, x:[80,b.w*0.5+80], dy:24, rows,
-      y0:b.h-rows*24+2};},
+  gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
@@ -1788,7 +1799,7 @@ const M5={
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
-    const {g,w}=b, h=b.h-90;
+    const {g,w}=b, h=this.gcol(b).gtop;
     g.clearRect(0,0,w,h);
     const nm={sol:['Місяць кидає тінь на Землю',CLR.k1],
       lun:['Місяць входить у тінь Землі',CLR.k3],
