@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Границя послідовності · ε-смуга й номер N · приклади · властивості збіжних</title>
+<style>
+:root{
+  --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{background:var(--paper); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
+h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
+h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
+.tabs{display:flex; gap:6px; margin:12px 0 16px; border-bottom:1px solid var(--grid); padding-bottom:0; flex-wrap:wrap}
+.tabs button{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:8px 14px 10px; font:600 14px/1 system-ui,sans-serif; color:var(--sec); cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--ink)}
+.module{display:none}
+.module.active{display:block}
+.caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
+canvas{display:block}
+/* segmented control */
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
+  font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
+  box-shadow:inset 0 -2px 0 var(--c,#888)}
+/* icon buttons */
+.ibtn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:34px; height:30px; cursor:pointer; font-size:13px; color:var(--ink)}
+.ibtn:hover{border-color:var(--axis)}
+.btn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  padding:6px 11px; cursor:pointer; font:600 12.5px/1 system-ui,sans-serif; color:var(--ink)}
+.btn:hover{border-color:var(--axis)}
+.btn small{display:block; font-weight:400; color:var(--mut); margin-top:3px}
+/* key-value readouts */
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:5px 0; border-bottom:1px dashed var(--grid); font-size:13px}
+.kv:last-child{border-bottom:none}
+/* display:flex перебиває приховування атрибутом hidden — повертаємо його */
+.kv[hidden]{display:none}
+.kv span{color:var(--sec)}
+.kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
+  border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
+.badge[hidden]{display:none}
+.chip{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.cA{background:var(--k1)} .cB{background:var(--k2)} .cC{background:var(--k3)} .cI{background:var(--ink)}
+.formulas{font-size:12.5px; color:var(--mut); margin-top:8px; font-style:italic}
+.formulas i{font-family:Georgia,serif}
+.formulas b{color:var(--ink); font-style:normal}
+var{font-family:Georgia,serif; font-style:italic}
+/* toolbars, tables, charts — спільні для всіх модулів */
+.toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.toolbar .lbl{font-size:12.5px; color:var(--mut)}
+.toolbar .lbl b{font-variant-numeric:tabular-nums}
+.legend{display:flex; gap:18px; font-size:12.5px; color:var(--sec); margin-bottom:8px; flex-wrap:wrap}
+.legend.sm{gap:12px; font-size:11.5px; margin-bottom:5px}
+.chartrow{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.chartbox{position:relative}
+.chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.chartbox canvas{width:100%; height:186px}
+.tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
+  border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+.tip .th{color:var(--mut); margin-bottom:3px}
+.tip div{line-height:1.5}
+.pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
+.pgrid .scene canvas{width:100%; touch-action:none}
+.side .panel{padding:12px 14px}
+.c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
+
+/* ============ полотна цієї теми ============ */
+#m1scene{width:100%; height:470px}
+#m2scene{width:100%; height:500px}
+#m3scene{width:100%; height:510px}
+#m4scene{width:100%; height:470px}
+#m5scene{width:100%; height:470px}
+#m6scene{width:100%; height:500px}
+
+footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+@media (max-width:900px){
+  .chartrow,.pgrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Границя послідовності<small>ε-смуга й номер N · приклади · арифметика меж · єдиність · затиск</small></h1>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-m="m1" class="active">1 · Означення: ε і N</button>
+  <button data-m="m2">2 · Приклади й контрприклади</button>
+  <button data-m="m3">3 · Арифметика меж</button>
+  <button data-m="m4">4 · Єдиність і обмеженість</button>
+  <button data-m="m5">5 · Теорема про затиск</button>
+  <button data-m="m6">6 · Де це працює</button>
+</nav>
+
+<!-- ================= МОДУЛЬ 1 ================= -->
+<section class="module active" id="m1">
+  <p class="caption">Число <var>L</var> — границя послідовності, якщо в будь-яку смугу
+  <var>L</var> ± <var>ε</var> потрапляють усі члени, починаючи з деякого номера <var>N</var>.
+  Не «майже всі» й не «більшість»: поза смугою лишається скінченна кількість членів,
+  хоч би яку вузьку смугу взяти. Тягніть край смуги й лінію <var>N</var>.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m1reset" title="показати члени з початку">↺</button>
+          <span class="lbl">послідовність <b>aₙ = 1 + (−1)ⁿ⁺¹/n</b></span>
+          <span class="lbl" id="m1state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m1scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Що стоїть за означенням</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m1c1w"><h4>відхилення від границі, |aₙ − L|</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>|aₙ − L|</span><span><span class="chip cC"></span>ε</span><span><span class="chip cA"></span>обране N</span></div>
+            <canvas id="m1c1"></canvas></div>
+          <div class="chartbox" id="m1c2w"><h4>найменше придатне N як функція ε</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>N(ε) = ⌊1/ε⌋</span><span><span class="chip cI"></span>обране ε</span></div>
+            <canvas id="m1c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span><var>ε</var> — півширина смуги<span class="badge">край смуги в кадрі</span></span><b id="m1veps"></b></div>
+        <div class="kv"><span><var>N</var> — обраний номер<span class="badge">лінія в кадрі</span></span><b id="m1vN"></b></div>
+        <div class="kv"><span>показано членів<span class="badge">край осі в кадрі</span></span><b id="m1vnmax"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Перевірка означення</h3>
+        <div class="kv"><span>границя <var>L</var><span class="badge">не залежить від ε і N</span></span><b id="m1kL"></b></div>
+        <div class="kv"><span>найменше придатне <var>N</var><span class="badge">= ⌊1/ε⌋</span></span><b id="m1kNmin"></b></div>
+        <div class="kv"><span>відхилення першого члена після <var>N</var></span><b id="m1kdev"></b></div>
+        <div class="kv"><span>членів поза смугою при <var>n</var> &gt; <var>N</var></span><b id="m1kout"></b></div>
+        <div class="kv"><span>усього поза смугою<span class="badge">завжди скінченно</span></span><b id="m1kfin"></b></div>
+        <div class="kv"><span>виконано означення</span><b id="m1kok"></b></div>
+        <div class="formulas" id="m1fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Розгортка</h3>
+        <div class="kv"><span>намальовано членів</span><b id="m1kshown"></b></div>
+        <div class="kv"><span>перший член <var>a</var><sub>1</sub></span><b id="m1ka1"></b></div>
+        <div class="kv"><span>останній намальований</span><b id="m1kalast"></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 2 ================= -->
+<section class="module" id="m2">
+  <p class="caption">Границя — це не «куди схоже», а перевірка: чи ловить кожна смуга
+  <var>L</var> ± <var>ε</var> увесь хвіст послідовності. Оберіть послідовність на полиці,
+  поставте власне число-кандидат <var>L</var> і звузьте смугу — сцена скаже,
+  знайшовся номер чи ні.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m2reset" title="показати члени з початку">↺</button>
+          <span class="lbl">полиця послідовностей — унизу сцени</span>
+          <span class="lbl" id="m2state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m2scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Хвіст під мікроскопом</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m2c1w"><h4>відхилення від кандидата, |aₙ − L|</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>|aₙ − L|</span><span><span class="chip cC"></span>ε</span></div>
+            <canvas id="m2c1"></canvas></div>
+          <div class="chartbox" id="m2c2w"><h4>найбільше відхилення хвоста, sup |a<sub>k</sub> − L| при k ≥ n</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>хвостовий супремум</span><span><span class="chip cB"></span>ε</span></div>
+            <canvas id="m2c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span>послідовність<span class="badge">полиця в кадрі</span></span><b id="m2vseq"></b></div>
+        <div class="kv"><span>кандидат <var>L</var><span class="badge">лінія в кадрі</span></span><b id="m2vLg"></b></div>
+        <div class="kv"><span><var>ε</var> — півширина смуги<span class="badge">край смуги в кадрі</span></span><b id="m2veps"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Вердикт</h3>
+        <div class="kv"><span>найменше придатне <var>N</var></span><b id="m2kNmin"></b></div>
+        <div class="kv"><span>хвостовий супремум при <var>n</var> = 1</span><b id="m2ktail"></b></div>
+        <div class="kv"><span>чи є <var>L</var> границею<span class="badge">перевірено до n = 20 000</span></span><b id="m2kverd"></b></div>
+        <div class="kv"><span>справжня поведінка</span><b id="m2ktrue"></b></div>
+        <div class="formulas" id="m2fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Чому це важливо</h3>
+        <div class="kv"><span>у смузі членів (з видимих)</span><b id="m2kin"></b></div>
+        <div class="kv"><span>поза смугою (з видимих)</span><b id="m2kout"></b></div>
+        <div class="kv"><span>збіжна ⇒ обмежена<span class="badge">навпаки — ні</span></span><b id="m2kbd"></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 3 ================= -->
+<section class="module" id="m3">
+  <p class="caption">Якщо обидві послідовності збігаються, то границя суми, різниці й добутку —
+  та сама дія над границями. Для частки додається умова: границя знаменника не нуль.
+  Оберіть <var>a</var><sub>n</sub> і <var>b</var><sub>n</sub> на двох полицях і дію.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m3reset" title="показати члени з початку">↺</button>
+          <span class="lbl">дія:</span>
+          <div class="seg" id="m3op">
+            <button data-v="add" class="active" style="--c:var(--k3)">aₙ + bₙ</button>
+            <button data-v="sub" style="--c:var(--k3)">aₙ − bₙ</button>
+            <button data-v="mul" style="--c:var(--k3)">aₙ · bₙ</button>
+            <button data-v="div" style="--c:var(--k3)">aₙ / bₙ</button>
+          </div>
+          <span class="lbl" id="m3state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m3scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Результат дії</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m3c1w"><h4>члени результату cₙ</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>cₙ</span><span><span class="chip cI"></span>границя дії</span></div>
+            <canvas id="m3c1"></canvas></div>
+          <div class="chartbox" id="m3c2w"><h4>відхилення |cₙ − L<sub>c</sub>|</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>|cₙ − Lc|</span></div>
+            <canvas id="m3c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span><var>a</var><sub>n</sub><span class="badge">верхня полиця</span></span><b id="m3va"></b></div>
+        <div class="kv"><span><var>b</var><sub>n</sub><span class="badge">нижня полиця</span></span><b id="m3vb"></b></div>
+        <div class="kv"><span>показано членів<span class="badge">край осі в кадрі</span></span><b id="m3vnmax"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Границі</h3>
+        <div class="kv"><span>lim <var>a</var><sub>n</sub></span><b id="m3kLa"></b></div>
+        <div class="kv"><span>lim <var>b</var><sub>n</sub></span><b id="m3kLb"></b></div>
+        <div class="kv"><span>дія над границями</span><b id="m3kLc"></b></div>
+        <div class="kv"><span>границя <var>c</var><sub>n</sub> чисельно<span class="badge">n = 20 000</span></span><b id="m3kNum"></b></div>
+        <div class="kv"><span>збіг<span class="badge">арифметика меж</span></span><b id="m3kCheck"></b></div>
+        <div class="kv" id="m3wrow"><span>застереження</span><b id="m3kWarn"></b></div>
+        <div class="formulas" id="m3fx"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 4 ================= -->
+<section class="module" id="m4">
+  <p class="caption">Двох різних границь бути не може: візьміть смуги радіуса
+  <var>ε</var> = |<var>L</var><sub>1</sub> − <var>L</var><sub>2</sub>|/2 — вони не перетинаються,
+  а хвіст послідовності один. Тягніть обидва кандидати. Тут же видно, чому кожна
+  збіжна послідовність обмежена — і чому навпаки це не працює.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m4reset" title="показати члени з початку">↺</button>
+          <span class="lbl">послідовність:</span>
+          <div class="seg" id="m4seq">
+            <button data-v="0" class="active" style="--c:var(--k2)">(−1)ⁿ/n — збіжна</button>
+            <button data-v="1" style="--c:var(--k2)">(−1)ⁿ — обмежена, але не збіжна</button>
+          </div>
+          <span class="lbl" id="m4state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m4scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Два кандидати проти одного хвоста</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m4c1w"><h4>відхилення від обох кандидатів</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>|aₙ − L₁|</span><span><span class="chip cC"></span>|aₙ − L₂|</span></div>
+            <canvas id="m4c1"></canvas></div>
+          <div class="chartbox" id="m4c2w"><h4>найбільший модуль серед перших n членів</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>max |a<sub>k</sub>|, k ≤ n</span></div>
+            <canvas id="m4c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span>кандидат <var>L</var><sub>1</sub><span class="badge">лінія в кадрі</span></span><b id="m4vL1"></b></div>
+        <div class="kv"><span>кандидат <var>L</var><sub>2</sub><span class="badge">лінія в кадрі</span></span><b id="m4vL2"></b></div>
+        <div class="kv"><span>показано членів<span class="badge">край осі в кадрі</span></span><b id="m4vnmax"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Єдиність</h3>
+        <div class="kv"><span>відстань між кандидатами</span><b id="m4kGap"></b></div>
+        <div class="kv"><span><var>ε</var> = |<var>L</var><sub>1</sub> − <var>L</var><sub>2</sub>|/2<span class="badge">смуги не перетинаються</span></span><b id="m4kEps"></b></div>
+        <div class="kv"><span>номер для смуги біля <var>L</var><sub>1</sub></span><b id="m4kN1"></b></div>
+        <div class="kv"><span>номер для смуги біля <var>L</var><sub>2</sub></span><b id="m4kN2"></b></div>
+        <div class="kv"><span>обидві смуги одразу<span class="badge">неможливо</span></span><b id="m4kBoth"></b></div>
+        <div class="formulas" id="m4fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Обмеженість</h3>
+        <div class="kv"><span>межа <var>M</var> = sup |<var>a</var><sub>n</sub>|</span><b id="m4kM"></b></div>
+        <div class="kv"><span>збіжна ⇒ обмежена<span class="badge">виконано</span></span><b id="m4kBnd"></b></div>
+        <div class="kv"><span>обмежена ⇒ збіжна</span><b id="m4kConv"></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 5 ================= -->
+<section class="module" id="m5">
+  <p class="caption">Якщо <var>a</var><sub>n</sub> ≤ <var>c</var><sub>n</sub> ≤ <var>b</var><sub>n</sub>
+  і обидва «конвоїри» сходяться до одного числа, то й затиснута послідовність
+  сходиться туди ж — хоч би як вона стрибала всередині коридору.
+  Тягніть край коридору: ширший коридор теж працює, просто пізніше.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m5reset" title="показати члени з початку">↺</button>
+          <span class="lbl">приклад:</span>
+          <div class="seg" id="m5ex">
+            <button data-v="0" class="active" style="--c:var(--k2)">cₙ = 1 + sin n / n</button>
+            <button data-v="1" style="--c:var(--k2)">cₙ = 1 + (−1)ⁿ/√n</button>
+          </div>
+          <span class="lbl" id="m5state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m5scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Коридор стискається</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m5c1w"><h4>ширина коридору bₙ − aₙ</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>bₙ − aₙ</span></div>
+            <canvas id="m5c1"></canvas></div>
+          <div class="chartbox" id="m5c2w"><h4>відхилення |cₙ − 1| і півширина коридору</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>|cₙ − 1|</span><span><span class="chip cA"></span>півширина</span></div>
+            <canvas id="m5c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span>коефіцієнт коридору <var>k</var><span class="badge">край коридору в кадрі</span></span><b id="m5vk"></b></div>
+        <div class="kv"><span>показано членів<span class="badge">край осі в кадрі</span></span><b id="m5vnmax"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Затиск</h3>
+        <div class="kv"><span>нижній конвоїр <var>a</var><sub>n</sub></span><b id="m5kA"></b></div>
+        <div class="kv"><span>затиснута <var>c</var><sub>n</sub></span><b id="m5kC"></b></div>
+        <div class="kv"><span>верхній конвоїр <var>b</var><sub>n</sub></span><b id="m5kB"></b></div>
+        <div class="kv"><span>ширина коридору при цьому <var>n</var></span><b id="m5kW"></b></div>
+        <div class="kv"><span>нерівність <var>a</var><sub>n</sub> ≤ <var>c</var><sub>n</sub> ≤ <var>b</var><sub>n</sub><span class="badge">для всіх видимих n</span></span><b id="m5kIneq"></b></div>
+        <div class="kv"><span>спільна границя конвоїрів<span class="badge">не залежить від k</span></span><b id="m5kLim"></b></div>
+        <div class="formulas" id="m5fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Чому це не «очевидно»</h3>
+        <div class="kv"><span>cₙ монотонна?</span><b id="m5kMono"></b></div>
+        <div class="kv"><span>перших членів поза коридором</span><b id="m5kOut"></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 6 ================= -->
+<section class="module" id="m6">
+  <p class="caption">Означення через <var>ε</var> і <var>N</var> — не шкільна формальність,
+  а спосіб відповісти на робоче питання: скільки ітерацій, нарахувань, періодів
+  піврозпаду чи вимірювань потрібно, щоб похибка стала меншою за задану.
+  Оберіть процес на полиці й потягніть край смуги допустимої похибки.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m6reset" title="показати кроки з початку">↺</button>
+          <span class="lbl">полиця процесів — унизу сцени</span>
+          <span class="lbl" id="m6state" style="font-weight:600"></span>
+        </div>
+        <canvas id="m6scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Ціна точності</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m6c1w"><h4>похибка на кроці <var>n</var></h4>
+            <div class="legend sm"><span><span class="chip cB"></span>похибка</span><span><span class="chip cC"></span>допустима ε</span></div>
+            <canvas id="m6c1"></canvas></div>
+          <div class="chartbox" id="m6c2w"><h4>скільки правильних знаків дає крок</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>знаків, −lg похибки</span><span><span class="chip cI"></span>потрібна точність</span></div>
+            <canvas id="m6c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span>процес<span class="badge">полиця в кадрі</span></span><b id="m6vproc"></b></div>
+        <div class="kv"><span>допустима похибка <var>ε</var><span class="badge">край смуги в кадрі</span></span><b id="m6veps"></b></div>
+        <div class="kv"><span>показано кроків<span class="badge">край осі в кадрі</span></span><b id="m6vnmax"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <div class="kv"><span>питання</span><b id="m6kask"></b></div>
+        <div class="kv"><span>потрібний номер <var>N</var><span class="badge">те саме N, що й на вкладці 1</span></span><b id="m6kN"></b></div>
+        <div class="kv"><span>значення на кроці <var>N</var> + 1</span><b id="m6kval"></b></div>
+        <div class="kv"><span>похибка на кроці <var>N</var> + 1</span><b id="m6kdev"></b></div>
+        <div class="kv"><span>гранична величина<span class="badge">не залежить від ε</span></span><b id="m6kL"></b></div>
+        <div class="formulas" id="m6fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Де це трапляється</h3>
+        <div class="kv"><span>галузь</span><b id="m6karea"></b></div>
+        <div class="kv"><span>що таке крок</span><b id="m6kstep"></b></div>
+        <div class="kv"><span>перший крок</span><b id="m6kfirst"></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Допоміжний матеріал з математичного аналізу · границя послідовності · означення через ε і N · властивості збіжних послідовностей</footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Ролі кольорів у цьому файлі (брендбук §18). Мапінг спільний для всієї
+   серії «Математичний аналіз» і не міняється між вкладками:
+
+     --k1   перший даний об'єкт і вісь аргументу: номер N, вісь n,
+            конвоїри коридору, кандидат L₁
+     --k2   послідовність та її значення: члени aₙ, ε-смуга, вісь значень
+     --k3   те, що ми з них будуємо: найменший придатний номер, результат
+            дії над послідовностями, другий кандидат L₂
+     --ink  результат: сама границя L, підсумкове число
+     --sec  члени, про які в означенні не йдеться (до номера N)
+   ===================================================================== */
+
+/* ===================== спільні утиліти ===================== */
+const $=id=>document.getElementById(id);
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+  grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb'};
+const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sci(n,d=3){
+  if(!isFinite(n)||n===0) return fmt(0,d);
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  return fmt(n/Math.pow(10,e),d)+'·10'+String(e).split('').map(c=>SUP[c]||c).join('');
+}
+/* дуже малі числа в підписах не мають перетворюватися на «0,000000» —
+   похибка ітерації після п'ятого кроку саме така */
+const smart=(n,d=3)=>(n!==0&&Math.abs(n)<1e-4)?sci(n,3):fmt(n,d);
+
+const CV={};
+function cvx(id){
+  if(CV[id]) return CV[id];
+  const c=$(id); const r=c.getBoundingClientRect();
+  if(r.width<2||r.height<2) return null;
+  const d=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
+  const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  return CV[id]={g,w:r.width,h:r.height,el:c};
+}
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];});
+
+function seg(id,cb){
+  const el=$(id);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    cb(b.dataset.v);
+  });
+}
+function txt(g,s,x,y,o={}){
+  g.fillStyle=o.color||CLR.ink;
+  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,y);
+}
+function arrow(g,x1,y1,x2,y2,color,w=2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
+  if(Math.hypot(x2-x1,y2-y1)<1.5) return;
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*L*0.6,y2-Math.sin(a)*L*0.6); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2);
+  g.lineTo(x2-L*Math.cos(a-0.44),y2-L*Math.sin(a-0.44));
+  g.lineTo(x2-L*Math.cos(a+0.44),y2-L*Math.sin(a+0.44));
+  g.closePath(); g.fill();
+}
+function pill(g,s,x,y,o={}){
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14;
+  g.fillStyle=o.bg||'rgba(252,252,251,.92)';
+  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  txt(g,s,x,y+1,{...o,align:'center'});
+}
+function dot(g,x,y,r,fill,ring){
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.fillStyle=fill; g.fill();
+  if(ring){g.strokeStyle=ring; g.lineWidth=2; g.stroke();}
+}
+function niceStep(raw){
+  if(!(raw>0)) return 1;
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+/* Межі графіка не перераховуються щокадру. Вони стоять на місці, поки крива
+   в них влазить, і присуваються сходинкою niceStep лише тоді, коли крива
+   справді вийшла за кадр. Автопідбір «за поточними даними» змушував би графік
+   дихати під кожним рухом ручки, і два стани стало б неможливо порівняти.
+   Стеля не опускається сама: її скидає лише зміна того, що показують
+   (інший зразок на полиці, інша дія) — а вона входить у ключ. */
+const FIT={};
+function fitStep(v){return niceStep(Math.abs(v)/4)||1;}
+function fitTop(key,need){
+  const st=fitStep(need), want=Math.ceil(need/st-1e-9)*st;
+  const cur=FIT[key];
+  return FIT[key]=(cur==null||want>cur)?want:cur;
+}
+function fitBot(key,need){
+  const st=fitStep(need), want=-Math.ceil(-need/st-1e-9)*st;
+  const cur=FIT[key];
+  return FIT[key]=(cur==null||want<cur)?want:cur;
+}
+/* простий лінійний графік із перехрестям-підказкою */
+function drawChart(box,opt){
+  const {g,w,h}=box;
+  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  const X=t=>L+t/opt.tMax*pw;
+  const Y=y=>T+(1-(y-opt.yMin)/(opt.yMax-opt.yMin))*ph;
+  g.clearRect(0,0,w,h);
+  g.lineWidth=1;
+  const yd=opt.yDec||0;
+  const st=niceStep((opt.yMax-opt.yMin)/4.5);
+  for(let y=Math.ceil(opt.yMin/st)*st;y<=opt.yMax+1e-9;y+=st){
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
+    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+  }
+  const xs=opt.xStep||niceStep(opt.tMax/5);
+  for(let t=0;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
+    g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
+    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+  }
+  if(opt.yMin<0&&opt.yMax>0){
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  }
+  /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
+     наїжджають то на верхню поділку, то на прямий підпис серії */
+  txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
+  txt(g,opt.xLab||'n',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  const ends=[];
+  for(const s of opt.series){
+    if(!s.ts||s.ts.length<2) continue;
+    g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
+    g.beginPath();
+    for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
+    g.stroke(); g.setLineDash([]);
+    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    dot(g,lx,ly,3,s.color);
+    ends.push({x:lx,y:ly,label:s.label});
+  }
+  /* прямі підписи серій розводимо по вертикалі — інакше при близьких
+     значеннях вони лягають один на одного і жоден не читається */
+  ends.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<ends.length;i++)
+    if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
+  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+  if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
+    const t=(opt.hover-L)/pw*opt.tMax;
+    const s0=opt.series[0];
+    const tc=Math.min(t,s0.ts[s0.ts.length-1]);
+    const hx=X(tc);
+    g.strokeStyle=CLR.axis; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(hx+.5,T); g.lineTo(hx+.5,T+ph); g.stroke(); g.setLineDash([]);
+    const vals=[];
+    for(const s of opt.series){
+      let i=s.ts.length-1;
+      while(i>0&&s.ts[i]>tc) i--;
+      const v=s.ys[Math.min(i+(s.ts[i]<tc?1:0),s.ys.length-1)];
+      dot(g,hx,Y(v),3.5,'#fff',s.color); vals.push(v);
+    }
+    return {t:tc,vals,px:hx};
+  }
+  return null;
+}
+function makeTip(wrapId){
+  const w=$(wrapId); const d=document.createElement('div');
+  d.className='tip'; w.appendChild(d); return d;
+}
+function hover(canvasId,state){
+  const c=$(canvasId);
+  c.addEventListener('pointermove',e=>{
+    const r=c.getBoundingClientRect(); state.x=e.clientX-r.left; state.cy=e.clientY-r.top;
+  });
+  c.addEventListener('pointerleave',()=>{state.x=null;});
+}
+/* показати підказку графіка; names = [[підпис,колір],…] */
+function showTip(el,r,unit,st,names,dec){
+  if(!r){el.style.display='none'; return;}
+  el.innerHTML='<div class="th">'+(st.xlab||'n')+' = '+fmt(r.t,st.xdec==null?0:st.xdec)+' '+(st.xunit||'')+'</div>'+
+    r.vals.map((v,i)=>'<div><span class="chip" style="background:'+names[i][1]+'"></span>'+
+      names[i][0]+' — '+fmt(v,dec==null?3:dec)+(unit?' '+unit:'')+'</div>').join('');
+  el.style.display='block';
+  const bw=el.offsetWidth;
+  el.style.left=Math.min(r.px+14,el.parentElement.clientWidth-bw-4)+'px';
+  el.style.top=Math.max(20,(st.cy||60)-10)+'px';
+}
+/* ---------- пряме керування на сцені ---------- */
+const clamp=(v,lo,hi)=>v<lo?lo:(v>hi?hi:v);
+const snap=(v,st)=>Math.round(v/st)*st;
+/* Реєстр ручок — гачок для оснастки: харнес бере звідси список і синтетично
+   тягне кожну ручку в крайні положення кадру. Без реєстру перевірка осліпла б
+   тієї ж миті, коли керування переїхало з повзунків на полотно. */
+const GRIPS=[];
+/* Масштаб сцени рахується з фактичного розмаху (§10). Але щойно ми тягнемо
+   величину, від якої той розмах залежить, виникає контур: палець рухає
+   величину → росте розмах → падає sc → ручка тікає з-під пальця. Тому на час
+   жесту кадр заморожується: geo() віддає знімок, зроблений на pointerdown,
+   і світ не перемасштабовується посеред руху. Після відпускання масштаб
+   перепідбирається один раз. */
+function frozen(st,b,calc){
+  const f=st._froz;
+  if(f&&f.w===b.w&&f.h===b.h) return f.G;
+  const G=calc(b);
+  if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
+  return G;
+}
+/* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
+   (радіус 13 px — це палець), а move() сам переводить піксель назад у величину
+   через geo(), захоплену в замиканні. Хелпер не знає жодної математики.
+   listFn() мусить бути чистою: її кличе і scene() (щоб намалювати ручки),
+   і цей хелпер (щоб влучити) — одна геометрія, один код. */
+function grip(id,st,listFn){
+  const c=$(id);
+  GRIPS.push({id,st,listFn});
+  const pos=e=>{const r=c.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
+  const pick=(px,py)=>{
+    let best=null,bd=1e9;
+    for(const h of listFn()){
+      const d=Math.hypot(px-h.x,py-h.y);
+      if(d<=h.r+6&&d<bd){bd=d; best=h;}
+    }
+    return best;
+  };
+  c.addEventListener('pointerdown',e=>{
+    const p=pos(e), h=pick(p[0],p[1]);
+    if(!h) return;
+    st._grab=h.id; st._over=h.id; st._froz=null;
+    if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
+    /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
+       geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
+       заморожувався б кадр, порахований уже за новим значенням. */
+    listFn();
+    h.move(p[0],p[1]);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('pointermove',e=>{
+    const p=pos(e);
+    if(st._grab!=null){
+      for(const h of listFn()) if(h.id===st._grab){h.move(p[0],p[1]); break;}
+      c.style.cursor='grabbing';
+    } else {
+      const h=pick(p[0],p[1]);
+      st._over=h?h.id:null;
+      c.style.cursor=h?'grab':'';
+    }
+  });
+  const off=()=>{st._grab=null; st._froz=null; c.style.cursor=st._over?'grab':'';};
+  c.addEventListener('pointerup',off);
+  c.addEventListener('pointercancel',off);
+  c.addEventListener('pointerleave',()=>{st._over=null; if(st._grab==null) c.style.cursor='';});
+  /* Клавіатура. Повзунки були доступні з клавіатури, полотно саме по собі —
+     ні; без цього переїзд на сцену був би системною регресією доступності (§14).
+     Tab всередині полотна перебирає ручки, стрілки зсувають на 4 px, Shift — на 16. */
+  c.tabIndex=0;
+  c.addEventListener('keydown',e=>{
+    const L=listFn(); if(!L.length) return;
+    const k=e.key;
+    if(k==='Tab'){
+      const i=L.findIndex(h=>h.id===st._over);
+      st._over=L[(i+(e.shiftKey?-1:1)+L.length+1)%L.length].id;
+      if(e.preventDefault) e.preventDefault();
+      return;
+    }
+    const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(!d) return;
+    const h=L.filter(x=>x.id===st._over)[0]||L[0];
+    st._over=h.id;
+    const s=e.shiftKey?16:4;
+    h.move(h.x+d[0]*s,h.y+d[1]*s);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('blur',()=>{if(st._grab==null) st._over=null;});
+}
+/* Полиця зразків. Формула послідовності не має розміру, який можна потягнути:
+   її обирають клацанням по підписаному зразку. M = {x0, y, dx};
+   list = [[назва, значення, підпис?], …]. Полиця живе на сцені поруч із
+   кресленням, а не в бічній колонці. */
+function shelf(g,M,list,cur,lab){
+  if(lab) txt(g,lab,M.x0-8,M.y+4,{color:CLR.mut,size:10,align:'right'});
+  list.forEach((m,i)=>{
+    const x=M.x0+i*M.dx, on=Math.abs(cur-m[1])<1e-9;
+    g.fillStyle=on?'rgba(27,175,122,.16)':'#fff';
+    g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+    g.beginPath(); g.roundRect(x+3,M.y-13,M.dx-6,26,6); g.fill(); g.stroke();
+    txt(g,m[0],x+M.dx/2,M.y-1,{color:on?CLR.ink:CLR.sec,size:10.5,bold:on,align:'center'});
+    txt(g,m[2]==null?fmt(m[1],2):m[2],x+M.dx/2,M.y+11,{color:CLR.mut,size:9.5,align:'center'});
+  });
+}
+/* pre — префікс id: у сцені може бути дві полиці, і без префікса їхні ручки
+   мали б однакові імена */
+function shelfGrips(M,list,set,pre){
+  return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
+    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+}
+/* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
+   лише при наведенні — у спокої креслення лишається чистим (§1). */
+function drawGrip(g,h,st){
+  const on=st._over===h.id, gr=st._grab===h.id;
+  /* bare — ручкою є сам об'єкт сцени: свого кружка вона не малює, інакше
+     накрила б те, за що тягнуть */
+  if(!h.bare) dot(g,h.x,h.y,h.r,h.color,'#fff');
+  if(on||gr){
+    g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.2;
+    g.beginPath(); g.arc(h.x,h.y,h.r+4,0,7); g.stroke();
+    if(h.hint) pill(g,h.hint,h.x,h.y-h.r-12,{color:CLR.ink,size:11,bold:true});
+  }
+}
+
+/* ============ мова сцени для координатної площини (n, aₙ) ============ */
+/* Кадр площини. Вісь номерів і вісь значень — величини різної природи, тож
+   спільного масштабу в них бути не може: кутів на такому кресленні немає,
+   і правило §10 про однаковий масштаб по обох осях сюди не застосовне.
+   Що лишається чинним — розмах рахується щокадру з фактичних значень.
+   Праворуч від останнього члена лишається запас 10 %: інакше ручку
+   «скільки членів видно» не було б куди тягнути. */
+function seqGeo(b,nMax,lo,hi,o){
+  o=o||{};
+  /* ліве поле ширше за потрібне для чисел: у ньому ще сидить ручка кандидата
+     границі, і без запасу вона накрила б підписи поділок */
+  const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
+  const padT=o.padT==null?56:o.padT, padB=o.padB==null?48:o.padB;
+  const x0=padL, x1=Math.max(padL+60,b.w-padR);
+  const y0=padT, y1=Math.max(padT+80,b.h-padB);
+  let a0=lo,a1=hi;
+  if(!(a1-a0>1e-9)){a0-=0.5; a1+=0.5;}
+  const m=(a1-a0)*0.12; a0-=m; a1+=m;
+  const span=nMax*1.1;
+  return {x0,x1,y0,y1,nMax,span,aMin:a0,aMax:a1,
+    SX:n=>x0+n/span*(x1-x0),
+    SY:a=>y1-(a-a0)/(a1-a0)*(y1-y0),
+    iX:px=>(px-x0)/(x1-x0)*span,
+    iY:py=>a0+(y1-py)/(y1-y0)*(a1-a0)};
+}
+/* Осі з підписаними поділками просто в кадрі сцени. Вісь номерів іде по низу
+   кадру, а не по рівню нуля: нуль значень може лежати поза кадром, а номери
+   потрібні завжди. */
+function axesXY(g,G,o){
+  o=o||{};
+  const st=niceStep((G.aMax-G.aMin)/5);
+  for(let a=Math.ceil(G.aMin/st)*st;a<=G.aMax+1e-9;a+=st){
+    const y=G.SY(a), zero=Math.abs(a)<st*1e-6;
+    g.strokeStyle=zero?CLR.axis:CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(G.x0,y+.5); g.lineTo(G.x1+10,y+.5); g.stroke();
+    txt(g,fmt(zero?0:a,o.aDec==null?1:o.aDec),G.x0-24,y+3.5,{color:CLR.mut,size:10,align:'right'});
+  }
+  g.strokeStyle=CLR.axis; g.lineWidth=1;
+  g.beginPath(); g.moveTo(G.x0,G.y1+.5); g.lineTo(G.x1+18,G.y1+.5); g.stroke();
+  const ns=Math.max(1,niceStep(G.nMax/7));
+  for(let n=ns;n<=G.nMax+1e-9;n+=ns){
+    const x=G.SX(n);
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(x+.5,G.y0); g.lineTo(x+.5,G.y1); g.stroke();
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(x+.5,G.y1); g.lineTo(x+.5,G.y1+4); g.stroke();
+    txt(g,String(Math.round(n)),x,G.y1+16,{color:CLR.mut,size:10,align:'center'});
+  }
+  txt(g,'n',G.x1+22,G.y1+16,{color:CLR.mut,size:11});
+  txt(g,o.aLab||'aₙ',8,G.y0-8,{color:CLR.mut,size:10.5});
+}
+/* Смуга навколо значення c радіуса r. Штрихування, а не заливка: смуга —
+   це область, у яку члени потрапляють, а не намальований об'єкт (§7.4). */
+function band(g,G,o){
+  const yA=G.SY(o.c+o.r), yB=G.SY(o.c-o.r);
+  const top=Math.min(yA,yB), hgt=Math.max(1,Math.abs(yB-yA));
+  const x1=G.x1+10;
+  /* смуга обрізається кадром: у прикладах із нульовою границею (розпад,
+     похибка вимірювання) її нижня половина лежить в області від'ємних
+     значень, якої на кресленні просто немає */
+  clipPlot(g,G);
+  g.beginPath(); g.rect(G.x0,top,x1-G.x0,hgt); g.clip();
+  g.strokeStyle=o.color; g.globalAlpha=0.20; g.lineWidth=1;
+  for(let x=G.x0-hgt;x<x1;x+=7){
+    g.beginPath(); g.moveTo(x,top+hgt); g.lineTo(x+hgt,top); g.stroke();
+  }
+  g.restore();
+  g.strokeStyle=o.color; g.lineWidth=1.3; g.setLineDash([5,3]);
+  g.beginPath(); g.moveTo(G.x0,yA+.5); g.lineTo(x1,yA+.5); g.stroke();
+  g.beginPath(); g.moveTo(G.x0,yB+.5); g.lineTo(x1,yB+.5); g.stroke();
+  g.setLineDash([]);
+}
+/* Послідовність точками з тонкими ніжками. Член, що не влазить у кадр,
+   лишає на межі вказівник зі стрілкою: інакше послідовність мовчки зникала б
+   саме там, де найцікавіше — коли вона тікає в нескінченність. */
+function stems(g,G,f,n1,n2,o){
+  o=o||{};
+  const yb=clamp(G.SY(o.base==null?0:o.base),G.y0,G.y1);
+  const r=o.r||3;
+  for(let n=n1;n<=n2;n++){
+    const v=f(n), x=G.SX(n);
+    const s=o.style?o.style(n,v):{};
+    if(!isFinite(v)) continue;
+    const y=G.SY(v);
+    if(y<G.y0-1||y>G.y1+1){
+      const up=y<G.y0;
+      arrow(g,x,up?G.y0+14:G.y1-14,x,up?G.y0+2:G.y1-2,s.color||CLR.k2,1.6);
+      continue;
+    }
+    if(o.stem!==false){
+      g.strokeStyle=s.stem||CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x+.5,yb); g.lineTo(x+.5,y); g.stroke();
+    }
+    if(s.hollow) dot(g,x,y,r,CLR.paper,s.color||CLR.sec);
+    else dot(g,x,y,r,s.color||CLR.k2);
+  }
+}
+/* Обрізання по кадру: криві, що йдуть у нескінченність біля малих номерів,
+   інакше вилазять під вісь і читаються як частина креслення. */
+function clipPlot(g,G){
+  g.save(); g.beginPath();
+  g.rect(G.x0-1,G.y0-1,G.x1-G.x0+12,G.y1-G.y0+2); g.clip();
+}
+/* Ламана по членах послідовності — для конвоїрів коридору, де важлива
+   не окрема точка, а хід межі. */
+function seqLine(g,G,f,n1,n2,color,dash){
+  clipPlot(g,G);
+  g.strokeStyle=color; g.lineWidth=1.8; g.lineJoin='round'; g.setLineDash(dash||[]);
+  g.beginPath();
+  let started=false;
+  for(let n=n1;n<=n2;n++){
+    const v=f(n); if(!isFinite(v)) continue;
+    const x=G.SX(n), y=clamp(G.SY(v),G.y0-40,G.y1+40);
+    started?g.lineTo(x,y):g.moveTo(x,y); started=true;
+  }
+  g.stroke(); g.setLineDash([]);
+  g.restore();
+}
+
+
+/* ============ мова сцени для графіка функції y = f(x) ============ */
+/* Кадр площини (x, y). Вісь аргументу і вісь значень — величини різної
+   природи, тож спільного масштабу в них не буває; що лишається чинним —
+   розмах береться з фактичних значень, а не з константи. */
+function plotGeo(b,xa,xb,ya,yb,o){
+  o=o||{};
+  const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
+  const padT=o.padT==null?56:o.padT, padB=o.padB==null?48:o.padB;
+  const x0=padL, x1=Math.max(padL+60,b.w-padR);
+  const y0=padT, y1=Math.max(padT+80,b.h-padB);
+  let a0=ya,a1=yb; if(!(a1-a0>1e-12)){a0-=0.5; a1+=0.5;}
+  let b0=xa,b1=xb; if(!(b1-b0>1e-12)){b0-=0.5; b1+=0.5;}
+  if(o.pad!==false){const m=(a1-a0)*0.08; a0-=m; a1+=m;}
+  return {x0,x1,y0,y1,xMin:b0,xMax:b1,aMin:a0,aMax:a1,nMax:b1,span:b1,
+    SX:x=>x0+(x-b0)/(b1-b0)*(x1-x0),
+    SY:y=>y1-(y-a0)/(a1-a0)*(y1-y0),
+    iX:px=>b0+(px-x0)/(x1-x0)*(b1-b0),
+    iY:py=>a0+(y1-py)/(y1-y0)*(a1-a0)};
+}
+/* Осі з поділками для неперервного аргументу: якщо нуль лежить у кадрі, осі
+   проходять через нього, інакше притискаються до країв кадру. */
+function axesFn(g,G,o){
+  o=o||{};
+  const sy=niceStep((G.aMax-G.aMin)/5), sx=niceStep((G.xMax-G.xMin)/6);
+  const yz=(G.aMin<0&&G.aMax>0)?G.SY(0):G.y1;
+  const xz=(G.xMin<0&&G.xMax>0)?G.SX(0):G.x0;
+  const labX=xz>G.x0+34?xz-6:G.x0-24;
+  for(let y=Math.ceil(G.aMin/sy)*sy;y<=G.aMax+1e-9;y+=sy){
+    const py=G.SY(y), zero=Math.abs(y)<sy*1e-6;
+    g.strokeStyle=zero?CLR.axis:CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(G.x0,py+.5); g.lineTo(G.x1+10,py+.5); g.stroke();
+    if(!zero) txt(g,fmt(y,o.yDec==null?1:o.yDec),labX,py+3.5,{color:CLR.mut,size:10,align:'right'});
+  }
+  for(let x=Math.ceil(G.xMin/sx)*sx;x<=G.xMax+1e-9;x+=sx){
+    const px=G.SX(x), zero=Math.abs(x)<sx*1e-6;
+    g.strokeStyle=zero?CLR.axis:CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(px+.5,G.y0); g.lineTo(px+.5,G.y1); g.stroke();
+    if(!zero) txt(g,fmt(x,o.xDec==null?1:o.xDec),px,yz+15,{color:CLR.mut,size:10,align:'center'});
+  }
+  g.strokeStyle=CLR.axis; g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(G.x0,yz+.5); g.lineTo(G.x1+16,yz+.5); g.stroke();
+  g.beginPath(); g.moveTo(xz+.5,G.y0-6); g.lineTo(xz+.5,G.y1); g.stroke();
+  txt(g,o.xLab||'x',G.x1+22,yz+4,{color:CLR.mut,size:11});
+  txt(g,o.yLab||'y',8,G.y0-8,{color:CLR.mut,size:10.5});
+}
+/* Крива y = f(x) попіксельно. Лінія рветься там, де функція не визначена або
+   де стрибок завеликий: без розриву полюс 1/x малювався б вертикальною
+   палицею й брехав би про неперервність. f може повернути null — це діра
+   в області визначення. */
+function fplot(g,G,f,color,o){
+  o=o||{};
+  clipPlot(g,G);
+  g.strokeStyle=color; g.lineWidth=o.w||2; g.lineJoin='round'; g.setLineDash(o.dash||[]);
+  const xa=o.from==null?G.xMin:o.from, xb=o.to==null?G.xMax:o.to;
+  const N=Math.max(16,Math.round((G.x1-G.x0)*(o.dense?2:1)));
+  const jump=(G.y1-G.y0)*(o.jump||0.55);
+  let prev=null;
+  g.beginPath();
+  for(let i=0;i<=N;i++){
+    const x=xa+(xb-xa)*i/N, v=f(x);
+    if(v==null||!isFinite(v)){prev=null; continue;}
+    const px=G.SX(x), py=G.SY(v);
+    if(prev===null||Math.abs(py-prev)>jump) g.moveTo(px,py); else g.lineTo(px,py);
+    prev=py;
+  }
+  g.stroke(); g.setLineDash([]);
+  g.restore();
+}
+/* Виколота точка. Обов'язкова там, де значення в самій точці на границю не
+   впливає, і там, де розрив усувний: без неї два різні креслення виглядали б
+   однаково. */
+function hole(g,x,y,color,r){
+  g.beginPath(); g.arc(x,y,r||4,0,7);
+  g.fillStyle=CLR.paper; g.fill();
+  g.strokeStyle=color||CLR.ink; g.lineWidth=2; g.stroke();
+}
+/* δ-смуга по осі аргументу — та сама штрихована область, що й band(),
+   але навколо точки на осі x. */
+function bandX(g,G,o){
+  const xa=G.SX(o.c-o.r), xb=G.SX(o.c+o.r);
+  const l=Math.min(xa,xb), wd=Math.max(1,Math.abs(xb-xa));
+  clipPlot(g,G);
+  g.beginPath(); g.rect(l,G.y0,wd,G.y1-G.y0); g.clip();
+  g.strokeStyle=o.color; g.globalAlpha=0.20; g.lineWidth=1;
+  const H=G.y1-G.y0;
+  for(let x=l-H;x<l+wd+H;x+=7){
+    g.beginPath(); g.moveTo(x,G.y1); g.lineTo(x+H,G.y0); g.stroke();
+  }
+  g.restore();
+  g.strokeStyle=o.color; g.lineWidth=1.3; g.setLineDash([5,3]);
+  for(const px of [xa,xb]){
+    g.beginPath(); g.moveTo(px+.5,G.y0); g.lineTo(px+.5,G.y1); g.stroke();
+  }
+  g.setLineDash([]);
+}
+/* Смуга керування під кресленням. Це не повзунки з бічної колонки: смуга
+   лежить у тому самому кадрі, під самою сценою, тягнеться пальцем і
+   перебирається з клавіатури нарівні з рештою ручок. Її беруть тоді, коли
+   величина не має власного розміру в кресленні (частота, кількість витків,
+   коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
+   Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
+function gpos(C,i){
+  return {x:C.x[i%2], y:C.y0+Math.floor(i/2)*C.dy};
+}
+function gaugeGrips(C,list,st){
+  return list.map((m,i)=>{
+    const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
+    return {id:m[0], x:p.x+f*C.W, y:p.y, r:8, color:m[5]||CLR.k1, hint:m[1],
+      move:(px,py)=>{
+        st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+        if(m[6]) m[6].call(st);
+      }};
+  });
+}
+function gaugeCol(g,C,list,st){
+  g.strokeStyle=CLR.grid; g.lineWidth=1;
+  g.beginPath(); g.moveTo(8,C.y0-16+.5); g.lineTo(C.x[1]+C.W+16,C.y0-16+.5); g.stroke();
+  list.forEach((m,i)=>{
+    const p=gpos(C,i), f=Math.max(0,Math.min(1,(st[m[0]]-m[2])/(m[3]-m[2])));
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(p.x,p.y+.5); g.lineTo(p.x+C.W,p.y+.5); g.stroke();
+    g.strokeStyle=m[5]||CLR.k1; g.lineWidth=3;
+    g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x+f*C.W,p.y); g.stroke();
+    txt(g,m[1],p.x-8,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
+    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+8,p.y+4,
+      {color:CLR.mut,size:10});
+  });
+}
+/* ===================== математика теми ===================== */
+/* Стеля перегляду хвоста. Означення говорить про всі номери, тож номер N
+   шукається переглядом згори, а не формулою: одна перевірка на всі приклади,
+   і жоден із них не дістає окремого «правильного» доведення в коді. */
+const NCAP=20000;
+/* Найбільший номер, на якому член ще виходить за смугу: далі за нього весь
+   хвіст усередині. Умова означення — «для всіх n > N», тому саме цей номер
+   і є найменшим придатним N. null — смуга хвіст не ловить. */
+function tailD(dev,eps,cap){
+  cap=cap||NCAP;
+  for(let n=cap;n>=1;n--){
+    const d=dev(n);
+    if(!isFinite(d)||!(d<eps)) return n>cap*0.9?null:n;
+  }
+  return 0;
+}
+function tailN(f,L,eps,cap){return tailD(n=>Math.abs(f(n)-L),eps,cap);}
+/* Хвостовий супремум sup |a_k − L| при k ≥ n. Прямує до нуля тоді й лише тоді,
+   коли L — границя: це те саме означення, записане однією величиною. */
+function tailSup(f,L,nMax,cap){
+  cap=cap||4000;
+  const out=new Array(nMax+2).fill(0);
+  let s=0;
+  for(let n=cap;n>=1;n--){
+    const v=f(n);
+    const d=isFinite(v)?Math.abs(v-L):1e9;
+    if(d>s) s=d;
+    if(n<=nMax) out[n]=Math.min(s,1e9);
+  }
+  return out;
+}
+/* послідовності полиці: [підпис, формула, границя або null, вікно кадру, поведінка] */
+const SEQ=[
+  ['1/n',      n=>1/n,                 0,       [-0.15,1.10], 'спадає до нуля'],
+  ['(−1)ⁿ',    n=>(n%2?-1:1),          null,    [-1.35,1.35], 'дві часткові границі: −1 і 1'],
+  ['(−1)ⁿ/n',  n=>(n%2?-1:1)/n,        0,       [-1.15,1.15], 'стрибає, але затухає'],
+  ['n/(n+1)',  n=>n/(n+1),             1,       [0.30,1.20],  'зростає до одиниці'],
+  ['0,9ⁿ',     n=>Math.pow(0.9,n),     0,       [-0.10,1.05], 'геометрична, |q| < 1'],
+  ['1,1ⁿ',     n=>Math.pow(1.1,n),     null,    [0,6],        'прямує до +∞'],
+  ['sin n',    n=>Math.sin(n),         null,    [-1.35,1.35], 'блукає по всьому відрізку'],
+  ['(1+1/n)ⁿ', n=>Math.pow(1+1/n,n),   Math.E,  [1.90,3.00],  'збігається до числа e']
+];
+const SEQSUB=['до 0','границі немає','до 0','до 1','до 0','до +∞','границі немає','до e'];
+
+/* послідовності модуля 3: [підпис, формула, границя] */
+const SQA=[
+  ['1/n',       n=>1/n,             0],
+  ['n/(n+1)',   n=>n/(n+1),         1],
+  ['2 + 1/n²',  n=>2+1/(n*n),       2],
+  ['(−1)ⁿ/n',   n=>(n%2?-1:1)/n,    0]
+];
+const SQB=[
+  ['3 − 1/n',       n=>3-1/n,                    3],
+  ['1 + (−1)ⁿ/n',   n=>1+(n%2?-1:1)/n,           1],
+  ['2ⁿ/(2ⁿ+1)',     n=>1/(1+Math.pow(2,-n)),     1],
+  ['1/n',           n=>1/n,                      0]
+];
+const OPS={add:['+',(x,y)=>x+y],sub:['−',(x,y)=>x-y],mul:['·',(x,y)=>x*y],div:['/',(x,y)=>x/y]};
+
+/* ===================== МОДУЛЬ 1 · означення ===================== */
+const M1={
+  L:1, eps:0.25, N:6, nMax:40, t:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  /* aₙ = 1 + (−1)ⁿ⁺¹/n — стрибає навколо границі з обох боків,
+     тож смуга ловить хвіст не «згори» чи «знизу», а по-справжньому */
+  a(n){return 1+(n%2?1:-1)/n;},
+  /* Відхилення береться алгебраїчно спрощеним, а не як |a(n) − L|: різниця
+     1,2 − 1 у подвійній точності дає 0,19999999999999996, і на ε = 0,2
+     найменший номер вийшов би 4 замість 5, суперечачи підпису ⌊1/ε⌋.
+     Тут |aₙ − L| = 1/n точно — саме цю рівність модуль і показує. */
+  dev(n){return 1/n;},
+  Nmin(){
+    const key=this.eps.toFixed(6);
+    if(this._nk!==key){this._nk=key; this._nv=tailD(n=>this.dev(n),this.eps);}
+    return this._nv;
+  },
+  ok(){const m=this.Nmin(); return m!=null&&m<=this.N;},
+  outAfterN(){
+    const m=this.Nmin(); if(m==null) return null;
+    let c=0;
+    for(let n=this.N+1;n<=m;n++) if(!(this.dev(n)<this.eps)) c++;
+    return c;
+  },
+  outTotal(){const m=this.Nmin(); return m==null?null:m;},
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  reset(){this.t=0;},
+  init(){
+    grip('m1scene',this,()=>this.grips());
+    $('m1reset').addEventListener('click',()=>this.reset());
+    this.tip1=makeTip('m1c1w'); this.tip2=makeTip('m1c2w');
+    hover('m1c1',this.h1); hover('m1c2',this.h2);
+    this.h1.xlab='n'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='ε'; this.h2.xunit=''; this.h2.xdec=2;
+  },
+  /* поки ручку тримають, розгортка часу не втручається */
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  geo(b){
+    return frozen(this,b,bb=>seqGeo(bb,this.nMax,
+      Math.min(0.5,this.L-this.eps),Math.max(2,this.L+this.eps),{padB:52}));
+  },
+  grips(){
+    const b=cvx('m1scene'); if(!b) return [];
+    const G=this.geo(b);
+    return [
+      {id:'eps',x:G.x1+14,y:G.SY(this.L+this.eps),r:9,color:CLR.k2,hint:'ε — півширина смуги',
+        move:(px,py)=>{this.eps=clamp(snap(Math.abs(G.iY(py)-this.L),0.01),0.02,0.90); this.t=0;}},
+      /* ручка номера сидить угорі своєї лінії: біля осі вона накривала б
+         підписи поділок саме тоді, коли N мале й найцікавіше */
+      {id:'N',x:G.SX(this.N),y:G.y0+8,r:9,color:CLR.k1,hint:'номер N',
+        move:px=>{this.N=clamp(Math.round(G.iX(px)),1,this.nMax); this.t=0;}},
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+        move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.N=Math.min(this.N,this.nMax); this.t=0;}}
+    ];
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m1scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), ok=this.ok();
+    g.clearRect(0,0,w,h);
+    txt(g,ok?('усі члени з номером n > '+this.N+' лежать у смузі L ± ε')
+            :('після номера '+this.N+' поза смугою ще є члени'),
+      12,20,{color:ok?CLR.k2:CLR.sec,size:12.5,bold:true});
+    txt(g,'видно: смугу можна звузити як завгодно — просто номер N доведеться взяти більший',
+      12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:1,aLab:'aₙ'});
+    band(g,G,{c:this.L,r:this.eps,color:CLR.k2});
+    const yL=G.SY(this.L);
+    g.strokeStyle=CLR.ink; g.lineWidth=1.4; g.setLineDash([2,3]);
+    g.beginPath(); g.moveTo(G.x0,yL+.5); g.lineTo(G.x1+10,yL+.5); g.stroke(); g.setLineDash([]);
+    txt(g,'L = '+fmt(this.L,0),G.x1+30,yL+4,{color:CLR.ink,size:11,bold:true});
+    txt(g,'ε = '+fmt(this.eps,2),G.x0+6,G.SY(this.L+this.eps)-5,{color:'#b8431a',size:10.5,bold:true});
+    /* обраний номер N */
+    const xN=G.SX(this.N);
+    g.strokeStyle=CLR.k1; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(xN+.5,G.y0); g.lineTo(xN+.5,G.y1); g.stroke();
+    txt(g,'N = '+this.N,xN+14,G.y0+12,{color:'#1c5cab',size:11,bold:true});
+    /* найменший придатний номер — побудована величина, не задана */
+    const nm=this.Nmin();
+    if(nm!=null&&nm<=G.span){
+      const xm=G.SX(nm);
+      g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(xm+.5,G.y0); g.lineTo(xm+.5,G.y1); g.stroke(); g.setLineDash([]);
+      txt(g,'найменше N = '+nm,xm+6,G.y0+28,{color:'#0d7a55',size:10.5,bold:true});
+    }
+    stems(g,G,n=>this.a(n),1,this.shown(),{base:this.L,style:n=>{
+      const inside=this.dev(n)<this.eps;
+      return {color:n>this.N?(inside?CLR.k2:CLR.sec):CLR.mut,hollow:!inside};
+    }});
+    txt(g,'порожнє коло — член поза смугою · сірий — номер ще не перевищив N',
+      12,G.y1+34,{color:CLR.mut,size:10});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const nm=this.Nmin(), ok=this.ok(), sh=this.shown();
+    $('m1state').textContent=ok?'означення виконано':'означення ще не виконано';
+    $('m1veps').textContent=fmt(this.eps,2);
+    $('m1vN').textContent=String(this.N);
+    $('m1vnmax').textContent=String(this.nMax);
+    $('m1kL').textContent=fmt(this.L,0);
+    $('m1kNmin').textContent=nm==null?'не знайдено':String(nm);
+    $('m1kdev').textContent=fmt(this.dev(this.N+1),4);
+    const out=this.outAfterN();
+    $('m1kout').textContent=out===0?'жодного':(out==null?'нескінченно багато':String(out));
+    $('m1kfin').textContent=nm==null?'нескінченно багато':(nm+' — з номерами до '+nm);
+    $('m1kok').textContent=ok?'так: N придатне':'ні: візьміть N ≥ '+(nm==null?'—':nm);
+    $('m1kshown').textContent=sh+' з '+this.nMax;
+    $('m1ka1').textContent=fmt(this.a(1),3);
+    $('m1kalast').textContent='a'+sh+' = '+fmt(this.a(sh),4);
+    $('m1fx').innerHTML='<i>|aₙ − L|</i> = 1/<i>n</i> &lt; <i>ε</i> = '+fmt(this.eps,2)+
+      ' ⇔ <i>n</i> &gt; 1/'+fmt(this.eps,2)+' = '+fmt(1/this.eps,2)+
+      ' ⇒ найменше <b>N = '+(nm==null?'—':nm)+'</b> = ⌊1/ε⌋';
+  },
+  charts(){
+    const b1=cvx('m1c1');
+    if(b1){
+      const ts=[],ys=[];
+      for(let n=1;n<=this.nMax;n++){ts.push(n); ys.push(this.dev(n));}
+      const r=drawChart(b1,{tMax:this.nMax,yMin:0,yMax:1.05,yLab:'|aₙ − L|',xLab:'n',yDec:2,xDec:0,
+        hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k2,label:'|aₙ−L|'},
+          {ts:[1,this.nMax],ys:[this.eps,this.eps],color:CLR.k3,label:'ε',dash:[4,3]},
+          {ts:[this.N,this.N],ys:[0,1.05],color:CLR.k1,label:'N',dash:[2,3]}]});
+      showTip(this.tip1,r,'',this.h1,[['|aₙ−L|',CLR.k2],['ε',CLR.k3],['N',CLR.k1]],4);
+    }
+    const b2=cvx('m1c2');
+    if(b2){
+      /* діапазон рахується з крайніх значень усього інтервалу ε, а не з
+         поточного кадру — інакше графік «дихав» би під час перетягування */
+      const ts=[],ys=[];
+      for(let i=0;i<=240;i++){const e=0.02+0.88*i/240; ts.push(e); ys.push(Math.floor(1/e));}
+      const r=drawChart(b2,{tMax:0.90,yMin:0,yMax:52,yLab:'N',xLab:'ε',yDec:0,xDec:2,xStep:0.1,
+        hover:this.h2.x,
+        series:[{ts,ys,color:CLR.k3,label:'N(ε)'},
+          {ts:[this.eps,this.eps],ys:[0,52],color:CLR.ink,label:'обране ε',dash:[4,3]}]});
+      showTip(this.tip2,r,'',this.h2,[['N(ε)',CLR.k3],['обране ε',CLR.ink]],0);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 2 · приклади ===================== */
+const M2={
+  k:0, Lg:0, eps:0.25, nMax:40, t:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  f(){return SEQ[this.k][1];},
+  Nmin(){
+    const key=this.k+'|'+this.Lg.toFixed(6)+'|'+this.eps.toFixed(6);
+    if(this._nk!==key){this._nk=key; this._nv=tailN(this.f(),this.Lg,this.eps);}
+    return this._nv;
+  },
+  sup(){
+    const key=this.k+'|'+this.Lg.toFixed(6)+'|'+this.nMax;
+    if(this._sk!==key){this._sk=key; this._sv=tailSup(this.f(),this.Lg,this.nMax);}
+    return this._sv;
+  },
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  pick(i){
+    this.k=i;
+    const L=SEQ[i][2];
+    this.Lg=L==null?0:L;
+    this.t=0;
+  },
+  reset(){this.t=0;},
+  init(){
+    grip('m2scene',this,()=>this.grips());
+    $('m2reset').addEventListener('click',()=>this.reset());
+    this.tip1=makeTip('m2c1w'); this.tip2=makeTip('m2c2w');
+    hover('m2c1',this.h1); hover('m2c2',this.h2);
+    this.h1.xlab='n'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='n'; this.h2.xunit=''; this.h2.xdec=0;
+  },
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  win(){
+    const w=SEQ[this.k][3];
+    return [Math.min(w[0],this.Lg-this.eps),Math.max(w[1],this.Lg+this.eps)];
+  },
+  geo(b){
+    return frozen(this,b,bb=>{const w=this.win(); return seqGeo(bb,this.nMax,w[0],w[1],{padB:82});});
+  },
+  shelfM(b){
+    const dx=Math.min(94,(b.w-70)/SEQ.length);
+    return {x0:Math.max(52,(b.w-dx*SEQ.length)/2),y:b.h-24,dx};
+  },
+  grips(){
+    const b=cvx('m2scene'); if(!b) return [];
+    const G=this.geo(b);
+    const out=[
+      {id:'Lg',x:G.x0-12,y:G.SY(this.Lg),r:9,color:CLR.ink,hint:'кандидат L',
+        move:(px,py)=>{this.Lg=clamp(snap(G.iY(py),0.05),-4,6); this.t=0;}},
+      {id:'eps',x:G.x1+14,y:G.SY(this.Lg+this.eps),r:9,color:CLR.k2,hint:'ε — півширина смуги',
+        move:(px,py)=>{this.eps=clamp(snap(Math.abs(G.iY(py)-this.Lg),0.01),0.02,1.5); this.t=0;}},
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+        move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.t=0;}}
+    ];
+    return out.concat(shelfGrips(this.shelfM(b),SEQ.map((s,i)=>[s[0],i,SEQSUB[i]]),i=>this.pick(i),'sq'));
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m2scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), nm=this.Nmin(), s=SEQ[this.k];
+    g.clearRect(0,0,w,h);
+    txt(g,nm==null?('число '+fmt(this.Lg,2)+' границею не є: смуга не ловить хвіст')
+                  :('смуга ловить увесь хвіст, починаючи з n > '+nm),
+      12,20,{color:nm==null?CLR.sec:CLR.k2,size:12.5,bold:true});
+    txt(g,'видно: збіжність — це не «куди схоже», а те, чи знайдеться номер для кожної смуги',
+      12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:1,aLab:'aₙ = '+s[0]});
+    band(g,G,{c:this.Lg,r:this.eps,color:CLR.k2});
+    const yL=G.SY(this.Lg);
+    g.strokeStyle=CLR.ink; g.lineWidth=1.4; g.setLineDash([2,3]);
+    g.beginPath(); g.moveTo(G.x0,yL+.5); g.lineTo(G.x1+10,yL+.5); g.stroke(); g.setLineDash([]);
+    txt(g,'L = '+fmt(this.Lg,2),G.x1+30,yL+4,{color:CLR.ink,size:11,bold:true});
+    txt(g,'ε = '+fmt(this.eps,2),G.x0+6,G.SY(this.Lg+this.eps)-5,{color:'#b8431a',size:10.5,bold:true});
+    if(nm!=null&&nm<=G.span){
+      const xm=G.SX(nm);
+      g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(xm+.5,G.y0); g.lineTo(xm+.5,G.y1); g.stroke(); g.setLineDash([]);
+      txt(g,'N = '+nm,xm+6,G.y0+12,{color:'#0d7a55',size:10.5,bold:true});
+    }
+    stems(g,G,this.f(),1,this.shown(),{base:this.Lg,style:(n,v)=>{
+      const inside=Math.abs(v-this.Lg)<this.eps;
+      return {color:inside?CLR.k2:CLR.sec,hollow:!inside};
+    }});
+    shelf(g,this.shelfM(b),SEQ.map((sq,i)=>[sq[0],i,SEQSUB[i]]),this.k,'');
+    txt(g,s[4],12,G.y1+34,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const nm=this.Nmin(), s=SEQ[this.k], sup=this.sup(), f=this.f();
+    let inb=0,out=0;
+    for(let n=1;n<=this.nMax;n++){
+      if(Math.abs(f(n)-this.Lg)<this.eps) inb++; else out++;
+    }
+    let mx=0;
+    for(let n=1;n<=2000;n++){const v=Math.abs(f(n)); if(isFinite(v)&&v>mx) mx=v;}
+    $('m2state').textContent=nm==null?'границею не є':'смуга спрацювала';
+    $('m2vseq').textContent=s[0];
+    $('m2vLg').textContent=fmt(this.Lg,2);
+    $('m2veps').textContent=fmt(this.eps,2);
+    $('m2kNmin').textContent=nm==null?'не знайдено':String(nm);
+    $('m2ktail').textContent=sup[1]>=1e8?'необмежений':fmt(sup[1],3);
+    $('m2kverd').textContent=nm==null?'ні':'так, для цього ε';
+    $('m2ktrue').textContent=s[2]==null?'границі немає':('збігається до '+fmt(s[2],4));
+    $('m2kin').textContent=String(inb);
+    $('m2kout').textContent=String(out);
+    $('m2kbd').textContent=s[2]==null&&mx>1e6?'не обмежена — і не збіжна':'|aₙ| ≤ '+fmt(mx,3);
+    const dv=Math.abs(f(this.nMax)-this.Lg);
+    $('m2fx').innerHTML='<i>|a</i><sub>'+this.nMax+'</sub><i> − L|</i> = |'+
+      fmt(f(this.nMax),4)+' − '+fmt(this.Lg,2)+'| = <b>'+fmt(dv,4)+'</b> '+
+      (dv<this.eps?'&lt;':'≥')+' <i>ε</i> = '+fmt(this.eps,2);
+  },
+  charts(){
+    const f=this.f();
+    const b1=cvx('m2c1');
+    if(b1){
+      const ts=[],ys=[];
+      let need=this.eps*1.15;
+      for(let n=1;n<=this.nMax;n++){const d=Math.abs(f(n)-this.Lg); if(isFinite(d)&&d>need) need=d;}
+      const hi=Math.min(fitTop('m2c1|'+this.k,need),12);
+      for(let n=1;n<=this.nMax;n++){
+        const d=Math.abs(f(n)-this.Lg);
+        ts.push(n); ys.push(Math.min(isFinite(d)?d:hi,hi));
+      }
+      const r=drawChart(b1,{tMax:this.nMax,yMin:0,yMax:hi,yLab:'|aₙ − L|',xLab:'n',yDec:2,xDec:0,
+        hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k2,label:'|aₙ−L|'},
+          {ts:[1,this.nMax],ys:[this.eps,this.eps],color:CLR.k3,label:'ε',dash:[4,3]}]});
+      showTip(this.tip1,r,'',this.h1,[['|aₙ−L|',CLR.k2],['ε',CLR.k3]],4);
+    }
+    const b2=cvx('m2c2');
+    if(b2){
+      const sup=this.sup(), ts=[],ys=[];
+      let need=this.eps*1.15;
+      for(let n=1;n<=this.nMax;n++) if(sup[n]<1e8&&sup[n]>need) need=sup[n];
+      const hi=Math.min(fitTop('m2c2|'+this.k,need),12);
+      for(let n=1;n<=this.nMax;n++){ts.push(n); ys.push(Math.min(sup[n],hi));}
+      const r=drawChart(b2,{tMax:this.nMax,yMin:0,yMax:hi,yLab:'sup |aₖ − L|',xLab:'n',yDec:2,xDec:0,
+        hover:this.h2.x,
+        series:[{ts,ys,color:CLR.k3,label:'хвіст'},
+          {ts:[1,this.nMax],ys:[this.eps,this.eps],color:CLR.k2,label:'ε',dash:[4,3]}]});
+      showTip(this.tip2,r,'',this.h2,[['хвостовий супремум',CLR.k3],['ε',CLR.k2]],4);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 3 · арифметика меж ===================== */
+const M3={
+  ai:0, bi:0, op:'add', nMax:30, t:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  fa(){return SQA[this.ai][1];},
+  fb(){return SQB[this.bi][1];},
+  fc(){const a=this.fa(),b=this.fb(),o=OPS[this.op][1]; return n=>o(a(n),b(n));},
+  La(){return SQA[this.ai][2];},
+  Lb(){return SQB[this.bi][2];},
+  /* границя частки визначена лише за ненульової границі знаменника —
+     інакше теорема про арифметику меж не застосовна взагалі */
+  broken(){return this.op==='div'&&Math.abs(this.Lb())<1e-12;},
+  Lc(){return this.broken()?null:OPS[this.op][1](this.La(),this.Lb());},
+  numLim(){const f=this.fc(); return f(20000);},
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  reset(){this.t=0;},
+  init(){
+    grip('m3scene',this,()=>this.grips());
+    $('m3reset').addEventListener('click',()=>this.reset());
+    seg('m3op',v=>{this.op=v; this.t=0;});
+    this.tip1=makeTip('m3c1w'); this.tip2=makeTip('m3c2w');
+    hover('m3c1',this.h1); hover('m3c2',this.h2);
+    this.h1.xlab='n'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='n'; this.h2.xunit=''; this.h2.xdec=0;
+  },
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  win(){
+    const a=this.fa(),b=this.fb(),c=this.fc();
+    let lo=1e9,hi=-1e9;
+    for(let n=1;n<=this.nMax;n++){
+      for(const v of [a(n),b(n),c(n)]){
+        if(!isFinite(v)) continue;
+        if(v<lo) lo=v; if(v>hi) hi=v;
+      }
+    }
+    /* результат ділення на послідовність, що прямує до нуля, росте без межі:
+       кадр обмежуємо, а члени, що не влізли, лишають вказівники на межі */
+    lo=Math.max(lo,-8); hi=Math.min(hi,10);
+    if(!(hi-lo>0.4)){lo-=0.4; hi+=0.4;}
+    return [lo,hi];
+  },
+  geo(b){
+    return frozen(this,b,bb=>{const w=this.win(); return seqGeo(bb,this.nMax,w[0],w[1],{padB:118});});
+  },
+  shelfM(b,row){
+    const dx=Math.min(112,(b.w-140)/4);
+    return {x0:Math.max(96,(b.w-dx*4)/2),y:b.h-(row?26:62),dx};
+  },
+  grips(){
+    const b=cvx('m3scene'); if(!b) return [];
+    const G=this.geo(b);
+    const gs=[{id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+      move:px=>{this.nMax=clamp(Math.round(G.iX(px)),8,120); this.t=0;}}];
+    return gs
+      .concat(shelfGrips(this.shelfM(b,0),SQA.map((s,i)=>[s[0],i]),i=>{this.ai=i; this.t=0;},'sa'))
+      .concat(shelfGrips(this.shelfM(b,1),SQB.map((s,i)=>[s[0],i]),i=>{this.bi=i; this.t=0;},'sb'));
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), br=this.broken();
+    const a=this.fa(),bb=this.fb(),c=this.fc(),Lc=this.Lc();
+    g.clearRect(0,0,w,h);
+    txt(g,br?'границя знаменника — нуль: теорема про частку не застосовна'
+            :('границя дії дорівнює дії над границями: '+fmt(this.La(),3)+' '+OPS[this.op][0]+' '+
+              fmt(this.Lb(),3)+' = '+fmt(Lc,3)),
+      12,20,{color:br?CLR.sec:CLR.k3,size:12.5,bold:true});
+    txt(g,'видно: обидві дані послідовності мають границі — і результат прямує саме туди, куди велить дія',
+      12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:1,aLab:'aₙ, bₙ, cₙ'});
+    /* три границі пунктиром — кожна своїм кольором ролі */
+    const lines=[[this.La(),CLR.k1,'lim aₙ','#1c5cab'],[this.Lb(),CLR.k2,'lim bₙ','#b8431a']];
+    if(!br) lines.push([Lc,CLR.k3,'lim cₙ','#0d7a55']);
+    const labs=[];
+    for(const [v,col,lab,tc] of lines){
+      if(v<G.aMin||v>G.aMax) continue;
+      const y=G.SY(v);
+      g.strokeStyle=col; g.lineWidth=1.2; g.setLineDash([2,3]);
+      g.beginPath(); g.moveTo(G.x0,y+.5); g.lineTo(G.x1+10,y+.5); g.stroke(); g.setLineDash([]);
+      labs.push({y,lab,tc});
+    }
+    /* границі різних послідовностей часто збігаються (сума 1/n і 3 − 1/n дає
+       рівно 3) — тоді підписи лягли б один на одного; розводимо по вертикалі */
+    labs.sort((p,q)=>p.y-q.y);
+    for(let i=1;i<labs.length;i++) if(labs[i].y-labs[i-1].y<13) labs[i].y=labs[i-1].y+13;
+    for(const l of labs) txt(g,l.lab,G.x1+30,l.y+4,{color:l.tc,size:10.5,bold:true});
+    const sh=this.shown();
+    stems(g,G,a,1,sh,{base:0,stem:false,r:2.6,style:()=>({color:CLR.k1})});
+    stems(g,G,bb,1,sh,{base:0,stem:false,r:2.6,style:()=>({color:CLR.k2})});
+    stems(g,G,c,1,sh,{base:0,stem:false,r:3.4,style:()=>({color:CLR.k3})});
+    /* прямі підписи серій — у вільній смузі під віссю, між номерами й
+       полицями: три ряди точок розрізнити можна лише за кольором, а зелений
+       сенсу самотужки не несе (§2.1). У самому кадрі підпис накрив би точки */
+    let lx=G.x0;
+    for(const s of [['aₙ — дане',CLR.k1,'#1c5cab'],['bₙ — дане',CLR.k2,'#b8431a'],
+                    ['cₙ — результат',CLR.k3,'#0d7a55']]){
+      dot(g,lx+4,G.y1+30,3.2,s[1]);
+      txt(g,s[0],lx+12,G.y1+34,{color:s[2],size:10.5,bold:true});
+      g.font='600 10.5px system-ui,sans-serif';
+      lx+=12+g.measureText(s[0]).width+20;
+    }
+    shelf(g,this.shelfM(b,0),SQA.map((s,i)=>[s[0],i,'lim = '+fmt(s[2],2)]),this.ai,'aₙ');
+    shelf(g,this.shelfM(b,1),SQB.map((s,i)=>[s[0],i,'lim = '+fmt(s[2],2)]),this.bi,'bₙ');
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const br=this.broken(), Lc=this.Lc(), num=this.numLim();
+    const okc=!br&&Math.abs(num-Lc)<2e-3;
+    $('m3state').textContent=br?'умову теореми порушено':'умови теореми виконано';
+    $('m3va').textContent=SQA[this.ai][0];
+    $('m3vb').textContent=SQB[this.bi][0];
+    $('m3vnmax').textContent=String(this.nMax);
+    $('m3kLa').textContent=fmt(this.La(),3);
+    $('m3kLb').textContent=fmt(this.Lb(),3);
+    $('m3kLc').textContent=br?'не визначено':fmt(Lc,3);
+    $('m3kNum').textContent=isFinite(num)?fmt(num,3):'росте без межі';
+    $('m3kCheck').textContent=br?'—':(okc?'збігається':'розбіжність '+fmt(Math.abs(num-Lc),4));
+    $('m3kWarn').textContent=br?'lim bₙ = 0 — теорема не діє':'lim bₙ ≠ 0 — виконано';
+    $('m3fx').innerHTML='lim(<i>a</i><sub>n</sub> '+OPS[this.op][0]+' <i>b</i><sub>n</sub>) = '+
+      fmt(this.La(),3)+' '+OPS[this.op][0]+' '+fmt(this.Lb(),3)+' = <b>'+
+      (br?'не визначено':fmt(Lc,3))+'</b>; чисельно при <i>n</i> = 20 000 — '+
+      (isFinite(num)?fmt(num,3):'росте без межі');
+  },
+  charts(){
+    const c=this.fc(), Lc=this.Lc();
+    const b1=cvx('m3c1');
+    if(b1){
+      const ts=[],ys=[];
+      let lo=1e9,hi=-1e9;
+      for(let n=1;n<=this.nMax;n++){const v=c(n); if(isFinite(v)){lo=Math.min(lo,v); hi=Math.max(hi,v);}}
+      lo=Math.max(lo,-8); hi=Math.min(hi,10);
+      if(!(hi-lo>0.4)){lo-=0.4; hi+=0.4;}
+      const kk='|'+this.ai+this.bi+this.op;
+      lo=fitBot('m3c1lo'+kk,lo); hi=fitTop('m3c1hi'+kk,hi);
+      for(let n=1;n<=this.nMax;n++){const v=c(n); ts.push(n); ys.push(clamp(isFinite(v)?v:hi,lo,hi));}
+      const ser=[{ts,ys,color:CLR.k3,label:'cₙ'}];
+      if(Lc!=null&&Lc>=lo&&Lc<=hi) ser.push({ts:[1,this.nMax],ys:[Lc,Lc],color:CLR.ink,label:'lim',dash:[4,3]});
+      const r=drawChart(b1,{tMax:this.nMax,yMin:lo,yMax:hi,yLab:'cₙ',xLab:'n',yDec:2,xDec:0,
+        hover:this.h1.x,series:ser});
+      showTip(this.tip1,r,'',this.h1,[['cₙ',CLR.k3],['границя',CLR.ink]],4);
+    }
+    const b2=cvx('m3c2');
+    if(b2){
+      const ts=[],ys=[];
+      let hi=1e-6;
+      for(let n=1;n<=this.nMax;n++){
+        const d=Lc==null?NaN:Math.abs(c(n)-Lc);
+        if(isFinite(d)&&d>hi) hi=d;
+      }
+      /* сума 1/n і 3 − 1/n дорівнює 3 точно, і відхилення тотожно нульове:
+         без нижньої межі кадру вісь виродилася б у стовпчик нулів */
+      hi=Math.min(fitTop('m3c2|'+this.ai+this.bi+this.op,Math.max(hi*1.15,0.05)),12);
+      for(let n=1;n<=this.nMax;n++){
+        const d=Lc==null?hi:Math.abs(c(n)-Lc);
+        ts.push(n); ys.push(clamp(isFinite(d)?d:hi,0,hi));
+      }
+      const r=drawChart(b2,{tMax:this.nMax,yMin:0,yMax:hi,yLab:'|cₙ − Lc|',xLab:'n',yDec:3,xDec:0,
+        hover:this.h2.x,series:[{ts,ys,color:CLR.k3,label:'|cₙ−Lc|'}]});
+      showTip(this.tip2,r,'',this.h2,[['|cₙ−Lc|',CLR.k3]],4);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 4 · єдиність і обмеженість ===================== */
+const M4={
+  /* початкові кандидати: L₁ — справжня границя, L₂ — правдоподібне, але
+     хибне число; так одразу видно, що смугу хвіст обирає лише одну */
+  L1:0, L2:0.6, nMax:40, t:0, k:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  f(){return this.k===0?(n=>(n%2?-1:1)/n):(n=>(n%2?-1:1));},
+  eps(){return Math.abs(this.L1-this.L2)/2;},
+  N1(){return tailN(this.f(),this.L1,this.eps(),4000);},
+  N2(){return tailN(this.f(),this.L2,this.eps(),4000);},
+  sup(){
+    const f=this.f(); let m=0;
+    for(let n=1;n<=4000;n++){const v=Math.abs(f(n)); if(v>m) m=v;}
+    return m;
+  },
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  reset(){this.t=0;},
+  init(){
+    grip('m4scene',this,()=>this.grips());
+    $('m4reset').addEventListener('click',()=>this.reset());
+    seg('m4seq',v=>{this.k=+v; this.t=0;});
+    this.tip1=makeTip('m4c1w'); this.tip2=makeTip('m4c2w');
+    hover('m4c1',this.h1); hover('m4c2',this.h2);
+    this.h1.xlab='n'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='n'; this.h2.xunit=''; this.h2.xdec=0;
+  },
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  geo(b){
+    return frozen(this,b,bb=>{
+      const e=this.eps();
+      const lo=Math.min(-1.2,this.L1-e,this.L2-e), hi=Math.max(1.2,this.L1+e,this.L2+e);
+      return seqGeo(bb,this.nMax,lo,hi,{padB:52});
+    });
+  },
+  grips(){
+    const b=cvx('m4scene'); if(!b) return [];
+    const G=this.geo(b);
+    return [
+      {id:'L1',x:G.x0-12,y:G.SY(this.L1),r:9,color:CLR.k1,hint:'кандидат L₁',
+        move:(px,py)=>{this.L1=clamp(snap(G.iY(py),0.05),-2.4,2.4); this.t=0;}},
+      {id:'L2',x:G.x1+14,y:G.SY(this.L2),r:9,color:CLR.k3,hint:'кандидат L₂',
+        move:(px,py)=>{this.L2=clamp(snap(G.iY(py),0.05),-2.4,2.4); this.t=0;}},
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k2,hint:'скільки членів видно',
+        move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.t=0;}}
+    ];
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m4scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), e=this.eps(), n1=this.N1(), n2=this.N2();
+    g.clearRect(0,0,w,h);
+    const both=n1!=null&&n2!=null;
+    txt(g,both?'обидві смуги ловлять хвіст — так не буває, кандидати збіглися'
+              :(n1!=null?'хвіст лежить лише у смузі біля L₁'
+                        :(n2!=null?'хвіст лежить лише у смузі біля L₂'
+                                  :'жодна смуга хвоста не ловить')),
+      12,20,{color:both?CLR.sec:CLR.ink,size:12.5,bold:true});
+    txt(g,'видно: смуги радіуса ε = |L₁ − L₂|/2 не перетинаються, а хвіст один — тож і границя одна',
+      12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:1,aLab:'aₙ'});
+    band(g,G,{c:this.L1,r:e,color:CLR.k1});
+    band(g,G,{c:this.L2,r:e,color:CLR.k3});
+    for(const [v,col,lab] of [[this.L1,CLR.k1,'L₁'],[this.L2,CLR.k3,'L₂']]){
+      const y=G.SY(v);
+      g.strokeStyle=col; g.lineWidth=1.6; g.setLineDash([2,3]);
+      g.beginPath(); g.moveTo(G.x0,y+.5); g.lineTo(G.x1+10,y+.5); g.stroke(); g.setLineDash([]);
+      txt(g,lab+' = '+fmt(v,2),G.x1+30,y+4,{color:col===CLR.k1?'#1c5cab':'#0d7a55',size:11,bold:true});
+    }
+    /* межа обмеженості: смуга ±M, у якій лежить уся послідовність */
+    const M=this.sup();
+    for(const s of [1,-1]){
+      const y=G.SY(s*M);
+      if(y<G.y0||y>G.y1) continue;
+      g.strokeStyle=CLR.k2; g.lineWidth=1; g.setLineDash([6,4]);
+      g.beginPath(); g.moveTo(G.x0,y+.5); g.lineTo(G.x1+10,y+.5); g.stroke(); g.setLineDash([]);
+    }
+    txt(g,'±M — межа обмеженості',G.x0+6,G.SY(M)-6,{color:'#b8431a',size:10});
+    stems(g,G,this.f(),1,this.shown(),{base:0,style:(n,v)=>{
+      const i1=Math.abs(v-this.L1)<e, i2=Math.abs(v-this.L2)<e;
+      return {color:i1?CLR.k1:(i2?CLR.k3:CLR.sec),hollow:!(i1||i2)};
+    }});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const e=this.eps(), n1=this.N1(), n2=this.N2(), M=this.sup();
+    $('m4state').textContent=this.k===0?'збіжна послідовність':'обмежена, але не збіжна';
+    $('m4vL1').textContent=fmt(this.L1,2);
+    $('m4vL2').textContent=fmt(this.L2,2);
+    $('m4vnmax').textContent=String(this.nMax);
+    $('m4kGap').textContent=fmt(Math.abs(this.L1-this.L2),3);
+    $('m4kEps').textContent=fmt(e,3);
+    $('m4kN1').textContent=n1==null?'не знайдено':String(n1);
+    $('m4kN2').textContent=n2==null?'не знайдено':String(n2);
+    $('m4kBoth').textContent=(n1!=null&&n2!=null)?'обидва — кандидати надто близькі'
+      :'щонайбільше один';
+    $('m4kM').textContent=fmt(M,3);
+    $('m4kBnd').textContent='|aₙ| ≤ '+fmt(M,3);
+    $('m4kConv').textContent=this.k===0?'ні — це інша теорема':'ні: (−1)ⁿ — контрприклад';
+    $('m4fx').innerHTML='<i>ε</i> = |'+fmt(this.L1,2)+' − '+fmt(this.L2,2)+'|/2 = <b>'+fmt(e,3)+
+      '</b>; смуги (<i>L</i>₁ ± ε) і (<i>L</i>₂ ± ε) не перетинаються, '+
+      'а хвіст послідовності один — отже двох різних границь бути не може';
+  },
+  charts(){
+    const f=this.f();
+    const b1=cvx('m4c1');
+    if(b1){
+      const ts=[],y1=[],y2=[];
+      let hi=0.2;
+      for(let n=1;n<=this.nMax;n++){
+        const d1=Math.abs(f(n)-this.L1), d2=Math.abs(f(n)-this.L2);
+        hi=Math.max(hi,d1,d2);
+      }
+      hi=fitTop('m4c1|'+this.k,hi*1.1);
+      for(let n=1;n<=this.nMax;n++){
+        ts.push(n); y1.push(Math.abs(f(n)-this.L1)); y2.push(Math.abs(f(n)-this.L2));
+      }
+      const r=drawChart(b1,{tMax:this.nMax,yMin:0,yMax:hi,yLab:'відхилення',xLab:'n',yDec:2,xDec:0,
+        hover:this.h1.x,
+        series:[{ts,ys:y1,color:CLR.k1,label:'до L₁'},{ts,ys:y2,color:CLR.k3,label:'до L₂'},
+          {ts:[1,this.nMax],ys:[this.eps(),this.eps()],color:CLR.ink,label:'ε',dash:[4,3]}]});
+      showTip(this.tip1,r,'',this.h1,[['|aₙ−L₁|',CLR.k1],['|aₙ−L₂|',CLR.k3],['ε',CLR.ink]],4);
+    }
+    const b2=cvx('m4c2');
+    if(b2){
+      const ts=[],ys=[]; let m=0;
+      for(let n=1;n<=this.nMax;n++){m=Math.max(m,Math.abs(f(n))); ts.push(n); ys.push(m);}
+      const r=drawChart(b2,{tMax:this.nMax,yMin:0,yMax:fitTop('m4c2|'+this.k,Math.max(1.3,m*1.25)),
+        yLab:'max |aₖ|',xLab:'n',yDec:2,xDec:0,
+        hover:this.h2.x,
+        series:[{ts,ys,color:CLR.k2,label:'max |aₖ|'}]});
+      showTip(this.tip2,r,'',this.h2,[['max |aₖ|',CLR.k2]],3);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 5 · теорема про затиск ===================== */
+const M5={
+  ex:0, kw:1, nMax:40, t:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  /* g(n) — те, за чим спадає коридор: 1/n у першому прикладі, 1/√n у другому.
+     Коефіцієнт k ≥ 1 потрібен, щоб нерівність aₙ ≤ cₙ ≤ bₙ лишалася істинною:
+     |sin n| ≤ 1 і |(−1)ⁿ| ≤ 1 — ширші конвоїри теж законні, просто повільніші. */
+  gg(n){return this.ex===0?1/n:1/Math.sqrt(n);},
+  c(n){return this.ex===0?1+Math.sin(n)/n:1+(n%2?-1:1)/Math.sqrt(n);},
+  lo(n){return 1-this.kw*this.gg(n);},
+  hi(n){return 1+this.kw*this.gg(n);},
+  width(n){return this.hi(n)-this.lo(n);},
+  ineqOK(){
+    for(let n=1;n<=this.nMax;n++){
+      const c=this.c(n);
+      if(c<this.lo(n)-1e-12||c>this.hi(n)+1e-12) return false;
+    }
+    return true;
+  },
+  mono(){
+    let up=0,dn=0;
+    for(let n=1;n<this.nMax;n++){const d=this.c(n+1)-this.c(n); if(d>0) up++; else if(d<0) dn++;}
+    return up>0&&dn>0?'ні — стрибає в обидва боки':'так';
+  },
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  reset(){this.t=0;},
+  init(){
+    grip('m5scene',this,()=>this.grips());
+    $('m5reset').addEventListener('click',()=>this.reset());
+    seg('m5ex',v=>{this.ex=+v; this.t=0;});
+    this.tip1=makeTip('m5c1w'); this.tip2=makeTip('m5c2w');
+    hover('m5c1',this.h1); hover('m5c2',this.h2);
+    this.h1.xlab='n'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='n'; this.h2.xunit=''; this.h2.xdec=0;
+  },
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  geo(b){
+    /* кадр підбирається за коридором на n = 2, а не на n = 1: у прикладі B
+       перший член лежить утричі далі за всі наступні й розтягнув би кадр так,
+       що стиснення коридору перестало б читатися. Те, що не влізло, лишає
+       вказівник зі стрілкою на межі кадру */
+    return frozen(this,b,bb=>seqGeo(bb,this.nMax,this.lo(2)-0.05,this.hi(2)+0.05,{padB:52}));
+  },
+  /* ручка сидить на самому конвоїрі — тягнемо межу коридору, а не абстрактний
+     коефіцієнт; номер вибрано в першій третині кадру, де коридор ще широкий */
+  gripN(){return Math.max(2,Math.round(this.nMax*0.08));},
+  grips(){
+    const b=cvx('m5scene'); if(!b) return [];
+    const G=this.geo(b), n=this.gripN();
+    return [
+      {id:'kw',x:G.SX(n),y:G.SY(this.hi(n)),r:9,color:CLR.k1,hint:'ширина коридору',
+        move:(px,py)=>{this.kw=clamp(snap((G.iY(py)-1)/this.gg(n),0.1),1,6); this.t=0;}},
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+        move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.t=0;}}
+    ];
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m5scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), sh=this.shown();
+    g.clearRect(0,0,w,h);
+    txt(g,'конвоїри сходяться до 1 — затиснута послідовність не має куди подітися',
+      12,20,{color:CLR.k2,size:12.5,bold:true});
+    txt(g,'видно: ширший коридор теж працює — просто його стиснення до потрібної смуги настає пізніше',
+      12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:2,aLab:'aₙ ≤ cₙ ≤ bₙ'});
+    /* коридор між конвоїрами */
+    clipPlot(g,G); g.beginPath();
+    g.moveTo(G.SX(1),G.SY(this.hi(1)));
+    for(let n=1;n<=this.nMax;n++) g.lineTo(G.SX(n),clamp(G.SY(this.hi(n)),G.y0-40,G.y1+40));
+    for(let n=this.nMax;n>=1;n--) g.lineTo(G.SX(n),clamp(G.SY(this.lo(n)),G.y0-40,G.y1+40));
+    g.closePath(); g.fillStyle='rgba(42,120,214,.07)'; g.fill(); g.restore();
+    seqLine(g,G,n=>this.hi(n),1,this.nMax,CLR.k1);
+    seqLine(g,G,n=>this.lo(n),1,this.nMax,CLR.k1);
+    const yL=G.SY(1);
+    g.strokeStyle=CLR.ink; g.lineWidth=1.4; g.setLineDash([2,3]);
+    g.beginPath(); g.moveTo(G.x0,yL+.5); g.lineTo(G.x1+10,yL+.5); g.stroke(); g.setLineDash([]);
+    txt(g,'L = 1',G.x1+30,yL+4,{color:CLR.ink,size:11,bold:true});
+    txt(g,'bₙ',G.x1+30,G.SY(this.hi(this.nMax))-9,{color:'#1c5cab',size:10.5,bold:true});
+    txt(g,'aₙ',G.x1+30,G.SY(this.lo(this.nMax))+17,{color:'#1c5cab',size:10.5,bold:true});
+    stems(g,G,n=>this.c(n),1,sh,{base:1,style:()=>({color:CLR.k2})});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const n=this.nMax, ok=this.ineqOK();
+    $('m5state').textContent=ok?'нерівність виконано для всіх видимих n':'коридор надто вузький';
+    $('m5vk').textContent=fmt(this.kw,2);
+    $('m5vnmax').textContent=String(this.nMax);
+    $('m5kA').textContent='a'+n+' = '+fmt(this.lo(n),4);
+    $('m5kC').textContent='c'+n+' = '+fmt(this.c(n),4);
+    $('m5kB').textContent='b'+n+' = '+fmt(this.hi(n),4);
+    $('m5kW').textContent=fmt(this.width(n),4);
+    $('m5kIneq').textContent=ok?'виконано':'порушено';
+    $('m5kLim').textContent='1';
+    $('m5kMono').textContent=this.mono();
+    let out=0;
+    for(let i=1;i<=this.nMax;i++) if(this.c(i)<this.lo(i)-1e-12||this.c(i)>this.hi(i)+1e-12) out++;
+    $('m5kOut').textContent=String(out);
+    $('m5fx').innerHTML='при <i>n</i> = '+n+': '+fmt(this.lo(n),4)+' ≤ '+fmt(this.c(n),4)+
+      ' ≤ '+fmt(this.hi(n),4)+'; ширина коридору '+fmt(this.width(n),4)+
+      ' = 2·'+fmt(this.kw,2)+'·'+(this.ex===0?'1/'+n:'1/√'+n)+' → <b>0</b>';
+  },
+  charts(){
+    const b1=cvx('m5c1');
+    if(b1){
+      const ts=[],ys=[];
+      for(let n=1;n<=this.nMax;n++){ts.push(n); ys.push(this.width(n));}
+      const r=drawChart(b1,{tMax:this.nMax,yMin:0,yMax:fitTop('m5c1|'+this.ex,this.width(1)*1.1),
+        yLab:'bₙ − aₙ',xLab:'n',yDec:2,xDec:0,
+        hover:this.h1.x,series:[{ts,ys,color:CLR.k1,label:'ширина'}]});
+      showTip(this.tip1,r,'',this.h1,[['ширина коридору',CLR.k1]],4);
+    }
+    const b2=cvx('m5c2');
+    if(b2){
+      const ts=[],y1=[],y2=[];
+      for(let n=1;n<=this.nMax;n++){
+        ts.push(n); y1.push(Math.abs(this.c(n)-1)); y2.push(this.kw*this.gg(n));
+      }
+      const r=drawChart(b2,{tMax:this.nMax,yMin:0,yMax:fitTop('m5c2|'+this.ex,this.kw*this.gg(1)*1.15),
+        yLab:'відхилення',xLab:'n',yDec:2,xDec:0,
+        hover:this.h2.x,
+        series:[{ts,ys:y1,color:CLR.k2,label:'|cₙ−1|'},{ts,ys:y2,color:CLR.k1,label:'k/n'}]});
+      showTip(this.tip2,r,'',this.h2,[['|cₙ−1|',CLR.k2],['півширина коридору',CLR.k1]],4);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 6 · де це працює ===================== */
+/* Ітерація Герона xₙ₊₁ = (xₙ + a/xₙ)/2 — саме так добуває корінь калькулятор:
+   кожен крок подвоює кількість правильних знаків, тому «нескінченний процес»
+   на практиці зупиняють після п'ятого кроку. */
+function heron(n){let x=1; for(let i=1;i<n;i++) x=(x+2/x)/2; return x;}
+const PROC=[
+  {nm:'корінь ітерацією', sub:'√2', f:heron, L:Math.SQRT2, u:'', d:9, aD:2,
+   win:[1.40,1.53], e0:0.001, eLo:0.00002, eHi:0.15, eSt:0.00002, nD:8, nMx:30,
+   gal:'обчислювальна математика', area:'обчислювальна математика — так корінь добуває калькулятор',
+   ask:'скільки ітерацій потрібно', step:'ітерація x → (x + 2/x)/2',
+   xlab:'номер ітерації', vlab:'наближення до √2'},
+  {nm:'складні відсотки', sub:'1000 грн, 5 % річних', f:n=>1000*Math.pow(1+0.05/n,n),
+   L:1000*Math.exp(0.05), u:'грн', d:4, aD:1, win:[1049.5,1052.0],
+   e0:0.2, eLo:0.01, eHi:1.5, eSt:0.01, nD:40, nMx:200,
+   gal:'економіка', area:'економіка — до чого прямує сума за частішої капіталізації',
+   ask:'скільки нарахувань на рік потрібно', step:'одне нарахування відсотків',
+   xlab:'нарахувань на рік', vlab:'сума через рік, грн'},
+  {nm:'радіоактивний розпад', sub:'1000 ядер', f:n=>1000*Math.pow(0.5,n), L:0,
+   u:'ядер', d:4, aD:0, win:[0,520], e0:1, eLo:0.2, eHi:200, eSt:0.2, nD:16, nMx:60,
+   gal:'ядерна фізика', area:'ядерна фізика — скільки періодів піврозпаду чекати',
+   ask:'скільки періодів піврозпаду мине', step:'один період піврозпаду',
+   xlab:'періодів піврозпаду', vlab:'ядер, що не розпалися'},
+  {nm:'середнє з вимірювань', sub:'σ = 2 мм', f:n=>2/Math.sqrt(n), L:0,
+   u:'мм', d:4, aD:1, win:[0,2.1], e0:0.1, eLo:0.02, eHi:1, eSt:0.01, nD:120, nMx:600,
+   gal:'метрологія', area:'метрологія — похибка середнього спадає як σ/√n',
+   ask:'скільки вимірювань треба зробити', step:'одне вимірювання',
+   xlab:'кількість вимірювань', vlab:'похибка середнього, мм'}
+];
+const M6={
+  k:0, eps:PROC[0].e0, nMax:PROC[0].nD, t:0,
+  _grab:null,_over:null,_froz:null,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  p(){return PROC[this.k];},
+  dev(n){const p=this.p(); return Math.abs(p.f(n)-p.L);},
+  /* правильних десяткових знаків: похибка нижча за машинну точність — це вже
+     не «нескінченно точно», а межа подвійної точності, тож стеля 16 */
+  digits(n){const d=this.dev(n); return d<1e-16?16:-Math.log10(d);},
+  Nmin(){
+    const key=this.k+'|'+this.eps;
+    if(this._nk!==key){this._nk=key; this._nv=tailD(n=>this.dev(n),this.eps,4000);}
+    return this._nv;
+  },
+  shown(){return Math.max(1,Math.min(this.nMax,Math.floor(this.t/6*this.nMax)+1));},
+  pick(i){
+    const p=PROC[i];
+    this.k=i; this.eps=p.e0; this.nMax=p.nD; this.t=0;
+  },
+  reset(){this.t=0;},
+  init(){
+    grip('m6scene',this,()=>this.grips());
+    $('m6reset').addEventListener('click',()=>this.reset());
+    this.tip1=makeTip('m6c1w'); this.tip2=makeTip('m6c2w');
+    hover('m6c1',this.h1); hover('m6c2',this.h2);
+    this.h1.xlab='крок'; this.h1.xunit=''; this.h1.xdec=0;
+    this.h2.xlab='крок'; this.h2.xunit=''; this.h2.xdec=0;
+  },
+  tick(dt){if(this._grab==null) this.t=Math.min(6.2,this.t+dt); this.render();},
+  geo(b){
+    return frozen(this,b,bb=>{
+      const p=this.p();
+      return seqGeo(bb,this.nMax,Math.min(p.win[0],p.L-this.eps),
+        Math.max(p.win[1],p.L+this.eps),{padB:82});
+    });
+  },
+  shelfM(b){
+    const dx=Math.min(150,(b.w-90)/PROC.length);
+    return {x0:Math.max(60,(b.w-dx*PROC.length)/2),y:b.h-24,dx};
+  },
+  grips(){
+    const b=cvx('m6scene'); if(!b) return [];
+    const G=this.geo(b), p=this.p();
+    const out=[
+      {id:'eps',x:G.x1+14,y:G.SY(p.L+this.eps),r:9,color:CLR.k2,hint:'допустима похибка ε',
+        move:(px,py)=>{this.eps=clamp(snap(Math.abs(G.iY(py)-p.L),p.eSt),p.eLo,p.eHi); this.t=0;}},
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки кроків видно',
+        move:px=>{this.nMax=clamp(Math.round(G.iX(px)),4,p.nMx); this.t=0;}}
+    ];
+    return out.concat(shelfGrips(this.shelfM(b),PROC.map((q,i)=>[q.nm,i,q.sub]),i=>this.pick(i),'pr'));
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m6scene'); if(!b) return;
+    const {g,w,h}=b, G=this.geo(b), p=this.p(), nm=this.Nmin();
+    g.clearRect(0,0,w,h);
+    txt(g,nm==null?('такої точності цей процес не досягає за '+p.nMx+' кроків')
+                  :(p.ask+': '+nm+' — далі похибка вже менша за ε'),
+      12,20,{color:nm==null?CLR.sec:CLR.k2,size:12.5,bold:true});
+    txt(g,'видно: те саме означення — просто ε тепер у '+(p.u||'частках одиниці')+
+      ', а N — у кроках роботи',12,36,{color:CLR.mut,size:10.5});
+    axesXY(g,G,{aDec:p.aD,aLab:p.vlab});
+    band(g,G,{c:p.L,r:this.eps,color:CLR.k2});
+    const yL=G.SY(p.L);
+    g.strokeStyle=CLR.ink; g.lineWidth=1.4; g.setLineDash([2,3]);
+    g.beginPath(); g.moveTo(G.x0,yL+.5); g.lineTo(G.x1+10,yL+.5); g.stroke(); g.setLineDash([]);
+    txt(g,'межа '+fmt(p.L,p.aD+2),G.x1+30,yL+4,{color:CLR.ink,size:11,bold:true});
+    txt(g,'ε = '+smart(this.eps,4)+(p.u?' '+p.u:''),G.x0+6,G.SY(p.L+this.eps)-5,
+      {color:'#b8431a',size:10.5,bold:true});
+    if(nm!=null&&nm<=G.span){
+      const xm=G.SX(nm);
+      g.strokeStyle=CLR.k3; g.lineWidth=1.6;
+      g.beginPath(); g.moveTo(xm+.5,G.y0); g.lineTo(xm+.5,G.y1); g.stroke();
+      txt(g,'N = '+nm,xm+6,G.y0+12,{color:'#0d7a55',size:11,bold:true});
+    }
+    stems(g,G,n=>p.f(n),1,this.shown(),{base:p.L,style:n=>{
+      const inside=this.dev(n)<this.eps;
+      return {color:inside?CLR.k2:CLR.sec,hollow:!inside};
+    }});
+    shelf(g,this.shelfM(b),PROC.map((q,i)=>[q.nm,i,q.sub]),this.k,'');
+    txt(g,p.area,12,G.y1+34,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  table(){
+    const p=this.p(), nm=this.Nmin(), sh=this.shown();
+    const nn=nm==null?null:nm+1;
+    $('m6state').textContent=nm==null?'точність недосяжна':'відповідь: '+nm;
+    $('m6vproc').textContent=p.nm;
+    $('m6veps').textContent=smart(this.eps,4)+(p.u?' '+p.u:'');
+    $('m6vnmax').textContent=String(this.nMax);
+    $('m6kask').textContent=p.ask;
+    $('m6kN').textContent=nm==null?'не досягається':String(nm);
+    $('m6kval').textContent=nn==null?'—':smart(p.f(nn),p.d)+(p.u?' '+p.u:'');
+    $('m6kdev').textContent=nn==null?'—':smart(this.dev(nn),p.d)+(p.u?' '+p.u:'');
+    $('m6kL').textContent=fmt(p.L,p.d>4?6:p.d)+(p.u?' '+p.u:'');
+    $('m6karea').textContent=p.gal;
+    $('m6kstep').textContent=p.step;
+    $('m6kfirst').textContent=smart(p.f(1),p.d)+(p.u?' '+p.u:'');
+    $('m6fx').innerHTML=nn==null?'за '+p.nMx+' кроків похибка не спадає нижче ε'
+      :('похибка на кроці '+nn+': <i>|a</i><sub>'+nn+'</sub><i> − L|</i> = '+
+        smart(this.dev(nn),p.d)+' &lt; <i>ε</i> = '+smart(this.eps,4)+
+        ' ⇒ <b>'+p.ask+': '+nm+'</b>');
+  },
+  charts(){
+    const p=this.p(), key='|'+this.k;
+    const b1=cvx('m6c1');
+    if(b1){
+      const ts=[],ys=[];
+      let need=this.eps*1.15;
+      for(let n=1;n<=this.nMax;n++){const d=this.dev(n); if(isFinite(d)&&d>need) need=d;}
+      const hi=fitTop('m6c1'+key,need);
+      for(let n=1;n<=this.nMax;n++){ts.push(n); ys.push(Math.min(this.dev(n),hi));}
+      const r=drawChart(b1,{tMax:this.nMax,yMin:0,yMax:hi,yLab:p.u||'похибка',xLab:p.xlab,
+        yDec:hi<0.02?4:(hi<2?3:1),xDec:0,hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k2,label:'похибка'},
+          {ts:[1,this.nMax],ys:[this.eps,this.eps],color:CLR.k3,label:'ε',dash:[4,3]}]});
+      showTip(this.tip1,r,p.u,this.h1,[['похибка',CLR.k2],['ε',CLR.k3]],4);
+    }
+    const b2=cvx('m6c2');
+    if(b2){
+      const ts=[],ys=[];
+      let lo=0,hiN=1;
+      for(let n=1;n<=this.nMax;n++){const v=this.digits(n); if(v<lo) lo=v; if(v>hiN) hiN=v;}
+      const need=-Math.log10(this.eps);
+      lo=fitBot('m6c2lo'+key,Math.min(lo,need)-0.5);
+      const hi=fitTop('m6c2hi'+key,Math.max(hiN,need)+0.5);
+      for(let n=1;n<=this.nMax;n++){ts.push(n); ys.push(clamp(this.digits(n),lo,hi));}
+      const r=drawChart(b2,{tMax:this.nMax,yMin:lo,yMax:hi,yLab:'знаків',xLab:p.xlab,
+        yDec:0,xDec:0,hover:this.h2.x,
+        series:[{ts,ys,color:CLR.k3,label:'знаків'},
+          {ts:[1,this.nMax],ys:[need,need],color:CLR.ink,label:'треба',dash:[4,3]}]});
+      showTip(this.tip2,r,'',this.h2,[['правильних знаків',CLR.k3],['потрібно',CLR.ink]],1);
+    }
+  }
+};
+
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5,m6:M6};
+
+/* ===================== завантаження ===================== */
+let ACT='m1';
+function activate(id){
+  if(!MODULES[id]) return;
+  ACT=id;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.m===id));
+  document.querySelectorAll('.module').forEach(s=>s.classList.toggle('active',s.id===id));
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) activate(b.dataset.m);
+});
+for(const m of Object.values(MODULES)) m.init();
+(function(){
+  const hs=location.hash.replace('#','');
+  if(MODULES[hs]) activate(hs);
+})();
+let LAST=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
+  MODULES[ACT].tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
