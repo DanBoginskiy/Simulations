@@ -838,12 +838,17 @@ function sphAxis(g,V,color,labN,labS){
   txt(g,labN,N.x+7,N.y-4,{color:CLR.sec,size:11,bold:true});
   txt(g,labS,S.x+7,S.y+12,{color:CLR.sec,size:11,bold:true});
 }
-/* перетягування сфери: dx → азимут камери, dy → нахил */
+/* Перетягування сфери: dx → азимут камери, dy → нахил. Обидва обробники — і цей,
+   і реєстр ручок — висять на одному полотні, тож поки палець тримає ручку
+   (st._grab), обертати планету не можна: раніше кожен рух шкали розвертав глобус. */
 function dragSphere(id,st,onDrag){
   const c=$(id); let on=false,px=0,py=0;
-  c.addEventListener('pointerdown',e=>{on=true; c.setPointerCapture(e.pointerId); px=e.clientX; py=e.clientY;});
+  c.addEventListener('pointerdown',e=>{
+    if(st._grab!=null) return;
+    on=true; c.setPointerCapture(e.pointerId); px=e.clientX; py=e.clientY;});
   c.addEventListener('pointermove',e=>{
     if(!on) return;
+    if(st._grab!=null){on=false; return;}
     st.view=(st.view+(e.clientX-px)*0.45)%360;
     st.tilt=Math.max(-80,Math.min(80,st.tilt+(e.clientY-py)*0.3));
     px=e.clientX; py=e.clientY;
@@ -1072,7 +1077,8 @@ const M2={
   },
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='one')
-      return {cx:bb.w*0.44,cy:bb.h*0.5, bx:bb.w*0.9, by:bb.h-46, Bh:bb.h*0.34};
+      /* обидві шкали стоять поруч праворуч і мають однаковий вигляд */
+      return {cx:bb.w*0.44,cy:bb.h*0.5, ix:bb.w*0.9-44, bx:bb.w*0.9, by:bb.h-46, Bh:bb.h*0.34};
     return {cy:bb.h*0.5, sep:Math.min(bb.h*0.3,20+this.d*5),
       x0:bb.w*0.16, x1:bb.w*0.16+40+this.L2*1.5};
   });},
@@ -1090,8 +1096,8 @@ const M2={
            const ex=px-Q.cx, ey=py-Q.cy, d=Math.hypot(ex,ey);
            this.l=clamp(snap(d*2/4,1),2,40);
            this.a=clamp(snap((Math.atan2(ey,ex)/DEG+90+360)%360,5),0,180);}},
-        {id:'I', x:Q.cx-40, y:Q.by-this.I*4, r:8, color:CLR.k1, hint:'сила струму',
-         move:(px,py)=>{this.I=clamp(snap((Q.by-py)/4,0.5),0.5,20);}},
+        {id:'I', x:Q.ix, y:Q.by-this.I/20*Q.Bh, r:8, color:CLR.k1, hint:'сила струму',
+         move:(px,py)=>{this.I=clamp(snap((Q.by-py)/Q.Bh*20,0.5),0.5,20);}},
         {id:'B', x:Q.bx, y:Q.by-this.B*Q.Bh/2, r:8, color:CLR.k3, hint:'індукція поля',
          move:(px,py)=>{this.B=clamp(snap((Q.by-py)*2/Q.Bh,0.05),0.05,2);}}
       ];
@@ -1162,14 +1168,12 @@ const M2={
       {color:CLR.k3,size:12.5,bold:true});
     txt(g,'вона максимальна, коли струм перпендикулярний до поля, і зникає, коли паралельний',
       12,36,{color:CLR.mut,size:10.5});
-    /* дві шкали: струм і зовнішнє поле */
-    arrow(g,cx-40,Q.by,cx-40,Q.by-this.I*4,CLR.k1,2.5);
-    txt(g,'I',cx-40,Q.by+16,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
-    g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.roundRect(Q.bx-8,Q.by-Q.Bh,16,Q.Bh,4); g.stroke();
-    g.fillStyle='rgba(27,175,122,.32)';
-    g.fillRect(Q.bx-5,Q.by-this.B*Q.Bh/2,10,this.B*Q.Bh/2);
-    txt(g,'B',Q.bx,Q.by+16,{color:'#0d7a55',size:10.5,bold:true,align:'center'});
+    /* Дві шкали одного вигляду. Раніше струм задавала гола стрілка посеред поля —
+       вона не читалася як орган керування, та ще й стояла окремо від шкали поля. */
+    gauge(g,Q.ix,Q.by,Q.Bh,this.I/20,CLR.k1,'I');
+    gauge(g,Q.bx,Q.by,Q.Bh,this.B/2,CLR.k3,'B');
+    txt(g,fmt(this.I,1)+' А',Q.ix,Q.by+30,{color:'#1c5cab',size:10,bold:true,align:'center'});
+    txt(g,fmt(this.B,2)+' Тл',Q.bx,Q.by+30,{color:'#0d7a55',size:10,bold:true,align:'center'});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   sceneTwo(){
@@ -1348,7 +1352,7 @@ const M3={
       {id:'B', x:Q.bx, y:Q.by-this.B/0.2*Q.Bh, r:8, color:CLR.k3, hint:'індукція поля',
        move:(px,py)=>{this.B=clamp(snap((Q.by-py)/Q.Bh*0.2,0.005),0.005,0.2);}},
       /* кут між швидкістю й полем — точка на дузі біля частинки */
-      {id:'b', x:Q.cx+56*Math.cos((90-this.b)*DEG), y:Q.cy-56*Math.sin((90-this.b)*DEG),
+      {id:'b', x:Q.cx+74*Math.cos((90-this.b)*DEG), y:Q.cy-74*Math.sin((90-this.b)*DEG),
        r:8, color:CLR.k1, hint:'кут між v і B',
        move:(px,py)=>{const a=Math.atan2(Q.cy-py,px-Q.cx)/DEG;
          this.b=clamp(snap(90-a,5),0,90);}}
@@ -1429,7 +1433,15 @@ const M3={
     g.fillStyle='rgba(27,175,122,.32)';
     g.fillRect(Q.bx-5,Q.by-this.B/0.2*Q.Bh,10,this.B/0.2*Q.Bh);
     txt(g,'B',Q.bx,Q.by+16,{color:'#0d7a55',size:10.5,bold:true,align:'center'});
-    arc(g,cx,cy,56,-Math.PI/2,-(90-this.b)*DEG,CLR.k1,1.6);
+    /* Кут задають точкою на дузі — тож сама дуга має бути видимим слідом, по якому
+       та точка ходить: спершу бліда напрямна на всю чверть, поверх неї — набраний
+       кут. Раніше була сама дуга кута радіуса 56, і що вона орган керування,
+       здогадатися було ніяк. */
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.arc(cx,cy,74,-Math.PI/2,0); g.stroke(); g.setLineDash([]);
+    arc(g,cx,cy,74,-Math.PI/2,-(90-this.b)*DEG,CLR.k1,2.2);
+    txt(g,fmt(this.b,0)+'°',cx+86*Math.cos((90-this.b)*DEG*0.5),
+      cy-86*Math.sin((90-this.b)*DEG*0.5)+4,{color:'#1c5cab',size:11,bold:true});
     shelf(g,Q.pt,this.PART,this.p,'частинка');
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,helix?'швидкість під кутом до поля — траєкторія гвинтова'
@@ -1508,8 +1520,11 @@ const M4={
     const r1=this.rad(this.A1), r2=this.rad(this.A2);
     const sc=Math.min(bb.w*0.3,bb.h*0.36)/this.RREF;
     return {sc,selX0:bb.w*0.08,selX1:bb.w*0.4,cy:bb.h*0.32,r1,r2,
-      ex:bb.w*0.56,ey:bb.h-40,Eh:bb.h*0.42,
-      b1x:bb.w*0.68,b2x:bb.w*0.80};
+      /* Шкали зсунуто праворуч: дуги іонів виходять із щілини на 0,4·w і сягають
+         щонайменше 0,59·w, тож шкала поля селектора на 0,56·w опинялася просто
+         під слідом іона. */
+      ex:bb.w*0.74,ey:bb.h-40,Eh:bb.h*0.42,
+      b1x:bb.w*0.84,b2x:bb.w*0.94};
   });},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
