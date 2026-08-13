@@ -222,9 +222,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Лінза й предмет</h3>
-        <div class="kv"><span><var>F</var> — фокусна відстань<span class="badge">шкала в кадрі</span></span><b id="m2vF"></b></div>
-        <div class="kv"><span><var>d</var> — відстань від предмета до лінзи<span class="badge">шкала в кадрі</span></span><b id="m2vd"></b></div>
-        <div class="kv"><span><var>h</var> — висота предмета<span class="badge">шкала в кадрі</span></span><b id="m2vh"></b></div>
+        <div class="kv"><span><var>F</var> — фокусна відстань<span class="badge">тягнути позначку F</span></span><b id="m2vF"></b></div>
+        <div class="kv"><span><var>d</var> — відстань від предмета до лінзи<span class="badge">тягнути предмет</span></span><b id="m2vd"></b></div>
+        <div class="kv"><span><var>h</var> — висота предмета<span class="badge">тягнути вістря предмета</span></span><b id="m2vh"></b></div>
       </div>
       <div class="panel">
         <h3>Зображення</h3>
@@ -1193,16 +1193,13 @@ const M2={
     this.hg.xlab='d'; this.hg.xunit='см'; this.hg.xdec=0;
   },
   tick(){this.render();},
-  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
-     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
-  GG:[
-    ['F','F',5,40,1,CLR.k1,null,'m2vF',0,'см'],
-    ['d','d',3,90,1,CLR.k2,null,'m2vd',0,'см'],
-    ['h','h',1,10,0.5,CLR.k3,null,'m2vh',1,'см']
-  ],
-  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Шкал тут немає: усе, чим керують, намальовано на лаві. Предмет тягнуть за
+     вістря стрілки — це відразу і відстань, і висота; фокус — за його позначку
+     на осі. */
+  GG:[],
+  gcol(b){return {gtop:b.h-14, w:b.w, h:b.h, cols:2, rows:0, W:0, x:[0,0], dy:24, y0:b.h};},
   /* Масштаб сталий (§10): по горизонталі — від найбільшої відстані до предмета
-     (d ⩽ 90 см із таблиці GG), по вертикалі — від найбільшої його висоти (h ⩽ 10 см).
+     (d ⩽ 90 см із меж ручки), по вертикалі — від найбільшої його висоти (h ⩽ 10 см).
      Раніше обидва рахувалися з поточних величин разом із відстанню до зображення, а
      вона біля d = F прямує в нескінченність: кадр стискався тим сильніше, чим ближче
      предмет до фокуса, тож підсування предмета до фокуса виглядало нерухомістю.
@@ -1215,21 +1212,31 @@ const M2={
   });},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b);
+    return [
+      {id:'obj', x:Q.cx-Q.S(this.d), y:Q.cy-Q.S(this.h), r:10, bare:true, color:CLR.k1,
+       hint:'предмет: відстань і висота',
+       move:(px,py)=>{
+         this.d=clamp(Math.round((Q.cx-px)/Q.sx),3,90);
+         this.h=clamp(snap((Q.cy-py)/Q.sx,0.5),1,10);
+       }},
+      {id:'F', x:Q.cx-Q.S(this.F), y:Q.cy, r:8, color:CLR.k2, hint:'фокус лінзи',
+       move:(px)=>{this.F=clamp(Math.round((Q.cx-px)/Q.sx),5,40);}}
+    ];
   },
   gdraw(){
     const b=cvx('m2scene'); if(!b) return;
-    gaugeCol(b.g,this.gcol(b),this.GG,this);
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
-    /* числа в бічній колонці — те саме значення, що показує шкала */
-    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m2vF').textContent=fmt(this.F,0)+' см';
+    $('m2vd').textContent=fmt(this.d,0)+' см';
+    $('m2vh').textContent=fmt(this.h,1)+' см';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop;
-    g.clearRect(0,0,w,h);
+    g.clearRect(0,0,w,b.h);
     const F=this.Fs(), f=this.f(), conv=this.kind==='conv';
     txt(g,conv?'збиральна лінза: паралельні промені сходяться у фокусі'
       :'розсіювальна лінза: промені розходяться, а зображення завжди уявне й зменшене',
