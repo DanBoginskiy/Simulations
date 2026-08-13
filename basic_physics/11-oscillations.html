@@ -106,7 +106,7 @@ table.read tr:last-child td{border-bottom:none}
 #m2scene{width:100%; height:460px}
 #m3scene{width:100%; height:450px}
 #m4scene{width:100%; height:430px}
-#m5scene{width:100%; height:420px}
+#m5scene{width:100%; height:500px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -233,7 +233,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Маятник</h3>
         <div class="kv"><span><var>l</var> — довжина підвісу<span class="badge">шкала в кадрі</span></span><b id="m2vl"></b></div>
         <div class="kv"><span><var>θ</var><sub>0</sub> — початкове відхилення<span class="badge">шкала в кадрі</span></span><b id="m2va"></b></div>
-        <div class="kv"><span><var>g</var> — прискорення вільного падіння<span class="badge">шкала в кадрі</span></span><b id="m2vg"></b></div>
+        <div class="kv"><span><var>g</var> — прискорення вільного падіння<span class="badge">вибір планети</span></span><b id="m2vg"></b></div>
       </div>
       <div class="panel">
         <h3>Період</h3>
@@ -354,7 +354,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Осцилятор і опір</h3>
         <div class="kv"><span><var>m</var> — маса тіла<span class="badge">шкала в кадрі</span></span><b id="m4vm"></b></div>
         <div class="kv"><span><var>k</var> — жорсткість пружини<span class="badge">шкала в кадрі</span></span><b id="m4vk"></b></div>
-        <div class="kv"><span><var>b</var> — коефіцієнт опору<span class="badge">шкала в кадрі</span></span><b id="m4vb"></b></div>
+        <div class="kv"><span><var>b</var> — коефіцієнт опору<span class="badge">вибір середовища</span></span><b id="m4vb"></b></div>
         <div class="kv"><span><var>A</var><sub>0</sub> — початкове відхилення<span class="badge">шкала в кадрі</span></span><b id="m4vA"></b></div>
       </div>
       <div class="panel">
@@ -1110,16 +1110,18 @@ const M2={
      їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
   GG:[
     ['l','l',10,200,1,CLR.k1,function(){this.reset();},'m2vl',0,'см'],
-    ['a0','a',2,150,1,CLR.k2,function(){this.reset();},'m2va',0,'°'],
-    ['g','g',1.6,25,0.1,CLR.k3,function(){this.reset();},'m2vg',1,'м/с²']
+    ['a0','a',2,150,1,CLR.k2,function(){this.reset();},'m2va',0,'°']
   ],
+  /* g задають кнопки планет, і шкали для нього нема: два керування на одну
+     величину суперечили одне одному — можна було лишити активною «Землю»
+     й потягнути g до 25 м/с². Планета — це і є вибір g. */
   gcol(b){return gcolOf(b,this.GG.length);},
   /* Масштаб сталий (§10) і кріпиться до найдовшого маятника з таблиці GG — 2 м.
      Раніше він ділився на саму довжину, тож маятник будь-якої довжини мав на екрані
      той самий розмір: модуль про T = 2π√(l/g) не показував, що змінюється саме l. */
   LMAX:2.00,
   geo(b){return frozen(this,b,bb=>{
-    const H=bb.h-90;
+    const H=this.gcol(bb).gtop;
     return {cx:bb.w*0.44, cy:H*0.16, sc:Math.min(bb.w*0.30,H*0.62)/this.LMAX};
   });},
   grips(){
@@ -1132,6 +1134,7 @@ const M2={
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
     /* числа в бічній колонці — те саме значення, що показує шкала */
     for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m2vg').textContent=fmt(this.g,1)+' м/с²';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
@@ -1456,9 +1459,11 @@ const M4={
   GG:[
     ['m','m',50,2000,10,CLR.k1,function(){this.t=0;},'m4vm',0,'г'],
     ['k','k',5,200,1,CLR.k2,function(){this.t=0;},'m4vk',0,'Н/м'],
-    ['b','b',0,20,0.05,CLR.k3,function(){this.t=0;},'m4vb',2,'кг/с'],
     ['A','A',1,20,0.5,CLR.sec,function(){this.t=0;},'m4vA',1,'см']
   ],
+  /* b задає вибір середовища — окремої шкали для нього нема з тієї ж причини,
+     що й для g у модулі 2: два керування на одну величину розходяться. Режими
+     затухання все одно всі досяжні, бо b_кр = 2√(km) залежить від m і k. */
   gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
@@ -1470,6 +1475,7 @@ const M4={
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
     /* числа в бічній колонці — те саме значення, що показує шкала */
     for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m4vb').textContent=fmt(this.b,2)+' кг/с';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
@@ -1646,7 +1652,7 @@ const M5={
      можна: при b → 0,05 і f₀ → 0,2 Гц амплітуда сягає десятків метрів. */
   AREF:{radio:0.53, bridge:0.22, car:0.025},
   geo(b){return frozen(this,b,bb=>{
-    const H=bb.h-90, AR=this.AREF[this.use];
+    const H=this.gcol(bb).gtop, AR=this.AREF[this.use];
     return {AR, sc:Math.min(bb.w*0.20,H*0.26)/AR, cy:H*0.52, wx:bb.w*0.06};
   });},
   grips(){
@@ -1662,6 +1668,160 @@ const M5={
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
+  /* межі усталених коливань — та сама пунктирна пара в усіх трьох приладах */
+  lims(g,S,vert,c1,c2,len){
+    for(const s of [-1,1]){
+      const d=s*Math.min(S.A,S.lim)*S.sc;
+      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([2,3]);
+      g.beginPath();
+      if(vert){g.moveTo(c1-len,c2+d); g.lineTo(c1+len,c2+d);}
+      else{g.moveTo(c1+d,c2-len); g.lineTo(c1+d,c2+len);}
+      g.stroke(); g.setLineDash([]);
+    }
+  },
+  /* 1 · радіоконтур: коливається заряд на конденсаторі, а розгойдує його сигнал
+     з антени. Механічного тіла тут немає взагалі — зміщення x відповідає заряду. */
+  drawRadio(g,w,h,S){
+    const {cy,wx,sc,xc,A,u,F}=S;
+    const LX=wx+40, RX=w*0.60, TY=cy-54, BY=cy+54, mid=(LX+RX)/2;
+    /* антена: сигнал з ефіру — це і є змушувальна сила */
+    g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.moveTo(wx,BY+14); g.lineTo(wx,TY-34); g.stroke();
+    hatch(g,wx-16,BY+14,32,true,CLR.sec);
+    for(let i=1;i<=3;i++){
+      g.strokeStyle=CLR.k3; g.lineWidth=1.4;
+      g.globalAlpha=0.14+0.5*Math.abs(Math.cos(u))*(1-0.22*i);
+      g.beginPath(); g.arc(wx,TY-34,8+i*11,-Math.PI*0.45,Math.PI*0.45); g.stroke();
+    }
+    g.globalAlpha=1;
+    txt(g,'сигнал',wx,TY-56,{color:'#0d7a55',size:10.5,bold:true,align:'center'});
+    /* провідники контуру */
+    g.strokeStyle=CLR.k1; g.lineWidth=2.2; g.lineJoin='round';
+    g.beginPath(); g.moveTo(wx,cy); g.lineTo(LX,cy); g.lineTo(LX,TY); g.lineTo(LX+24,TY); g.stroke();
+    g.beginPath(); g.moveTo(RX-24,TY); g.lineTo(RX,TY); g.lineTo(RX,BY); g.lineTo(mid+9,BY); g.stroke();
+    g.beginPath(); g.moveTo(LX,cy); g.lineTo(LX,BY); g.lineTo(mid-9,BY); g.stroke();
+    /* котушка */
+    const n=6, r=((RX-24)-(LX+24))/(2*n);
+    g.lineWidth=2.4; g.lineCap='round'; g.beginPath();
+    for(let i=0;i<n;i++){const c=LX+24+r*(2*i+1); g.moveTo(c-r,TY); g.arc(c,TY,r,Math.PI,0,false);}
+    g.stroke();
+    txt(g,'L',mid,TY-r-9,{color:CLR.k1,size:11.5,bold:true,align:'center'});
+    /* конденсатор: пластини й заряд на них */
+    const q=xc*sc, qn=Math.min(1,Math.abs(A?xc/A:0));
+    for(const s of [-1,1]){
+      g.strokeStyle=(q*s>0)?CLR.k2:CLR.k1; g.lineWidth=3;
+      g.beginPath(); g.moveTo(mid+s*9,BY-16); g.lineTo(mid+s*9,BY+16); g.stroke();
+      txt(g,(q*s>0)?'+':'−',mid+s*22,BY+5,
+        {color:(q*s>0)?CLR.k2:CLR.k1,size:13,bold:true,align:'center'});
+    }
+    txt(g,'C',mid,BY+34,{color:CLR.k1,size:11.5,bold:true,align:'center'});
+    /* стовпчик заряду: вправо — плюс на правій пластині, вліво — на лівій */
+    g.fillStyle=q>0?'rgba(235,104,52,.55)':'rgba(42,120,214,.55)';
+    g.fillRect(mid,cy-9,q,18);
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(mid,cy-14); g.lineTo(mid,cy+14); g.stroke();
+    this.lims(g,S,false,mid,cy,14);
+    txt(g,'заряд q',mid+q+(q<0?-6:6),cy-18,
+      {color:CLR.sec,size:10.5,bold:true,align:q<0?'right':'left'});
+    /* струм у контурі — тим густіший, чим швидше змінюється заряд */
+    const iF=-Math.sin(u-S.ph);
+    for(let i=0;i<9;i++){
+      const s=((i/9+this.t*0.9*Math.sign(iF||1))%1+1)%1;
+      const px=LX+24+s*((RX-24)-(LX+24));
+      dot(g,px,TY-r*0.1,2.4+2*Math.abs(iF)*qn,'rgba(42,120,214,.65)');
+    }
+    txt(g,'сигнал з ефіру '+fmt(F,2)+' Н',LX,BY+34,{color:'#0d7a55',size:10.5,bold:true});
+  },
+  /* 2 · міст: прогін провисає під кроком натовпу */
+  drawBridge(g,w,h,S){
+    const {wx,sc,xc,u,F}=S;
+    const R=S.lim*sc, cy=Math.max(h*0.30,48+R), gy=cy+R+40;
+    const LX=wx+20, RX=w*0.62, mid=(LX+RX)/2, dy=xc*sc;
+    /* береги й опори */
+    for(const px of [LX,RX]){
+      g.fillStyle='rgba(82,81,78,.16)'; g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+      g.beginPath(); g.rect(px-16,cy+8,32,gy-cy-8); g.fill(); g.stroke();
+      hatch(g,px-24,gy,48,true,CLR.sec);
+    }
+    /* прогін: провисає посередині на dy */
+    g.strokeStyle=CLR.k2; g.lineWidth=4; g.lineJoin='round'; g.lineCap='round';
+    g.beginPath();
+    for(let i=0;i<=40;i++){
+      const s=i/40, px=LX+s*(RX-LX), py=cy+dy*Math.sin(Math.PI*s);
+      i?g.lineTo(px,py):g.moveTo(px,py);
+    }
+    g.stroke();
+    /* ванти від пілонів — видно, що прогін справді гнеться */
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    for(const s of [0.25,0.5,0.75]){
+      const px=LX+s*(RX-LX), py=cy+dy*Math.sin(Math.PI*s);
+      g.beginPath(); g.moveTo(px,py); g.lineTo(px<mid?LX:RX,cy-52); g.stroke();
+    }
+    for(const px of [LX,RX]){
+      g.strokeStyle=CLR.sec; g.lineWidth=2.4;
+      g.beginPath(); g.moveTo(px,cy+8); g.lineTo(px,cy-54); g.stroke();
+    }
+    /* натовп: крокує в такт із зовнішньою силою */
+    for(let i=0;i<7;i++){
+      const s=0.16+0.11*i, px=LX+s*(RX-LX);
+      const py=cy+dy*Math.sin(Math.PI*s);
+      const step=Math.abs(Math.sin(Math.PI*u/Math.PI+i*0.5))*4;
+      g.strokeStyle=CLR.ink; g.lineWidth=1.6; g.lineCap='round';
+      g.beginPath();
+      g.moveTo(px,py-6-step); g.lineTo(px,py-15-step);          /* тулуб */
+      g.moveTo(px-4,py-step); g.lineTo(px,py-6-step); g.lineTo(px+4,py-step);
+      g.stroke();
+      dot(g,px,py-19-step,3,CLR.ink);
+    }
+    this.lims(g,S,true,mid,cy,26);
+    arrow(g,mid,cy+dy-46,mid,cy+dy-46+F/Math.max(1e-9,this.F)*30,CLR.k3,2.6);
+    txt(g,'крок натовпу '+fmt(F,2)+' Н',mid+8,cy+dy-52,{color:'#0d7a55',size:11,bold:true});
+    txt(g,'прогин '+fmt(xc*100,2)+' см',mid,cy+dy+26,
+      {color:S.over?CLR.k2:CLR.ink,size:11.5,bold:true,align:'center'});
+  },
+  /* 3 · підвіска: кузов на пружині з амортизатором їде по хвилястій дорозі */
+  drawCar(g,w,h,S){
+    const {wx,sc,xc,u}=S;
+    const R=S.lim*sc, rw=17, gy=h-26, wy=gy-rw-10;
+    const cy=Math.max(54+R,wy-rw-52-R);
+    const LX=wx+16, RX=w*0.62, by=cy+xc*sc;
+    const cxw=(LX+RX)/2;
+    /* дорога: одна хвиля на період зовнішньої сили — саме вона й розгойдує */
+    g.strokeStyle=CLR.sec; g.lineWidth=2; g.lineJoin='round';
+    g.beginPath();
+    for(let i=0;i<=60;i++){
+      const px=LX+i/60*(RX-LX);
+      const py=gy+8*Math.cos(2*Math.PI*((px-cxw)/((RX-LX)/2.5))+u);
+      i?g.lineTo(px,py):g.moveTo(px,py);
+    }
+    g.stroke();
+    hatch(g,LX,gy+14,RX-LX,true,CLR.grid);
+    /* колесо */
+    const why=wy+8*Math.cos(u);
+    g.strokeStyle=CLR.ink; g.lineWidth=2.6; g.fillStyle='rgba(82,81,78,.10)';
+    g.beginPath(); g.arc(cxw,why,rw,0,7); g.fill(); g.stroke();
+    g.strokeStyle=CLR.sec; g.lineWidth=1.4;
+    g.beginPath(); g.arc(cxw,why,rw*0.42,0,7); g.stroke();
+    /* пружина й амортизатор між колесом і кузовом */
+    spring(g,cxw-16,why-rw,cxw-16,by+18,7,7,CLR.k1,2.2);
+    const dt=by+18, db=why-rw, dm=(dt+db)/2;
+    g.fillStyle='rgba(27,175,122,.12)'; g.strokeStyle=CLR.k3; g.lineWidth=2;
+    g.beginPath(); g.rect(cxw+8,dm-4,20,db-dm+4); g.fill(); g.stroke();
+    g.lineWidth=2.4;
+    g.beginPath(); g.moveTo(cxw+18,dt); g.lineTo(cxw+18,dm+8); g.stroke();
+    g.lineWidth=3.4;
+    g.beginPath(); g.moveTo(cxw+10,dm+8); g.lineTo(cxw+26,dm+8); g.stroke();
+    dot(g,cxw+18,dt,3,CLR.k3); dot(g,cxw+18,db,3,CLR.k3);
+    txt(g,'амортизатор',cxw+34,dm,{color:'#0d7a55',size:10.5,bold:true});
+    /* кузов */
+    g.fillStyle='rgba(42,120,214,.14)'; g.strokeStyle=CLR.k1; g.lineWidth=2.4;
+    g.beginPath(); g.roundRect(cxw-86,by-26,172,44,8); g.fill(); g.stroke();
+    g.strokeStyle=CLR.k1; g.lineWidth=1.6;
+    g.beginPath(); g.roundRect(cxw-52,by-20,64,18,4); g.stroke();
+    this.lims(g,S,true,cxw,cy,96);
+    txt(g,'хід кузова '+fmt(xc*100,2)+' см',cxw,by-36,
+      {color:S.over?CLR.k2:CLR.ink,size:11.5,bold:true,align:'center'});
+  },
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop;
@@ -1676,29 +1836,20 @@ const M5={
     const Q=this.geo(b);
     const cy=Q.cy, wx=Q.wx, sc=Q.sc, AR=Q.AR;
     const cx0=wx+AR*sc+50;
-    hatch(g,wx,cy-30,60,false,CLR.sec);
-    g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.moveTo(wx,cy+30); g.lineTo(cx0+AR*sc+56,cy+30); g.stroke();
     /* кадр сталий, тож розгойдане тіло справді може з нього вийти: притримуємо його
        на краю й підписуємо справжній розмах, а не мовчки стискаємо картинку (§10) */
-    const xLim=(w-40-cx0)/sc;
-    const x=A*Math.cos(u-ph), over=Math.abs(x)>xLim;
-    const bx=cx0+clamp(x,-xLim,xLim)*sc;
-    spring(g,wx,cy,bx-14,cy,9,8,CLR.k1,2.2);
-    g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.k1; g.lineWidth=2.2;
-    g.beginPath(); g.roundRect(bx-14,cy-16,28,32,4); g.fill(); g.stroke();
-    /* межі усталених коливань */
-    for(const s of [-1,1]){
-      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([2,3]);
-      const mx=cx0+s*Math.min(A,xLim)*sc;
-      g.beginPath(); g.moveTo(mx,cy-30); g.lineTo(mx,cy+30); g.stroke(); g.setLineDash([]);
-    }
-    txt(g,'A = '+fmt(A*100,2)+' см'+(over?' — розмах більший за кадр':''),
-      cx0,cy+48,{color:over?CLR.k2:CLR.ink,size:11.5,bold:true,align:'center'});
-    /* змушувальна сила */
+    const horiz=this.use==='radio';
+    const lim=horiz?w*0.20/sc:AR*1.15;
+    const x=A*Math.cos(u-ph), over=Math.abs(x)>lim, xc=clamp(x,-lim,lim);
     const F=this.F*Math.cos(u);
-    arrow(g,bx,cy-30,bx+F/Math.max(1e-9,this.F)*46,cy-30,CLR.k3,2.6);
-    txt(g,'F = '+fmt(F,2)+' Н',bx+6,cy-40,{color:'#0d7a55',size:11,bold:true});
+    /* Кожен приклад малюється своїм приладом: коливальний контур, прогін мосту
+       під кроком, кузов авто на пружині з амортизатором. Раніше в усіх трьох
+       випадках стояв той самий пружинний маятник, і вкладки відрізнялися
+       самими лише підписами. */
+    const S={cx0,cy,wx,sc,lim,xc,x,A,u,ph,F,over};
+    if(horiz) this.drawRadio(g,w,h,S);
+    else if(this.use==='bridge') this.drawBridge(g,w,h,S);
+    else this.drawCar(g,w,h,S);
     /* два обертові вектори: сила і зміщення, кут між ними — φ */
     const ox=w*0.80, oy=h*0.46, R=Math.min(w*0.13,h*0.30);
     g.strokeStyle=CLR.grid; g.lineWidth=1.2;
@@ -1711,7 +1862,7 @@ const M5={
     txt(g,'x',ox+(R*0.8+12)*Math.cos(-(u-ph)),oy+(R*0.8+12)*Math.sin(-(u-ph))+4,
       {color:'#b8431a',size:11,bold:true,align:'center'});
     txt(g,'Q = '+fmt(this.Q(),2)+' · резонанс на '+fmt(this.wr()/(2*Math.PI),3)+' Гц',
-      12,h-12,{color:CLR.sec,size:11.5,bold:true});
+      w-12,h-12,{color:CLR.sec,size:11.5,bold:true,align:'right'});
   },
   table(){
     const Om=this.W(), A=this.amp(Om), ph=this.phase(Om);
