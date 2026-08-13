@@ -360,11 +360,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Телескоп</h3>
-        <div class="kv"><span><var>D</var> — діаметр об’єктива<span class="badge">шкала в кадрі</span></span><b id="m4vD"></b></div>
-        <div class="kv"><span><var>F</var><sub>об</sub> — фокусна відстань об’єктива<span class="badge">шкала в кадрі</span></span><b id="m4vFob"></b></div>
-        <div class="kv"><span><var>F</var><sub>ок</sub> — фокусна відстань окуляра<span class="badge">шкала в кадрі</span></span><b id="m4vFoc"></b></div>
-        <div class="kv"><span><var>λ</var> — довжина хвилі<span class="badge">шкала в кадрі</span></span><b id="m4vlam"></b></div>
-        <div class="kv"><span><var>ρ</var> — кутова відстань подвійної зорі<span class="badge">шкала в кадрі</span></span><b id="m4vrho"></b></div>
+        <div class="kv"><span><var>D</var> — діаметр об’єктива<span class="badge">тягнути край пучка</span></span><b id="m4vD"></b></div>
+        <div class="kv"><span><var>F</var><sub>об</sub> — фокусна відстань об’єктива<span class="badge">тягнути фокус</span></span><b id="m4vFob"></b></div>
+        <div class="kv"><span><var>F</var><sub>ок</sub> — фокусна відстань окуляра<span class="badge">тягнути окуляр</span></span><b id="m4vFoc"></b></div>
+        <div class="kv"><span><var>λ</var> — довжина хвилі<span class="badge">полиця кольорів</span></span><b id="m4vlam"></b></div>
+        <div class="kv"><span><var>ρ</var> — кутова відстань подвійної зорі<span class="badge">тягнути зорю</span></span><b id="m4vrho"></b></div>
       </div>
       <div class="panel">
         <h3>Оптика</h3>
@@ -1647,40 +1647,71 @@ const M4={
     this.hm.xlab='D'; this.hm.xunit='мм'; this.hm.xdec=0;
   },
   tick(){this.render();},
-  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
-     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
-  GG:[
-    ['D','D',30,1000,10,CLR.k1,null,'m4vD',0,'мм'],
-    ['Fob','Fob',200,6000,50,CLR.k2,null,'m4vFob',0,'мм'],
-    ['Foc','Foc',4,40,1,CLR.k3,null,'m4vFoc',0,'мм'],
-    ['lam','lam',400,700,10,CLR.sec,null,'m4vlam',0,'нм'],
-    ['rho','rho',0.2,10,0.1,CLR.k1,null,'m4vrho',1,'″']
-  ],
-  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Усе, чим керують, є в кресленні: апертура — це край пучка, фокусна
+     об'єктива — місце фокуса, фокусна окуляра — місце окуляра, кутова відстань
+     пари — розхід зірок у полі зору. Довжина хвилі образу не має, зате має
+     колір: її обирають з полиці. Пікселі під кожну величину беруться з МЕЖ її
+     діапазону (§10) — раніше і апертура, і фокус, і розхід пари підганялися під
+     поточне значення, тож зміна величини майже нічого не робила на екрані. */
+  GG:[],
+  SPAN:{D:[30,1000], Fob:[200,6000], Foc:[4,40], rho:[0.2,10]},
+  fr(k,v){const S=this.SPAN[k]; return clamp((v-S[0])/(S[1]-S[0]),0,1);},
+  inv(k,f){const S=this.SPAN[k]; return S[0]+clamp(f,0,1)*(S[1]-S[0]);},
+  band(b){const H=b.h-52; return {H, x0:118, dx:Math.min(86,(b.w-170)/LAMS.length), y:H+26};},
+  gcol(b){return {gtop:this.band(b).H, w:b.w, h:b.h, cols:2, rows:0, W:0, x:[0,0], dy:24, y0:b.h};},
+  geo(b){return frozen(this,b,bb=>{
+    const H=this.band(bb).H;
+    return {H, cy:H*0.54, x0:bb.w*0.06, x1:bb.w*0.50,
+      apd:H*0.24, fxd:bb.w*0.22, oxd:56,
+      vx:bb.w*0.84, vy:H*0.50, vr:Math.min(bb.w*0.13,H*0.32)};
+  });},
+  ap(Q){return 16+this.fr('D',this.D)*Q.apd;},
+  fx(Q){return Q.x1+(this.kind==='refr'?34:-24)+this.fr('Fob',this.Fob)*Q.fxd;},
+  ox(Q){return this.fx(Q)+24+this.fr('Foc',this.Foc)*Q.oxd;},
+  scl(Q){return Q.vr*0.62/this.SPAN.rho[1];},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b), M=this.band(b), sc=this.scl(Q);
+    return [
+      {id:'D', x:Q.x1, y:Q.cy-this.ap(Q), r:8, color:CLR.k1, hint:'апертура D',
+       move:(px,py)=>{this.D=clamp(snap(this.inv('D',(Q.cy-py-16)/Q.apd),10),30,1000);}},
+      {id:'Fob', x:this.fx(Q), y:Q.cy, r:8, color:CLR.k2, hint:'фокус об’єктива',
+       move:(px)=>{this.Fob=clamp(snap(this.inv('Fob',
+         (px-Q.x1-(this.kind==='refr'?34:-24))/Q.fxd),50),200,6000);}},
+      {id:'Foc', x:this.ox(Q), y:Q.cy-24, r:8, color:CLR.k3, hint:'окуляр',
+       move:(px)=>{this.Foc=clamp(Math.round(this.inv('Foc',
+         (px-this.fx(Q)-24)/Q.oxd)),4,40);}},
+      {id:'rho', x:Q.vx+this.rho*sc/2, y:Q.vy, r:8, bare:true, color:CLR.k1,
+       hint:'кутова відстань пари ρ',
+       move:(px)=>{this.rho=clamp(snap(2*(px-Q.vx)/sc,0.1),0.2,10);}}
+    ].concat(shelfGrips({x0:M.x0,dx:M.dx,y:M.y},LAMS,v=>{this.lam=v;},'w'));
   },
   gdraw(){
     const b=cvx('m4scene'); if(!b) return;
-    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    const M=this.band(b);
+    b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+    b.g.beginPath(); b.g.moveTo(8,M.H+2.5); b.g.lineTo(b.w-8,M.H+2.5); b.g.stroke();
+    shelf(b.g,{x0:M.x0,dx:M.dx,y:M.y},LAMS,this.lam,'довжина хвилі λ, нм');
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
-    /* числа в бічній колонці — те саме значення, що показує шкала */
-    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m4vD').textContent=fmt(this.D,0)+' мм';
+    $('m4vFob').textContent=fmt(this.Fob,0)+' мм';
+    $('m4vFoc').textContent=fmt(this.Foc,0)+' мм';
+    $('m4vlam').textContent=fmt(this.lam,0)+' нм';
+    $('m4vrho').textContent=fmt(this.rho,1)+' ″';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m4scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop, refr=this.kind==='refr';
-    g.clearRect(0,0,w,h);
+    g.clearRect(0,0,w,b.h);
+    const Q=this.geo(b);
     txt(g,refr?'рефрактор: об’єктив — лінза, промені заломлюються'
       :'рефлектор: об’єктив — увігнуте дзеркало, промені відбиваються',
       12,20,{color:refr?CLR.k1:CLR.k3,size:12.5,bold:true});
     txt(g,'праворуч — як телескоп покаже подвійну зорю: розділить її чи зіллє в одну пляму',
       12,36,{color:CLR.mut,size:10.5});
-    const cy=h*0.54, x0=w*0.06, x1=w*0.50;
-    const ap=Math.min(h*0.30,20+this.D*0.10);
+    const cy=Q.cy, x0=Q.x0, x1=Q.x1, ap=this.ap(Q);
     /* паралельний пучок від зорі */
     for(const s of [-1,-0.5,0,0.5,1]){
       g.strokeStyle=CLR.k1; g.lineWidth=1.4;
@@ -1691,20 +1722,13 @@ const M4={
       g.beginPath();
       g.moveTo(x1,cy-ap); g.quadraticCurveTo(x1+13,cy,x1,cy+ap);
       g.moveTo(x1,cy-ap); g.quadraticCurveTo(x1-13,cy,x1,cy+ap); g.stroke();
-      const fx=x1+Math.min(w*0.30,this.Fob*0.06);
+      const fx=this.fx(Q);
       for(const s of [-1,-0.5,0.5,1]){
         g.strokeStyle=CLR.k2; g.lineWidth=1.4;
         g.beginPath(); g.moveTo(x1,cy+s*ap); g.lineTo(fx,cy); g.stroke();
       }
       dot(g,fx,cy,4,CLR.ink);
       txt(g,'фокус',fx,cy-10,{color:CLR.ink,size:10.5,bold:true,align:'center'});
-      /* окуляр */
-      const ox=fx+Math.min(60,this.Foc*2.2);
-      g.strokeStyle=CLR.k2; g.lineWidth=2.4;
-      g.beginPath();
-      g.moveTo(ox,cy-20); g.quadraticCurveTo(ox+9,cy,ox,cy+20);
-      g.moveTo(ox,cy-20); g.quadraticCurveTo(ox-9,cy,ox,cy+20); g.stroke();
-      txt(g,'окуляр',ox,cy+34,{color:'#b8431a',size:10.5,bold:true,align:'center'});
       g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
       g.beginPath(); g.moveTo(x1,cy+ap+16); g.lineTo(fx,cy+ap+16); g.stroke(); g.setLineDash([]);
       txt(g,'Fоб = '+fmt(this.Fob,0)+' мм',(x1+fx)/2,cy+ap+30,{color:CLR.mut,size:10,align:'center'});
@@ -1712,7 +1736,7 @@ const M4={
       g.strokeStyle=CLR.k3; g.lineWidth=3;
       g.beginPath(); g.arc(x1+140,cy,150,Math.PI-0.3,Math.PI+0.3); g.stroke();
       txt(g,'головне дзеркало',x1+10,cy+ap+24,{color:'#0d7a55',size:10.5,bold:true});
-      const fx=x1-30+Math.min(w*0.26,this.Fob*0.05);
+      const fx=this.fx(Q);
       for(const s of [-1,-0.5,0.5,1]){
         g.strokeStyle=CLR.k2; g.lineWidth=1.4;
         g.beginPath(); g.moveTo(x1,cy+s*ap); g.lineTo(fx,cy); g.stroke();
@@ -1720,12 +1744,20 @@ const M4={
       dot(g,fx,cy,4,CLR.ink);
       txt(g,'фокус',fx,cy-10,{color:CLR.ink,size:10.5,bold:true,align:'center'});
     }
+    /* окуляр — і в рефрактора, і в рефлектора; за нього тягнуть його фокусну */
+    const ox=this.ox(Q);
+    g.strokeStyle=CLR.k3; g.lineWidth=2.4;
+    g.beginPath();
+    g.moveTo(ox,cy-24); g.quadraticCurveTo(ox+9,cy,ox,cy+24);
+    g.moveTo(ox,cy-24); g.quadraticCurveTo(ox-9,cy,ox,cy+24); g.stroke();
+    txt(g,'окуляр Fок = '+fmt(this.Foc,0)+' мм',ox,cy+62,
+      {color:'#0d7a55',size:10.5,bold:true,align:'center'});
     /* що видно в окуляр */
-    const vx=w*0.84, vy=h*0.50, vr=Math.min(w*0.13,h*0.32);
+    const vx=Q.vx, vy=Q.vy, vr=Q.vr;
     dot(g,vx,vy,vr,'rgba(11,11,11,.06)',CLR.axis);
     const th=this.theta();
-    const scl=vr*0.62/Math.max(this.rho,2*th);
-    const sep=this.rho*scl/2, blob=Math.max(2.5,th*scl*0.9);
+    const scl=this.scl(Q);
+    const sep=this.rho*scl/2, blob=Math.max(2.5,Math.min(vr*0.9,th*scl*0.9));
     for(const s of [-1,1]){
       const gx=vx+s*sep;
       g.globalAlpha=0.85;
@@ -1786,6 +1818,11 @@ const M4={
     }
   }
 };
+
+/* Довжина хвилі має не розмір, а колір: полиця названих кольорів чесніша
+   за смугу з десятками проміжних значень. */
+const LAMS=[['фіолетове',400,'400'],['синє',450,'450'],['блакитне',490,'490'],
+  ['зелене',550,'550'],['жовте',580,'580'],['червоне',650,'650'],['багряне',700,'700']];
 
 /* ===================== МОДУЛЬ 5 · затемнення ===================== */
 const M5={
