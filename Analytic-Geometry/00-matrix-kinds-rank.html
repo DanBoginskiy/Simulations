@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Матриці та їхні числа · види · визначник · мінори · ранг · матриці Паулі</title>
+<title>Матриці та їхні числа · види · визначник · мінори · ранг · тензор напружень</title>
 <style>
 :root{
   --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
@@ -56,7 +56,12 @@ canvas{display:block}
 /* display:flex перебиває приховування атрибутом hidden — повертаємо його */
 .kv[hidden]{display:none}
 .kv span{color:var(--sec)}
+.kv span{min-width:0}
 .kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+/* Значення-присуд — це речення, а не число. Заборона переносу тримає число
+   з одиницею вкупі, але таке речення нею просто вилазить за край панелі,
+   тож словесним значенням перенос дозволено. */
+.kv b.w{white-space:normal; text-align:right; overflow-wrap:break-word}
 .badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
   border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
 .badge[hidden]{display:none}
@@ -103,6 +108,10 @@ table.read tr:last-child td{border-bottom:none}
 .mov input:focus{outline:none; background:#fff;
   border:1px solid var(--c,var(--k1)); box-shadow:0 0 0 2px rgba(42,120,214,.16)}
 .mov input[readonly]{border-bottom-style:none; pointer-events:none; color:var(--sec)}
+/* набране, але ще не застосоване число: доки клітинку не залишили й не
+   натиснули Enter, у моделі стоїть попереднє значення — і це має бути видно */
+.mov input.dirty{border:1px solid var(--k2); background:#fff;
+  box-shadow:0 0 0 2px rgba(235,104,52,.18)}
 .side .panel{padding:12px 14px}
 .duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 .duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
@@ -116,8 +125,7 @@ table.read tr:last-child td{border-bottom:none}
 #m2scene{width:100%; height:400px}
 #m3scene{width:100%; height:410px}
 #m4scene{width:100%; height:430px}
-#m5scene{width:100%; height:420px}
-#m6scene{width:100%; height:450px}
+#m5scene{width:100%; height:450px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -128,15 +136,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <body>
 <div class="wrap">
 <header>
-  <h1>Матриці та їхні числа<small>види · визначник · мінори · ранг · матриці Паулі</small></h1>
+  <h1>Матриці та їхні числа<small>види · визначник · мінори · ранг · тензор напружень</small></h1>
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Види матриць</button>
   <button data-m="m2">2 · Визначник — це площа</button>
   <button data-m="m3">3 · Мінори й доповнення</button>
   <button data-m="m4">4 · Ранг</button>
-  <button data-m="m5">5 · Матриці Паулі</button>
-  <button data-m="m6">6 · Практика: мережа доріг</button>
+  <button data-m="m5">5 · Практика: тензор напружень</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -171,17 +178,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       </div>
       <div class="panel">
         <h3>Що це за матриця</h3>
-        <div class="kv"><span>форма</span><b id="m1kShape"></b></div>
-        <div class="kv"><span>тип</span><b id="m1kType"></b></div>
+        <div class="kv"><span>форма</span><b class="w" id="m1kShape"></b></div>
+        <div class="kv"><span>тип</span><b class="w" id="m1kType"></b></div>
         <div class="kv"><span>слід <var>tr A</var> = Σ<var>a<sub>ii</sub></var></span><b id="m1kTr"></b></div>
         <div class="kv"><span><var>A</var> = <var>A</var><sup>т</sup> — симетрична<span class="badge">tr A = tr Aᵀ завжди</span></span><b id="m1kSym"></b></div>
         <div class="kv"><span><var>A</var> = −<var>A</var><sup>т</sup> — кососиметрична<span class="badge">діагональ нульова</span></span><b id="m1kSkew"></b></div>
       </div>
       <div class="panel">
         <h3>Розклад на симетричну й кососиметричну</h3>
-        <div class="kv"><span>будь-яку квадратну можна подати як суму<span class="badge">розклад єдиний</span></span><b id="m1kSplit"></b></div>
+        <div class="kv"><span>будь-яку квадратну можна подати як суму<span class="badge">розклад єдиний</span></span><b class="w" id="m1kSplit"></b></div>
         <div class="kv"><span>слід симетричної частини</span><b id="m1kTrS"></b></div>
-        <div class="kv"><span>слід кососиметричної частини</span><b id="m1kTrA"></b></div>
+        <div class="kv"><span>слід кососиметричної частини</span><b class="w" id="m1kTrA"></b></div>
         <div class="formulas" id="m1fx"></div>
       </div>
     </div>
@@ -209,17 +216,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m2scene"></canvas><div class="mov" id="m2mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Визначник у числах</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2caw"><h4>визначник від кута між стовпцями, при сталих довжинах</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>det = |a₁||a₂|·sin φ</span><span><span class="chip cI"></span>поточний кут</span></div>
-            <canvas id="m2ca"></canvas></div>
-          <div class="chartbox" id="m2csw"><h4>визначник під час зсуву a₂ → a₂ + t·a₁: стала</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>det(t)</span><span><span class="chip cI"></span>поточне t</span></div>
-            <canvas id="m2cs"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -234,14 +230,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>площа паралелограма |<var>det A</var>|</span><b id="m2kS"></b></div>
         <div class="kv"><span>кут між стовпцями <var>φ</var></span><b id="m2kPhi"></b></div>
         <div class="kv"><span>те саме через синус</span><b id="m2kSin"></b></div>
-        <div class="kv"><span>орієнтація пари</span><b id="m2kOr"></b></div>
+        <div class="kv"><span>орієнтація пари</span><b class="w" id="m2kOr"></b></div>
       </div>
       <div class="panel">
         <h3>Що звідси випливає</h3>
-        <div class="kv"><span>стовпці колінеарні<span class="badge">det = 0 ⇔ колінеарні</span></span><b id="m2kCol"></b></div>
-        <div class="kv"><span>зсув <var>a</var><sub>2</sub> уздовж <var>a</var><sub>1</sub><span class="badge">det не змінюється</span></span><b id="m2kShear"></b></div>
-        <div class="kv"><span>перестановка стовпців</span><b id="m2kSwap"></b></div>
-        <div class="kv"><span>образ одиничного квадрата</span><b id="m2kImg"></b></div>
+        <div class="kv"><span>стовпці колінеарні<span class="badge">det = 0 ⇔ колінеарні</span></span><b class="w" id="m2kCol"></b></div>
+        <div class="kv"><span>зсув <var>a</var><sub>2</sub> уздовж <var>a</var><sub>1</sub><span class="badge">det не змінюється</span></span><b class="w" id="m2kShear"></b></div>
+        <div class="kv"><span>перестановка стовпців</span><b class="w" id="m2kSwap"></b></div>
+        <div class="kv"><span>образ одиничного квадрата</span><b class="w" id="m2kImg"></b></div>
         <div class="formulas" id="m2fx"></div>
       </div>
     </div>
@@ -307,7 +303,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <section class="module" id="m4">
   <p class="caption">Ранг — це скільки серед рядків справді незалежних. Три рядки матриці 3×3 —
   це три вектори в просторі: якщо вони натягують увесь простір, ранг 3; якщо лягли в одну
-  площину — 2; на одну пряму — 1. Праворуч видно оболонку, яку вони натягують.</p>
+  площину — 2; на одну пряму — 1. Праворуч видно оболонку, яку вони натягують: тягніть
+  порожнє місце в кадрі — і сцена обертається, простір можна оглянути з будь-якого боку.
+  Матриця одна, і всі дев'ять координат набирають просто в ній: щойно якийсь рядок
+  виявиться комбінацією інших, він перекреслюється на місці. Скільки лишилося
+  неперекреслених — такий і ранг.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -324,28 +324,19 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m4scene"></canvas><div class="mov" id="m4mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Ранг проти визначника</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4cdw"><h4>|det A| під час опускання третього рядка в площину перших двох</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>|det|</span><span><span class="chip cI"></span>поточний стан</span></div>
-            <canvas id="m4cd"></canvas></div>
-          <div class="chartbox" id="m4crw"><h4>ранг у тому самому досліді</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>ранг — падає стрибком</span><span><span class="chip cI"></span>поточний стан</span></div>
-            <canvas id="m4cr"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
         <h3>Матриця</h3>
-        <div class="kv"><span>рядки задаються клітинками<span class="badge">набір у клітинках</span></span><b id="m4vhint">набирайте числа</b></div>
-        <div class="kv"><span><var>h</var> — висота 3-го рядка над площиною<span class="badge">шкала в кадрі</span></span><b id="m4vh"></b></div>
+        <div class="kv"><span>усі три рядки — координати векторів<span class="badge">набір у клітинках</span></span><b class="w" id="m4vhint">набирайте числа</b></div>
+        <div class="kv"><span>висоти <var>r</var><sub>1</sub>, <var>r</var><sub>2</sub>, <var>r</var><sub>3</sub> над площинами двох інших<span class="badge">нулі приходять одночасно</span></span><b class="w" id="m4vH"></b></div>
+        <div class="kv"><span>зведений об’єм |det| / (|<var>r</var><sub>1</sub>||<var>r</var><sub>2</sub>||<var>r</var><sub>3</sub>|)<span class="badge">0 ⇔ трійка вироджена</span></span><b id="m4vV"></b></div>
+        <div class="kv"><span>не додає нового напряму<span class="badge">при ранзі 2 — жоден із трьох</span></span><b class="w" id="m4vDep"></b></div>
       </div>
       <div class="panel">
         <h3>Ранг</h3>
         <div class="kv"><span>ранг <var>r</var> = rank <var>A</var></span><b id="m4kR"></b></div>
-        <div class="kv"><span>що натягують рядки</span><b id="m4kSpan"></b></div>
+        <div class="kv"><span>що натягують рядки</span><b class="w" id="m4kSpan"></b></div>
         <div class="kv"><span>визначник <var>det A</var></span><b id="m4kDet"></b></div>
         <div class="kv"><span>розмірність ядра <var>n</var> − <var>r</var><span class="badge">rank + dim ker = 3</span></span><b id="m4kKer"></b></div>
       </div>
@@ -353,7 +344,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Ступінчастий вигляд</h3>
         <div class="kv"><span>ведучих елементів<span class="badge">їх кількість і є ранг</span></span><b id="m4kPiv"></b></div>
         <div class="kv"><span>нульових рядків після зведення</span><b id="m4kZero"></b></div>
-        <div class="kv"><span>ранг до і після перетворень<span class="badge">не змінюється</span></span><b id="m4kInv"></b></div>
+        <div class="kv"><span>ранг до і після перетворень<span class="badge">не змінюється</span></span><b class="w" id="m4kInv"></b></div>
         <div class="formulas" id="m4fx"></div>
       </div>
     </div>
@@ -362,126 +353,64 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
-  <p class="caption">Матриці Паулі <var>σ</var><sub>1</sub>, <var>σ</var><sub>2</sub>,
-  <var>σ</var><sub>3</sub> — три матриці 2×2, якими описують спін електрона. Комбінація
-  <var>σ</var>·<var>n</var> для одиничного напряму <var>n</var> завжди має слід нуль,
-  визначник −1 і власні значення ±1: скільки не повертай напрям вимірювання, прилад
-  показує тільки «вгору» або «вниз».</p>
+  <p class="caption">Напруження в точці навантаженого тіла — це не одне число, а матриця 3×3:
+  щоб сказати, як тисне матеріал, треба ще вказати площадку. Рівновага моментів кубика робить
+  цю матрицю симетричною, а її слід, сума головних мінорів і визначник не залежать від того,
+  як повернути осі — саме на цих трьох інваріантах тримаються критерії міцності. Набирайте
+  числа в <var>σ</var>, тягніть фон — і дивіться, що змінюється, а що ні. Для сталі межа
+  текучості ≈ 250 МПа.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <span class="lbl">Півсфера:</span>
-          <div class="seg" id="m5hemi">
-            <button data-v="1" class="active" style="--c:var(--k1)">ближча до глядача</button>
-            <button data-v="-1" style="--c:var(--k3)">дальша</button>
+          <span class="lbl">Стан:</span>
+          <div class="seg" id="m5pre">
+            <button data-v="plane" class="active" style="--c:var(--k1)">плоский</button>
+            <button data-v="uni" style="--c:var(--k2)">одновісний розтяг</button>
+            <button data-v="shear" style="--c:var(--k3)">чистий зсув</button>
+            <button data-v="hydro" style="--c:var(--k1)">гідростатичний тиск</button>
+            <button data-v="vol" style="--c:var(--ink)">об’ємний</button>
           </div>
           <span class="lbl" id="m5state" style="font-weight:600"></span>
         </div>
         <div class="cvw"><canvas id="m5scene"></canvas><div class="mov" id="m5mx"></div></div>
       </div>
       <div class="panel">
-        <h3>Що показує прилад</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m5cpw"><h4>ймовірність результату «вгору» вздовж z, від кута θ</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>P₊ = cos²(θ/2)</span><span><span class="chip cB"></span>P₋ = sin²(θ/2)</span><span><span class="chip cI"></span>поточний θ</span></div>
-            <canvas id="m5cp"></canvas></div>
-          <div class="chartbox" id="m5cew"><h4>середнє значення ⟨σ_z⟩ від кута θ</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>⟨σ_z⟩ = cos θ</span><span><span class="chip cI"></span>поточний θ</span></div>
-            <canvas id="m5ce"></canvas></div>
-        </div>
+        <h3>Поверніть осі — окремі напруження гуляють, інваріанти ні</h3>
+        <table class="read" id="m5tab">
+          <thead><tr><th>поворот навколо <var>z</var></th><th>σ′₁₁</th><th>σ′₁₂</th><th>σ′₂₂</th>
+            <th><var>I</var><sub>1</sub></th><th><var>I</var><sub>2</sub></th><th><var>I</var><sub>3</sub></th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
     <div class="side">
       <div class="panel">
-        <h3>Напрям вимірювання</h3>
-        <div class="kv"><span><var>n</var> — одиничний вектор<span class="badge">точка на сфері в кадрі</span></span><b id="m5vn"></b></div>
-        <div class="kv"><span>кут <var>θ</var> від осі <var>z</var></span><b id="m5kTh"></b></div>
-        <div class="kv"><span>кут <var>φ</var> у площині <var>xy</var></span><b id="m5kPh"></b></div>
-        <div class="kv"><span>|<var>n</var>|<span class="badge">завжди 1</span></span><b id="m5kNorm"></b></div>
+        <h3>Напружений стан</h3>
+        <div class="kv"><span>σ = σ<sup>т</sup><span class="badge">парність дотичних напружень</span></span><b class="w" id="m5kSym"></b></div>
+        <div class="kv"><span>тип стану<span class="badge">ранг = скільки головних напружень ≠ 0</span></span><b class="w" id="m5kKind"></b></div>
+        <div class="kv"><span>середнє напруження <var>I</var><sub>1</sub>/3</span><b id="m5kMean"></b></div>
       </div>
       <div class="panel">
-        <h3>Матриця <var>σ</var>·<var>n</var></h3>
-        <div class="kv"><span>слід tr(<var>σ</var>·<var>n</var>)<span class="badge">завжди 0</span></span><b id="m5kTr"></b></div>
-        <div class="kv"><span>визначник det(<var>σ</var>·<var>n</var>)<span class="badge">завжди −1</span></span><b id="m5kDet"></b></div>
-        <div class="kv"><span>власні значення <var>λ</var><span class="badge">завжди ±1</span></span><b id="m5kLam"></b></div>
-        <div class="kv"><span>(<var>σ</var>·<var>n</var>)² <span class="badge">завжди I</span></span><b id="m5kSq"></b></div>
+        <h3>Інваріанти</h3>
+        <div class="kv"><span><var>I</var><sub>1</sub> = tr σ<span class="badge">поворот осей не змінює</span></span><b id="m5kI1"></b></div>
+        <div class="kv"><span><var>I</var><sub>2</sub> — сума головних мінорів 2×2<span class="badge">поворот осей не змінює</span></span><b id="m5kI2"></b></div>
+        <div class="kv"><span><var>I</var><sub>3</sub> = det σ<span class="badge">поворот осей не змінює</span></span><b id="m5kI3"></b></div>
       </div>
       <div class="panel">
-        <h3>Фізика спіна</h3>
-        <div class="kv"><span>⟨<var>σ<sub>z</sub></var>⟩ = cos <var>θ</var></span><b id="m5kEz"></b></div>
-        <div class="kv"><span>ймовірність «вгору» <var>P</var><sub>+</sub> = cos²(<var>θ</var>/2)</span><b id="m5kPp"></b></div>
-        <div class="kv"><span>ймовірність «вниз» <var>P</var><sub>−</sub><span class="badge">P₊ + P₋ = 1</span></span><b id="m5kPm"></b></div>
-        <div class="kv"><span>проєкція спіна на <var>n</var></span><b id="m5kSp"></b></div>
-        <div class="kv"><span>магнітний момент електрона</span><b id="m5kMu"></b></div>
+        <h3>Головні напруження</h3>
+        <div class="kv"><span>σ₁ · σ₂ · σ₃, МПа</span><b class="w" id="m5kPr"></b></div>
+        <div class="kv"><span>сума коренів = <var>I</var><sub>1</sub><span class="badge">коефіцієнти й корені</span></span><b class="w" id="m5kSum"></b></div>
+        <div class="kv"><span>τ<sub>max</sub> = (σ₁ − σ₃)/2<span class="badge">за нею й рахують міцність</span></span><b id="m5kTau"></b></div>
+        <div class="kv"><span>є площадка без напружень<span class="badge">є ⇔ det σ = 0</span></span><b class="w" id="m5kFree"></b></div>
         <div class="formulas" id="m5fx"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= МОДУЛЬ 6 ================= -->
-<section class="module" id="m6">
-  <p class="caption">П'ять міст на карті України, між ними — дороги. Запишімо мережу матрицею:
-  <var>a<sub>ij</sub></var> = 1, якщо з <var>i</var> в <var>j</var> є пряма дорога. Тоді
-  (<var>A</var><sup>k</sup>)<sub><var>ij</var></sub> — це вже не одиниці, а кількість маршрутів
-  рівно з <var>k</var> ділянок. Вмикайте й вимикайте дороги клацанням по кружку на них.</p>
-
-  <div class="pgrid">
-    <div class="scene">
-      <div class="panel">
-        <div class="toolbar">
-          <span class="lbl">Показати матрицю:</span>
-          <div class="seg" id="m6pow">
-            <button data-v="1" class="active" style="--c:var(--k1)">A — самі дороги</button>
-            <button data-v="2" style="--c:var(--k2)">A² — маршрути з 2 ділянок</button>
-            <button data-v="3" style="--c:var(--k3)">A³ — з 3 ділянок</button>
-          </div>
-          <span class="lbl" id="m6state" style="font-weight:600"></span>
-        </div>
-        <div class="cvw"><canvas id="m6scene"></canvas><div class="mov" id="m6mx"></div></div>
-      </div>
-      <div class="panel">
-        <h3>Як росте кількість маршрутів</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m6cww"><h4>усього маршрутів довжини k у мережі</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>сума всіх елементів A^k</span><span><span class="chip cI"></span>обране k</span></div>
-            <canvas id="m6cw"></canvas></div>
-          <div class="chartbox" id="m6cdw"><h4>маршрути Львів → Харків залежно від довжини k</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>(A^k) для цієї пари</span><span><span class="chip cI"></span>обране k</span></div>
-            <canvas id="m6cd"></canvas></div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Мережа</h3>
-        <div class="kv"><span>доріг увімкнено<span class="badge">кружки на дорогах у кадрі</span></span><b id="m6vE"></b></div>
-        <div class="kv"><span>сумарна довжина доріг</span><b id="m6kLen"></b></div>
-        <div class="kv"><span>рух двобічний<span class="badge">A = Aᵀ ⇔ двобічний</span></span><b id="m6kSym"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Матриця суміжності</h3>
-        <div class="kv"><span>сума рядка = скільки доріг з міста<span class="badge">степінь вершини</span></span><b id="m6kDeg"></b></div>
-        <div class="kv"><span>слід <var>tr A</var><span class="badge">петель немає ⇒ 0</span></span><b id="m6kTr"></b></div>
-        <div class="kv"><span>ранг <var>A</var></span><b id="m6kRank"></b></div>
-        <div class="kv"><span>визначник <var>det A</var></span><b id="m6kDet"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Маршрути</h3>
-        <div class="kv"><span>Львів → Харків прямою дорогою</span><b id="m6kD1"></b></div>
-        <div class="kv"><span>те саме з 2 ділянок — (<var>A</var>²)<sub>ЛХ</sub></span><b id="m6kD2"></b></div>
-        <div class="kv"><span>те саме з 3 ділянок — (<var>A</var>³)<sub>ЛХ</sub></span><b id="m6kD3"></b></div>
-        <div class="kv"><span>трикутників у мережі — tr(<var>A</var>³)/6</span><b id="m6kTri"></b></div>
-        <div class="kv"><span>мережа зв'язна<span class="badge">усі елементи I+A+A²+A³+A⁴ &gt; 0</span></span><b id="m6kConn"></b></div>
-        <div class="formulas" id="m6fx"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>Допоміжний матеріал з аналітичної геометрії · матриці · визначник · мінори · ранг · матриці Паулі</footer>
+<footer>Допоміжний матеріал з аналітичної геометрії · матриці · визначник · мінори · ранг</footer>
 </div>
 <script>
 'use strict';
@@ -711,6 +640,10 @@ function grip(id,st,listFn){
     const p=pos(e), h=pick(p[0],p[1]);
     if(!h) return;
     st._grab=h.id; st._over=h.id; st._froz=null;
+    /* Лічильник дотиків. Ручки з абсолютним відображенням його не помічають,
+       але орбіта камери працює приростами й мусить знати, де почався саме
+       ЦЕЙ жест: id ручки між двома дотиками той самий, а точка відліку — ні. */
+    st._gseq=(st._gseq||0)+1;
     if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
     /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
        geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
@@ -875,8 +808,14 @@ function matIn(ovId,o){
      готовою формою (пресет реакції, порядок визначника), і взятий один раз
      він застряг би на старому */
   const get=o.get||((i,j)=>o.A()[i][j]), set=o.set||((i,j,v)=>{o.A()[i][j]=v;});
+  /* Набране число округлюємо рівно до тієї точності, з якою його й показують,
+     і більше нічого з ним не робимо. Прив'язка до сітки кроку доречна, коли
+     величину тягнуть пальцем; для набору вона згубна: при кроці 0,5 набрані
+     0,2 перетворювалися на нуль, клітинка виглядала зіпсованою, а разом із
+     нею стрибав і ранг. Крок лишається кроком стрілок — і тільки ним. */
+  const q=Math.pow(10,dec);
   const put=(i,j,v)=>{
-    set(i,j,clamp(snap(v,step),o.lo,o.hi));
+    set(i,j,clamp(Math.round(v*q)/q,o.lo,o.hi));
     if(o.after) o.after.call(o.st,i,j);
   };
   const key=()=>{const M=o.M(); return o.m()+'×'+o.n()+'@'+Math.round(M.x)+','+Math.round(M.y);};
@@ -891,30 +830,49 @@ function matIn(ovId,o){
       el.type='text'; el.inputMode='decimal'; el.autocomplete='off'; el.spellcheck=false;
       el.style.left=(c.x+5)+'px'; el.style.top=(c.y+4)+'px';
       el.style.width=(MCW-10)+'px'; el.style.height=(MCH-8)+'px';
-      el.title=(o.name||'a')+(ii+1)+(jj+1)+' ∈ ['+fmt(o.lo,dec)+'; '+fmt(o.hi,dec)+']';
-      el.addEventListener('input',()=>{
+      el.title=(o.name||'a')+(ii+1)+(jj+1)+' ∈ ['+fmt(o.lo,dec)+'; '+fmt(o.hi,dec)+
+        '] · Enter застосовує, Esc скасовує, ↑↓ крок '+fmt(step,dec);
+      /* Число набирають цілком, а вже потім воно йде в модель. Посимвольне
+         застосування виглядало так, наче все міняється саме собою: поки
+         набираєш «4,5», модель устигає побачити 4, і все, що з нього
+         рахується — ранг, визначник, картинка — встигає стрибнути на
+         проміжному, ще не набраному числі. Тому набір лише позначається
+         незавершеним, а застосовується на Enter або коли клітинку лишають. */
+      const dirty=()=>{
+        const v=numIn(el.value);
+        el.classList.toggle('dirty',v!=null&&Math.abs(clamp(Math.round(v*q)/q,o.lo,o.hi)-get(ii,jj))>1e-12);
+      };
+      const commit=()=>{
         const v=numIn(el.value);
         if(v!=null) put(ii,jj,v);
-      });
-      /* стрілки лишають клавіатурний шлях, який був у доріжки: крок — той
-         самий, що й у сітки значень, Shift множить на п'ять */
+        el.value=fmt(get(ii,jj),dec);
+        el.classList.remove('dirty');
+      };
+      el.addEventListener('input',dirty);
       el.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){commit(); if(e.preventDefault) e.preventDefault(); return;}
+        /* Esc повертає те, що було до набору */
+        if(e.key==='Escape'){el.value=fmt(get(ii,jj),dec); el.classList.remove('dirty'); return;}
         const d=e.key==='ArrowUp'?1:(e.key==='ArrowDown'?-1:0);
         if(!d) return;
-        put(ii,jj,(numIn(el.value)==null?get(ii,jj):numIn(el.value))+d*step*(e.shiftKey?5:1));
+        /* стрілки — окрема історія: це не набір, а готовий крок, тож він і
+           застосовується одразу, та ще й сіткою кроку, заради круглих чисел */
+        const cur=numIn(el.value)==null?get(ii,jj):numIn(el.value);
+        put(ii,jj,snap(cur+d*step*(e.shiftKey?5:1),step));
         el.value=fmt(get(ii,jj),dec);
+        el.classList.remove('dirty');
         if(e.preventDefault) e.preventDefault();
       });
-      /* клацання в клітинку — це і є вибір клітинки: там, де раніше потрібну
-         позицію показувала захоплена ручка, тепер її показує курсор */
-      if(o.pick) el.addEventListener('focus',()=>{o.pick.call(o.st,ii,jj);});
-      /* на виході з поля приводимо запис до вигляду серії й повертаємо
-         число, якщо набір лишився незавершеним */
-      el.addEventListener('blur',()=>{
-        const v=numIn(el.value);
-        if(v!=null) put(ii,jj,v);
-        el.value=fmt(get(ii,jj),dec);
+      /* Клацання в клітинку виділяє те, що в ній стоїть. Без цього курсор
+         просто ставав біля наявного числа, і набрана цифра дописувалася до
+         нього: у клітинці з «3,0» набране «5» давало «53,0» — а це вже за
+         межею діапазону, тож у матрицю йшла межа, тобто 6. Виглядало так,
+         ніби будь-яке набране число перетворюється на шістку. */
+      el.addEventListener('focus',()=>{
+        if(el.select) el.select();
+        if(o.pick) o.pick.call(o.st,ii,jj);
       });
+      el.addEventListener('blur',commit);
       el.value=fmt(get(ii,jj),dec);
       cells.push({i:ii,j:jj,el});
       host.appendChild(el);
@@ -922,6 +880,7 @@ function matIn(ovId,o){
     built=key();
   };
   const rec={mod:String(ovId).match(/^m\d+/)[0], st:o.st, cells,
+    dec, step, lo:o.lo, hi:o.hi, get,
     sync(){
       if(key()!==built) rebuild();
       for(const c of cells){
@@ -971,17 +930,40 @@ function cap2(g,l1,l2,col,x,y){
 /* Аксонометрія. Базис (e1,e2,e3) ортонормований, тому проєкція зберігає
    кути в площині екрана й дозволяє точно обернути екранну точку назад
    у простір — без цього ручку на сфері не поставити. */
-function iso(cx,cy,sc,az,el){
+/* d — відстань до камери у світових одиницях. Без неї проєкція паралельна
+   (аксонометрія), з нею ближче до глядача стає більшим — і сцена перестає
+   читатися як плаский шестикутник. Знаменник підпираємо знизу, інакше точка
+   за камерою вивернулася б навиворіт. */
+function iso(cx,cy,sc,az,el,d){
   const ca=Math.cos(az),sa=Math.sin(az),ce=Math.cos(el),se=Math.sin(el);
+  const dep=(x,y,z)=>(x*sa+y*ca)*ce+z*se;
+  const k=d?((x,y,z)=>d/Math.max(0.4*d,d-dep(x,y,z))):(()=>1);
   return {
-    sc,cx,cy,
-    P(x,y,z){return [cx+(x*ca-y*sa)*sc, cy-(z*ce-(x*sa+y*ca)*se)*sc];},
-    D(x,y,z){return (x*sa+y*ca)*ce+z*se;},
+    sc,cx,cy,persp:d||0,
+    P(x,y,z){const f=k(x,y,z);
+      return [cx+(x*ca-y*sa)*sc*f, cy-(z*ce-(x*sa+y*ca)*se)*sc*f];},
+    D:dep,
     /* екранна точка → простір, w — глибина (вибір півсфери) */
     V(u,v,w){return [u*ca-v*sa*se+w*sa*ce, -u*sa-v*ca*se+w*ca*ce, v*ce+w*se];},
     iU(px){return (px-cx)/sc;},
     iV(py){return (cy-py)/sc;}
   };
+}
+/* Масштаб щокадру з фактичного розмаху (§10) — але в перспективі розмах
+   залежить ще й від кута камери: та сама фігура з іншого боку займає інше
+   місце. Тому міряємо його вже спроєктованим. Перший прохід з одиничним
+   масштабом дає точні межі (перспектива від масштабу не залежить), другий
+   ставить проєкцію рівно під відведене поле. Без цього доводилося б брати
+   найгірший випадок наосліп — і сцена або вилазила, або була вдвічі меншою,
+   ніж могла б бути. */
+function fitIso(cx,cy,az,el,persp,pts,availX,availY){
+  const P0=iso(0,0,1,az,el,persp);
+  let mu=1e-6, mv=1e-6;
+  for(const p of pts){
+    const s=P0.P(p[0],p[1],p[2]);
+    mu=Math.max(mu,Math.abs(s[0])); mv=Math.max(mv,Math.abs(s[1]));
+  }
+  return iso(cx,cy,Math.min(availX/mu,availY/mv),az,el,persp);
 }
 function line3(g,P,a,b,col,w,dash){
   const p=P.P(a[0],a[1],a[2]), q=P.P(b[0],b[1],b[2]);
@@ -1124,6 +1106,18 @@ function showM(g,x,y,A,o={}){
   if(o.lab) txt(g,o.lab,x-16,y+m*ch/2+4,{color:o.col||CLR.sec,size:12.5,bold:true,align:'right'});
   return {w:n*cw+12, h:m*ch+10};
 }
+/* Готова матриця з підписом згори. showM ставить підпис ліворуч, а коли
+   матриця стоїть біля самого краю кадру, там просто немає місця. */
+function showMTop(g,x,y,A,lab,col,o){
+  const O=o||{};
+  const cw=O.cw||MCW, ch=O.ch||MCH;
+  const r=showM(g,x,y,A,{cw,ch,dec:O.dec==null?2:O.dec,col:O.frame||CLR.axis,
+    txtCol:O.txtCol||CLR.sec,size:O.size});
+  if(lab) txt(g,lab,x+A[0].length*cw/2,y-15,
+    {color:col||CLR.sec,size:12.5,bold:true,align:'center'});
+  return r;
+}
+
 /* ===================== просторова оснастка ===================== */
 /* Спільний кадр для тривимірних сцен: масштаб щокадру з фактичного розмаху
    векторів, один на всі три осі (§10). padB лишає місце під смуги керування. */
@@ -1143,6 +1137,36 @@ function axes3(g,P,L){
     arrow3(g,P,[0,0,0],v,CLR.axis,1.4);
     const q=P.P(v[0],v[1],v[2]);
     txt(g,nm,q[0]+6,q[1]+4,{color:CLR.mut,size:10.5});
+  }
+}
+/* Орбіта камери. Ручка навмисно стоїть нескінченно далеко з нескінченним
+   радіусом: у pick() перемагає найближча, тож будь-яка справжня ручка
+   перехоплює дотик перша, а фон лишається останнім — тягнеш порожнє місце
+   й обертаєш сцену. Кут рахується приростом від точки, де почався жест,
+   тому камера не стрибає на першому ж пікселі. */
+function orbitGrip(st,azKey,elKey,lo,hi){
+  const LO=lo==null?-84:lo, HI=hi==null?84:hi;
+  return {id:'orbit', x:-1e7, y:-1e7, r:1e9, bare:true, color:CLR.mut,
+    hint:'обертання сцени',
+    move:(px,py)=>{
+      if(!st._ob||st._ob.s!==st._gseq)
+        st._ob={s:st._gseq, x:px, y:py, az:st[azKey], el:st[elKey]};
+      const o=st._ob;
+      let a=o.az-(px-o.x)*0.42;
+      a=((a+180)%360+360)%360-180;
+      st[azKey]=snap(a,0.5);
+      st[elKey]=clamp(snap(o.el+(py-o.y)*0.32,0.5),LO,HI);
+    }};
+}
+/* Підлога — сітка у площині z = 0. Саме вона дає око́ві опору: без неї
+   аксонометрія читається як плаский шестикутник, а не як простір. */
+function floor3(g,P,L,n){
+  const N=n||6, s=L/N;
+  g.lineWidth=1;
+  for(let i=-N;i<=N;i++){
+    const t=i*s, col=(Math.abs(i)===N||i===0)?CLR.axis:CLR.grid;
+    line3(g,P,[t,-L,0],[t,L,0],col,1);
+    line3(g,P,[-L,t,0],[L,t,0],col,1);
   }
 }
 /* дуга кута між двома векторами в просторі — малюємо по самій дузі, а не
@@ -1172,7 +1196,10 @@ function par3(g,P,a,b,fill,col){
 /* ===================== МОДУЛЬ 1 · види матриць ===================== */
 const M1={
   m:3, n:3,
-  A:[[2,-1,0],[-1,3,1],[0,1,-2],[0,0,0]],
+  /* Початкова матриця навмисно загального вигляду: якби вона вже була
+     симетричною, кнопка «симетрична» нічого б не змінила й виглядала б
+     зламаною. */
+  A:[[2,-1,3],[4,3,1],[-2,0,-2],[0,0,0]],
   M(){return {x:46,y:96};},
   MT(){return {x:46+this.n*MCW+108, y:96};},
   init(){
@@ -1191,10 +1218,19 @@ const M1={
       if(kind==='unit') for(let i=0;i<4;i++) A[i][i]=1;
       else for(let i=0;i<k;i++) if(A[i][i]===0) A[i][i]=i+1;
     } else if(kind==='sym'){
-      for(let i=0;i<k;i++) for(let j=0;j<i;j++){const v=Math.round((A[i][j]+A[j][i])/2); A[i][j]=v; A[j][i]=v;}
+      /* Дзеркалимо верхній трикутник у нижній. Тут напрошується усереднення
+         ½(aᵢⱼ + aⱼᵢ), і саме воно все й ламало: для симетричної воно не міняє
+         нічого, а кососиметрична частина симетричної — самі нулі, тож обидві
+         кнопки виглядали мертвими. Дзеркало завжди дає видимий результат. */
+      for(let i=0;i<k;i++) for(let j=i+1;j<k;j++) A[j][i]=A[i][j];
     } else if(kind==='skew'){
+      /* нульова матриця теж кососиметрична, але дивитися на неї нема на що:
+         якщо верхній трикутник порожній, підставляємо зразок */
+      let any=false;
+      for(let i=0;i<k;i++) for(let j=i+1;j<k;j++) if(A[i][j]) any=true;
+      if(!any){let v=1; for(let i=0;i<k;i++) for(let j=i+1;j<k;j++) A[i][j]=v++;}
       for(let i=0;i<k;i++){A[i][i]=0;
-        for(let j=0;j<i;j++){const v=Math.round((A[i][j]-A[j][i])/2); A[i][j]=v; A[j][i]=-v;}}
+        for(let j=i+1;j<k;j++) A[j][i]=-A[i][j];}
     } else if(kind==='tri'){
       for(let i=0;i<4;i++) for(let j=0;j<i;j++) A[i][j]=0;
     }
@@ -1334,7 +1370,6 @@ const M1={
 /* ===================== МОДУЛЬ 2 · визначник як площа ===================== */
 const M2={
   a11:3, a21:1, a12:1, a22:2.5, t:0, mode:'par',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m2scene',this,()=>this.grips());
     matIn('m2mx',{st:this, M:()=>this.M(), m:()=>2, n:()=>2,
@@ -1342,8 +1377,6 @@ const M2={
       get:(i,j)=>this['a'+(i+1)+(j+1)], set:(i,j,v)=>{this['a'+(i+1)+(j+1)]=v;},
       col:(i,j)=>j?CLR.k2:CLR.k1});
     seg('m2mode',v=>{this.mode=v; if(v!=='shear') this.t=0;});
-    this.tip1=makeTip('m2caw'); hover('m2ca',this.h1);
-    this.tip2=makeTip('m2csw'); hover('m2cs',this.h2);
   },
   M(){return {x:20,y:92};},
   /* та сама матриця, що й два вектори на сітці: стовпець j — це вектор aⱼ */
@@ -1384,7 +1417,7 @@ const M2={
     return out;
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w,h}=b;
@@ -1471,33 +1504,6 @@ const M2={
     $('m2fx').innerHTML='det A = '+fmt(p[0],1)+'·'+fmt(q[1],1)+' − '+fmt(q[0],1)+'·'+fmt(p[1],1)+
       ' = <b>'+fmt(D,2)+'</b>';
   },
-  charts(){
-    const p=this.a1(), q=this.a2();
-    const L1=Math.hypot(p[0],p[1]), L2=Math.hypot(q[0],q[1]);
-    const b1=cvx('m2ca');
-    if(b1){
-      const ts=[],ys=[];
-      for(let i=0;i<=180;i++){const a=i*2; ts.push(a); ys.push(L1*L2*Math.sin(a*DEG));}
-      const A=L1*L2||1;
-      const r=drawChart(b1,{tMax:360,yMin:-A*1.15,yMax:A*1.15,yLab:'det',xLab:'φ, °',
-        yDec:1,xDec:0,xStep:90,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'det(φ)'},
-          {ts:[this.phi(),this.phi()],ys:[-A*1.15,this.det()],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['det(φ)',CLR.k1],['зараз',CLR.ink]],2);
-    }
-    const b2=cvx('m2cs');
-    if(b2){
-      const ts=[],ys=[];
-      const D0=p[0]*(this.a22)-(this.a12)*p[1];
-      for(let i=0;i<=120;i++){const t=-3+6*i/120; ts.push(t+3); ys.push(D0);}
-      const A=Math.max(1,Math.abs(D0)*1.6);
-      const r=drawChart(b2,{tMax:6,yMin:-A,yMax:A,yLab:'det',xLab:'t + 3',
-        yDec:1,xDec:0,xStep:1,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k2,label:'det(t)'},
-          {ts:[this.t+3,this.t+3],ys:[-A,D0],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['det(t)',CLR.k2],['зараз',CLR.ink]],2);
-    }
-  }
 };
 
 /* ===================== МОДУЛЬ 3 · мінори й доповнення ===================== */
@@ -1619,67 +1625,236 @@ const M3={
   }
 };
 
+/* Розв'язувач для матриці Грама живих рядків (n ≤ 3). Прямий хід із вибором
+   головного елемента; система мала, і власного файла не варта. */
+function solveSmall(G,rhs){
+  const n=G.length, M=G.map((r,i)=>r.concat([rhs[i]]));
+  for(let c=0;c<n;c++){
+    let p=c;
+    for(let i=c;i<n;i++) if(Math.abs(M[i][c])>Math.abs(M[p][c])) p=i;
+    if(Math.abs(M[p][c])<1e-12) return null;
+    const t=M[c]; M[c]=M[p]; M[p]=t;
+    for(let i=0;i<n;i++){
+      if(i===c) continue;
+      const f=M[i][c]/M[c][c];
+      for(let j=c;j<=n;j++) M[i][j]-=f*M[c][j];
+    }
+  }
+  return M.map((r,i)=>r[n]/M[i][i]);
+}
+
 /* ===================== МОДУЛЬ 4 · ранг ===================== */
 const M4={
-  /* Третій рядок задається не сам по собі, а як α·r₁ + β·r₂ + h·n̂:
-     інакше «висота над площиною перших двох» не була б керованою величиною,
-     а саме вона й показує, чому ранг падає стрибком. */
-  R:[[3,1,0],[1,3,1]],
-  al:0.5, be:0.5, hh:1.2, az:38,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  /* Усі дев'ять координат набирають у самій матриці: рядок матриці — це
+     і є вектор. Жодних α, β, h між ними більше немає — вони робили третій
+     рядок похідним і ховали те, що ранг залежить просто від чисел. */
+  A:[[3,1,0],[1,3,1],[2,2,2.5]],
+  /* Прибрання — це стан, а не щоразу новий висновок. Якщо вектор уже прибрано,
+     він мусить лишатися прибраним і тоді, коли рухаються інші: разом із
+     прапорцем зберігаємо коефіцієнти, якими він виражався через живі рядки,
+     і після кожної правки перераховуємо його за ними. Вектор іде за площиною,
+     а не вискакує з неї від чужої зміни. Повернути його можна одним способом —
+     набрати в ньому власні числа. */
+  off:[false,false,false],
+  co:[null,null,null],
+  az:38, el:24,
   M(){return {x:34,y:96};},
   init(){
     grip('m4scene',this,()=>this.grips());
-    matIn('m4mx',{st:this, M:()=>this.M(), A:()=>this.R, m:()=>2, n:()=>3,
-      lo:-6, hi:6, step:0.5, dec:1});
+    matIn('m4mx',{st:this, M:()=>this.M(), A:()=>this.A, m:()=>3, n:()=>3,
+      lo:-6, hi:6, step:0.5, dec:1,
+      /* прибраний рядок і в матриці вицвітає — але набирати в ньому можна,
+         інакше повернути вектор було б нічим */
+      col:i=>this.dep()[i]?CLR.mut:[CLR.k1,CLR.k2,CLR.ink][i],
+      after:function(i){
+        /* набрали у прибраному — він повертається */
+        if(this.off[i]){this.off[i]=false; this.co[i]=null;}
+        this.follow();
+        this.capture(i);
+      }});
     seg('m4pre',v=>{
-      if(v==='r3'){this.R=[[3,1,0],[1,3,1]]; this.al=0.5; this.be=0.5; this.hh=1.2;}
-      if(v==='r2'){this.R=[[3,1,0],[1,3,1]]; this.al=1; this.be=1; this.hh=0;}
-      if(v==='r1'){this.R=[[3,1,0],[6,2,0]]; this.al=1; this.be=0; this.hh=0;}
-      if(v==='r0'){this.R=[[0,0,0],[0,0,0]]; this.al=0; this.be=0; this.hh=0;}
+      /* пресет задає і числа, і те, які рядки прибрано, і з якими саме
+         коефіцієнтами вони тримаються за живі */
+      if(v==='r3'){this.A=[[3,1,0],[1,3,1],[2,2,2.5]];
+        this.off=[false,false,false]; this.co=[null,null,null];}
+      if(v==='r2'){this.A=[[3,1,0],[1,3,1],[4,4,1]];
+        this.off=[false,false,true]; this.co=[null,null,[1,1,0]];}
+      if(v==='r1'){this.A=[[3,1,0],[6,2,0],[-3,-1,0]];
+        this.off=[false,true,true]; this.co=[null,[2,0,0],[-1,0,0]];}
+      if(v==='r0'){this.A=[[0,0,0],[0,0,0],[0,0,0]];
+        this.off=[true,true,true]; this.co=[null,null,null];}
     });
-    this.tip1=makeTip('m4cdw'); hover('m4cd',this.h1);
-    this.tip2=makeTip('m4crw'); hover('m4cr',this.h2);
+
   },
-  nhat(){return v3norm(v3cross(this.R[0],this.R[1]));},
-  r3(){
-    const n=this.nhat();
-    return v3add(v3add(v3mul(this.R[0],this.al),v3mul(this.R[1],this.be)),v3mul(n,this.hh));
-  },
-  A(){return [this.R[0].slice(),this.R[1].slice(),this.r3()];},
-  detA(){return det3(this.A());},
-  rank(){return rankM(this.A(),1e-7);},
-  gcol(b){return {x:[b.w-232], y0:b.h-74, dy:21, W:170};},
-  GG:[
-    ['al','α — частка r₁',-2,2,0.1,'#2a78d6',null,null,1,''],
-    ['be','β — частка r₂',-2,2,0.1,'#eb6834',null,null,1,''],
-    ['hh','h — висота над площиною',-2.5,2.5,0.05,'#0b0b0b',null,'m4vh',2,''],
-    ['az','поворот сцени',-180,180,2,'#898781',null,null,0,'°']
-  ],
-  grips(){
-    const b=cvx('m4scene'); if(!b) return [];
-    const out=[];
-    out.push(...gaugeGrips(this.gcol(b),this.GG,this));
+  detA(){return det3(this.A);},
+  /* Три рівноправні показники замість однієї «висоти третього над площиною
+     перших двох». Той показник виділяв r₃, ніби він похідний від двох інших,
+     — а всі три вектори тут рівні між собою й задаються кожен своїми числами.
+     hᵢ = |det| / |rⱼ × r_k| — висота вектора над площиною двох інших; кожна
+     з трьох обертається на нуль рівно тоді, коли трійка вироджується. */
+  heights(){
+    const A=this.A, D=Math.abs(det3(A)), out=[];
+    for(let i=0;i<3;i++){
+      const j=(i+1)%3, k=(i+2)%3;
+      const S=v3len(v3cross(A[j],A[k]));
+      out.push(S<1e-12?null:D/S);
+    }
     return out;
   },
+  /* зведений об'єм |det| / (|r₁||r₂||r₃|) ∈ [0; 1]: одиниця — трійка взаємно
+     перпендикулярна, нуль — вироджена. Теж однаково дивиться на всіх трьох. */
+  vred(){
+    const A=this.A, p=v3len(A[0])*v3len(A[1])*v3len(A[2]);
+    return p<1e-12?0:Math.abs(det3(A))/p;
+  },
+  /* Чи виражається кожен вектор через два інші — питаємо про кожного окремо.
+     При ранзі 2 відповідь «так» буває для всіх трьох одразу: залежність —
+     властивість трійки, а не одного обраного рядка. */
+  inOthers(){
+    const A=this.A, out=[];
+    for(let i=0;i<3;i++){
+      const j=(i+1)%3, k=(i+2)%3;
+      const n=v3cross(A[j],A[k]), L=v3len(n), Li=v3len(A[i]);
+      if(L>=1e-9){out.push(Math.abs(v3dot(A[i],n))/(L*Math.max(1,Li))<1e-7); continue;}
+      /* двоє інших самі лежать на прямій — питання зводиться до колінеарності */
+      const base=v3len(A[j])>=v3len(A[k])?A[j]:A[k], Lb=v3len(base);
+      out.push(Lb<1e-12?Li<1e-12:v3len(v3cross(A[i],base))<1e-7*Math.max(1,Li*Lb));
+    }
+    return out;
+  },
+  /* ранг рахуємо з того самого перебору, що й закреслення: інакше на екрані
+     могли б розійтися число й картинка */
+  rank(){return 3-this.dep().filter(Boolean).length;},
+  live(){const o=this.off||[false,false,false]; return [0,1,2].filter(i=>!o[i]);},
+  /* коефіцієнти рядка через живі — з матриці Грама. Для справді залежного
+     рядка це точний розклад, і саме його ми потім і тримаємо. */
+  coefOf(k){
+    const A=this.A, lv=this.live().filter(i=>i!==k);
+    if(!lv.length) return [0,0,0];
+    const G=lv.map(a=>lv.map(b=>v3dot(A[a],A[b])));
+    const sol=solveSmall(G,lv.map(a=>v3dot(A[k],A[a])));
+    if(!sol) return null;
+    const c=[0,0,0];
+    lv.forEach((a,t)=>{c[a]=sol[t];});
+    return c;
+  },
+  /* прибрані рядки йдуть за живими */
+  follow(){
+    const A=this.A;
+    for(let k=0;k<3;k++){
+      if(!this.off[k]||!this.co[k]) continue;
+      const q=[0,0,0];
+      for(const j of this.live()) for(let t=0;t<3;t++) q[t]+=this.co[k][j]*A[j][t];
+      const r=q.map(v=>Math.round(v*10)/10);
+      A[k]=r;
+      /* якщо округлення до десятих вибило рядок із площини — лишаємо точну
+         проєкцію: рядок усе одно прихований, а ранг мусить устояти */
+      if(!this.spans(k)) A[k]=q;
+    }
+  },
+  /* чи лежить рядок k в оболонці живих */
+  spans(k){
+    const A=this.A, basis=[];
+    for(const i of this.live()){
+      if(i===k) continue;
+      let v=A[i].slice();
+      for(const b of basis) v=v3sub(v,v3mul(b,v3dot(v,b)));
+      if(v3len(v)>1e-9) basis.push(v3norm(v));
+    }
+    let v=A[k].slice();
+    for(const b of basis) v=v3sub(v,v3mul(b,v3dot(v,b)));
+    return v3len(v)<=1e-7*Math.max(1,v3len(A[k]));
+  },
+  /* Живий рядок, який сам виявився залежним, теж прибираємо — і запам'ятовуємо,
+     якими коефіцієнтами він тримається. Коли трійка стала компланарною, зайвим
+     можна оголосити будь-який із трьох; беремо той, який щойно правили: саме
+     його студент і завів у площину решти. Далі — за спаданням номера. */
+  capture(edited){
+    for(;;){
+      const lv=this.live();
+      const order=(edited==null?[]:[edited]).concat([2,1,0]);
+      let pick=-1;
+      for(const k of order) if(lv.indexOf(k)>=0&&this.spans(k)){pick=k; break;}
+      if(pick<0) break;
+      const c=this.coefOf(pick);
+      if(!c) break;
+      this.off[pick]=true; this.co[pick]=c;
+    }
+  },
+  /* Який рядок прибрано. Ортогоналізуємо живі рядки першими, прибрані —
+     останніми: тоді перекреслення падає саме на ті, які прибрав користувач
+     чи пресет, а не просто на останній за номером. */
+  dep(){
+    const o=this.off||[false,false,false];
+    const order=[0,1,2].filter(i=>!o[i]).concat([0,1,2].filter(i=>o[i]));
+    const out=[false,false,false], basis=[];
+    for(const i of order){
+      const row=this.A[i];
+      let v=row.slice();
+      for(const b of basis) v=v3sub(v,v3mul(b,v3dot(v,b)));
+      if(v3len(v)<=1e-7*Math.max(1,v3len(row))) out[i]=true;
+      else basis.push(v3norm(v));
+    }
+    return out;
+  },
+  grips(){
+    const b=cvx('m4scene'); if(!b) return [];
+    /* єдина ручка на всю вкладку — сама сцена: тягнеш порожнє місце,
+       обертається камера. Числа набирають у клітинках. */
+    return [orbitGrip(this,'az','el')];
+  },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m4scene'); if(!b) return;
     const {g,w,h}=b;
     g.clearRect(0,0,w,h);
-    const M=this.M(), A=this.A(), r=this.rank();
-    mFrame(g,M,2,3,CLR.k1,'рядки r₁, r₂',CLR.k1);
-    mCells(g,M,this.R,2,3,{input:true});
-    const M3p={x:M.x,y:M.y+2*MCH+30};
-    mFrame(g,M3p,1,3,CLR.k2,'r₃ = α·r₁ + β·r₂ + h·n̂',CLR.k2);
-    mCells(g,M3p,[A[2]],1,3,{dec:2,cellCol:()=>CLR.sec});
-    /* простір праворуч: один масштаб на всі три осі (§10) */
-    const cx=M.x+3*MCW+40+(w-(M.x+3*MCW+40)-20)/2, cy=(h-96)/2+42;
+    const M=this.M(), A=this.A, r=this.rank(), D=this.dep();
+    mFrame(g,M,3,3,CLR.k1,'рядки r₁, r₂, r₃',CLR.sec);
+    /* зайвий рядок перекреслюємо просто в тій матриці, яку набирають:
+       окрема ступінчаста копія показувала б переставлені рядки, і зіставляти
+       їх із власними довелося б очима */
+    mCells(g,M,A,3,3,{input:true,
+      cellBg:(i)=>D[i]?'rgba(11,11,11,.05)':null});
+    for(let i=0;i<3;i++){
+      if(!D[i]) continue;
+      const yz=M.y+i*MCH+MCH/2;
+      g.strokeStyle=CLR.mut; g.lineWidth=1.4; g.setLineDash([5,4]);
+      g.beginPath(); g.moveTo(M.x-2,yz); g.lineTo(M.x+3*MCW+2,yz); g.stroke();
+      g.setLineDash([]);
+    }
+    const nmR=['r₁','r₂','r₃'], zz=[0,1,2].filter(i=>D[i]).map(i=>nmR[i]);
+    txt(g,'ненульових рядків: '+r+'  =  ранг',M.x,M.y+3*MCH+26,
+      {color:CLR.k3,size:11.5,bold:true});
+    txt(g,zz.length?('перекреслено '+zz.join(', ')+' — комбінація інших')
+                   :'усі три рядки незалежні',
+      M.x,M.y+3*MCH+43,{color:CLR.mut,size:10.5});
+    const io=this.inOthers(), nio=io.filter(Boolean).length;
+    txt(g,zz.length?(zz.join(', ')+' нічого не додає — у просторі його немає')
+                   :'усі три вектори видно: кожен додає свій напрям',
+      M.x,M.y+3*MCH+58,{color:zz.length?CLR.k3:CLR.mut,size:11,bold:zz.length>0});
+    txt(g,zz.length?'він іде за рештою; наберіть у ньому числа — повернеться'
+                   :'дев’ять чисел навмання майже завжди дають ранг 3',
+      M.x,M.y+3*MCH+75,{color:CLR.mut,size:10.5});
+    txt(g,'числа від −6,0 до 6,0 — за межею беремо саму межу',M.x,M.y+3*MCH+93,
+      {color:CLR.sec,size:10.5});
+    txt(g,'набране йде в матрицю на Enter або на виході',M.x,M.y+3*MCH+107,
+      {color:CLR.sec,size:10.5});
+    /* простір праворуч: один масштаб на всі три осі (§10), проєкція
+       перспективна — з нею сцена читається як простір, а не як плаский
+       шестикутник. Камеру водять мишею по кадру. */
+    const left=M.x+3*MCW+40;
+    const cx=left+(w-left-20)/2, cy=(h-96)/2+42;
     const span=Math.max(1.5,...A.flat().map(Math.abs))*1.35;
-    const sc=Math.min((w-(M.x+3*MCW+70))/2, (h-120)/2)/span;
-    const P=iso(cx,cy,sc,this.az*DEG,26*DEG);
-    const L=span;
+    const L=span, F0=L*0.8;
+    const P=fitIso(cx,cy,this.az*DEG,this.el*DEG,3.2*span,
+      A.concat([[F0,F0,0],[F0,-F0,0],[-F0,F0,0],[-F0,-F0,0],
+        [L,0,0],[0,L,0],[0,0,L],[-L,0,0],[0,-L,0],[0,0,-L]]),
+      Math.min(cx-left,w-10-cx), Math.min(cy-30,h-34-cy));
+    const sc=P.sc;
+    /* підлога трохи менша за розмах: її кути в перспективі відлітають далі
+       за самі вектори, і при повороті вона першою полізла б на матрицю */
+    floor3(g,P,F0,4);
     line3(g,P,[-L,0,0],[L,0,0],CLR.grid,1);
     line3(g,P,[0,-L,0],[0,L,0],CLR.grid,1);
     line3(g,P,[0,0,-L],[0,0,L],CLR.grid,1);
@@ -1690,12 +1865,14 @@ const M4={
     q=P.P(0,L*0.95,0); txt(g,'y',q[0]+5,q[1]+4,{color:CLR.mut,size:10.5});
     q=P.P(0,0,L*0.95); txt(g,'z',q[0]+5,q[1]+4,{color:CLR.mut,size:10.5});
     /* оболонка рядків */
+    const keep=[0,1,2].filter(i=>!D[i]).map(i=>A[i]);
     if(r===2){
-      const u=v3mul(v3norm(A[0]),L), v=v3mul(v3norm(v3sub(A[1],v3mul(A[0],v3dot(A[1],A[0])/Math.max(1e-9,v3dot(A[0],A[0]))))),L);
+      const K0=keep[0], K1=keep[1];
+      const u=v3mul(v3norm(K0),L), v=v3mul(v3norm(v3sub(K1,v3mul(K0,v3dot(K1,K0)/Math.max(1e-9,v3dot(K0,K0))))),L);
       poly3(g,P,[v3sub(v3mul(u,-1),v),v3sub(u,v),v3add(u,v),v3add(v3mul(u,-1),v)],
         'rgba(27,175,122,.14)',CLR.k3,1.2);
     } else if(r===1){
-      const u=v3mul(v3norm(A[0].some(x=>x)?A[0]:A[1]),L);
+      const u=v3mul(v3norm(keep[0]),L);
       line3(g,P,v3mul(u,-1),u,CLR.k3,2.4);
     } else if(r===3){
       const c=[A[0],A[1],A[2]];
@@ -1708,20 +1885,37 @@ const M4={
        .forEach(o=>poly3(g,P,o.f.map(k=>V[k]),'rgba(11,11,11,.05)','rgba(11,11,11,.18)',1));
     }
     const cols=[CLR.k1,CLR.k2,CLR.ink], nm=['r₁','r₂','r₃'];
-    for(let i=0;i<3;i++){
-      arrow3(g,P,[0,0,0],A[i],cols[i],i===2?2.6:2.2);
-      const s=P.P(A[i][0],A[i][1],A[i][2]);
-      txt(g,nm[i],s[0]+7,s[1]-5,{color:cols[i],size:12,bold:true});
-    }
+    /* Перекресленого вектора в просторі просто немає. Він нічого не додає до
+       оболонки, тож і показувати його там нема чого: у кадрі лишається рівно
+       стільки стрілок, який ранг. Кадр при цьому меншає не починає стрибати —
+       масштаб і далі рахується по всіх трьох, бо числа нікуди не поділися. */
+    const live=[0,1,2].filter(i=>!D[i]);
+    /* висок до підлоги — головна підказка глибини: без нього вектор і його
+       слід на площині z = 0 на екрані не розрізнити */
+    for(const i of live) line3(g,P,A[i],[A[i][0],A[i][1],0],CLR.grid,1,[3,3]);
+    /* далекі стрілки малюємо першими, ближні лягають поверх них */
+    live.map(i=>({i,d:P.D(A[i][0],A[i][1],A[i][2])}))
+      .sort((p1,p2)=>p1.d-p2.d)
+      .forEach(o=>{
+        const i=o.i;
+        arrow3(g,P,[0,0,0],A[i],cols[i],i===2?2.6:2.2);
+        const s=P.P(A[i][0],A[i][1],A[i][2]);
+        txt(g,nm[i],s[0]+7,s[1]-5,{color:cols[i],size:12,bold:true});
+      });
     const spanName={0:'точку — саме лише начало координат',1:'пряму',2:'площину',3:'увесь простір'}[r];
     cap2(g,'Ранг = '+r,'три рядки натягують '+spanName,r===3?CLR.ink:CLR.k3,cx-sc*span,20);
-    gaugeCol(g,this.gcol(b),this.GG,this);
-    $('m4vh').textContent=fmt(this.hh,2);
+    txt(g,'тягніть фон — сцена обертається · азимут '+fmt(this.az,0)+'°, нахил '+fmt(this.el,0)+'°',
+      M.x+3*MCW+40,h-12,{color:CLR.mut,size:10.5});
     for(const hh2 of this.grips()) drawGrip(g,hh2,this);
     $('m4state').textContent='rank = '+r+', det = '+fmt(this.detA(),3);
   },
   table(){
-    const r=this.rank(), D=this.detA();
+    const r=this.rank(), D=this.detA(), A=this.A;
+    const hs=this.heights(), io=this.inOthers();
+    $('m4vH').textContent=hs.map(v=>v==null?'—':fmt(v,2)).join(' · ');
+    $('m4vV').textContent=fmt(this.vred(),3);
+    const names=['r₁','r₂','r₃'], sel=[0,1,2].filter(i=>io[i]).map(i=>names[i]);
+    $('m4vDep').textContent=sel.length===0?'жоден':(sel.length===3?'усі три':sel.join(', '));
     $('m4kR').textContent=fmt(r,0);
     $('m4kSpan').textContent={0:'точку',1:'пряму',2:'площину',3:'увесь простір ℝ³'}[r];
     $('m4kDet').textContent=fmt(D,3);
@@ -1730,397 +1924,215 @@ const M4={
     $('m4kZero').textContent=fmt(3-r,0);
     /* ранг після довільного елементарного перетворення має збігатися —
        перевіряємо це просто на екрані, а не на слово */
-    const A=this.A();
     const B=[A[0].slice(),A[1].map((v,j)=>v+2*A[0][j]),A[2].slice()];
     $('m4kInv').textContent=r+' → '+rankM(B,1e-7)+(rankM(B,1e-7)===r?' — збігається':' — розбіжність');
-    $('m4fx').innerHTML='det A = <b>'+fmt(D,3)+'</b>; при h = 0 третій рядок лягає в площину '+
-      'перших двох, визначник стає нулем, а ранг падає з 3 до '+rankM([A[0],A[1]],1e-7)+'.';
+    $('m4fx').innerHTML='det A = <b>'+fmt(D,3)+'</b>. Усі три вектори тут рівноправні: '+
+      'кожен задається своїми трьома числами й ні з чого не виводиться. Виродження — '+
+      'властивість трійки, а не окремого рядка: щойно один із них лягає в площину двох '+
+      'інших, у нуль обертаються одразу всі три висоти й сам визначник.';
   },
-  charts(){
-    const b1=cvx('m4cd');
-    const base=[this.R[0],this.R[1]], n=this.nhat();
-    const d0=det3([base[0],base[1],n]);
-    if(b1){
-      const ts=[],ys=[];
-      for(let i=0;i<=120;i++){const hval=-2.5+5*i/120; ts.push(hval+2.5); ys.push(Math.abs(d0*hval));}
-      const A=Math.max(0.5,Math.abs(d0)*2.5*1.2);
-      const r=drawChart(b1,{tMax:5,yMin:0,yMax:A,yLab:'|det|',xLab:'h + 2,5',
-        yDec:1,xDec:1,xStep:1,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k2,label:'|det|'},
-          {ts:[this.hh+2.5,this.hh+2.5],ys:[0,Math.abs(this.detA())],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['|det|',CLR.k2],['зараз',CLR.ink]],2);
-    }
-    const b2=cvx('m4cr');
-    if(b2){
-      const ts=[],ys=[];
-      const r2=rankM(base,1e-7);
-      for(let i=0;i<=240;i++){
-        const hval=-2.5+5*i/240;
-        ts.push(hval+2.5);
-        ys.push(Math.abs(hval)<1e-6?r2:rankM([base[0],base[1],
-          v3add(v3add(v3mul(base[0],this.al),v3mul(base[1],this.be)),v3mul(n,hval))],1e-7));
-      }
-      const r=drawChart(b2,{tMax:5,yMin:0,yMax:3.4,yLab:'ранг',xLab:'h + 2,5',
-        yDec:0,xDec:1,xStep:1,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k3,label:'rank'},
-          {ts:[this.hh+2.5,this.hh+2.5],ys:[0,this.rank()],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['rank',CLR.k3],['зараз',CLR.ink]],0);
-    }
-  }
 };
 
-/* ===================== МОДУЛЬ 5 · матриці Паулі ===================== */
+/* ===================== МОДУЛЬ 5 · практика: тензор напружень ===================== */
+/* Напружений стан у точці тіла — це матриця 3×3, і не будь-яка. Рівновага
+   моментів елементарного кубика робить її симетричною: σᵢⱼ = σⱼᵢ, закон
+   парності дотичних напружень. А слід, сума головних мінорів 2×2 і визначник
+   цієї матриці не змінюються від повороту осей — саме тому їх звуть
+   інваріантами й саме на них будують критерії міцності.
+   Величини — у мегапаскалях; для сталі межа текучості ≈ 250 МПа. */
+
+/* Власні числа симетричної 3×3 — тригонометричним розв'язком кубічного
+   рівняння. Ітерації тут зайві: для симетричної матриці корені завжди дійсні,
+   а формула дає їх одразу й стійко навіть біля кратних. */
+function eig3sym(A){
+  const p1=A[0][1]*A[0][1]+A[0][2]*A[0][2]+A[1][2]*A[1][2];
+  const q=(A[0][0]+A[1][1]+A[2][2])/3;
+  if(p1<1e-18) return [A[0][0],A[1][1],A[2][2]].sort((a,b)=>b-a);
+  const p2=(A[0][0]-q)*(A[0][0]-q)+(A[1][1]-q)*(A[1][1]-q)+(A[2][2]-q)*(A[2][2]-q)+2*p1;
+  const p=Math.sqrt(p2/6);
+  const B=[[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) B[i][j]=(A[i][j]-(i===j?q:0))/p;
+  const phi=Math.acos(clamp(det3(B)/2,-1,1))/3;
+  const e1=q+2*p*Math.cos(phi);
+  const e3=q+2*p*Math.cos(phi+2*Math.PI/3);
+  return [e1, 3*q-e1-e3, e3];
+}
+/* Три інваріанти — це коефіцієнти характеристичного рівняння
+   λ³ − I₁λ² + I₂λ − I₃ = 0: слід, сума головних мінорів 2×2 і визначник. */
+function stressInv(A){
+  const I1=A[0][0]+A[1][1]+A[2][2];
+  const I2=det2(A[0][0],A[0][1],A[1][0],A[1][1])
+          +det2(A[0][0],A[0][2],A[2][0],A[2][2])
+          +det2(A[1][1],A[1][2],A[2][1],A[2][2]);
+  return {I1,I2,I3:det3(A)};
+}
+/* Ортонормований базис камери у світових осях: рядки — «праворуч по екрану»,
+   «вгору по екрану», «на глядача». Той самий поворот, що й у проєкції, тому
+   σ′ у таблиці — це справді те, що глядач бачить перед собою. */
+function camQ(az,el){
+  const ca=Math.cos(az), sa=Math.sin(az), ce=Math.cos(el), se=Math.sin(el);
+  return [[ca,-sa,0],[-sa*se,-ca*se,ce],[sa*ce,ca*ce,se]];
+}
+/* σ′ = Q σ Qᵀ — той самий стан, записаний в інших осях */
+function congr(Q,S){return mMul(mMul(Q,S),mT(Q));}
+/* поворот на кут навколо осі z — для таблиці інваріантів */
+function rotZ(a){
+  const c=Math.cos(a), s=Math.sin(a);
+  return [[c,-s,0],[s,c,0],[0,0,1]];
+}
+
 const M5={
-  nx:0.42, nz:0.78, hemi:1,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  S:[[100,40,0],[40,-30,0],[0,0,0]],
+  az:34, el:22,
+  M(){return {x:34,y:96};},
+  MR(){return {x:34,y:96+3*MCH+52};},
   init(){
     grip('m5scene',this,()=>this.grips());
-    seg('m5hemi',v=>{this.hemi=+v;});
-    this.tip1=makeTip('m5cpw'); hover('m5cp',this.h1);
-    this.tip2=makeTip('m5cew'); hover('m5ce',this.h2);
+    matIn('m5mx',{st:this, M:()=>this.M(), A:()=>this.S, m:()=>3, n:()=>3,
+      lo:-250, hi:250, step:5, dec:0, name:'σ',
+      col:(i,j)=>i===j?CLR.k1:CLR.k2,
+      /* дзеркалимо одразу: несиметричний тензор напружень означав би, що
+         кубик самочинно розкручується — такого стану просто не буває */
+      after:function(i,j){this.S[j][i]=this.S[i][j];}});
+    seg('m5pre',v=>{
+      if(v==='uni')   this.S=[[120,0,0],[0,0,0],[0,0,0]];
+      if(v==='shear') this.S=[[0,80,0],[80,0,0],[0,0,0]];
+      if(v==='hydro') this.S=[[-60,0,0],[0,-60,0],[0,0,-60]];
+      if(v==='plane') this.S=[[100,40,0],[40,-30,0],[0,0,0]];
+      if(v==='vol')   this.S=[[140,50,30],[50,-40,20],[30,20,60]];
+    });
   },
-  /* n завжди одиничний: екранна точка дає дві координати, третю добудовує
-     сама сфера — тому |n| = 1 не «підтримується», а виконується тотожно */
-  nvec(){
-    const u=this.nx, v=this.nz;
-    const w=this.hemi*Math.sqrt(Math.max(0,1-u*u-v*v));
-    const el=18*DEG, ce=Math.cos(el), se=Math.sin(el);
-    return [u, -v*se+w*ce, v*ce+w*se];
+  inv(){return stressInv(this.S);},
+  pr(){return eig3sym(this.S);},
+  rank(){return rankM(this.S,1e-7);},
+  tmax(){const e=this.pr(); return (e[0]-e[2])/2;},
+  /* напруження на площадці з нормаллю n: вектор t = σ·n, його нормальна
+     складова σₙ = n·t і дотична τ = |t − σₙ·n| */
+  trac(n){
+    const t=[0,1,2].map(i=>this.S[i][0]*n[0]+this.S[i][1]*n[1]+this.S[i][2]*n[2]);
+    const sn=v3dot(t,n);
+    const sh=v3sub(t,v3mul(n,sn));
+    return {t,sn,sh,tau:v3len(sh)};
   },
-  theta(){return Math.acos(clamp(this.nvec()[2],-1,1))/DEG;},
-  phi(){const n=this.nvec(); let a=Math.atan2(n[1],n[0])/DEG; if(a<0) a+=360; return a;},
-  geo(b){return frozen(this,b,bb=>{
-    const R=Math.min((bb.w-330)/2,(bb.h-96)/2);
-    return {R,cx:R+40,cy:(bb.h-30)/2+8};
-  });},
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
-    const G=this.geo(b);
-    return [{id:'n', x:G.cx+this.nx*G.R, y:G.cy-this.nz*G.R, r:9, color:CLR.k2,
-      hint:'напрям вимірювання n',
-      move:(px,py)=>{
-        let u=(px-G.cx)/G.R, v=(G.cy-py)/G.R;
-        const L=Math.hypot(u,v);
-        /* за межами диска точку кладемо на екватор, а не втрачаємо */
-        if(L>1){u/=L; v/=L;}
-        this.nx=snap(u,0.01); this.nz=snap(v,0.01);
-        const L2=Math.hypot(this.nx,this.nz);
-        if(L2>1){this.nx/=L2; this.nz/=L2;}
-      }}];
+    return [orbitGrip(this,'az','el')];
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w,h}=b;
     g.clearRect(0,0,w,h);
-    const G=this.geo(b), n=this.nvec(), R=G.R;
-    const P=iso(G.cx,G.cy,R,0,18*DEG);
-    /* сама сфера в ортогональній проєкції — рівно коло */
-    g.beginPath(); g.arc(G.cx,G.cy,R,0,7);
-    g.fillStyle='rgba(42,120,214,.05)'; g.fill();
-    g.strokeStyle=CLR.axis; g.lineWidth=1.4; g.stroke();
-    /* екватор і меридіан — щоб глибина читалася */
-    g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.ellipse(G.cx,G.cy,R,R*Math.sin(18*DEG),0,0,7); g.stroke();
-    g.beginPath(); g.ellipse(G.cx,G.cy,R*Math.sin(18*DEG),R,0,0,7); g.stroke();
-    arrow3(g,P,[0,0,0],[0,0,1.16],CLR.k1,1.6);
-    arrow3(g,P,[0,0,0],[1.16,0,0],CLR.k1,1.6);
-    arrow3(g,P,[0,0,0],[0,1.16,0],CLR.k1,1.6);
-    let q=P.P(0,0,1.16); txt(g,'z',q[0]+6,q[1],{color:CLR.k1,size:11,bold:true});
-    q=P.P(1.16,0,0); txt(g,'x',q[0]+5,q[1]+4,{color:CLR.k1,size:11,bold:true});
-    q=P.P(0,1.16,0); txt(g,'y',q[0]+5,q[1]+4,{color:CLR.k1,size:11,bold:true});
-    /* сам напрям */
-    arrow3(g,P,[0,0,0],n,CLR.k2,2.6);
-    const s=P.P(n[0],n[1],n[2]);
-    txt(g,'n',s[0]+9,s[1]-6,{color:CLR.k2,size:12.5,bold:true});
-    /* дуга кута θ від осі z */
-    const a1=-Math.PI/2, a2=Math.atan2(s[1]-G.cy,s[0]-G.cx);
-    arc(g,G.cx,G.cy,R*0.34,a1,a2,CLR.mut,1.2);
-    txt(g,'θ = '+fmt(this.theta(),0)+'°',G.cx+12,G.cy-R*0.34-6,{color:CLR.mut,size:11});
-    /* матриця σ·n */
-    const MX={x:G.cx+R+58, y:52};
-    txt(g,'σ·n = n_x σ₁ + n_y σ₂ + n_z σ₃',MX.x-6,MX.y-24,{color:CLR.sec,size:12,bold:true});
-    const nz=n[2], nx=n[0], ny=n[1];
-    const cell=[[fmt(nz,2),cpx(nx,-ny)],[cpx(nx,ny),fmt(-nz,2)]];
-    g.strokeStyle=CLR.k3; g.lineWidth=1.6;
-    const CW=118, CH=34;
-    g.beginPath();
-    g.moveTo(MX.x+1,MX.y-6); g.lineTo(MX.x-6,MX.y-6); g.lineTo(MX.x-6,MX.y+2*CH+6); g.lineTo(MX.x+1,MX.y+2*CH+6);
-    g.moveTo(MX.x+2*CW-1,MX.y-6); g.lineTo(MX.x+2*CW+6,MX.y-6); g.lineTo(MX.x+2*CW+6,MX.y+2*CH+6); g.lineTo(MX.x+2*CW-1,MX.y+2*CH+6);
-    g.stroke();
-    for(let i=0;i<2;i++) for(let j=0;j<2;j++)
-      txt(g,cell[i][j],MX.x+j*CW+CW/2,MX.y+i*CH+CH/2+4,{color:CLR.ink,size:12,bold:true,align:'center'});
-    const yb=MX.y+2*CH+30;
-    txt(g,'tr = '+fmt(nz,2)+' + ('+fmt(-nz,2)+') = 0',MX.x-6,yb,{color:CLR.ink,size:11.5,bold:true});
-    txt(g,'det = −n_z² − (n_x² + n_y²) = '+fmt(-(nz*nz+nx*nx+ny*ny),3),MX.x-6,yb+17,
+    const M=this.M(), S=this.S, I=this.inv();
+    mFrame(g,M,3,3,CLR.k1,'σ, МПа',CLR.k1);
+    mCells(g,M,S,3,3,{input:true,
+      cellBg:(i,j)=>i===j?'rgba(42,120,214,.07)':(S[i][j]?'rgba(235,104,52,.07)':null)});
+    /* той самий стан в осях глядача */
+    const Q=camQ(this.az*DEG,this.el*DEG), Sp=congr(Q,S), Ip=stressInv(Sp);
+    const MR=this.MR();
+    mFrame(g,MR,3,3,CLR.k3,'σ′ у ваших осях',CLR.k3);
+    mCells(g,MR,Sp,3,3,{dec:0,cellCol:()=>CLR.sec});
+    const yb=MR.y+3*MCH+24;
+    txt(g,'tr σ = '+fmt(I.I1,0)+'   tr σ′ = '+fmt(Ip.I1,0),MR.x,yb,
       {color:CLR.ink,size:11.5,bold:true});
-    txt(g,'λ = ±1  →  прилад показує тільки «вгору» або «вниз»',MX.x-6,yb+34,
-      {color:CLR.sec,size:11.5});
-    txt(g,'σ₁σ₂ = iσ₃    σ₂σ₃ = iσ₁    σ₃σ₁ = iσ₂',MX.x-6,yb+56,{color:CLR.mut,size:11});
-    txt(g,'σ_k² = I    σ₁σ₂ = −σ₂σ₁',MX.x-6,yb+72,{color:CLR.mut,size:11});
-    cap2(g,'Сфера напрямів',this.hemi>0?'обрано ближчу до глядача півсферу':'обрано дальшу півсферу',
-      this.hemi>0?CLR.k1:CLR.k3);
+    txt(g,'det σ = '+fmt(I.I3,0)+'   det σ′ = '+fmt(Ip.I3,0),MR.x,yb+16,
+      {color:CLR.ink,size:11.5,bold:true});
+    txt(g,'числа інші — інваріанти ті самі',MR.x,yb+32,{color:CLR.mut,size:10.5});
+    /* кубик напружень */
+    const left=M.x+3*MCW+40;
+    const cx=left+(w-left-20)/2, cy=(h-96)/2+40;
+    const a=1, span=2.3;
+    const fitP=[];
+    for(const sx of [-1,1]) for(const sy of [-1,1]) for(const sz of [-1,1]) fitP.push([sx*a,sy*a,sz*a]);
+    for(const n of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])
+      for(const d of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])
+        fitP.push([n[0]*a+d[0]*1.15, n[1]*a+d[1]*1.15, n[2]*a+d[2]*1.15]);
+    for(const sx of [-1,1]) for(const sy of [-1,1]) fitP.push([sx*1.8,sy*1.8,0]);
+    const P=fitIso(cx,cy,this.az*DEG,this.el*DEG,3.4*span,fitP,
+      Math.min(cx-left,w-10-cx), Math.min(cy-28,h-30-cy));
+    floor3(g,P,1.8,3);
+    /* ребра кубика: дальні — тонким штрихом, ближні — суцільним */
+    const V=[];
+    for(const sx of [-1,1]) for(const sy of [-1,1]) for(const sz of [-1,1]) V.push([sx*a,sy*a,sz*a]);
+    for(let i=0;i<8;i++) for(let j=i+1;j<8;j++){
+      let d=0;
+      for(let k=0;k<3;k++) if(V[i][k]!==V[j][k]) d++;
+      if(d!==1) continue;
+      const dep=(P.D(V[i][0],V[i][1],V[i][2])+P.D(V[j][0],V[j][1],V[j][2]))/2;
+      line3(g,P,V[i],V[j],dep<0?CLR.grid:CLR.axis,dep<0?1:1.5,dep<0?[3,3]:[]);
+    }
+    const N=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    let maxT=0;
+    for(const n of N) maxT=Math.max(maxT,v3len(this.trac(n).t));
+    const k=maxT<1e-9?0:1.15*a/maxT;
+    for(const n of N){
+      if(P.D(n[0],n[1],n[2])<=0.06) continue;
+      const c=v3mul(n,a), T=this.trac(n);
+      /* грань підсвічуємо, щоб було видно, до якої саме площадки належать
+         стрілки: без неї нормаль і зсув «висять» у порожнечі */
+      const u=[n[1],n[2],n[0]], v2=v3cross(n,u);
+      const cor=(su,sv)=>v3add(v3add(c,v3mul(u,su*a)),v3mul(v2,sv*a));
+      poly3(g,P,[cor(1,1),cor(-1,1),cor(-1,-1),cor(1,-1)],
+        'rgba(11,11,11,.035)',CLR.grid,1);
+      if(k===0) continue;
+      if(Math.abs(T.sn)>1e-9)
+        arrow3(g,P,c,v3add(c,v3mul(n,T.sn*k)),CLR.k1,2.2);
+      if(T.tau>1e-9)
+        arrow3(g,P,c,v3add(c,v3mul(T.sh,k)),CLR.k2,2.2);
+      const q=P.P(c[0],c[1],c[2]);
+      pill(g,'σ '+fmt(T.sn,0)+' · τ '+fmt(T.tau,0),q[0],q[1]-4,{color:CLR.sec,size:10});
+    }
+    if(k===0) pill(g,'тіло не навантажене',cx,cy,{color:CLR.mut,size:11.5});
+    const kind={0:'тіло не навантажене',1:'лінійний (одновісний)',2:'плоский',3:'об’ємний'}[this.rank()];
+    cap2(g,'Напружений стан: '+kind,
+      'ранг σ = скільки головних напружень не дорівнюють нулю',
+      this.rank()===3?CLR.ink:CLR.k3,left,20);
+    txt(g,'тягніть фон — осі повертаються разом із вами · азимут '+fmt(this.az,0)+
+      '°, нахил '+fmt(this.el,0)+'°',left,h-12,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
-    $('m5state').textContent='θ = '+fmt(this.theta(),0)+'°, φ = '+fmt(this.phi(),0)+'°';
+    $('m5state').textContent='I₁ = '+fmt(I.I1,0)+' МПа, τmax = '+fmt(this.tmax(),1)+' МПа';
   },
   table(){
-    const n=this.nvec(), th=this.theta();
-    const Pp=Math.cos(th*DEG/2)**2, Pm=Math.sin(th*DEG/2)**2;
-    $('m5vn').textContent='('+fmt(n[0],2)+'; '+fmt(n[1],2)+'; '+fmt(n[2],2)+')';
-    $('m5kTh').textContent=fmt(th,0)+'°';
-    $('m5kPh').textContent=fmt(this.phi(),0)+'°';
-    $('m5kNorm').textContent=fmt(v3len(n),4);
-    $('m5kTr').textContent=fmt(n[2]-n[2],1);
-    $('m5kDet').textContent=fmt(-(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]),4);
-    $('m5kLam').textContent='+1 і −1';
-    $('m5kSq').textContent='так, (σ·n)² = |n|²·I = I';
-    $('m5kEz').textContent=fmt(Math.cos(th*DEG),3);
-    $('m5kPp').textContent=fmt(Pp*100,1)+' %';
-    $('m5kPm').textContent=fmt(Pm*100,1)+' %  (сума '+fmt((Pp+Pm)*100,1)+' %)';
-    $('m5kSp').textContent='±ħ/2 = ±'+sci(1.054571817e-34/2,3)+' Дж·с';
-    $('m5kMu').textContent='μ_B = '+sci(9.2740100783e-24,4)+' Дж/Тл';
-    $('m5fx').innerHTML='P₊ = cos²(θ/2) = cos²('+fmt(th/2,1)+'°) = <b>'+fmt(Pp,3)+
-      '</b>; ⟨σ_z⟩ = P₊ − P₋ = '+fmt(Pp-Pm,3)+' = cos θ.';
-  },
-  charts(){
-    const th=this.theta();
-    const b1=cvx('m5cp');
-    if(b1){
-      const ts=[],ys=[],ys2=[];
-      for(let i=0;i<=180;i++){const a=i; ts.push(a); ys.push(Math.cos(a*DEG/2)**2); ys2.push(Math.sin(a*DEG/2)**2);}
-      const r=drawChart(b1,{tMax:180,yMin:0,yMax:1.08,yLab:'P',xLab:'θ, °',
-        yDec:1,xDec:0,xStep:45,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'P₊'},{ts,ys:ys2,color:CLR.k2,label:'P₋'},
-          {ts:[th,th],ys:[0,1.08],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['P₊',CLR.k1],['P₋',CLR.k2],['зараз',CLR.ink]],3);
-    }
-    const b2=cvx('m5ce');
-    if(b2){
-      const ts=[],ys=[];
-      for(let i=0;i<=180;i++){ts.push(i); ys.push(Math.cos(i*DEG));}
-      const r=drawChart(b2,{tMax:180,yMin:-1.15,yMax:1.15,yLab:'⟨σ_z⟩',xLab:'θ, °',
-        yDec:1,xDec:0,xStep:45,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k3,label:'⟨σ_z⟩'},
-          {ts:[th,th],ys:[-1.15,Math.cos(th*DEG)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['⟨σ_z⟩',CLR.k3],['зараз',CLR.ink]],3);
-    }
-  }
-};
-/* комплексне число у вигляді a ± bi — для клітинок матриці Паулі */
-function cpx(re,im){
-  if(Math.abs(im)<5e-3) return fmt(re,2);
-  if(Math.abs(re)<5e-3) return fmt(im,2)+'i';
-  return fmt(re,2)+(im<0?' − ':' + ')+fmt(Math.abs(im),2)+'i';
-}
-
-/* ===================== МОДУЛЬ 6 · практика: мережа доріг ===================== */
-/* Координати міст — справжні географічні; відстані рахуються по великому колу
-   (R = 6371 км) і звірені окремим скриптом перевірок. */
-const CITY=[
-  ['Київ','К',50.4501,30.5234],
-  ['Львів','Л',49.8397,24.0297],
-  ['Одеса','О',46.4825,30.7233],
-  ['Харків','Х',49.9935,36.2304],
-  ['Дніпро','Д',48.4647,35.0462]
-];
-const R_EARTH=6371;
-function geoDist(a,b){
-  const f1=a[2]*DEG, f2=b[2]*DEG, dl=(b[3]-a[3])*DEG;
-  const c=Math.sin(f1)*Math.sin(f2)+Math.cos(f1)*Math.cos(f2)*Math.cos(dl);
-  return R_EARTH*Math.acos(clamp(c,-1,1));
-}
-const M6={
-  /* ключ ребра — «i,j», i < j */
-  E:{'0,1':1,'0,2':1,'0,3':1,'0,4':1,'2,4':1,'3,4':1,'1,2':0,'1,3':0,'1,4':0,'0,0':0,'2,3':0},
-  pow:1, _tog:null,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
-  init(){
-    grip('m6scene',this,()=>this.grips());
-    seg('m6pow',v=>{this.pow=+v;});
-    this.tip1=makeTip('m6cww'); hover('m6cw',this.h1);
-    this.tip2=makeTip('m6cdw'); hover('m6cd',this.h2);
-  },
-  pairs(){
-    const out=[];
-    for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) out.push([i,j]);
-    return out;
-  },
-  on(i,j){return this.E[Math.min(i,j)+','+Math.max(i,j)]?1:0;},
-  A(){
-    const A=mZero(5,5);
-    for(const [i,j] of this.pairs()){const v=this.on(i,j); A[i][j]=v; A[j][i]=v;}
-    return A;
-  },
-  Ak(k){
-    let P=this.A();
-    for(let t=1;t<k;t++) P=mMul(P,this.A());
-    return P;
-  },
-  geo(b){return frozen(this,b,bb=>{
-    /* рівнокутна проєкція: довготу стискаємо на cos середньої широти,
-       інакше карта України розтягується вшир */
-    const f0=48.7*DEG;
-    const xs=CITY.map(c=>c[3]*Math.cos(f0)), ys=CITY.map(c=>c[2]);
-    const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
-    const W=bb.w-360, H=bb.h-104;
-    const sc=Math.min(W/(x1-x0), H/(y1-y0));
-    const ox=30+(W-(x1-x0)*sc)/2, oy=60+(H-(y1-y0)*sc)/2;
-    return {sc,f0,
-      SX:lon=>ox+(lon*Math.cos(f0)-x0)*sc,
-      SY:lat=>oy+(y1-lat)*sc};
-  });},
-  cxy(G,k){return [G.SX(CITY[k][3]), G.SY(CITY[k][2])];},
-  grips(){
-    const b=cvx('m6scene'); if(!b) return [];
-    const G=this.geo(b);
-    return this.pairs().map(([i,j])=>{
-      const p=this.cxy(G,i), q=this.cxy(G,j);
-      const key=i+','+j;
-      return {id:'e'+key, x:(p[0]+q[0])/2, y:(p[1]+q[1])/2, r:8,
-        color:this.E[key]?CLR.k2:CLR.mut,
-        hint:(this.E[key]?'прибрати дорогу ':'прокласти дорогу ')+CITY[i][1]+'–'+CITY[j][1],
-        /* toggle має спрацювати один раз на дотик, а не щокадру, поки палець
-           лежить на кружку — тому запам'ятовуємо, яку ручку вже перемкнули */
-        move:()=>{if(this._tog!==key){this._tog=key; this.E[key]=this.E[key]?0:1;}}};
+    const S=this.S, I=this.inv(), e=this.pr(), r=this.rank();
+    $('m5kSym').textContent='так, завжди';
+    $('m5kKind').textContent={0:'ненавантажений',1:'лінійний — ранг 1',
+      2:'плоский — ранг 2',3:'об’ємний — ранг 3'}[r];
+    $('m5kMean').textContent=fmt(I.I1/3,1)+' МПа';
+    $('m5kI1').textContent=fmt(I.I1,1)+' МПа';
+    $('m5kI2').textContent=fmt(I.I2,0)+' МПа²';
+    $('m5kI3').textContent=fmt(I.I3,0)+' МПа³';
+    $('m5kPr').textContent=fmt(e[0],1)+' · '+fmt(e[1],1)+' · '+fmt(e[2],1);
+    $('m5kSum').textContent=fmt(e[0]+e[1]+e[2],1)+' = '+fmt(I.I1,1);
+    $('m5kTau').textContent=fmt(this.tmax(),1)+' МПа';
+    $('m5kFree').textContent=Math.abs(I.I3)<1e-6
+      ? 'є — det σ = 0, знайдеться напрям із нульовим напруженням'
+      : 'немає — det σ ≠ 0';
+    /* Таблиця замість графіків: повертаємо осі навколо z і дивимося, що
+       окремі σ′ᵢⱼ гуляють, а три інваріанти стоять як укопані. */
+    const rows=[0,30,45,60,90].map(d=>{
+      const Sp=congr(rotZ(d*DEG),S), J=stressInv(Sp);
+      return [fmt(d,0)+'°',Sp[0][0],Sp[0][1],Sp[1][1],J.I1,J.I2,J.I3];
     });
-  },
-  tick(){
-    if(this._grab==null) this._tog=null;
-    this.render();
-  },
-  render(){this.scene(); this.table(); this.charts();},
-  scene(){
-    const b=cvx('m6scene'); if(!b) return;
-    const {g,w,h}=b;
-    g.clearRect(0,0,w,h);
-    const G=this.geo(b), A=this.A(), K=this.Ak(this.pow);
-    cap2(g,'Мережа доріг',this.pow===1?'матриця A: 1 — є пряма дорога, 0 — немає'
-      :'матриця A'+(this.pow===2?'²':'³')+': скільки маршрутів рівно з '+this.pow+' ділянок',
-      this.pow===1?CLR.k1:(this.pow===2?CLR.k2:CLR.k3));
-    /* дороги */
-    for(const [i,j] of this.pairs()){
-      const p=this.cxy(G,i), q=this.cxy(G,j), onE=this.on(i,j);
-      g.strokeStyle=onE?CLR.k2:CLR.grid; g.lineWidth=onE?2.4:1;
-      g.setLineDash(onE?[]:[3,3]);
-      g.beginPath(); g.moveTo(p[0],p[1]); g.lineTo(q[0],q[1]); g.stroke(); g.setLineDash([]);
-      if(onE){
-        const mx=(p[0]+q[0])/2, my=(p[1]+q[1])/2;
-        pill(g,fmt(geoDist(CITY[i],CITY[j]),0)+' км',mx,my-13,{color:CLR.sec,size:10});
-      }
-    }
-    /* міста */
-    for(let k=0;k<5;k++){
-      const p=this.cxy(G,k);
-      dot(g,p[0],p[1],7,CLR.k1,'#fff');
-      txt(g,CITY[k][0],p[0]+11,p[1]-7,{color:CLR.ink,size:11.5,bold:true});
-    }
-    /* матриця праворуч */
-    const MX={x:w-306, y:78};
-    const cw=48, ch=28;
-    txt(g,'A'+(this.pow===1?'':(this.pow===2?'²':'³')),MX.x+2.5*cw,MX.y-34,
-      {color:CLR.ink,size:13,bold:true,align:'center'});
-    for(let k=0;k<5;k++){
-      txt(g,CITY[k][1],MX.x-10,MX.y+k*ch+ch/2+4,{color:CLR.k1,size:11,bold:true,align:'right'});
-      txt(g,CITY[k][1],MX.x+k*cw+cw/2,MX.y-8,{color:CLR.k2,size:11,bold:true,align:'center'});
-    }
-    g.strokeStyle=CLR.axis; g.lineWidth=1.6;
-    g.beginPath();
-    g.moveTo(MX.x-4,MX.y-4); g.lineTo(MX.x-10,MX.y-4); g.lineTo(MX.x-10,MX.y+5*ch+4); g.lineTo(MX.x-4,MX.y+5*ch+4);
-    g.moveTo(MX.x+5*cw+4,MX.y-4); g.lineTo(MX.x+5*cw+10,MX.y-4); g.lineTo(MX.x+5*cw+10,MX.y+5*ch+4); g.lineTo(MX.x+5*cw+4,MX.y+5*ch+4);
-    g.stroke();
-    for(let i=0;i<5;i++) for(let j=0;j<5;j++){
-      const v=K[i][j];
-      if(v>0){
-        g.fillStyle=this.pow===1?'rgba(42,120,214,.10)':'rgba(235,104,52,.10)';
-        g.beginPath(); g.roundRect(MX.x+j*cw+2,MX.y+i*ch+2,cw-4,ch-4,5); g.fill();
-      }
-      txt(g,fmt(v,0),MX.x+j*cw+cw/2,MX.y+i*ch+ch/2+4,
-        {color:v>0?CLR.ink:CLR.mut,size:12,bold:v>0,align:'center'});
-    }
-    const yb=MX.y+5*ch+28;
-    txt(g,'рядок — звідки, стовпець — куди',MX.x-10,yb,{color:CLR.mut,size:10.5});
-    txt(g,'(A^k)ᵢⱼ — кількість маршрутів рівно з k ділянок',MX.x-10,yb+15,{color:CLR.mut,size:10.5});
-    const LH=this.Ak(this.pow)[1][3];
-    txt(g,'Львів → Харків за '+this.pow+': '+fmt(LH,0)+' маршрут'+(LH===1?'':(LH>=2&&LH<=4?'и':'ів')),
-      MX.x-10,yb+34,{color:CLR.ink,size:11.5,bold:true});
-    for(const hh of this.grips()) drawGrip(g,hh,this);
-    const cnt=this.pairs().filter(([i,j])=>this.on(i,j)).length;
-    $('m6state').textContent=cnt+' доріг';
-  },
-  table(){
-    const A=this.A();
-    const es=this.pairs().filter(([i,j])=>this.on(i,j));
-    $('m6vE').textContent=fmt(es.length,0)+' з 10';
-    $('m6kLen').textContent=fmt(es.reduce((s,[i,j])=>s+geoDist(CITY[i],CITY[j]),0),0)+' км';
-    $('m6kSym').textContent='так — A = Aᵀ';
-    $('m6kDeg').textContent=A.map(r=>fmt(r.reduce((s,v)=>s+v,0),0)).join(' · ');
-    $('m6kTr').textContent=fmt(A.reduce((s,r,i)=>s+r[i],0),0);
-    $('m6kRank').textContent=fmt(rankM(A,1e-7),0);
-    const D=(function(A){
-      /* визначник 5×5 — прямим ходом; для матриці з нулів і одиниць
-         цього досить, а розклад за рядком тут був би зайвою роботою */
-      const B=A.map(r=>r.slice()); let d=1;
-      for(let c=0;c<5;c++){
-        let p=c; for(let i=c;i<5;i++) if(Math.abs(B[i][c])>Math.abs(B[p][c])) p=i;
-        if(Math.abs(B[p][c])<1e-12) return 0;
-        if(p!==c){const t=B[c]; B[c]=B[p]; B[p]=t; d=-d;}
-        d*=B[c][c];
-        for(let i=c+1;i<5;i++){const f=B[i][c]/B[c][c]; for(let j=c;j<5;j++) B[i][j]-=f*B[c][j];}
-      }
-      return d;
-    })(A);
-    $('m6kDet').textContent=fmt(Math.round(D),0);
-    const A2=this.Ak(2), A3=this.Ak(3);
-    $('m6kD1').textContent=fmt(A[1][3],0);
-    $('m6kD2').textContent=fmt(A2[1][3],0);
-    $('m6kD3').textContent=fmt(A3[1][3],0);
-    $('m6kTri').textContent=fmt(A3.reduce((s,r,i)=>s+r[i],0)/6,0);
-    let S=mZero(5,5), P=null;
-    for(let k=0;k<=4;k++){
-      P=k===0?[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]:this.Ak(k);
-      for(let i=0;i<5;i++) for(let j=0;j<5;j++) S[i][j]+=P[i][j];
-    }
-    let conn=true;
-    for(let i=0;i<5;i++) for(let j=0;j<5;j++) if(S[i][j]<=0) conn=false;
-    $('m6kConn').textContent=conn?'так — з будь-якого міста дістатися можна':'ні — мережа розпалася';
-    $('m6fx').innerHTML='(A²)<sub>ЛХ</sub> = Σ<sub>k</sub> a<sub>Лk</sub>·a<sub>kХ</sub> = <b>'+
-      fmt(A2[1][3],0)+'</b> — це просто перебір міст-пересадок: у скільки з них є дорога з Львова '+
-      'і з них же — у Харків.';
-  },
-  charts(){
-    const b1=cvx('m6cw');
-    const tot=[],lh=[];
-    for(let k=1;k<=6;k++){
-      const P=this.Ak(k);
-      tot.push(P.reduce((s,r)=>s+r.reduce((q,v)=>q+v,0),0));
-      lh.push(P[1][3]);
-    }
-    if(b1){
-      const ts=[],ys=[];
-      for(let k=1;k<=6;k++){ts.push(k); ys.push(tot[k-1]);}
-      const A=Math.max(10,Math.max(...tot)*1.15);
-      const r=drawChart(b1,{tMax:6,yMin:0,yMax:A,yLab:'маршрутів',xLab:'k — довжина',
-        yDec:0,xDec:0,xStep:1,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k2,label:'усього'},
-          {ts:[this.pow,this.pow],ys:[0,tot[this.pow-1]],color:CLR.ink,label:'обране k',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['усього',CLR.k2],['обране k',CLR.ink]],0);
-    }
-    const b2=cvx('m6cd');
-    if(b2){
-      const ts=[],ys=[];
-      for(let k=1;k<=6;k++){ts.push(k); ys.push(lh[k-1]);}
-      const A=Math.max(4,Math.max(...lh)*1.2);
-      const r=drawChart(b2,{tMax:6,yMin:0,yMax:A,yLab:'маршрутів',xLab:'k — довжина',
-        yDec:0,xDec:0,xStep:1,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k3,label:'Л → Х'},
-          {ts:[this.pow,this.pow],ys:[0,lh[this.pow-1]],color:CLR.ink,label:'обране k',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['Л → Х',CLR.k3],['обране k',CLR.ink]],0);
-    }
+    const Qc=camQ(this.az*DEG,this.el*DEG), Sc=congr(Qc,S), Jc=stressInv(Sc);
+    rows.push(['ваш вид',Sc[0][0],Sc[0][1],Sc[1][1],Jc.I1,Jc.I2,Jc.I3]);
+    const tb=$('m5tab').querySelector('tbody');
+    tb.innerHTML=rows.map((rw,idx)=>{
+      const cur=idx===rows.length-1;
+      return '<tr'+(cur?' style="background:rgba(11,11,11,.04)"':'')+'>'+
+        '<td'+(cur?' style="font-weight:600"':'')+'>'+rw[0]+'</td>'+
+        rw.slice(1,4).map(v=>'<td>'+fmt(v,1)+'</td>').join('')+
+        '<td style="font-weight:600">'+fmt(rw[4],1)+'</td>'+
+        '<td style="font-weight:600">'+fmt(rw[5],0)+'</td>'+
+        '<td style="font-weight:600">'+fmt(rw[6],0)+'</td></tr>';
+    }).join('');
+    $('m5fx').innerHTML='Характеристичне рівняння <i>λ</i>³ − <b>'+fmt(I.I1,1)+'</b><i>λ</i>² + <b>'+
+      fmt(I.I2,0)+'</b><i>λ</i> − <b>'+fmt(I.I3,0)+'</b> = 0 — його коефіцієнти й є слід, '+
+      'сума головних мінорів 2×2 та визначник; корені — головні напруження.';
   }
 };
 
-const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5,m6:M6};
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5};
 
 /* ===================== завантаження ===================== */
 let ACT='m1';
