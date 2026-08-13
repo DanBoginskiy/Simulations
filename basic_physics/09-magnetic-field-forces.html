@@ -1079,8 +1079,13 @@ const M2={
     if(this.mode==='one')
       /* обидві шкали стоять поруч праворуч і мають однаковий вигляд */
       return {cx:bb.w*0.44,cy:bb.h*0.5, ix:bb.w*0.9-44, bx:bb.w*0.9, by:bb.h-46, Bh:bb.h*0.34};
-    return {cy:bb.h*0.5, sep:Math.min(bb.h*0.3,20+this.d*5),
-      x0:bb.w*0.16, x1:bb.w*0.16+40+this.L2*1.5};
+    /* Відстань між провідниками й довжина ділянки читаються в мить малювання:
+       заморожені разом із кадром, вони не рухалися, поки тягнеш ручку. */
+    const x0=bb.w*0.16;
+    return {cy:bb.h*0.5, x0,
+      get sep(){return Math.min(bb.h*0.3,20+M2.d*5);},
+      get x1(){return x0+40+M2.L2*1.5;},
+      i1x:bb.w*0.86, i2x:bb.w*0.95, by:bb.h-46, Ih:bb.h*0.34};
   });},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
@@ -1107,10 +1112,10 @@ const M2={
        move:(px,py)=>{this.d=clamp(snap((2*(py-Q.cy)-20)/5,0.5),1,30);}},
       {id:'L2', x:Q.x1, y:Q.cy, r:9, color:CLR.sec, hint:'довжина ділянки',
        move:px=>{this.L2=clamp(snap((px-Q.x0-40)/1.5,5),10,200);}},
-      {id:'I1', x:Q.x0+30+this.I1*3, y:Q.cy-Q.sep/2-22, r:8, color:CLR.k1, hint:'струм I₁',
-       move:px=>{this.I1=clamp(snap((px-Q.x0-30)/3,1),-30,30);}},
-      {id:'I2', x:Q.x0+30+this.I2*3, y:Q.cy+Q.sep/2+22, r:8, color:CLR.k2, hint:'струм I₂',
-       move:px=>{this.I2=clamp(snap((px-Q.x0-30)/3,1),-30,30);}}
+      {id:'I1', x:Q.i1x, y:Q.by-(this.I1+30)/60*Q.Ih, r:8, color:CLR.k1, hint:'струм I₁',
+       move:(px,py)=>{this.I1=clamp(snap((Q.by-py)/Q.Ih*60-30,1),-30,30);}},
+      {id:'I2', x:Q.i2x, y:Q.by-(this.I2+30)/60*Q.Ih, r:8, color:CLR.k2, hint:'струм I₂',
+       move:(px,py)=>{this.I2=clamp(snap((Q.by-py)/Q.Ih*60-30,1),-30,30);}}
     ];
   },
   init(){
@@ -1215,12 +1220,15 @@ const M2={
       12,20,{color:same?CLR.k1:CLR.k2,size:12.5,bold:true});
     txt(g,'саме через цю силу означено ампер — одиницю сили струму',12,36,
       {color:CLR.mut,size:10.5});
-    /* шкали струмів: довжина відрізка з нуля — сам струм зі знаком */
-    for(const [I,yy,col] of [[this.I1,cy-sep/2-22,CLR.k1],[this.I2,cy+sep/2+22,CLR.k2]]){
-      g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.moveTo(x0-60,yy); g.lineTo(x0+120,yy); g.stroke();
-      g.strokeStyle=col; g.lineWidth=2.5;
-      g.beginPath(); g.moveTo(x0+30,yy); g.lineTo(x0+30+I*3,yy); g.stroke();
+    /* Шкали струмів — того самого вигляду, що й у режимі «провідник у полі».
+       Раніше це були відрізки просто поверх креслення, без доріжки. Струм тут
+       зі знаком, тож нуль позначено рискою посередині шкали. */
+    for(const [I,x,col,lab] of [[this.I1,Q.i1x,CLR.k1,'I₁'],[this.I2,Q.i2x,CLR.k2,'I₂']]){
+      gauge(g,x,Q.by,Q.Ih,(I+30)/60,col,lab);
+      g.strokeStyle=CLR.mut; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x-10,Q.by-Q.Ih/2); g.lineTo(x+10,Q.by-Q.Ih/2); g.stroke();
+      txt(g,fmt(I,0)+' А',x,Q.by+30,{color:col===CLR.k1?'#1c5cab':'#b8431a',
+        size:10,bold:true,align:'center'});
     }
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
@@ -1338,8 +1346,11 @@ const M3={
   radRef(){const P=this.P(); return P.m*5e6/(P.q*0.05);},
   geo(b){return frozen(this,b,bb=>{
     const helix=this.b<88;
+    /* cx стале. Раніше воно стрибало з 0,24·w на 0,44·w при переході через 88°:
+       поки тягнеш кут, frozen() тримає кадр, а на відпусканні вся картина
+       зсувалася стрибком. Місце під знос гвинтової лінії лишаємо завжди. */
     return {helix, sc:Math.min(bb.w*0.22,bb.h*0.24)/this.radRef(),
-      cx:bb.w*(helix?0.24:0.44), cy:bb.h*0.5,
+      cx:bb.w*0.28, cy:bb.h*0.5,
       vx:bb.w*0.80, vy:bb.h-52, bx:bb.w*0.92, by:bb.h-52, Bh:bb.h*0.4,
       pt:{y:64,x0:bb.w-4*80-8,dx:80}};
   });},
@@ -1711,9 +1722,10 @@ const M5={
       {id:'n', x:Q.nx, y:Q.ny-(this.n-1)/59*Q.gh, r:8, color:CLR.k2,
        hint:'щільність потоку',
        move:(px,py)=>{this.n=clamp(snap((Q.ny-py)/Q.gh*59+1,1),1,60);}},
+      /* оболонка захоплення — величина дискретна: проміжних значень немає */
       {id:'L', x:Q.lx, y:Q.ly-(this.L-1.5)/4.5*Q.lh, r:8, color:CLR.k3,
        hint:'оболонка захоплення',
-       move:(px,py)=>{this.L=clamp(snap((Q.ly-py)/Q.lh*4.5+1.5,0.1),1.5,6);}}
+       move:(px,py)=>{this.L=clamp(snap((Q.ly-py)/Q.lh*4.5+1.5,0.5),1.5,6);}}
     ];
   },
   init(){
