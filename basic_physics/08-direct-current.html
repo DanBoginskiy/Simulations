@@ -821,11 +821,15 @@ const M1={
   R0(){return this.M().rho*this.l/(this.S*1e-6);},
   R(t){return this.R0()*(1+this.M().al*(t-20));},
   Rnow(){return Math.max(1e-9,this.R(this.t));},
+  /* Правий кінець провідника й вісь джерела рахуються в мить малювання, а не
+     заморожуються разом із кадром: інакше, поки тягнеш кінець, провідник стоїть
+     на місці й довшає лише на відпусканні. Масштаб kl при цьому сталий. */
   geo(b){return frozen(this,b,bb=>{
     const x0=bb.w*0.14, kl=(bb.w*0.72-70)/20;
-    return {cy:bb.h*0.46,x0,kl,x1:x0+70+this.l*kl,
-      tx:bb.w*0.94, tb:bb.h*0.46+bb.h*0.2, th:bb.h*0.4,
-      sx:x0+(70+this.l*kl)/2+35};
+    return {cy:bb.h*0.46,x0,kl,
+      get x1(){return x0+70+M1.l*kl;},
+      get sx(){return x0+(70+M1.l*kl)/2+35;},
+      tx:bb.w*0.94, tb:bb.h*0.46+bb.h*0.2, th:bb.h*0.4};
   });},
   th(){return 6+this.S*5;},          /* товщина провідника ∝ перерізу */
   bl(){return 8+this.U*0.6;},        /* півпластина джерела ∝ напрузі */
@@ -1000,9 +1004,13 @@ const M2={
         move:(px,py)=>{const d=(rot?py-y:px-x)*2;
           this[key[i]]=clamp(snap((d-18)/0.9,1),1,60);}});
     });
-    out.push({id:'U', x:L.sx+this.bl(), y:L.sy-8, r:8, color:CLR.sec,
-      hint:'напруга джерела',
-      move:px=>{this.U=clamp(snap((px-L.sx-11)/0.4,1),1,48);}});
+    /* кінець довгої пластини: у послідовному й змішаному режимах вона вертикальна,
+       у паралельному — горизонтальна, бо там джерело стоїть на вертикальному дроті */
+    const vert=this.mode!=='par';
+    out.push({id:'U', x:vert?L.sx-8:L.sx+this.bl(), y:vert?L.sy+this.bl():L.sy-8,
+      r:8, color:CLR.sec, hint:'напруга джерела',
+      move:(px,py)=>{const d=vert?py-L.sy:px-L.sx;
+        this.U=clamp(snap((d-11)/0.4,1),1,48);}});
     return out;
   },
   init(){
@@ -1035,11 +1043,19 @@ const M2={
     const cols=[CLR.k1,CLR.k2,CLR.k3], Rs=[this.R1,this.R2,this.R3];
     g.clearRect(0,0,w,h);
     g.strokeStyle=CLR.sec; g.lineWidth=1.8;
-    const src=(x,y)=>{
+    /* Пластини джерела стоять ПОПЕРЕК провідника, як у схемному позначенні:
+       довга — плюс, коротка — мінус. Раніше вони лежали вздовж дроту й читалися
+       як його потовщення, а не як батарея. Довжина довгої пластини — напруга. */
+    const src=(x,y,along)=>{
       const bl=this.bl();
-      g.lineWidth=3; g.beginPath(); g.moveTo(x-bl,y-8); g.lineTo(x+bl,y-8); g.stroke();
-      g.lineWidth=1.6; g.beginPath(); g.moveTo(x-6,y+8); g.lineTo(x+6,y+8); g.stroke();
-      txt(g,fmt(this.U,0)+' В',x,y+28,{color:CLR.sec,size:11,bold:true,align:'center'});
+      g.lineWidth=3; g.beginPath();
+      if(along==='x'){g.moveTo(x-8,y-bl); g.lineTo(x-8,y+bl);} else {g.moveTo(x-bl,y-8); g.lineTo(x+bl,y-8);}
+      g.stroke();
+      g.lineWidth=1.6; g.beginPath();
+      if(along==='x'){g.moveTo(x+8,y-7); g.lineTo(x+8,y+7);} else {g.moveTo(x-7,y+8); g.lineTo(x+7,y+8);}
+      g.stroke();
+      txt(g,fmt(this.U,0)+' В',x,along==='x'?y+bl+18:y+28,
+        {color:CLR.sec,size:11,bold:true,align:'center'});
       g.lineWidth=1.8;
     };
     if(this.mode==='ser'){
@@ -1052,7 +1068,7 @@ const M2={
         this.res(g,x,y,Rs[i],cols[i],'R'+(i+1),true);
         txt(g,fmt(P[i].U,2)+' В',x,y+30,{color:CLR.mut,size:10,align:'center'});
       });
-      src(w*0.5,y+90);
+      src(w*0.5,y+90,'x');
       txt(g,'послідовне: струм однаковий, напруги додаються',12,20,
         {color:CLR.k1,size:12.5,bold:true});
       txt(g,'найбільша напруга падає на найбільшому опорі — опори просто складаються',
@@ -1070,7 +1086,7 @@ const M2={
         this.res(g,x,(yT+yB)/2,Rs[i],cols[i],'R'+(i+1),false);
         txt(g,fmt(P[i].I,2)+' А',x,(yT+yB)/2+40,{color:CLR.mut,size:10,align:'center'});
       });
-      src(x0,(yT+yB)/2);
+      src(x0,(yT+yB)/2,'y');
       txt(g,'паралельне: напруга однакова, струми додаються',12,20,
         {color:CLR.k2,size:12.5,bold:true});
       txt(g,'найбільший струм тече через найменший опір; сумарний опір менший за будь-який із них',
@@ -1093,10 +1109,12 @@ const M2={
       this.res(g,w*0.63,y-46,this.R2,CLR.k2,'R₂',true);
       g.fillStyle=CLR.paper; g.fillRect(w*0.63-36,y+46-11,72,22);
       this.res(g,w*0.63,y+46,this.R3,CLR.k3,'R₃',true);
-      src(w*0.5,y+96);
+      src(w*0.5,y+96,'x');
       txt(g,'змішане: R₁ послідовно з паралельною парою',12,20,{color:CLR.k3,size:12.5,bold:true});
       txt(g,'спершу зводимо паралельну ділянку до одного опору, далі додаємо послідовний',
         12,36,{color:CLR.mut,size:10.5});
+      /* у змішаному режимі ручок не малювали зовсім — величини виглядали незмінними */
+      for(const hh of this.grips()) drawGrip(g,hh,this);
     }
   },
   table(){
@@ -1502,11 +1520,20 @@ const M5={
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='line'){
       const gy=bb.h-40, x0=bb.w*0.14, kL=(bb.w*0.66-180)/500;
-      return {gy,x0,kL,x1:x0+180+this.L*kL, py:gy-(60+this.U*0.12),
-        st:40+this.P*0.16, cr:6+Math.sqrt(this.S)*1.1, cx:bb.w*0.07, cy:bb.h*0.26};
+      /* Довжина лінії, висота підвісу, товщина проводу й розмір споживача
+         читаються в мить малювання, а не заморожуються разом із кадром: інакше,
+         поки тягнеш ручку, креслення стоїть і змінюється лише на відпусканні.
+         Масштаб kL при цьому лишається сталим. */
+      return {gy,x0,kL, cx:bb.w*0.07, cy:bb.h*0.26,
+        get x1(){return x0+180+M5.L*kL;},
+        get py(){return gy-(60+M5.U*0.12);},
+        get st(){return 40+M5.P*0.16;},
+        get cr(){return 6+Math.sqrt(M5.S)*1.1;}};
     }
     const cy=bb.h*0.5, x0=bb.w*0.08+86, kL=(bb.w*0.5)/60;
-    return {cy,x0,kL,x1:x0+70+this.Lh*kL, cr:6+Math.sqrt(this.Sh)*7,
+    return {cy,x0,kL,
+      get x1(){return x0+70+M5.Lh*kL;},
+      get cr(){return 6+Math.sqrt(M5.Sh)*7;},
       ccx:bb.w*0.06, ccy:bb.h*0.16,
       aa:{y:bb.h-18,x0:bb.w-4*62-8,dx:62}};
   });},
