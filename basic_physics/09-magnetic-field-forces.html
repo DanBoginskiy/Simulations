@@ -1705,6 +1705,11 @@ const M4={
 /* ===================== МОДУЛЬ 5 · магнітосфера ===================== */
 const M5={
   v:450, n:8, L:3,                  /* v у км/с, L у радіусах Землі */
+  /* Оболонки, які справді намальовані. Шкала L перебирає рівно їх: раніше вона
+     ходила з кроком 0,5, і на 2,5 · 3,5 · 4,5 · 5,5 підсвічувати було нічого. */
+  LS:[1.5,2,3,4,5,6],
+  Li(){let k=0; for(let i=1;i<this.LS.length;i++)
+    if(Math.abs(this.LS[i]-this.L)<Math.abs(this.LS[k]-this.L)) k=i; return k;},
   view:-25, tilt:18, t:0, playing:true,
   BL(){return B_EARTH/Math.pow(this.L,3);},
   rL(){return MP*this.v*1e3/(QE*this.BL());},
@@ -1726,10 +1731,14 @@ const M5={
       {id:'n', x:Q.nx, y:Q.ny-(this.n-1)/59*Q.gh, r:8, color:CLR.k2,
        hint:'щільність потоку',
        move:(px,py)=>{this.n=clamp(snap((Q.ny-py)/Q.gh*59+1,1),1,60);}},
-      /* оболонка захоплення — величина дискретна: проміжних значень немає */
-      {id:'L', x:Q.lx, y:Q.ly-(this.L-1.5)/4.5*Q.lh, r:8, color:CLR.k3,
+      /* оболонка захоплення — величина дискретна: ручка сідає на намальовану
+         оболонку й проміжних положень не має */
+      {id:'L', x:Q.lx, y:Q.ly-this.Li()/(this.LS.length-1)*Q.lh, r:8, color:CLR.k3,
        hint:'оболонка захоплення',
-       move:(px,py)=>{this.L=clamp(snap((Q.ly-py)/Q.lh*4.5+1.5,0.5),1.5,6);}}
+       move:(px,py)=>{
+         const k=Math.round((Q.ly-py)/Q.lh*(this.LS.length-1));
+         this.L=this.LS[clamp(k,0,this.LS.length-1)];
+       }}
     ];
   },
   init(){
@@ -1768,15 +1777,23 @@ const M5={
     };
     gauge(Q.vx,(this.v-200)/700,CLR.k2,'v');
     gauge(Q.nx,(this.n-1)/59,CLR.k2,'n');
-    gauge(Q.lx,(this.L-1.5)/4.5,CLR.k3,'L');
+    gauge(Q.lx,this.Li()/(this.LS.length-1),CLR.k3,'L');
+    /* поділки шкали L — по одній на кожну намальовану оболонку, з підписом:
+       видно, що вибір дискретний і що вибрати можна лише те, що є в кадрі */
+    this.LS.forEach((Lv,i)=>{
+      const y=Q.ly-i/(this.LS.length-1)*Q.lh, on=i===this.Li();
+      g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+      g.beginPath(); g.moveTo(Q.lx-8,y); g.lineTo(Q.lx+8,y); g.stroke();
+      txt(g,fmt(Lv,1),Q.lx+13,y+4,{color:on?CLR.k3:CLR.mut,size:9.5,bold:on});
+    });
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,'сонячний вітер',14,h*0.17,{color:'#b8431a',size:11.5,bold:true});
     txt(g,fmt(this.v,0)+' км/с · '+fmt(this.n,0)+' част/см³',14,h*0.17+16,
       {color:CLR.mut,size:10.5});
     /* дипольні лінії поля: r = L·R⊕·cos²λ */
-    for(const L of [1.5,2,3,4,5,6]){
+    for(const L of this.LS){
       for(const lon of [0,90,180,270]){
-        const strong=Math.abs(L-this.L)<0.25;
+        const strong=L===this.L;
         sphCurve(g,V,u=>{
           const lam=(-80+160*u)*DEG;
           const r=L*Math.cos(lam)*Math.cos(lam);
