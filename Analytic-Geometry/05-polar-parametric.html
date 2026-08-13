@@ -56,7 +56,12 @@ canvas{display:block}
 /* display:flex перебиває приховування атрибутом hidden — повертаємо його */
 .kv[hidden]{display:none}
 .kv span{color:var(--sec)}
+.kv span{min-width:0}
 .kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+/* Значення-присуд — це речення, а не число. Заборона переносу тримає число
+   з одиницею вкупі, але таке речення нею просто вилазить за край панелі,
+   тож словесним значенням перенос дозволено. */
+.kv b.w{white-space:normal; text-align:right; overflow-wrap:break-word}
 .badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
   border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
 .badge[hidden]{display:none}
@@ -103,6 +108,10 @@ table.read tr:last-child td{border-bottom:none}
 .mov input:focus{outline:none; background:#fff;
   border:1px solid var(--c,var(--k1)); box-shadow:0 0 0 2px rgba(42,120,214,.16)}
 .mov input[readonly]{border-bottom-style:none; pointer-events:none; color:var(--sec)}
+/* набране, але ще не застосоване число: доки клітинку не залишили й не
+   натиснули Enter, у моделі стоїть попереднє значення — і це має бути видно */
+.mov input.dirty{border:1px solid var(--k2); background:#fff;
+  box-shadow:0 0 0 2px rgba(235,104,52,.18)}
 .side .panel{padding:12px 14px}
 .duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 .duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
@@ -189,9 +198,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Пастки полярних координат</h3>
         <div class="kv"><span>той самий кут інакше<span class="badge">φ + 360° — та сама точка</span></span><b id="m1kAmb"></b></div>
         <div class="kv"><span>вона ж через відʼємне <var>ρ</var><span class="badge">(−ρ; φ + 180°)</span></span><b id="m1kNeg"></b></div>
-        <div class="kv"><span>у полюсі <var>φ</var> не визначений</span><b id="m1kPole"></b></div>
-        <div class="kv"><span>рівняння прямої в полярних</span><b id="m1kLine"></b></div>
-        <div class="kv"><span>рівняння кола з центром у полюсі</span><b id="m1kCirc"></b></div>
+        <div class="kv"><span>у полюсі <var>φ</var> не визначений</span><b class="w" id="m1kPole"></b></div>
+        <div class="kv"><span>рівняння прямої в полярних</span><b class="w" id="m1kLine"></b></div>
+        <div class="kv"><span>рівняння кола з центром у полюсі</span><b class="w" id="m1kCirc"></b></div>
         <div class="formulas" id="m1fx"></div>
       </div>
     </div>
@@ -244,7 +253,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Числа кривої</h3>
         <div class="kv"><span>повний період по <var>φ</var></span><b id="m2kPer"></b></div>
-        <div class="kv"><span>пелюсток / витків</span><b id="m2kPet"></b></div>
+        <div class="kv"><span>пелюсток / витків</span><b class="w" id="m2kPet"></b></div>
         <div class="kv"><span>площа фігури <span class="badge">S = ½∫ρ²dφ</span></span><b id="m2kS"></b></div>
         <div class="kv"><span>довжина дуги</span><b id="m2kL"></b></div>
         <div class="kv"><span>звірка з відомою формулою</span><b id="m2kChk"></b></div>
@@ -300,8 +309,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Числа кривої</h3>
         <div class="kv"><span>довжина одного витка</span><b id="m3kL"></b></div>
         <div class="kv"><span>площа під однією аркою</span><b id="m3kS"></b></div>
-        <div class="kv"><span>особлива точка<span class="badge">там швидкість нульова</span></span><b id="m3kSing"></b></div>
-        <div class="kv"><span>звірка з відомою формулою</span><b id="m3kChk"></b></div>
+        <div class="kv"><span>особлива точка<span class="badge">там швидкість нульова</span></span><b class="w" id="m3kSing"></b></div>
+        <div class="kv"><span>звірка з відомою формулою</span><b class="w" id="m3kChk"></b></div>
         <div class="formulas" id="m3fx"></div>
       </div>
     </div>
@@ -359,7 +368,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>розкид <var>ρ</var>²<var>φ̇</var> по обороту</span><b id="m4kDev"></b></div>
         <div class="kv"><span>секторна швидкість <var>dS</var>/<var>dt</var></span><b id="m4kSec"></b></div>
         <div class="kv"><span>у перицентрі: <var>v<sub>ρ</sub></var> = 0<span class="badge">швидкість поперек радіуса</span></span><b id="m4kPeri"></b></div>
-        <div class="kv"><span>площа всієї орбіти <var>πab</var> = <var>L</var>·<var>T</var>/2</span><b id="m4kArea"></b></div>
+        <div class="kv"><span>площа всієї орбіти <var>πab</var> = <var>L</var>·<var>T</var>/2</span><b class="w" id="m4kArea"></b></div>
         <div class="formulas" id="m4fx"></div>
       </div>
     </div>
@@ -413,7 +422,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>довжина прямої</span><b id="m5kLl"></b></div>
         <div class="kv"><span>довжина дуги кола</span><b id="m5kLa"></b></div>
         <div class="kv"><span>довжина циклоїди<span class="badge">найдовша — і найшвидша</span></span><b id="m5kLc"></b></div>
-        <div class="kv"><span>радіус твірного кола <var>R</var></span><b id="m5kR"></b></div>
+        <div class="kv"><span>радіус твірного кола <var>R</var></span><b class="w" id="m5kR"></b></div>
       </div>
       <div class="panel">
         <h3>Час спуску</h3>
@@ -421,7 +430,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>по дузі кола</span><b id="m5kTa"></b></div>
         <div class="kv"><span>по циклоїді<span class="badge">найменший з можливих</span></span><b id="m5kTc"></b></div>
         <div class="kv"><span>виграш проти прямої</span><b id="m5kWin"></b></div>
-        <div class="kv"><span>звірка з формулою <var>T</var> = <var>θ</var>√(<var>R</var>/<var>g</var>)</span><b id="m5kChk"></b></div>
+        <div class="kv"><span>звірка з формулою <var>T</var> = <var>θ</var>√(<var>R</var>/<var>g</var>)</span><b class="w" id="m5kChk"></b></div>
         <div class="kv"><span>таутохронність: <var>T</var> = π√(<var>R</var>/<var>g</var>)<span class="badge">не залежить від висоти старту</span></span><b id="m5kTau"></b></div>
         <div class="formulas" id="m5fx"></div>
       </div>
@@ -659,6 +668,10 @@ function grip(id,st,listFn){
     const p=pos(e), h=pick(p[0],p[1]);
     if(!h) return;
     st._grab=h.id; st._over=h.id; st._froz=null;
+    /* Лічильник дотиків. Ручки з абсолютним відображенням його не помічають,
+       але орбіта камери працює приростами й мусить знати, де почався саме
+       ЦЕЙ жест: id ручки між двома дотиками той самий, а точка відліку — ні. */
+    st._gseq=(st._gseq||0)+1;
     if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
     /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
        geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
@@ -823,8 +836,14 @@ function matIn(ovId,o){
      готовою формою (пресет реакції, порядок визначника), і взятий один раз
      він застряг би на старому */
   const get=o.get||((i,j)=>o.A()[i][j]), set=o.set||((i,j,v)=>{o.A()[i][j]=v;});
+  /* Набране число округлюємо рівно до тієї точності, з якою його й показують,
+     і більше нічого з ним не робимо. Прив'язка до сітки кроку доречна, коли
+     величину тягнуть пальцем; для набору вона згубна: при кроці 0,5 набрані
+     0,2 перетворювалися на нуль, клітинка виглядала зіпсованою, а разом із
+     нею стрибав і ранг. Крок лишається кроком стрілок — і тільки ним. */
+  const q=Math.pow(10,dec);
   const put=(i,j,v)=>{
-    set(i,j,clamp(snap(v,step),o.lo,o.hi));
+    set(i,j,clamp(Math.round(v*q)/q,o.lo,o.hi));
     if(o.after) o.after.call(o.st,i,j);
   };
   const key=()=>{const M=o.M(); return o.m()+'×'+o.n()+'@'+Math.round(M.x)+','+Math.round(M.y);};
@@ -839,30 +858,49 @@ function matIn(ovId,o){
       el.type='text'; el.inputMode='decimal'; el.autocomplete='off'; el.spellcheck=false;
       el.style.left=(c.x+5)+'px'; el.style.top=(c.y+4)+'px';
       el.style.width=(MCW-10)+'px'; el.style.height=(MCH-8)+'px';
-      el.title=(o.name||'a')+(ii+1)+(jj+1)+' ∈ ['+fmt(o.lo,dec)+'; '+fmt(o.hi,dec)+']';
-      el.addEventListener('input',()=>{
+      el.title=(o.name||'a')+(ii+1)+(jj+1)+' ∈ ['+fmt(o.lo,dec)+'; '+fmt(o.hi,dec)+
+        '] · Enter застосовує, Esc скасовує, ↑↓ крок '+fmt(step,dec);
+      /* Число набирають цілком, а вже потім воно йде в модель. Посимвольне
+         застосування виглядало так, наче все міняється саме собою: поки
+         набираєш «4,5», модель устигає побачити 4, і все, що з нього
+         рахується — ранг, визначник, картинка — встигає стрибнути на
+         проміжному, ще не набраному числі. Тому набір лише позначається
+         незавершеним, а застосовується на Enter або коли клітинку лишають. */
+      const dirty=()=>{
+        const v=numIn(el.value);
+        el.classList.toggle('dirty',v!=null&&Math.abs(clamp(Math.round(v*q)/q,o.lo,o.hi)-get(ii,jj))>1e-12);
+      };
+      const commit=()=>{
         const v=numIn(el.value);
         if(v!=null) put(ii,jj,v);
-      });
-      /* стрілки лишають клавіатурний шлях, який був у доріжки: крок — той
-         самий, що й у сітки значень, Shift множить на п'ять */
+        el.value=fmt(get(ii,jj),dec);
+        el.classList.remove('dirty');
+      };
+      el.addEventListener('input',dirty);
       el.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){commit(); if(e.preventDefault) e.preventDefault(); return;}
+        /* Esc повертає те, що було до набору */
+        if(e.key==='Escape'){el.value=fmt(get(ii,jj),dec); el.classList.remove('dirty'); return;}
         const d=e.key==='ArrowUp'?1:(e.key==='ArrowDown'?-1:0);
         if(!d) return;
-        put(ii,jj,(numIn(el.value)==null?get(ii,jj):numIn(el.value))+d*step*(e.shiftKey?5:1));
+        /* стрілки — окрема історія: це не набір, а готовий крок, тож він і
+           застосовується одразу, та ще й сіткою кроку, заради круглих чисел */
+        const cur=numIn(el.value)==null?get(ii,jj):numIn(el.value);
+        put(ii,jj,snap(cur+d*step*(e.shiftKey?5:1),step));
         el.value=fmt(get(ii,jj),dec);
+        el.classList.remove('dirty');
         if(e.preventDefault) e.preventDefault();
       });
-      /* клацання в клітинку — це і є вибір клітинки: там, де раніше потрібну
-         позицію показувала захоплена ручка, тепер її показує курсор */
-      if(o.pick) el.addEventListener('focus',()=>{o.pick.call(o.st,ii,jj);});
-      /* на виході з поля приводимо запис до вигляду серії й повертаємо
-         число, якщо набір лишився незавершеним */
-      el.addEventListener('blur',()=>{
-        const v=numIn(el.value);
-        if(v!=null) put(ii,jj,v);
-        el.value=fmt(get(ii,jj),dec);
+      /* Клацання в клітинку виділяє те, що в ній стоїть. Без цього курсор
+         просто ставав біля наявного числа, і набрана цифра дописувалася до
+         нього: у клітинці з «3,0» набране «5» давало «53,0» — а це вже за
+         межею діапазону, тож у матрицю йшла межа, тобто 6. Виглядало так,
+         ніби будь-яке набране число перетворюється на шістку. */
+      el.addEventListener('focus',()=>{
+        if(el.select) el.select();
+        if(o.pick) o.pick.call(o.st,ii,jj);
       });
+      el.addEventListener('blur',commit);
       el.value=fmt(get(ii,jj),dec);
       cells.push({i:ii,j:jj,el});
       host.appendChild(el);
@@ -870,6 +908,7 @@ function matIn(ovId,o){
     built=key();
   };
   const rec={mod:String(ovId).match(/^m\d+/)[0], st:o.st, cells,
+    dec, step, lo:o.lo, hi:o.hi, get,
     sync(){
       if(key()!==built) rebuild();
       for(const c of cells){
@@ -919,17 +958,40 @@ function cap2(g,l1,l2,col,x,y){
 /* Аксонометрія. Базис (e1,e2,e3) ортонормований, тому проєкція зберігає
    кути в площині екрана й дозволяє точно обернути екранну точку назад
    у простір — без цього ручку на сфері не поставити. */
-function iso(cx,cy,sc,az,el){
+/* d — відстань до камери у світових одиницях. Без неї проєкція паралельна
+   (аксонометрія), з нею ближче до глядача стає більшим — і сцена перестає
+   читатися як плаский шестикутник. Знаменник підпираємо знизу, інакше точка
+   за камерою вивернулася б навиворіт. */
+function iso(cx,cy,sc,az,el,d){
   const ca=Math.cos(az),sa=Math.sin(az),ce=Math.cos(el),se=Math.sin(el);
+  const dep=(x,y,z)=>(x*sa+y*ca)*ce+z*se;
+  const k=d?((x,y,z)=>d/Math.max(0.4*d,d-dep(x,y,z))):(()=>1);
   return {
-    sc,cx,cy,
-    P(x,y,z){return [cx+(x*ca-y*sa)*sc, cy-(z*ce-(x*sa+y*ca)*se)*sc];},
-    D(x,y,z){return (x*sa+y*ca)*ce+z*se;},
+    sc,cx,cy,persp:d||0,
+    P(x,y,z){const f=k(x,y,z);
+      return [cx+(x*ca-y*sa)*sc*f, cy-(z*ce-(x*sa+y*ca)*se)*sc*f];},
+    D:dep,
     /* екранна точка → простір, w — глибина (вибір півсфери) */
     V(u,v,w){return [u*ca-v*sa*se+w*sa*ce, -u*sa-v*ca*se+w*ca*ce, v*ce+w*se];},
     iU(px){return (px-cx)/sc;},
     iV(py){return (cy-py)/sc;}
   };
+}
+/* Масштаб щокадру з фактичного розмаху (§10) — але в перспективі розмах
+   залежить ще й від кута камери: та сама фігура з іншого боку займає інше
+   місце. Тому міряємо його вже спроєктованим. Перший прохід з одиничним
+   масштабом дає точні межі (перспектива від масштабу не залежить), другий
+   ставить проєкцію рівно під відведене поле. Без цього доводилося б брати
+   найгірший випадок наосліп — і сцена або вилазила, або була вдвічі меншою,
+   ніж могла б бути. */
+function fitIso(cx,cy,az,el,persp,pts,availX,availY){
+  const P0=iso(0,0,1,az,el,persp);
+  let mu=1e-6, mv=1e-6;
+  for(const p of pts){
+    const s=P0.P(p[0],p[1],p[2]);
+    mu=Math.max(mu,Math.abs(s[0])); mv=Math.max(mv,Math.abs(s[1]));
+  }
+  return iso(cx,cy,Math.min(availX/mu,availY/mv),az,el,persp);
 }
 function line3(g,P,a,b,col,w,dash){
   const p=P.P(a[0],a[1],a[2]), q=P.P(b[0],b[1],b[2]);
@@ -1072,6 +1134,18 @@ function showM(g,x,y,A,o={}){
   if(o.lab) txt(g,o.lab,x-16,y+m*ch/2+4,{color:o.col||CLR.sec,size:12.5,bold:true,align:'right'});
   return {w:n*cw+12, h:m*ch+10};
 }
+/* Готова матриця з підписом згори. showM ставить підпис ліворуч, а коли
+   матриця стоїть біля самого краю кадру, там просто немає місця. */
+function showMTop(g,x,y,A,lab,col,o){
+  const O=o||{};
+  const cw=O.cw||MCW, ch=O.ch||MCH;
+  const r=showM(g,x,y,A,{cw,ch,dec:O.dec==null?2:O.dec,col:O.frame||CLR.axis,
+    txtCol:O.txtCol||CLR.sec,size:O.size});
+  if(lab) txt(g,lab,x+A[0].length*cw/2,y-15,
+    {color:col||CLR.sec,size:12.5,bold:true,align:'center'});
+  return r;
+}
+
 /* ===================== просторова оснастка ===================== */
 /* Спільний кадр для тривимірних сцен: масштаб щокадру з фактичного розмаху
    векторів, один на всі три осі (§10). padB лишає місце під смуги керування. */
@@ -1091,6 +1165,36 @@ function axes3(g,P,L){
     arrow3(g,P,[0,0,0],v,CLR.axis,1.4);
     const q=P.P(v[0],v[1],v[2]);
     txt(g,nm,q[0]+6,q[1]+4,{color:CLR.mut,size:10.5});
+  }
+}
+/* Орбіта камери. Ручка навмисно стоїть нескінченно далеко з нескінченним
+   радіусом: у pick() перемагає найближча, тож будь-яка справжня ручка
+   перехоплює дотик перша, а фон лишається останнім — тягнеш порожнє місце
+   й обертаєш сцену. Кут рахується приростом від точки, де почався жест,
+   тому камера не стрибає на першому ж пікселі. */
+function orbitGrip(st,azKey,elKey,lo,hi){
+  const LO=lo==null?-84:lo, HI=hi==null?84:hi;
+  return {id:'orbit', x:-1e7, y:-1e7, r:1e9, bare:true, color:CLR.mut,
+    hint:'обертання сцени',
+    move:(px,py)=>{
+      if(!st._ob||st._ob.s!==st._gseq)
+        st._ob={s:st._gseq, x:px, y:py, az:st[azKey], el:st[elKey]};
+      const o=st._ob;
+      let a=o.az-(px-o.x)*0.42;
+      a=((a+180)%360+360)%360-180;
+      st[azKey]=snap(a,0.5);
+      st[elKey]=clamp(snap(o.el+(py-o.y)*0.32,0.5),LO,HI);
+    }};
+}
+/* Підлога — сітка у площині z = 0. Саме вона дає око́ві опору: без неї
+   аксонометрія читається як плаский шестикутник, а не як простір. */
+function floor3(g,P,L,n){
+  const N=n||6, s=L/N;
+  g.lineWidth=1;
+  for(let i=-N;i<=N;i++){
+    const t=i*s, col=(Math.abs(i)===N||i===0)?CLR.axis:CLR.grid;
+    line3(g,P,[t,-L,0],[t,L,0],col,1);
+    line3(g,P,[-L,t,0],[L,t,0],col,1);
   }
 }
 /* дуга кута між двома векторами в просторі — малюємо по самій дузі, а не
