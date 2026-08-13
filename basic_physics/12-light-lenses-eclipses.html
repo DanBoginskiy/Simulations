@@ -132,7 +132,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <p class="caption">На межі двох середовищ промінь і відбивається, і заломлюється:
   <var>n</var><sub>1</sub>·sin <var>α</var><sub>1</sub> = <var>n</var><sub>2</sub>·sin <var>α</var><sub>2</sub>.
   Якщо світло йде з густішого середовища в рідше, за граничним кутом заломленого променя вже немає —
-  усе світло відбивається. На цьому й тримається світловод.</p>
+  усе світло відбивається. На цьому й тримається оптоволокно.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -141,7 +141,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="seg" id="m1mode">
             <button data-v="edge" class="active" style="--c:var(--k3)">межа двох середовищ</button>
             <button data-v="plate" style="--c:var(--k1)">плоскопаралельна пластина</button>
-            <button data-v="fiber" style="--c:var(--k2)">світловод</button>
+            <button data-v="fiber" style="--c:var(--k2)">оптоволокно</button>
           </div>
           <span class="lbl" id="m1state" style="font-weight:600"></span>
         </div>
@@ -162,10 +162,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Середовища й промінь</h3>
-        <div class="kv"><span><var>n</var><sub>1</sub> — показник заломлення першого<span class="badge">шкала в кадрі</span></span><b id="m1vn1"></b></div>
-        <div class="kv"><span><var>n</var><sub>2</sub> — показник заломлення другого<span class="badge">шкала в кадрі</span></span><b id="m1vn2"></b></div>
-        <div class="kv"><span><var>α</var><sub>1</sub> — кут падіння від нормалі<span class="badge">шкала в кадрі</span></span><b id="m1va1"></b></div>
-        <div class="kv"><span><var>d</var> — товщина пластини (діаметр серцевини)<span class="badge">шкала в кадрі</span></span><b id="m1vd"></b></div>
+        <div class="kv"><span><var>n</var><sub>1</sub> — показник заломлення першого<span class="badge">полиця речовин</span></span><b id="m1vn1"></b></div>
+        <div class="kv"><span><var>n</var><sub>2</sub> — показник заломлення другого<span class="badge">полиця речовин</span></span><b id="m1vn2"></b></div>
+        <div class="kv"><span><var>α</var><sub>1</sub> — кут падіння від нормалі<span class="badge">тягнути промінь</span></span><b id="m1va1"></b></div>
+        <div class="kv"><span><var>d</var> — товщина пластини (діаметр серцевини)<span class="badge">тягнути стінку</span></span><b id="m1vd"></b></div>
       </div>
       <div class="panel">
         <h3>Кути</h3>
@@ -420,9 +420,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Розташування світил</h3>
-        <div class="kv"><span>відстань Земля – Місяць<span class="badge">шкала в кадрі</span></span><b id="m5vdem"></b></div>
-        <div class="kv"><span>відстань Земля – Сонце<span class="badge">шкала в кадрі</span></span><b id="m5vdes"></b></div>
-        <div class="kv"><span><var>β</var> — відхилення Місяця від екліптики<span class="badge">шкала в кадрі</span></span><b id="m5vb"></b></div>
+        <div class="kv"><span>відстань Земля – Місяць<span class="badge">тягнути Місяць</span></span><b id="m5vdem"></b></div>
+        <div class="kv"><span>відстань Земля – Сонце<span class="badge">тягнути Землю</span></span><b id="m5vdes"></b></div>
+        <div class="kv"><span><var>β</var> — відхилення Місяця від екліптики<span class="badge">тягнути Місяць угору</span></span><b id="m5vb"></b></div>
       </div>
       <div class="panel">
         <h3>Кутові розміри</h3>
@@ -872,6 +872,12 @@ function rayLine(g,x,y,ang,len,color,wd){
   arrow(g,x,y,x+len*Math.cos(ang),y+len*Math.sin(ang),color,wd||2.2);
 }
 
+/* Показник заломлення — не безрозмірний континуум, а речовина: полиця зразків
+   чесніша за смугу. Кварц і скло серцевини дають ту саму пару, що стояла в
+   режимі оптоволокна за замовчуванням. */
+const NMAT=[['повітря',1.00],['вода',1.33],['кварц',1.46],['серцевина',1.48],
+  ['скло',1.50],['сапфір',1.77],['алмаз',2.42]];
+
 /* ===================== МОДУЛЬ 1 · заломлення ===================== */
 const M1={
   mode:'edge', n1:1, n2:1.5, a1:40, d:10,      /* d у мм */
@@ -899,7 +905,7 @@ const M1={
     seg('m1mode',v=>{
       this.mode=v;
       /* кожен режим приходить зі своїми природними числами:
-         повітря–скло для межі й пластини, кварцова пара для світловода */
+         повітря–скло для межі й пластини, кварцова пара для оптоволокна */
       if(v==='fiber'){this.n1=1.48; this.n2=1.46; this.a1=8;}
       else {this.n1=1; this.n2=1.5; this.a1=40;}
       this.showMode();
@@ -913,39 +919,74 @@ const M1={
   showMode(){
     $('m1rowSh').hidden=this.mode!=='plate';
     $('m1rowNa').hidden=this.mode!=='fiber';
-    $('m1kvh').textContent={edge:'Швидкості й відбивання',plate:'Пластина',fiber:'Світловод'}[this.mode];
+    $('m1kvh').textContent={edge:'Швидкості й відбивання',plate:'Пластина',fiber:'Оптоволокно'}[this.mode];
   },
   tick(){this.render();},
-  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
-     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
-  GG:[
-    ['n1','n1',1,2.5,0.01,CLR.k1,null,'m1vn1',2,''],
-    ['n2','n2',1,2.5,0.01,CLR.k2,null,'m1vn2',2,''],
-    ['a1','a1',0,89,1,CLR.k3,null,'m1va1',0,'°'],
-    ['d','d',1,40,1,CLR.sec,null,'m1vd',0,'мм']
-  ],
-  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Абстрактних шкал у цьому модулі більше немає. Кут падіння беруть просто за
+     промінь, товщину — за стінку пластини чи серцевини, а показник заломлення —
+     це не континуум, а речовина: її обирають з полиці зразків. */
+  GG:[],
+  band(b){const H=b.h-88; return {H, x0:96, dx:Math.min(80,(b.w-150)/NMAT.length),
+    y1:H+24, y2:H+62};},
+  gcol(b){return {gtop:this.band(b).H, w:b.w, h:b.h, cols:2, rows:0,
+    W:0, x:[0,0], dy:24, y0:b.h};},
+  geo(b){return frozen(this,b,bb=>{
+    const H=this.band(bb).H, cx=bb.w*0.42, cy=H*0.54;
+    return {H, cx, cy, L:Math.min(bb.w*0.30,H*0.40), fcy:H*0.58, ax:bb.w*0.17,
+      get thick(){return M1.mode==='plate'?Math.max(24,Math.min(110,M1.d*3)):0;},
+      get core(){return Math.max(26,Math.min(120,M1.d*3));}};
+  });},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b), M=this.band(b), a=this.a1*DEG, out=[];
+    if(this.mode==='fiber'){
+      out.push({id:'a1', x:Q.ax-76*Math.cos(a), y:Q.fcy-76*Math.sin(a), r:8, color:CLR.k3,
+        hint:'кут входу α',
+        move:(px,py)=>{this.a1=clamp(Math.round(
+          Math.atan2(Q.fcy-py,Math.max(8,Q.ax-px))/DEG),0,89);}});
+      out.push({id:'d', x:Q.ax+b.w*0.42, y:Q.fcy+Q.core/2, r:8, color:CLR.sec,
+        hint:'діаметр серцевини',
+        move:(px,py)=>{this.d=clamp(Math.round(2*(py-Q.fcy)/3),1,40);}});
+    } else {
+      const yTop=Q.cy-Q.thick/2;
+      out.push({id:'a1', x:Q.cx-Q.L*Math.sin(a), y:yTop-Q.L*Math.cos(a), r:8, color:CLR.k3,
+        hint:'кут падіння α₁',
+        move:(px,py)=>{this.a1=clamp(Math.round(
+          Math.atan2(Q.cx-px,Math.max(8,yTop-py))/DEG),0,89);}});
+      if(this.mode==='plate')
+        out.push({id:'d', x:Q.cx+104, y:Q.cy+Q.thick/2, r:8, color:CLR.sec,
+          hint:'товщина пластини',
+          move:(px,py)=>{this.d=clamp(Math.round(2*(py-Q.cy)/3),1,40);}});
+    }
+    return out.concat(
+      shelfGrips({x0:M.x0,dx:M.dx,y:M.y1},NMAT,v=>{this.n1=v;},'u'),
+      shelfGrips({x0:M.x0,dx:M.dx,y:M.y2},NMAT,v=>{this.n2=v;},'l'));
   },
   gdraw(){
     const b=cvx('m1scene'); if(!b) return;
-    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    const M=this.band(b);
+    b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+    b.g.beginPath(); b.g.moveTo(8,M.H+2.5); b.g.lineTo(b.w-8,M.H+2.5); b.g.stroke();
+    shelf(b.g,{x0:M.x0,dx:M.dx,y:M.y1},NMAT,this.n1,
+      this.mode==='fiber'?'серцевина n₁':'верхнє n₁');
+    shelf(b.g,{x0:M.x0,dx:M.dx,y:M.y2},NMAT,this.n2,
+      this.mode==='fiber'?'оболонка n₂':'нижнє n₂');
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
-    /* числа в бічній колонці — те саме значення, що показує шкала */
-    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m1vn1').textContent=fmt(this.n1,2);
+    $('m1vn2').textContent=fmt(this.n2,2);
+    $('m1va1').textContent=fmt(this.a1,0)+' °';
+    $('m1vd').textContent=fmt(this.d,0)+' мм';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop;
-    g.clearRect(0,0,w,h);
+    g.clearRect(0,0,w,b.h);
     const a2=this.a2(), tir=a2==null;
     const nm={edge:['промінь на межі двох середовищ',CLR.k3],
       plate:['плоскопаралельна пластина: промінь виходить паралельно, але зсунутим',CLR.k1],
-      fiber:['світловод: промінь біжить усередині, весь час зазнаючи повного відбивання',CLR.k2]}[this.mode];
+      fiber:['оптоволокно: промінь біжить усередині, весь час зазнаючи повного відбивання',CLR.k2]}[this.mode];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     if(this.mode==='fiber')
       txt(g,'серцевина щільніша за оболонку — промінь не може вийти назовні, поки кут входу менший за кут прийому',
@@ -953,9 +994,9 @@ const M1={
     else
       txt(g,'кут відбивання завжди дорівнює куту падіння; заломлений промінь тягнеться до нормалі в щільнішому середовищі',
         12,36,{color:CLR.mut,size:10.5});
-    if(this.mode==='fiber'){this.sceneFiber(g,w,h); return;}
-    const cx=w*0.42, cy=h*0.54, L=Math.min(w*0.30,h*0.40);
-    const thick=this.mode==='plate'?Math.max(24,Math.min(110,this.d*3)):0;
+    const Q=this.geo(b);
+    if(this.mode==='fiber'){this.sceneFiber(g,w,h,Q); return;}
+    const cx=Q.cx, cy=Q.cy, L=Q.L, thick=Q.thick;
     /* середовища */
     if(this.mode==='plate'){
       g.fillStyle='rgba(42,120,214,.08)'; g.fillRect(0,cy-thick/2,w,thick);
@@ -966,6 +1007,16 @@ const M1={
       g.fillStyle='rgba(42,120,214,.08)'; g.fillRect(0,cy,w,h-cy);
       g.strokeStyle=CLR.k3; g.lineWidth=1.8;
       g.beginPath(); g.moveTo(0,cy); g.lineTo(w,cy); g.stroke();
+    }
+    if(this.mode==='plate'){
+      const dx=cx+104;
+      g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(dx,cy-thick/2); g.lineTo(dx,cy+thick/2); g.stroke();
+      g.setLineDash([]);
+      for(const sy2 of [cy-thick/2,cy+thick/2]){
+        g.beginPath(); g.moveTo(dx-7,sy2); g.lineTo(dx+7,sy2); g.stroke();
+      }
+      txt(g,'d = '+fmt(this.d,0)+' мм',dx+12,cy+5,{color:CLR.sec,size:11,bold:true});
     }
     txt(g,'n₁ = '+fmt(this.n1,2),12,cy-thick/2-10,{color:CLR.sec,size:11,bold:true});
     txt(g,'n₂ = '+fmt(this.n2,2),12,cy+(this.mode==='plate'?0:22)+(this.mode==='plate'?4:0),
@@ -978,7 +1029,7 @@ const M1={
     /* падаючий */
     const sx=cx-L*Math.sin(aIn), sy=yTop-L*Math.cos(aIn);
     arrow(g,sx,sy,cx-L*0.12*Math.sin(aIn),yTop-L*0.12*Math.cos(aIn),CLR.k1,2.4);
-    txt(g,'падаючий',sx-4,sy-6,{color:'#1c5cab',size:10.5,bold:true,align:'left'});
+    txt(g,'падаючий',sx-14,sy-14,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
     arc(g,cx,yTop,34,-Math.PI/2,-Math.PI/2-aIn,CLR.sec,1.3);
     txt(g,'α₁ = '+fmt(this.a1,0)+'°',cx-40,yTop-40,{color:CLR.sec,size:11,bold:true,align:'right'});
     /* відбитий */
@@ -986,6 +1037,8 @@ const M1={
     g.globalAlpha=0.35+0.65*R;
     rayLine(g,cx,yTop,-Math.PI/2+aIn,L*0.85,CLR.k3,2.4);
     g.globalAlpha=1;
+    arc(g,cx,yTop,26,-Math.PI/2,-Math.PI/2+aIn,CLR.sec,1.3);
+    txt(g,'α = '+fmt(this.a1,0)+'°',cx+30,yTop-30,{color:CLR.sec,size:10.5,bold:true});
     txt(g,'відбитий · '+fmt(100*R,1)+' %',cx+L*0.85*Math.sin(aIn)+6,yTop-L*0.85*Math.cos(aIn)+4,
       {color:'#0d7a55',size:10.5,bold:true});
     /* заломлений */
@@ -995,6 +1048,9 @@ const M1={
         const xin=cx+thick*Math.tan(a2r);
         g.strokeStyle=CLR.k2; g.lineWidth=2.4;
         g.beginPath(); g.moveTo(cx,yTop); g.lineTo(xin,cy+thick/2); g.stroke();
+        arc(g,cx,yTop,Math.min(30,thick*0.5),Math.PI/2,Math.PI/2-a2r,CLR.sec,1.3);
+        txt(g,'α₂ = '+fmt(a2,1)+'°',cx+Math.min(34,thick*0.5)+4,yTop+18,
+          {color:CLR.sec,size:11,bold:true});
         /* вихід — паралельно початковому */
         rayLine(g,xin,cy+thick/2,Math.PI/2-aIn,L*0.8,CLR.k2,2.4);
         /* продовження початкового напряму для показу зсуву */
@@ -1002,7 +1058,8 @@ const M1={
         g.beginPath(); g.moveTo(cx,yTop);
         g.lineTo(cx+(thick+L*0.8*Math.cos(aIn))*Math.tan(aIn),cy+thick/2+L*0.8*Math.cos(aIn));
         g.stroke(); g.setLineDash([]);
-        txt(g,'зсув '+fmt(this.shift(),2)+' мм',xin+10,cy+thick/2+26,{color:'#b8431a',size:11,bold:true});
+        txt(g,'зсув '+fmt(this.shift(),2)+' мм',xin-14,cy+thick/2+44,
+          {color:'#b8431a',size:11,bold:true,align:'right'});
       } else {
         rayLine(g,cx,cy,Math.PI/2-a2r,L*0.9,CLR.k2,2.4);
         arc(g,cx,cy,34,Math.PI/2,Math.PI/2-a2r,CLR.sec,1.3);
@@ -1015,30 +1072,37 @@ const M1={
         cx+10,cy+30,{color:'#0d7a55',size:11.5,bold:true});
     }
   },
-  sceneFiber(g,w,h){
-    const cy=h*0.58, core=Math.max(26,Math.min(120,this.d*3));
-    g.fillStyle='rgba(27,175,122,.10)'; g.fillRect(w*0.10,cy-core/2-14,w*0.84,core+28);
-    g.fillStyle='rgba(42,120,214,.10)'; g.fillRect(w*0.10,cy-core/2,w*0.84,core);
+  sceneFiber(g,w,h,Q){
+    const cy=Q.fcy, core=Q.core;
+    g.fillStyle='rgba(27,175,122,.10)'; g.fillRect(Q.ax,cy-core/2-14,w*0.76,core+28);
+    g.fillStyle='rgba(42,120,214,.10)'; g.fillRect(Q.ax,cy-core/2,w*0.76,core);
     g.strokeStyle=CLR.k3; g.lineWidth=1.6;
-    g.strokeRect(w*0.10,cy-core/2-14,w*0.84,core+28);
+    g.strokeRect(Q.ax,cy-core/2-14,w*0.76,core+28);
     g.strokeStyle=CLR.k1; g.lineWidth=1.6;
-    g.strokeRect(w*0.10,cy-core/2,w*0.84,core);
-    txt(g,'серцевина n₁ = '+fmt(this.n1,2),w*0.11,cy-core/2-20,{color:'#1c5cab',size:10.5,bold:true});
-    txt(g,'оболонка n₂ = '+fmt(this.n2,2),w*0.11,cy+core/2+26,{color:'#0d7a55',size:10.5,bold:true});
+    g.strokeRect(Q.ax,cy-core/2,w*0.76,core);
+    txt(g,'серцевина n₁ = '+fmt(this.n1,2),Q.ax+8,cy-core/2-20,{color:'#1c5cab',size:10.5,bold:true});
+    txt(g,'оболонка n₂ = '+fmt(this.n2,2),Q.ax+8,cy+core/2+26,{color:'#0d7a55',size:10.5,bold:true});
     /* кут усередині серцевини */
     const na=this.na(), sIn=Math.sin(this.a1*DEG);
     const guided=sIn<=na;
     const thIn=Math.asin(Math.min(1,sIn/this.n1));     /* кут до осі всередині */
-    /* вхідний промінь */
-    arrow(g,w*0.10-70,cy-70*Math.tan(this.a1*DEG),w*0.10,cy,CLR.k1,2.4);
-    txt(g,'α = '+fmt(this.a1,0)+'° до осі',w*0.10-76,cy-70*Math.tan(this.a1*DEG)-6,
+    /* вхідний промінь: за нього й тягнуть кут входу */
+    const ax=Q.ax, ar=76, aa=this.a1*DEG;
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(ax-ar-16,cy); g.lineTo(ax+30,cy); g.stroke(); g.setLineDash([]);
+    txt(g,'вісь',ax-ar-18,cy+4,{color:CLR.mut,size:10,align:'right'});
+    arrow(g,ax-ar*Math.cos(aa),cy-ar*Math.sin(aa),ax,cy,CLR.k1,2.4);
+    arc(g,ax,cy,38,Math.PI,Math.PI+aa,CLR.sec,1.3);
+    txt(g,'α = '+fmt(this.a1,0)+'° до осі',ax-ar*Math.cos(aa)-6,cy-ar*Math.sin(aa)-6,
       {color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    txt(g,'усередині θ = '+fmt(Math.asin(Math.min(1,sIn/this.n1))/DEG,1)+'° до осі',
+      ax+34,cy-core/2-34,{color:'#b8431a',size:10.5,bold:true});
     /* хід усередині — зигзаг між стінками */
     g.strokeStyle=guided?CLR.k2:CLR.sec; g.lineWidth=2.4; g.lineJoin='round';
     g.beginPath();
-    let x=w*0.10, y=cy, dy=Math.tan(thIn)||1e-6, dir=1, safe=0;
+    let x=Q.ax, y=cy, dy=Math.tan(thIn)||1e-6, dir=1, safe=0;
     g.moveTo(x,y);
-    const xEnd=w*0.94;
+    const xEnd=Q.ax+w*0.76;
     while(x<xEnd&&safe++<60){
       const yT=dir>0?cy+core/2:cy-core/2;
       const dx=Math.abs((yT-y)/dy);
@@ -1776,31 +1840,70 @@ const M5={
     this.hf.xdec=m==='lun'?0:2;
   },
   tick(){this.render();},
-  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
-     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
-  GG:[
-    ['dem','dem',356,407,1,CLR.k1,null,'m5vdem',0,'тис. км'],
-    ['des','des',147,152,0.1,CLR.k2,null,'m5vdes',1,'млн км'],
-    ['beta','b',0,1.6,0.02,CLR.k3,null,'m5vb',2,'°']
-  ],
-  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Шкал у цьому модулі більше немає: Землю й Місяць переставляють просто на
+     схемі. Схема свідомо не в масштабі, але пікселі під кожну величину беруться
+     з МЕЖ її діапазону, а не з поточного значення (§10), тож хід руки скрізь
+     однаковий: уся ширина ходу — це весь діапазон. */
+  GG:[],
+  SPAN:{dem:[356,407], des:[147,152], beta:[0,1.6]},
+  fr(k,v){const S=this.SPAN[k]; return (v-S[0])/(S[1]-S[0]);},
+  inv(k,f){const S=this.SPAN[k]; return S[0]+clamp(f,0,1)*(S[1]-S[0]);},
+  gcol(b){return {gtop:b.h-14, w:b.w, h:b.h, cols:2, rows:0, W:0, x:[0,0], dy:24, y0:b.h};},
+  sch(b){return frozen(this,b,bb=>{
+    const H=bb.h-14, cy=H*0.46;
+    return {H, cy, sx:bb.w*0.05,
+      exS:bb.w*0.40, exL:bb.w*0.20, exd:bb.w*0.10,   /* хід Землі уздовж променя */
+      mg0:bb.w*0.11, mgd:bb.w*0.07,                  /* проміжок Земля–Місяць */
+      bo:44,                                         /* повний зсув Місяця впоперек */
+      occR:Math.min(bb.w*0.13,H*0.30), occX:bb.w*0.30, occY:H*0.52};
+  });},
+  /* екранні місця тіл — спільні для схеми й для ручок */
+  bodies(b){
+    const Q=this.sch(b), m=this.mode;
+    const ex=(m==='lun'?Q.exL:Q.exS)+this.fr('des',this.des)*Q.exd;
+    const gap=Q.mg0+this.fr('dem',this.dem)*Q.mgd;
+    return {Q, ex, ey:Q.cy, mx:m==='lun'?ex+gap:ex-gap,
+      my:Q.cy-this.fr('beta',this.beta)*Q.bo};
+  },
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const B=this.bodies(b), Q=B.Q, out=[];
+    if(this.mode==='occ'){
+      const R=Q.occR*(1.12-0.24*this.fr('dem',this.dem));
+      out.push({id:'dem', x:Q.occX+R, y:Q.occY, r:9, color:CLR.k1,
+        hint:'відстань до Місяця',
+        move:(px)=>{this.dem=Math.round(this.inv('dem',
+          (1.12-(px-Q.occX)/Q.occR)/0.24));}});
+      out.push({id:'beta', x:Q.occX+R*1.5, y:Q.occY-this.fr('beta',this.beta)*Q.occR*1.4,
+        r:9, color:CLR.k3, hint:'прицільна відстань зорі β',
+        move:(px,py)=>{this.beta=snap(this.inv('beta',(Q.occY-py)/(Q.occR*1.4)),0.02);}});
+      return out;
+    }
+    const dir=this.mode==='lun'?1:-1;
+    out.push({id:'des', x:B.ex, y:B.ey, r:20, bare:true, color:CLR.k1, hint:'Земля · відстань до Сонця',
+      move:(px)=>{const f=(px-(this.mode==='lun'?Q.exL:Q.exS))/Q.exd;
+        this.des=snap(this.inv('des',f),0.1);}});
+    out.push({id:'dem', x:B.mx, y:B.my, r:11, bare:true, color:CLR.k2,
+      hint:'Місяць · відстань і відхилення',
+      move:(px,py)=>{
+        this.dem=Math.round(this.inv('dem',(dir*(px-B.ex)-Q.mg0)/Q.mgd));
+        this.beta=snap(this.inv('beta',(Q.cy-py)/Q.bo),0.02);
+      }});
+    return out;
   },
   gdraw(){
     const b=cvx('m5scene'); if(!b) return;
-    gaugeCol(b.g,this.gcol(b),this.GG,this);
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
-    /* числа в бічній колонці — те саме значення, що показує шкала */
-    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m5vdem').textContent=fmt(this.dem,0)+' тис. км';
+    $('m5vdes').textContent=fmt(this.des,1)+' млн км';
+    $('m5vb').textContent=fmt(this.beta,2)+' °';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop;
-    g.clearRect(0,0,w,h);
+    g.clearRect(0,0,w,b.h);
     const nm={sol:['Місяць кидає тінь на Землю',CLR.k1],
       lun:['Місяць входить у тінь Землі',CLR.k3],
       occ:['Місяць насуває свій диск на зорю',CLR.k2]}[this.mode];
@@ -1812,31 +1915,32 @@ const M5={
     else this.sceneLun(g,w,h);
   },
   sceneSol(g,w,h){
-    const cy=h*0.46;
-    /* схема */
-    const sx=w*0.05, mx=w*0.26, ex=w*0.44;
-    g.fillStyle='rgba(235,104,52,.25)'; dot(g,sx,cy,26,'rgba(235,104,52,.25)',CLR.k2);
+    const B=this.bodies(cvx('m5scene')), Q=B.Q, cy=Q.cy;
+    const sx=Q.sx, mx=B.mx, my=B.my, ex=B.ex;
+    dot(g,sx,cy,26,'rgba(235,104,52,.25)',CLR.k2);
     txt(g,'Сонце',sx,cy+42,{color:CLR.sec,size:10.5,bold:true,align:'center'});
-    dot(g,mx,cy-8,7,CLR.sec);
-    txt(g,'Місяць',mx,cy-24,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    /* конус тіні йде від Сонця крізь Місяць — з ростом β він з'їжджає з Землі */
+    const kx=(ex+26-sx)/Math.max(1,mx-sx), ty=cy+(my-cy)*kx, tx=ex+26;
+    g.fillStyle='rgba(11,11,11,.18)';
+    g.beginPath(); g.moveTo(mx,my-8); g.lineTo(mx,my+8); g.lineTo(tx,ty); g.closePath(); g.fill();
+    g.strokeStyle=CLR.ink; g.lineWidth=1.2;
+    g.beginPath(); g.moveTo(mx,my-8); g.lineTo(tx,ty); g.moveTo(mx,my+8); g.lineTo(tx,ty); g.stroke();
     dot(g,ex,cy,22,'rgba(42,120,214,.16)',CLR.k1);
     txt(g,'Земля',ex,cy+40,{color:CLR.sec,size:10.5,bold:true,align:'center'});
-    /* конус тіні */
-    g.fillStyle='rgba(11,11,11,.18)';
-    g.beginPath();
-    g.moveTo(mx,cy-15); g.lineTo(mx,cy-1);
-    g.lineTo(mx+(ex-mx)*1.06,cy-8); g.closePath(); g.fill();
-    g.strokeStyle=CLR.ink; g.lineWidth=1.2;
-    g.beginPath(); g.moveTo(mx,cy-15); g.lineTo(mx+(ex-mx)*1.06,cy-8);
-    g.moveTo(mx,cy-1); g.lineTo(mx+(ex-mx)*1.06,cy-8); g.stroke();
-    txt(g,'схема, не в масштабі',(sx+ex)/2,h*0.86,{color:CLR.mut,size:10,align:'center'});
+    dot(g,mx,my,8,CLR.sec);
+    txt(g,'Місяць',mx,my-18,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    /* лінія екліптики — від чого міряють β */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(sx,cy); g.lineTo(ex+40,cy); g.stroke(); g.setLineDash([]);
+    txt(g,'схема, не в масштабі · тягніть Землю і Місяць',(sx+ex)/2,h*0.86,
+      {color:CLR.mut,size:10,align:'center'});
     /* вигляд із Землі — у справжніх кутових розмірах */
     this.viewDiscs(g,w,h,this.thSun()/2,this.thMoon()/2,
       Math.max(0,this.off()-R_EARTH)/this.demk()/DEG,'Сонце','Місяць','rgba(235,104,52,.85)','#3a3a38',0.32);
   },
   sceneLun(g,w,h){
-    const cy=h*0.46;
-    const sx=w*0.05, ex=w*0.24, mx=w*0.46;
+    const B=this.bodies(cvx('m5scene')), Q=B.Q, cy=Q.cy;
+    const sx=Q.sx, ex=B.ex, mx=B.mx;
     dot(g,sx,cy,26,'rgba(235,104,52,.25)',CLR.k2);
     txt(g,'Сонце',sx,cy+42,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     dot(g,ex,cy,20,'rgba(42,120,214,.16)',CLR.k1);
@@ -1849,17 +1953,21 @@ const M5={
     g.beginPath();
     g.moveTo(ex,cy-20); g.lineTo(ex,cy+20);
     g.lineTo(mx+40,cy+40); g.lineTo(mx+40,cy-40); g.closePath(); g.fill();
-    dot(g,mx,cy-this.off()/this.rPenE()*30,7,CLR.sec);
-    txt(g,'Місяць',mx,cy-this.off()/this.rPenE()*30-16,{color:CLR.sec,size:10.5,bold:true,align:'center'});
-    txt(g,'схема, не в масштабі',(sx+mx)/2,h*0.86,{color:CLR.mut,size:10,align:'center'});
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(sx,cy); g.lineTo(mx+50,cy); g.stroke(); g.setLineDash([]);
+    dot(g,mx,B.my,8,CLR.sec);
+    txt(g,'Місяць',mx,B.my-18,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    txt(g,'схема, не в масштабі · тягніть Землю і Місяць',(sx+mx)/2,h*0.86,
+      {color:CLR.mut,size:10,align:'center'});
     /* вигляд: тінь Землі та Місяць у ній, у кутовій мірі з Землі */
     const thU=2*this.rUmbE()/this.demk()/DEG/2;
     this.viewDiscs(g,w,h,thU,this.thMoon()/2,this.off()/this.demk()/DEG,
       'тінь Землі','Місяць','rgba(11,11,11,.35)','#c9c6bd',1.00);
   },
   sceneOcc(g,w,h){
-    const cy=h*0.52, cx=w*0.30;
-    const R=Math.min(w*0.13,h*0.30);
+    const Q=this.sch(cvx('m5scene')), cy=Q.occY, cx=Q.occX;
+    /* диск Місяця на схемі росте, коли Місяць ближчий: за його край і тягнуть */
+    const R=Q.occR*(1.12-0.24*this.fr('dem',this.dem));
     dot(g,cx,cy,R,'#c9c6bd',CLR.sec);
     txt(g,'Місяць',cx,cy+R+18,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     /* шлях Місяця відносно зір */
@@ -1867,12 +1975,13 @@ const M5={
     txt(g,'Місяць іде на схід на '+fmt(this.omOcc()*60,1)+'′ за годину',
       cx-R-76,cy-10,{color:'#b8431a',size:10.5,bold:true,align:'right'});
     /* зоря */
-    const yStar=cy-this.beta/Math.max(0.05,this.thMoon()/2)*R;
+    const yStar=cy-this.fr('beta',this.beta)*Q.occR*1.4;
     dot(g,cx+R*1.5,yStar,3.5,CLR.ink);
     txt(g,'зоря',cx+R*1.5+8,yStar+4,{color:CLR.ink,size:10.5,bold:true});
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
     g.beginPath(); g.moveTo(cx-R*2.2,yStar); g.lineTo(cx+R*2.2,yStar); g.stroke(); g.setLineDash([]);
-    txt(g,'схема, не в масштабі',cx,h*0.90,{color:CLR.mut,size:10,align:'center'});
+    txt(g,'схема, не в масштабі · тягніть край Місяця і зорю',cx,h*0.90,
+      {color:CLR.mut,size:10,align:'center'});
     /* вигляд у справжніх кутах */
     this.viewDiscs(g,w,h,this.thMoon()/2,0.004,this.beta,'Місяць','зоря','#c9c6bd','#0b0b0b',0.50);
   },
