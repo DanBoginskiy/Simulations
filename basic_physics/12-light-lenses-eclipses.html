@@ -278,15 +278,15 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Що задано на сцені</h3>
         <div class="grp" id="m3gEye">
-          <div class="kv"><span><var>d</var> — відстань до предмета<span class="badge">шкала в кадрі</span></span><b id="m3vd"></b></div>
-          <div class="kv"><span>надлишок оптичної сили ока<span class="badge">шкала в кадрі</span></span><b id="m3vdef"></b></div>
-          <div class="kv"><span>запас акомодації<span class="badge">шкала в кадрі</span></span><b id="m3vacc"></b></div>
+          <div class="kv"><span><var>d</var> — відстань до предмета<span class="badge">тягнути предмет</span></span><b id="m3vd"></b></div>
+          <div class="kv"><span>надлишок оптичної сили ока<span class="badge">полиця вад зору</span></span><b id="m3vdef"></b></div>
+          <div class="kv"><span>запас акомодації<span class="badge">полиця віку</span></span><b id="m3vacc"></b></div>
         </div>
         <div class="grp" id="m3gInst" hidden>
-          <div class="kv"><span><var>F</var> — фокусна відстань лупи<span class="badge">шкала в кадрі</span></span><b id="m3vFl"></b></div>
-          <div class="kv"><span><var>F</var><sub>об</sub> — об’єктив мікроскопа<span class="badge">шкала в кадрі</span></span><b id="m3vFob"></b></div>
-          <div class="kv"><span><var>F</var><sub>ок</sub> — окуляр мікроскопа<span class="badge">шкала в кадрі</span></span><b id="m3vFoc"></b></div>
-          <div class="kv"><span><var>Δ</var> — оптична довжина тубуса<span class="badge">шкала в кадрі</span></span><b id="m3vtub"></b></div>
+          <div class="kv"><span><var>F</var> — фокусна відстань лупи<span class="badge">тягнути розмірну лінію</span></span><b id="m3vFl"></b></div>
+          <div class="kv"><span><var>F</var><sub>об</sub> — об’єктив мікроскопа<span class="badge">тягнути розмірну лінію</span></span><b id="m3vFob"></b></div>
+          <div class="kv"><span><var>F</var><sub>ок</sub> — окуляр мікроскопа<span class="badge">тягнути розмірну лінію</span></span><b id="m3vFoc"></b></div>
+          <div class="kv"><span><var>Δ</var> — оптична довжина тубуса<span class="badge">тягнути окуляр</span></span><b id="m3vtub"></b></div>
         </div>
       </div>
       <div id="m3kvEye">
@@ -868,6 +868,13 @@ function lensArea(r1,r2,d){
   return r1*r1*(a1-Math.sin(2*a1)/2)+r2*r2*(a2-Math.sin(2*a2)/2);
 }
 /* промінь-стрілка з підписом кута біля нормалі */
+/* розмірна лінія фокусної відстані: від приладу до позначки, за яку її тягнуть */
+function dimF(g,x0,y,x1,lab,col){
+  g.strokeStyle=col; g.lineWidth=1; g.setLineDash([3,3]);
+  g.beginPath(); g.moveTo(x0,y); g.lineTo(x1,y); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.moveTo(x0,y-5); g.lineTo(x0,y+5); g.stroke();
+  txt(g,lab,(x0+x1)/2,y+16,{color:col,size:10,bold:true,align:'center'});
+}
 function rayLine(g,x,y,ang,len,color,wd){
   arrow(g,x,y,x+len*Math.cos(ang),y+len*Math.sin(ang),color,wd||2.2);
 }
@@ -1421,45 +1428,90 @@ const M3={
     this.h2.xlab=e?'вада':'Fоб'; this.h2.xunit=e?'дптр':'мм'; this.h2.xdec=1;
   },
   tick(){this.render();},
-  /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
-     їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
-  GG:[
-    ['d','d',10,1000,5,CLR.k1,null,'m3vd',0,'см'],
-    ['def','def',-4,6,0.25,CLR.k2,null,'m3vdef',2,'дптр'],
-    ['acc','acc',0.5,14,0.5,CLR.k3,null,'m3vacc',1,'дптр'],
-    ['Fl','Fl',2,15,0.5,CLR.sec,null,'m3vFl',1,'см'],
-    ['Fob','Fob',1,20,0.5,CLR.k1,null,'m3vFob',1,'мм'],
-    ['Foc','Foc',5,40,1,CLR.k2,null,'m3vFoc',0,'мм'],
-    ['tub','tub',100,250,10,CLR.k3,null,'m3vtub',0,'мм']
-  ],
-  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Шкал немає. Предмет тягнуть по осі, фокусні відстані — за розмірні лінії
+     під приладами, довжину тубуса — за окуляр. Вада зору й запас акомодації
+     довжини в кресленні не мають, зате мають природні дискретні набори: вада —
+     це діагноз, акомодація — вік. Пікселі беруться з МЕЖ діапазонів (§10);
+     для відстані до предмета (10 см … 10 м) карта логарифмічна, інакше вся
+     ближня половина діапазону злипалася б в один піксель. */
+  GG:[],
+  SPAN:{Fl:[2,15], Fob:[1,20], Foc:[5,40], tub:[100,250]},
+  fr(k,v){const S=this.SPAN[k]; return clamp((v-S[0])/(S[1]-S[0]),0,1);},
+  inv(k,f){const S=this.SPAN[k]; return S[0]+clamp(f,0,1)*(S[1]-S[0]);},
+  frD(d){return clamp(Math.log(d/10)/Math.log(100),0,1);},
+  invD(f){return 10*Math.pow(100,clamp(f,0,1));},
+  band(b){const eye=this.mode==='eye', H=eye?b.h-88:b.h-14;
+    return {eye, H, x0:118, dx:Math.min(86,(b.w-170)/6), y1:H+24, y2:H+62};},
+  gcol(b){return {gtop:this.band(b).H, w:b.w, h:b.h, cols:2, rows:0, W:0, x:[0,0], dy:24, y0:b.h};},
+  geo(b){return frozen(this,b,bb=>{
+    const H=this.band(bb).H;
+    return {H, cy:H*0.54, ex:bb.w*0.66, R:Math.min(bb.w*0.13,H*0.30), oxd:bb.w*0.34,
+      ly:H*0.34, lx:bb.w*0.24, my:H*0.76, mx:bb.w*0.24, tld:bb.w*0.30};
+  });},
+  objX(Q){return Q.ex-Q.R*0.82-(40+this.frD(this.d)*Q.oxd);},
+  tubL(Q){return 60+this.fr('tub',this.tub)*Q.tld;},
   grips(){
     const b=cvx('m3scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b), M=this.band(b);
+    if(this.mode==='eye'){
+      return [{id:'d', x:this.objX(Q), y:Q.cy, r:10, bare:true, color:CLR.k1,
+        hint:'предмет: відстань до ока',
+        move:(px)=>{this.d=clamp(snap(this.invD(
+          (Q.ex-Q.R*0.82-40-px)/Q.oxd),5),10,1000);}}]
+        .concat(shelfGrips({x0:M.x0,dx:M.dx,y:M.y1},DEFS,v=>{this.def=v;},'d'),
+                shelfGrips({x0:M.x0,dx:M.dx,y:M.y2},ACCS,v=>{this.acc=v;},'a'));
+    }
+    const tl=this.tubL(Q);
+    return [
+      {id:'Fl', x:Q.lx-20-this.fr('Fl',this.Fl)*120, y:Q.ly+56, r:8, color:CLR.sec,
+       hint:'фокусна лупи',
+       move:(px)=>{this.Fl=clamp(snap(this.inv('Fl',(Q.lx-20-px)/120),0.5),2,15);}},
+      {id:'Fob', x:Q.mx-20-this.fr('Fob',this.Fob)*110, y:Q.my+46, r:8, color:CLR.k1,
+       hint:'фокусна об’єктива',
+       move:(px)=>{this.Fob=clamp(snap(this.inv('Fob',(Q.mx-20-px)/110),0.5),1,20);}},
+      {id:'tub', x:Q.mx+tl, y:Q.my-26, r:8, color:CLR.k3, hint:'довжина тубуса Δ',
+       move:(px)=>{this.tub=clamp(snap(this.inv('tub',(px-Q.mx-60)/Q.tld),10),100,250);}},
+      {id:'Foc', x:Q.mx+tl+20+this.fr('Foc',this.Foc)*110, y:Q.my+46, r:8, color:CLR.k2,
+       hint:'фокусна окуляра',
+       move:(px)=>{this.Foc=clamp(Math.round(this.inv('Foc',
+         (px-Q.mx-tl-20)/110)),5,40);}}
+    ];
   },
   gdraw(){
     const b=cvx('m3scene'); if(!b) return;
-    gaugeCol(b.g,this.gcol(b),this.GG,this);
+    const M=this.band(b);
+    if(M.eye){
+      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+      b.g.beginPath(); b.g.moveTo(8,M.H+2.5); b.g.lineTo(b.w-8,M.H+2.5); b.g.stroke();
+      shelf(b.g,{x0:M.x0,dx:M.dx,y:M.y1},DEFS,this.def,'вада зору, дптр');
+      shelf(b.g,{x0:M.x0,dx:M.dx,y:M.y2},ACCS,this.acc,'запас акомодації');
+    }
     for(const hh of this.grips()) drawGrip(b.g,hh,this);
-    /* числа в бічній колонці — те саме значення, що показує шкала */
-    for(const m of this.GG) $(m[7]).textContent=fmt(this[m[0]],m[8])+(m[9]?' '+m[9]:'');
+    $('m3vd').textContent=fmt(this.d,0)+' см';
+    $('m3vdef').textContent=fmt(this.def,2)+' дптр';
+    $('m3vacc').textContent=fmt(this.acc,1)+' дптр';
+    $('m3vFl').textContent=fmt(this.Fl,1)+' см';
+    $('m3vFob').textContent=fmt(this.Fob,1)+' мм';
+    $('m3vFoc').textContent=fmt(this.Foc,0)+' мм';
+    $('m3vtub').textContent=fmt(this.tub,0)+' мм';
   },
   render(){this.render0(); this.gdraw();},
   render0(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m3scene'); if(!b) return;
     const {g,w}=b, h=this.gcol(b).gtop;
-    g.clearRect(0,0,w,h);
-    if(this.mode==='eye') this.sceneEye(g,w,h); else this.sceneInst(g,w,h);
+    g.clearRect(0,0,w,b.h);
+    const Q=this.geo(b);
+    if(this.mode==='eye') this.sceneEye(g,w,h,Q); else this.sceneInst(g,w,h,Q);
   },
-  sceneEye(g,w,h){
+  sceneEye(g,w,h,Q){
     const def=this.def;
     txt(g,def>0.05?'короткозоре око: збирає промені перед сітківкою'
       :(def<-0.05?'далекозоре око: збирає промені за сітківкою':'нормальне око: зображення точно на сітківці'),
       12,20,{color:def===0?CLR.k1:CLR.k3,size:12.5,bold:true});
     txt(g,'зелена лінза — окуляри, які компенсують ваду; без них фокус не потрапляє на сітківку',
       12,36,{color:CLR.mut,size:10.5});
-    const cy=h*0.54, ex=w*0.66, R=Math.min(w*0.13,h*0.30);
+    const cy=Q.cy, ex=Q.ex, R=Q.R;
     /* очне яблуко */
     dot(g,ex,cy,R,'rgba(42,120,214,.06)',CLR.sec);
     g.strokeStyle=CLR.k1; g.lineWidth=2.4;
@@ -1469,7 +1521,7 @@ const M3={
     g.beginPath(); g.arc(ex,cy,R,-0.9,0.9); g.stroke();
     txt(g,'сітківка',ex+R+8,cy+4,{color:CLR.ink,size:10.5,bold:true});
     /* предмет і промені */
-    const ox=Math.max(w*0.05,ex-R*0.82-Math.min(w*0.42,this.d*3));
+    const ox=this.objX(Q);
     arrow(g,ox,cy+26,ox,cy-26,CLR.k1,2.4);
     txt(g,'предмет · '+fmt(this.d,0)+' см',ox,cy-34,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
     /* фокус: зсув від сітківки пропорційний нескомпенсованій силі */
@@ -1500,13 +1552,13 @@ const M3={
     txt(g,'чітко видно від '+fmt(nr,0)+' см'+(isFinite(fr)?' до '+fmt(fr,0)+' см':' і до нескінченності'),
       12,h-12,{color:CLR.sec,size:11.5,bold:true});
   },
-  sceneInst(g,w,h){
+  sceneInst(g,w,h,Q){
     txt(g,'лупа й мікроскоп збільшують кут зору: дрібне ми бачимо так, ніби воно велике й близьке',
       12,20,{color:CLR.k2,size:12.5,bold:true});
     txt(g,'відстань найкращого зору — 25 см: саме з нею порівнюють усі збільшення',
       12,36,{color:CLR.mut,size:10.5});
     /* лупа */
-    const ly=h*0.34, lx=w*0.24;
+    const ly=Q.ly, lx=Q.lx;
     g.strokeStyle=CLR.k1; g.lineWidth=2.4;
     g.beginPath();
     g.moveTo(lx,ly-34); g.quadraticCurveTo(lx+13,ly,lx,ly+34);
@@ -1517,18 +1569,21 @@ const M3={
     g.beginPath(); g.moveTo(lx-70,ly-4); g.lineTo(lx,ly-16); g.lineTo(lx+66,ly-30); g.stroke();
     txt(g,'лупа F = '+fmt(this.Fl,1)+' см',lx,ly-46,{color:'#1c5cab',size:11,bold:true,align:'center'});
     txt(g,'Γ = 25/F = '+fmt(this.gLoupe(),1)+'×',lx+80,ly+4,{color:'#b8431a',size:11.5,bold:true});
+    dimF(g,lx,Q.ly+56,lx-20-this.fr('Fl',this.Fl)*120,'F = '+fmt(this.Fl,1)+' см',CLR.sec);
     /* мікроскоп */
-    const my=h*0.76, mx=w*0.24;
+    const my=Q.my, mx=Q.mx;
     g.strokeStyle=CLR.axis; g.lineWidth=1;
     g.beginPath(); g.moveTo(w*0.06,my); g.lineTo(w*0.72,my); g.stroke();
-    for(const [x,lab,col] of [[mx,'об’єктив',CLR.k1],[mx+Math.min(w*0.34,this.tub*1.1),'окуляр',CLR.k2]]){
+    for(const [x,lab,col] of [[mx,'об’єктив',CLR.k1],[mx+this.tubL(Q),'окуляр',CLR.k2]]){
       g.strokeStyle=col; g.lineWidth=2.4;
       g.beginPath();
       g.moveTo(x,my-26); g.quadraticCurveTo(x+11,my,x,my+26);
       g.moveTo(x,my-26); g.quadraticCurveTo(x-11,my,x,my+26); g.stroke();
       txt(g,lab,x,my+42,{color:col===CLR.k1?'#1c5cab':'#b8431a',size:10.5,bold:true,align:'center'});
     }
-    const tl=Math.min(w*0.34,this.tub*1.1);
+    const tl=this.tubL(Q);
+    dimF(g,mx,my+46,mx-20-this.fr('Fob',this.Fob)*110,'Fоб = '+fmt(this.Fob,1)+' мм',CLR.k1);
+    dimF(g,mx+tl,my+46,mx+tl+20+this.fr('Foc',this.Foc)*110,'Fок = '+fmt(this.Foc,0)+' мм',CLR.k2);
     g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
     g.beginPath(); g.moveTo(mx,my-40); g.lineTo(mx+tl,my-40); g.stroke(); g.setLineDash([]);
     txt(g,'Δ = '+fmt(this.tub,0)+' мм',mx+tl/2,my-46,{color:CLR.mut,size:10,align:'center'});
@@ -1625,6 +1680,13 @@ const M3={
     }
   }
 };
+
+/* Вада зору — це діагноз, запас акомодації — вік: обидві величини природно
+   дискретні, і полиця показує їх чесніше за смугу з проміжними значеннями. */
+const DEFS=[['−3,0',-3,'далекозорість'],['−1,5',-1.5,'далекозорість'],['0',0,'норма'],
+  ['+1,5',1.5,'короткозорість'],['+3,0',3,'короткозорість'],['+5,0',5,'короткозорість']];
+const ACCS=[['10 років',14,'14 дптр'],['20 років',10,'10 дптр'],['30 років',7,'7 дптр'],
+  ['40 років',4.5,'4,5 дптр'],['50 років',2.5,'2,5 дптр'],['60 років',1,'1 дптр']];
 
 /* ===================== МОДУЛЬ 4 · телескоп ===================== */
 const M4={
