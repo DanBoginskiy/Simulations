@@ -1073,12 +1073,31 @@ function v3norm(a){const L=v3len(a); return L<1e-12?[0,0,0]:v3mul(a,1/L);}
    осях; поле — від більшого з розмахів, інакше плеската фігура без потреби
    стискає масштаб по другій осі (§10, §15). padY лишає місце під смуги
    керування в нижній частині полотна. */
-function planeGeo(st,b,ptsFn,padY,padL){
-  return frozen(st,b,bb=>{
-    const pts=ptsFn();
-    const rx=Math.max(0.8,...pts.map(p=>Math.abs(p[0])));
-    const ry=Math.max(0.8,...pts.map(p=>Math.abs(p[1])));
-    const m=Math.max(rx,ry)*0.14+0.5;
+/* Кадр, що не пливе (§10). Масштаб рахується від МЕЖ діапазону величин, а не
+   від їхніх поточних значень, і кешується за ключем. Доки ключ той самий —
+   тягни що завгодно, лінійка на екрані не змінюється; переміряти її може лише
+   перемикач типу кривої або зміна розміру полотна. Так рух ручки видно як рух
+   фігури, а не як мовчазне перемасштабування навколо неї. */
+function fixedFrame(st,key,calc){
+  const c=st._ff;
+  if(c&&c.key===key) return c.G;
+  const G=calc();
+  st._ff={key,G};
+  return G;
+}
+/* fix — стала півширина кадру (число або [rx,ry]). Якщо її задано, кадр більше
+   не залежить від точок: він однаковий за будь-якого їх положення. */
+function planeGeo(st,b,ptsFn,padY,padL,fix){
+  const calc=bb=>{
+    let rx,ry,m;
+    if(fix!=null){
+      rx=Array.isArray(fix)?fix[0]:fix; ry=Array.isArray(fix)?fix[1]:fix; m=0;
+    } else {
+      const pts=ptsFn();
+      rx=Math.max(0.8,...pts.map(p=>Math.abs(p[0])));
+      ry=Math.max(0.8,...pts.map(p=>Math.abs(p[1])));
+      m=Math.max(rx,ry)*0.14+0.5;
+    }
     const HH=bb.h-(padY||0);
     /* padL — колонка ліворуч, у якій стоїть сама матриця: сцена зсувається
        праворуч рівно на неї, тож числа й креслення не налазять одне на одне */
@@ -1086,7 +1105,10 @@ function planeGeo(st,b,ptsFn,padY,padL){
     const sc=Math.min((bb.w-96-L)/(2*(rx+m)),(HH-72)/(2*(ry+m)));
     const cx=L+(bb.w-L)/2, cy=HH/2+20;
     return {sc,cx,cy,H:HH,SX:x=>cx+x*sc,SY:y=>cy-y*sc,iX:px=>(px-cx)/sc,iY:py=>(cy-py)/sc};
-  });
+  };
+  return fix!=null
+    ? fixedFrame(st,'pg|'+(padL||0)+'|'+(padY||0)+'|'+fix+'|'+b.w+'×'+b.h,()=>calc(b))
+    : frozen(st,b,calc);
 }
 function planeGrid(g,G,w,h){
   const step=G.sc>52?1:(G.sc>26?2:(G.sc>11?5:10));
