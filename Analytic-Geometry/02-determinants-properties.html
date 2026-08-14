@@ -33,6 +33,8 @@ canvas{display:block}
 .seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
   font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
 .seg button:last-child{border-right:none}
+/* inline-flex перебиває hidden — повертаємо його, як і для .kv */
+.seg[hidden]{display:none}
 .seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
   box-shadow:inset 0 -2px 0 var(--c,#888)}
 /* icon buttons */
@@ -125,7 +127,7 @@ table.read tr:last-child td{border-bottom:none}
 #m2scene{width:100%; height:430px}
 #m3scene{width:100%; height:450px}
 #m4scene{width:100%; height:460px}
-#m5scene{width:100%; height:460px}
+#m5scene{width:100%; height:480px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -143,14 +145,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <button data-m="m2">2 · Саррюс і розклад</button>
   <button data-m="m3">3 · Властивості</button>
   <button data-m="m4">4 · Зведення до трикутного</button>
-  <button data-m="m5">5 · Практика: площа ділянки</button>
+  <button data-m="m5">5 · Практика: робота за цикл</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
   <p class="caption">Визначник — це міра. Для двох векторів на площині він дорівнює площі
   паралелограма, для трьох у просторі — об'єму паралелепіпеда. Знак каже, права трійка
-  чи ліва. Нуль означає, що фігура сплющилася: вектори лежать в одній площині або на одній прямій.</p>
+  чи ліва. Нуль означає, що фігура сплющилася: вектори лежать в одній площині або на одній
+  прямій. Матриця тут одна, і кожен її рядок — окремий вектор зі своїми числами: жоден
+  не виводиться з інших. У просторі тягніть порожнє місце в кадрі — сцена обертається.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -165,24 +169,13 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m1scene"></canvas><div class="mov" id="m1mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Від чого міра залежить</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m1chw"><h4>міра залежно від висоти останнього вектора над рештою</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>|det|</span><span><span class="chip cI"></span>поточний стан</span></div>
-            <canvas id="m1ch"></canvas></div>
-          <div class="chartbox" id="m1caw"><h4>міра залежно від кута між першими двома векторами</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>|det|</span><span><span class="chip cI"></span>поточний кут</span></div>
-            <canvas id="m1ca"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
-        <h3>Вектори-стовпці</h3>
-        <div class="kv"><span><var>a</var><sub>1</sub><span class="badge">у кадрі</span></span><b id="m1v1"></b></div>
-        <div class="kv"><span><var>a</var><sub>2</sub><span class="badge">у кадрі</span></span><b id="m1v2"></b></div>
-        <div class="kv" id="m1v3row"><span><var>a</var><sub>3</sub><span class="badge">у кадрі</span></span><b id="m1v3"></b></div>
+        <h3>Вектори-рядки матриці</h3>
+        <div class="kv"><span><var>a</var><sub>1</sub><span class="badge">набір у клітинках</span></span><b id="m1v1"></b></div>
+        <div class="kv"><span><var>a</var><sub>2</sub><span class="badge">набір у клітинках</span></span><b id="m1v2"></b></div>
+        <div class="kv" id="m1v3row"><span><var>a</var><sub>3</sub><span class="badge">набір у клітинках</span></span><b id="m1v3"></b></div>
       </div>
       <div class="panel">
         <h3>Міра</h3>
@@ -236,7 +229,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Матриця</h3>
-        <div class="kv"><span>набирайте числа<span class="badge">набір у клітинках</span></span><b id="m2vA">3×3</b></div>
         <div class="kv"><span>поточний доданок</span><b id="m2vStep"></b></div>
       </div>
       <div class="panel">
@@ -282,17 +274,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m3scene"></canvas><div class="mov" id="m3mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Як перетворення діє на визначник</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3caw"><h4>рядок 1 += t·рядок 2 — визначник не змінюється</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>det(t)</span><span><span class="chip cI"></span>поточне t</span></div>
-            <canvas id="m3ca"></canvas></div>
-          <div class="chartbox" id="m3csw"><h4>рядок 1 × λ — визначник множиться на λ</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>det(λ)</span><span><span class="chip cI"></span>поточне λ</span></div>
-            <canvas id="m3cs"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -331,7 +312,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m4prev" title="крок назад">◀</button>
+          <button class="ibtn" id="m4next" title="крок уперед">▶</button>
           <button class="ibtn" id="m4re" title="спочатку">↺</button>
           <span class="lbl">Порядок:</span>
           <div class="seg" id="m4n">
@@ -342,23 +324,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m4scene"></canvas><div class="mov" id="m4mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Скільки коштують два способи</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4ccw"><h4>множень для визначника n×n, десятковий логарифм</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>розклад за рядком</span><span><span class="chip cA"></span>метод Гаусса</span><span><span class="chip cI"></span>поточне n</span></div>
-            <canvas id="m4cc"></canvas></div>
-          <div class="chartbox" id="m4cpw"><h4>множень, зроблених на цій матриці, за кроками</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>накопичено</span><span><span class="chip cI"></span>поточний крок</span></div>
-            <canvas id="m4cp"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
         <h3>Крок</h3>
         <div class="kv"><span>крок з усіх<span class="badge">кнопка ▶ у кадрі</span></span><b id="m4vStep"></b></div>
-        <div class="kv"><span>початкова матриця<span class="badge">набір у клітинках</span></span><b id="m4vA">набирайте числа</b></div>
       </div>
       <div class="panel">
         <h3>Що робимо зараз</h3>
@@ -382,58 +352,57 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
-  <p class="caption">Землевпорядник має координати межових точок ділянки — і більше нічого.
-  Площу він рахує формулою шнурівки: це сума визначників 2×2, по одному на кожну пару сусідніх
-  вершин. Кожен доданок — подвоєна площа трикутника з вершиною в початку координат;
-  зайве при обході взаємно знищується.</p>
+  <p class="caption">Газ проходить замкнутий цикл і повертається у вихідний стан — а роботу
+  встигає зробити. Ця робота дорівнює площі, охопленій циклом на <var>pV</var>-діаграмі,
+  тобто тій самій сумі визначників 2×2, по одному на кожну пару сусідніх станів. Знак суми
+  тут не абстракція: у робочого циклу двигуна обхід іде за годинниковою стрілкою, і саме
+  тоді газ віддає роботу. Одиниці підібрано так, що 1 бар·л дорівнює рівно 100 Дж.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <span class="lbl">Показати:</span>
-          <div class="seg" id="m5mode">
-            <button data-v="tri" class="active" style="--c:var(--k3)">трикутники доданків</button>
-            <button data-v="plot" style="--c:var(--k1)">саму ділянку</button>
+          <span class="lbl">Цикл:</span>
+          <div class="seg" id="m5pre">
+            <button data-v="rect" class="active" style="--c:var(--k1)">прямокутний</button>
+            <button data-v="tri" style="--c:var(--k2)">трикутний</button>
+            <button data-v="otto" style="--c:var(--k3)">п’ятикутний</button>
           </div>
-          <button class="ibtn" id="m5play" title="перебирати доданки">⏸</button>
           <span class="lbl" id="m5state" style="font-weight:600"></span>
         </div>
-        <div class="cvw"><canvas id="m5scene"></canvas><div class="mov" id="m5mx"></div></div>
-      </div>
-      <div class="panel">
-        <h3>Доданки формули шнурівки</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m5ccw"><h4>накопичена сума доданків, м²</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>Σ до i-го доданка</span><span><span class="chip cC"></span>подвоєна площа</span><span><span class="chip cI"></span>поточний доданок</span></div>
-            <canvas id="m5cc"></canvas></div>
-          <div class="chartbox" id="m5csw"><h4>площа при зсуві початку координат — не змінюється</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>S(зсув)</span><span><span class="chip cI"></span>поточний зсув</span></div>
-            <canvas id="m5cs"></canvas></div>
+        <div class="toolbar">
+          <span class="lbl">Показати:</span>
+          <div class="seg" id="m5mode">
+            <button data-v="tri" class="active" style="--c:var(--k3)">трикутник доданка</button>
+            <button data-v="plot" style="--c:var(--k1)">лише цикл</button>
+          </div>
+          <button class="ibtn" id="m5prev" title="попередній доданок">◀</button>
+          <button class="ibtn" id="m5next" title="наступний доданок">▶</button>
         </div>
+        <div class="cvw"><canvas id="m5scene"></canvas><div class="mov" id="m5mx"></div></div>
       </div>
     </div>
     <div class="side">
       <div class="panel">
-        <h3>Ділянка</h3>
-        <div class="kv"><span>межових точок<span class="badge">тягніть вершини в кадрі</span></span><b id="m5vN"></b></div>
-        <div class="kv"><span>зсув початку координат<span class="badge">шкала в кадрі</span></span><b id="m5vSh"></b></div>
-        <div class="kv"><span>поточний доданок <var>i</var></span><b id="m5vI"></b></div>
+        <h3>Цикл</h3>
+        <div class="kv"><span>станів у циклі<span class="badge">тягніть їх у кадрі</span></span><b id="m5vN"></b></div>
+        <div class="kv"><span>поточний доданок</span><b id="m5vI"></b></div>
+        <div class="kv"><span>напрям обходу<span class="badge">знак суми</span></span><b class="w" id="m5kDir"></b></div>
       </div>
       <div class="panel">
         <h3>Доданок і сума</h3>
-        <div class="kv"><span><var>x<sub>i</sub>y</var><sub><var>i</var>+1</sub> − <var>x</var><sub><var>i</var>+1</sub><var>y<sub>i</sub></var></span><b id="m5kTerm"></b></div>
+        <div class="kv"><span><var>V<sub>k</sub>p</var><sub><var>k</var>+1</sub> − <var>V</var><sub><var>k</var>+1</sub><var>p<sub>k</sub></var></span><b class="w" id="m5kTerm"></b></div>
         <div class="kv"><span>сума всіх доданків</span><b id="m5kSum"></b></div>
-        <div class="kv"><span>площа <var>S</var> = ½|Σ|</span><b id="m5kS"></b></div>
-        <div class="kv"><span>вона ж у гектарах</span><b id="m5kHa"></b></div>
+        <div class="kv"><span>охоплена площа ½|Σ|</span><b id="m5kS"></b></div>
+        <div class="kv"><span>робота за цикл<span class="badge">1 бар·л = 100 Дж</span></span><b id="m5kA"></b></div>
       </div>
       <div class="panel">
         <h3>Що звідси видно</h3>
-        <div class="kv"><span>напрям обходу<span class="badge">знак суми</span></span><b class="w" id="m5kDir"></b></div>
-        <div class="kv"><span>площа при зсуві початку<span class="badge">не залежить від нього</span></span><b class="w" id="m5kInv"></b></div>
-        <div class="kv"><span>периметр ділянки</span><b id="m5kPer"></b></div>
-        <div class="kv"><span>звірка розбиттям на трикутники<span class="badge">має збігтися</span></span><b class="w" id="m5kChk"></b></div>
-        <div class="kv"><span>ділянка самоперетинається</span><b class="w" id="m5kSelf"></b></div>
+        <div class="kv"><span>середній тиск циклу<span class="badge">робота / розмах об’єму</span></span><b id="m5kPmid"></b></div>
+        <div class="kv"><span>потужність</span><b class="w" id="m5kPow"></b></div>
+        <div class="kv"><span>площа при зсуві осей<span class="badge">не залежить від нього</span></span><b class="w" id="m5kInv"></b></div>
+        <div class="kv"><span>звірка розбиттям на трикутники</span><b class="w" id="m5kChk"></b></div>
+        <div class="kv"><span>контур перекручений<span class="badge">тоді формула бреше</span></span><b class="w" id="m5kSelf"></b></div>
         <div class="formulas" id="m5fx"></div>
       </div>
     </div>
@@ -770,6 +739,15 @@ function gaugeCol(g,C,list,st){
     g.beginPath(); g.moveTo(p.x,p.y+.5); g.lineTo(p.x+C.W,p.y+.5); g.stroke();
     g.strokeStyle=m[5]||CLR.k1; g.lineWidth=3;
     g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x+f*C.W,p.y); g.stroke();
+    /* позначка на смузі: значення, від якого величина нічого не робить —
+       множник 1, доданок 0. Без неї «нейтральне» місце доводиться вгадувати. */
+    if(m[10]!=null){
+      const fm=Math.max(0,Math.min(1,(m[10]-m[2])/(m[3]-m[2])));
+      const xm=p.x+fm*C.W;
+      g.strokeStyle=CLR.ink; g.lineWidth=1.4;
+      g.beginPath(); g.moveTo(xm,p.y-7); g.lineTo(xm,p.y+7); g.stroke();
+      txt(g,fmt(m[10],m[8]),xm,p.y-10,{color:CLR.ink,size:9.5,bold:true,align:'center'});
+    }
     txt(g,m[1],p.x-8,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
     txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+8,p.y+4,
       {color:CLR.mut,size:10});
@@ -1225,223 +1203,158 @@ function par3(g,P,a,b,fill,col){
 
 
 /* ===================== МОДУЛЬ 1 · визначник як міра ===================== */
+/* Одна матриця на обидва режими: у площині працює її лівий верхній кут 2×2,
+   у просторі — уся 3×3. Жодних α, β, h: усі рядки задаються своїми числами
+   й ні з чого не виводяться, тому «висота третього над площиною перших двох»
+   тут не орган керування, а наслідок набраних чисел. Простір — справжній,
+   із перспективою й підлогою; камеру водять мишею по кадру. */
 const M1={
   dim:2,
-  A2:[[3,1],[1,2.4]],
-  R3:[[3,1,0],[1,3,1]], al:0.4, be:0.4, hh:1.6, az:38,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  A:[[3,1,0],[1,2.4,0],[0.6,0.8,2.2]],
+  az:38, el:24,
+  M(){return {x:34,y:96};},
   init(){
     grip('m1scene',this,()=>this.grips());
-    matIn('m1mx',{st:this, M:()=>this.M(), A:()=>this.R3, m:()=>2, n:()=>3,
-      lo:-6, hi:6, step:0.5, dec:1});
+    matIn('m1mx',{st:this, M:()=>this.M(), A:()=>this.A, m:()=>this.dim, n:()=>this.dim,
+      lo:-6, hi:6, step:0.5, dec:1, col:i=>[CLR.k1,CLR.k2,CLR.ink][i]});
     seg('m1dim',v=>{this.dim=+v;});
-    this.tip1=makeTip('m1chw'); hover('m1ch',this.h1);
-    this.tip2=makeTip('m1caw'); hover('m1ca',this.h2);
   },
-  nhat(){return v3norm(v3cross(this.R3[0],this.R3[1]));},
-  a3(){
-    const n=this.nhat();
-    return v3add(v3add(v3mul(this.R3[0],this.al),v3mul(this.R3[1],this.be)),v3mul(n,this.hh));
+  /* рядок матриці — це вектор; у площині їх два, у просторі три */
+  rows(){
+    return this.dim===2 ? [[this.A[0][0],this.A[0][1]],[this.A[1][0],this.A[1][1]]]
+                        : [this.A[0].slice(),this.A[1].slice(),this.A[2].slice()];
   },
-  A3(){return [this.R3[0].slice(),this.R3[1].slice(),this.a3()];},
-  det(){return this.dim===2?m2det(this.A2):det3(this.A3());},
-  M(){return {x:34,y:96};},
-  gcol(b){return {x:[b.w-232], y0:b.h-74, dy:21, W:170};},
-  GG:[
-    ['al','α — частка a₁',-2,2,0.1,'#2a78d6',null,null,1,''],
-    ['be','β — частка a₂',-2,2,0.1,'#eb6834',null,null,1,''],
-    ['hh','h — висота над площиною',-2.5,2.5,0.05,'#0b0b0b',null,null,2,''],
-    ['az','поворот сцени',-180,180,2,'#898781',null,null,0,'°']
-  ],
-  geo2(b){return planeGeo(this,b,()=>[[0,0],
-    [this.A2[0][0],this.A2[1][0]],[this.A2[0][1],this.A2[1][1]],
-    [this.A2[0][0]+this.A2[0][1],this.A2[1][0]+this.A2[1][1]]],12);},
+  det(){const R=this.rows(); return this.dim===2?m2det(R):det3(R);},
+  geo2(b){return planeGeo(this,b,()=>{
+    const R=this.rows();
+    return [[0,0],R[0],R[1],[R[0][0]+R[1][0],R[0][1]+R[1][1]]];
+  },12,214);},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     if(this.dim===2){
       const G=this.geo2(b);
-      return [0,1].map(j=>({id:'a'+j, x:G.SX(this.A2[0][j]), y:G.SY(this.A2[1][j]), r:9,
-        color:j?CLR.k2:CLR.k1, hint:'вектор a'+(j+1),
-        move:(px,py)=>{this.A2[0][j]=clamp(snap(G.iX(px),0.1),-7,7);
-                       this.A2[1][j]=clamp(snap(G.iY(py),0.1),-7,7);}}));
+      return [0,1].map(i=>({id:'a'+i, x:G.SX(this.A[i][0]), y:G.SY(this.A[i][1]), r:9,
+        color:i?CLR.k2:CLR.k1, hint:'рядок a'+(i+1),
+        move:(px,py)=>{this.A[i][0]=clamp(snap(G.iX(px),0.5),-6,6);
+                       this.A[i][1]=clamp(snap(G.iY(py),0.5),-6,6);}}));
     }
-    const out=[];
-    out.push(...gaugeGrips(this.gcol(b),this.GG,this));
-    return out;
+    return [orbitGrip(this,'az','el')];
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w}=b;
     g.clearRect(0,0,w,b.h);
-    if(this.dim===2) this.scene2(b); else this.scene3(b);
+    const M=this.M(), d=this.dim;
+    mFrame(g,M,d,d,CLR.k1,d===2?'рядки a₁, a₂':'рядки a₁, a₂, a₃',CLR.sec);
+    mCells(g,M,this.A,d,d,{input:true});
+    if(d===2) this.scene2(b); else this.scene3(b);
     for(const hh of this.grips()) drawGrip(g,hh,this);
-    $('m1state').textContent=(this.dim===2?'площа = ':'об’єм = ')+fmt(Math.abs(this.det()),3);
+    $('m1state').textContent=(d===2?'площа = ':'об’єм = ')+fmt(Math.abs(this.det()),3);
   },
   scene2(b){
-    const {g,w}=b, G=this.geo2(b), h=G.H;
+    const {g,w}=b, G=this.geo2(b), h=G.H, R=this.rows(), D=m2det(R);
     planeGrid(g,G,w,h);
-    const A=this.A2, D=m2det(A);
-    const P=[[0,0],[A[0][0],A[1][0]],[A[0][0]+A[0][1],A[1][0]+A[1][1]],[A[0][1],A[1][1]]];
-    pathXY(g,G,P,true);
-    g.fillStyle=D>=0?'rgba(11,11,11,.08)':'rgba(235,104,52,.12)'; g.fill();
-    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]); g.stroke(); g.setLineDash([]);
-    /* основа й висота — щоб «площа = основа × висота» була видна, а не сказана */
-    const L1=Math.hypot(A[0][0],A[1][0]);
-    if(L1>1e-6){
-      const u=[A[0][0]/L1,A[1][0]/L1];
-      const t=A[0][1]*u[0]+A[1][1]*u[1];
-      const foot=[u[0]*t,u[1]*t];
-      g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([4,3]);
-      g.beginPath();
-      g.moveTo(G.SX(A[0][1]),G.SY(A[1][1])); g.lineTo(G.SX(foot[0]),G.SY(foot[1]));
-      g.stroke(); g.setLineDash([]);
-      pill(g,'висота '+fmt(Math.abs(D)/L1,2),
-        G.SX((A[0][1]+foot[0])/2),G.SY((A[1][1]+foot[1])/2),{color:CLR.k3,size:10.5,bold:true});
-    }
-    const O=[G.SX(0),G.SY(0)];
-    for(const j of [0,1]){
-      const p=[G.SX(A[0][j]),G.SY(A[1][j])];
-      arrow(g,O[0],O[1],p[0],p[1],j?CLR.k2:CLR.k1,2.4);
-      txt(g,'a'+(j+1),p[0]+8,p[1]-6,{color:j?CLR.k2:CLR.k1,size:12.5,bold:true});
-    }
-    pill(g,'|det| = '+fmt(Math.abs(D),3),
-      G.SX((A[0][0]+A[0][1])/2),G.SY((A[1][0]+A[1][1])/2)+4,{color:CLR.ink,size:11.5,bold:true});
-    cap2(g,'Площа паралелограма',
-      Math.abs(D)<1e-4?'вектори колінеарні — площа нульова':'основа × висота = |det A|',
-      Math.abs(D)<1e-4?CLR.k2:CLR.ink);
+    const S=v=>[G.SX(v[0]),G.SY(v[1])], O=S([0,0]);
+    const P1=S(R[0]), P2=S(R[1]), P3=S([R[0][0]+R[1][0],R[0][1]+R[1][1]]);
+    g.beginPath();
+    g.moveTo(O[0],O[1]); g.lineTo(P1[0],P1[1]); g.lineTo(P3[0],P3[1]); g.lineTo(P2[0],P2[1]);
+    g.closePath();
+    g.fillStyle=D>=0?'rgba(42,120,214,.12)':'rgba(235,104,52,.12)'; g.fill();
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(P1[0],P1[1]); g.lineTo(P3[0],P3[1]); g.lineTo(P2[0],P2[1]); g.stroke();
+    g.setLineDash([]);
+    arrow(g,O[0],O[1],P1[0],P1[1],CLR.k1,2.4);
+    arrow(g,O[0],O[1],P2[0],P2[1],CLR.k2,2.4);
+    txt(g,'a₁',P1[0]+8,P1[1]-6,{color:CLR.k1,size:12.5,bold:true});
+    txt(g,'a₂',P2[0]+8,P2[1]-6,{color:CLR.k2,size:12.5,bold:true});
+    pill(g,'площа |det| = '+fmt(Math.abs(D),3),(O[0]+P3[0])/2,(O[1]+P3[1])/2+4,
+      {color:CLR.ink,size:11.5,bold:true});
+    cap2(g,'Визначник 2×2 — це площа зі знаком',
+      D>=0?'обхід a₁ → a₂ проти годинникової стрілки, знак додатний'
+          :'обхід a₁ → a₂ за годинниковою стрілкою, знак від’ємний',
+      D>=0?CLR.k1:CLR.k2,214,20);
   },
   scene3(b){
-    const {g,w,h}=b;
-    const M=this.M(), A=this.A3();
-    mFrame(g,M,2,3,CLR.k1,'a₁, a₂',CLR.k1);
-    mCells(g,M,this.R3,2,3,{input:true});
-    const M3p={x:M.x,y:M.y+2*MCH+30};
-    mFrame(g,M3p,1,3,CLR.k2,'a₃ = α·a₁ + β·a₂ + h·n̂',CLR.k2);
-    mCells(g,M3p,[A[2]],1,3,{dec:2,cellCol:()=>CLR.sec});
-    const left=M.x+3*MCW+40;
+    const {g,w,h}=b, R=this.rows(), D=det3(R);
+    const left=this.M().x+3*MCW+40;
     const cx=left+(w-left-20)/2, cy=(h-96)/2+42;
-    const span=Math.max(1.5,...A.flat().map(Math.abs))*1.4;
-    const sc=Math.min((w-left-30)/2,(h-120)/2)/span;
-    const P=iso(cx,cy,sc,this.az*DEG,26*DEG);
-    const L=span;
+    const span=Math.max(1.5,...R.flat().map(Math.abs))*1.3;
+    const L=span, F0=L*0.8;
+    const P=fitIso(cx,cy,this.az*DEG,this.el*DEG,3.2*span,
+      R.concat([[F0,F0,0],[F0,-F0,0],[-F0,F0,0],[-F0,-F0,0],
+        [L,0,0],[0,L,0],[0,0,L],[-L,0,0],[0,-L,0],[0,0,-L]]),
+      Math.min(cx-left,w-10-cx), Math.min(cy-30,h-34-cy));
+    floor3(g,P,F0,4);
+    line3(g,P,[-L,0,0],[L,0,0],CLR.grid,1);
+    line3(g,P,[0,-L,0],[0,L,0],CLR.grid,1);
+    line3(g,P,[0,0,-L],[0,0,L],CLR.grid,1);
     arrow3(g,P,[0,0,0],[L*0.95,0,0],CLR.axis,1.4);
     arrow3(g,P,[0,0,0],[0,L*0.95,0],CLR.axis,1.4);
     arrow3(g,P,[0,0,0],[0,0,L*0.95],CLR.axis,1.4);
     let q=P.P(L*0.95,0,0); txt(g,'x',q[0]+5,q[1]+4,{color:CLR.mut,size:10.5});
     q=P.P(0,L*0.95,0); txt(g,'y',q[0]+5,q[1]+4,{color:CLR.mut,size:10.5});
     q=P.P(0,0,L*0.95); txt(g,'z',q[0]+5,q[1]+4,{color:CLR.mut,size:10.5});
-    const V=[[0,0,0],A[0],A[1],A[2],v3add(A[0],A[1]),v3add(A[0],A[2]),v3add(A[1],A[2]),
-      v3add(v3add(A[0],A[1]),A[2])];
+    /* сам паралелепіпед — гранями за глибиною */
+    const V=[[0,0,0],R[0],R[1],R[2],v3add(R[0],R[1]),v3add(R[0],R[2]),v3add(R[1],R[2]),
+      v3add(v3add(R[0],R[1]),R[2])];
     const F=[[0,1,4,2],[0,1,5,3],[0,2,6,3],[1,4,7,5],[2,4,7,6],[3,5,7,6]];
     F.map(f=>({f,d:f.reduce((s,k)=>s+P.D(V[k][0],V[k][1],V[k][2]),0)/4}))
      .sort((a,b2)=>a.d-b2.d)
-     .forEach(o=>poly3(g,P,o.f.map(k=>V[k]),'rgba(11,11,11,.06)','rgba(11,11,11,.20)',1));
-    /* основа — паралелограм a₁, a₂; висота — перпендикуляр від a₃ */
-    poly3(g,P,[[0,0,0],A[0],v3add(A[0],A[1]),A[1]],'rgba(42,120,214,.14)',CLR.k1,1.6);
-    const n=this.nhat();
-    const foot=v3sub(A[2],v3mul(n,v3dot(A[2],n)));
-    line3(g,P,foot,A[2],CLR.k3,1.6,[4,3]);
+     .forEach(o=>poly3(g,P,o.f.map(k=>V[k]),
+       D>=0?'rgba(42,120,214,.07)':'rgba(235,104,52,.07)','rgba(11,11,11,.20)',1.1));
     const cols=[CLR.k1,CLR.k2,CLR.ink], nm=['a₁','a₂','a₃'];
-    for(let i=0;i<3;i++){
-      arrow3(g,P,[0,0,0],A[i],cols[i],i===2?2.6:2.2);
-      const s=P.P(A[i][0],A[i][1],A[i][2]);
-      txt(g,nm[i],s[0]+7,s[1]-5,{color:cols[i],size:12,bold:true});
-    }
-    const D=det3(A);
-    cap2(g,'Об’єм паралелепіпеда',
-      Math.abs(D)<1e-4?'усі три вектори в одній площині — об’єм нульовий'
-        :'площа основи × висота = |det A| = '+fmt(Math.abs(D),3),
-      Math.abs(D)<1e-4?CLR.k2:CLR.ink,left,20);
-    gaugeCol(g,this.gcol(b),this.GG,this);
-  },
-  base(){
-    if(this.dim===2) return Math.hypot(this.A2[0][0],this.A2[1][0]);
-    return v3len(v3cross(this.R3[0],this.R3[1]));
+    for(let i=0;i<3;i++) line3(g,P,R[i],[R[i][0],R[i][1],0],CLR.grid,1,[3,3]);
+    [0,1,2].map(i=>({i,d:P.D(R[i][0],R[i][1],R[i][2])}))
+      .sort((p1,p2)=>p1.d-p2.d)
+      .forEach(o=>{
+        const i=o.i;
+        arrow3(g,P,[0,0,0],R[i],cols[i],2.4);
+        const s=P.P(R[i][0],R[i][1],R[i][2]);
+        txt(g,nm[i],s[0]+7,s[1]-5,{color:cols[i],size:12,bold:true});
+      });
+    cap2(g,'Визначник 3×3 — це об’єм зі знаком',
+      Math.abs(D)<1e-9?'три вектори лягли в одну площину — об’єм нульовий'
+        :(D>0?'трійка права: знак додатний':'трійка ліва: знак від’ємний'),
+      Math.abs(D)<1e-9?CLR.k2:CLR.ink,left,20);
+    txt(g,'тягніть фон — сцена обертається · азимут '+fmt(this.az,0)+'°, нахил '+fmt(this.el,0)+'°',
+      left,h-12,{color:CLR.mut,size:10.5});
   },
   table(){
-    const D=this.det(), B=this.base();
-    if(this.dim===2){
-      $('m1v1').textContent='('+fmt(this.A2[0][0],1)+'; '+fmt(this.A2[1][0],1)+')';
-      $('m1v2').textContent='('+fmt(this.A2[0][1],1)+'; '+fmt(this.A2[1][1],1)+')';
-      $('m1v3row').hidden=true;
-      $('m1kBase').textContent='|a₁| = '+fmt(B,3);
-      $('m1kRank').textContent=fmt(rankM(this.A2,1e-7),0)+' з 2';
-      $('m1fx').innerHTML='det A = '+fmt(this.A2[0][0],1)+'·'+fmt(this.A2[1][1],1)+' − '+
-        fmt(this.A2[0][1],1)+'·'+fmt(this.A2[1][0],1)+' = <b>'+fmt(D,3)+'</b>';
-    } else {
-      const A=this.A3();
-      $('m1v1').textContent='('+A[0].map(v=>fmt(v,1)).join('; ')+')';
-      $('m1v2').textContent='('+A[1].map(v=>fmt(v,1)).join('; ')+')';
-      $('m1v3row').hidden=false;
-      $('m1v3').textContent='('+A[2].map(v=>fmt(v,2)).join('; ')+')';
-      $('m1kBase').textContent='|a₁ × a₂| = '+fmt(B,3);
-      $('m1kRank').textContent=fmt(rankM(A,1e-7),0)+' з 3';
-      $('m1fx').innerHTML='Об’єм = площа основи × висота = '+fmt(B,3)+' · '+
-        fmt(B>1e-9?Math.abs(D)/B:0,3)+' = <b>'+fmt(Math.abs(D),3)+'</b>';
-    }
+    const d=this.dim, R=this.rows(), D=this.det();
+    const fp=v=>'('+v.map(q=>fmt(q,1)).join('; ')+')';
+    $('m1v1').textContent=fp(R[0]);
+    $('m1v2').textContent=fp(R[1]);
+    $('m1v3row').hidden=d!==3;
+    if(d===3) $('m1v3').textContent=fp(R[2]);
     $('m1kDet').textContent=fmt(D,4);
-    $('m1kAbs').textContent=fmt(Math.abs(D),4)+(this.dim===2?' кв. од.':' куб. од.');
-    $('m1kOr').textContent=Math.abs(D)<1e-6?'вироджена'
-      :(D>0?'додатна (права)':'відʼємна (ліва)');
-    $('m1kDeg').textContent=Math.abs(D)<1e-6?'так':'ні';
-    $('m1kH').textContent=B>1e-9?fmt(Math.abs(D)/B,3):'—';
-    $('m1kBH').textContent=fmt(B,3)+' · '+fmt(B>1e-9?Math.abs(D)/B:0,3)+' = '+fmt(Math.abs(D),3);
-  },
-  charts(){
-    const b1=cvx('m1ch');
-    if(b1){
-      const ts=[],ys=[];
-      let cur=0, x0=0;
-      if(this.dim===2){
-        /* висота другого вектора над першим */
-        const a1=[this.A2[0][0],this.A2[1][0]];
-        const L=Math.hypot(a1[0],a1[1])||1;
-        const n=[-a1[1]/L,a1[0]/L];
-        const a2=[this.A2[0][1],this.A2[1][1]];
-        const t0=a2[0]*a1[0]/L+a2[1]*a1[1]/L;
-        cur=a2[0]*n[0]+a2[1]*n[1];
-        for(let i=0;i<=120;i++){const hgt=-4+8*i/120;
-          const p=[a1[0]/L*t0+n[0]*hgt, a1[1]/L*t0+n[1]*hgt];
-          ts.push(hgt+4); ys.push(Math.abs(a1[0]*p[1]-p[0]*a1[1]));}
-        x0=cur+4;
-      } else {
-        const d0=det3([this.R3[0],this.R3[1],this.nhat()]);
-        for(let i=0;i<=120;i++){const hv=-4+8*i/120; ts.push(hv+4); ys.push(Math.abs(d0*hv));}
-        x0=this.hh+4; cur=this.hh;
-      }
-      const hi=Math.max(0.5,...ys)*1.12;
-      const r=drawChart(b1,{tMax:8,yMin:0,yMax:hi,yLab:'|det|',xLab:'висота + 4',
-        yDec:1,xDec:0,xStep:2,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k2,label:'|det|'},
-          {ts:[x0,x0],ys:[0,Math.abs(this.det())],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['|det|',CLR.k2],['зараз',CLR.ink]],3);
+    $('m1kAbs').textContent=fmt(Math.abs(D),4)+(d===2?' кв. од.':' куб. од.');
+    $('m1kOr').textContent=Math.abs(D)<1e-9?'немає — міра виродилася'
+      :(D>0?'права: знак додатний':'ліва: знак від’ємний');
+    $('m1kDeg').textContent=Math.abs(D)<1e-9
+      ? (d===2?'так — вектори колінеарні':'так — вектори компланарні') : 'ні';
+    /* міра як «основа × висота» — та сама величина, порахована інакше */
+    if(d===2){
+      const L=Math.hypot(R[0][0],R[0][1]);
+      const H=L<1e-12?0:Math.abs(D)/L;
+      $('m1kBase').textContent='|a₁| = '+fmt(L,3);
+      $('m1kH').textContent=fmt(H,3);
+      $('m1kBH').textContent=fmt(L*H,4)+(Math.abs(L*H-Math.abs(D))<1e-9?' — збіглося':'');
+      $('m1kRank').textContent=fmt(rankM([[R[0][0],R[0][1]],[R[1][0],R[1][1]]],1e-9),0)+' з 2';
+    } else {
+      const n=v3cross(R[0],R[1]), S=v3len(n);
+      const H=S<1e-12?0:Math.abs(v3dot(R[2],n))/S;
+      $('m1kBase').textContent='площа на a₁, a₂ = '+fmt(S,3);
+      $('m1kH').textContent=fmt(H,3);
+      $('m1kBH').textContent=fmt(S*H,4)+(Math.abs(S*H-Math.abs(D))<1e-9?' — збіглося':'');
+      $('m1kRank').textContent=fmt(rankM(R,1e-9),0)+' з 3';
     }
-    const b2=cvx('m1ca');
-    if(b2){
-      const ts=[],ys=[];
-      let L1,L2,cur;
-      if(this.dim===2){
-        L1=Math.hypot(this.A2[0][0],this.A2[1][0]);
-        L2=Math.hypot(this.A2[0][1],this.A2[1][1]);
-        const c=(this.A2[0][0]*this.A2[0][1]+this.A2[1][0]*this.A2[1][1])/Math.max(1e-9,L1*L2);
-        cur=Math.acos(clamp(c,-1,1))/DEG;
-      } else {
-        const a1=this.R3[0], a2=this.R3[1];
-        L1=v3len(a1); L2=v3len(a2);
-        cur=Math.acos(clamp(v3dot(a1,a2)/Math.max(1e-9,L1*L2),-1,1))/DEG;
-      }
-      const hgt=this.dim===2?1:Math.abs(this.hh);
-      for(let i=0;i<=180;i++){const a=i; ts.push(a);
-        ys.push(L1*L2*Math.abs(Math.sin(a*DEG))*(this.dim===2?1:hgt));}
-      const hi=Math.max(0.5,...ys)*1.12;
-      const r=drawChart(b2,{tMax:180,yMin:0,yMax:hi,yLab:'|det|',xLab:'кут, °',
-        yDec:1,xDec:0,xStep:45,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k1,label:'|det|'},
-          {ts:[cur,cur],ys:[0,Math.abs(this.det())],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['|det|',CLR.k1],['зараз',CLR.ink]],3);
-    }
+    $('m1fx').innerHTML=d===2
+      ? 'Площа паралелограма = |a₁|·|a₂|·sin φ, і це рівно |det|. Знак каже про напрям '+
+        'обходу, а не про розмір: перестановка рядків його перевертає.'
+      : 'Об’єм = площа основи на a₁, a₂, помножена на висоту a₃ над нею — і це рівно |det|. '+
+        'Щойно третій вектор ляже в площину перших двох, висота стане нулем, а з нею й увесь об’єм.';
   }
 };
 
@@ -1463,7 +1376,7 @@ const M2={
   init(){
     grip('m2scene',this,()=>this.grips());
     matIn('m2mx',{st:this, M:()=>this.M(), A:()=>this.A, m:()=>3, n:()=>3,
-      lo:-9, hi:9, step:1, dec:0, after:function(){this.k=0; this.t=0;}});
+      lo:-9, hi:9, step:1, dec:0, after:function(){this.k=0;}});
     seg('m2way',v=>{this.way=v; this.k=0; this.t=0;});
     $('m2play').addEventListener('click',()=>{
       this.play=!this.play; $('m2play').textContent=this.play?'⏸':'▶';
@@ -1613,15 +1526,12 @@ const M2={
 /* ===================== МОДУЛЬ 3 · властивості ===================== */
 const M3={
   A:[[3,1],[1,2]], op:'none', lam:2, t:1,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   M(){return {x:40,y:88};},
   init(){
     grip('m3scene',this,()=>this.grips());
     matIn('m3mx',{st:this, M:()=>this.M(), A:()=>this.A, m:()=>2, n:()=>2,
       lo:-6, hi:6, step:0.5, dec:1});
     seg('m3op',v=>{this.op=v;});
-    this.tip1=makeTip('m3caw'); hover('m3ca',this.h1);
-    this.tip2=makeTip('m3csw'); hover('m3cs',this.h2);
   },
   /* після перетворення — саме РЯДКИ, бо всі три властивості формулюються
      для рядків; на площині рядки малюємо як вектори (a11,a12) і (a21,a22) */
@@ -1634,8 +1544,10 @@ const M3={
     return [A[0].slice(),A[1].slice()];
   },
   gcol(b){return {x:[b.w-224], y0:b.h-28, dy:20, W:166};},
-  GL:[['lam','λ — множник рядка',-3,3,0.1,'#2a78d6',null,'m3vlam',1,'']],
-  GT:[['t','t — скільки рядка 2 додаємо',-3,3,0.1,'#1baf7a',null,'m3vt',1,'']],
+  /* на смугах позначено те значення, при якому нічого не відбувається:
+     множник 1 лишає рядок як був, доданок 0 — теж */
+  GL:[['lam','λ — множник рядка',-3,3,0.1,'#2a78d6',null,'m3vlam',1,'',1]],
+  GT:[['t','t — скільки рядка 2 додаємо',-3,3,0.1,'#1baf7a',null,'m3vt',1,'',0]],
   rows(M){return [[M[0][0],M[0][1]],[M[1][0],M[1][1]]];},
   geo(b){return planeGeo(this,b,()=>{
     const R0=this.rows(this.A), R1=this.rows(this.after());
@@ -1650,7 +1562,7 @@ const M3={
     return out;
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m3scene'); if(!b) return;
     const {g,w}=b;
@@ -1728,34 +1640,6 @@ const M3={
     $('m3fx').innerHTML='Додавання рядка до рядка не змінює визначника — тому метод Гаусса '+
       'має право зводити матрицю до трикутного вигляду й не псувати відповідь.';
   },
-  charts(){
-    const A=this.A;
-    const b1=cvx('m3ca');
-    if(b1){
-      const ts=[],ys=[];
-      for(let i=0;i<=120;i++){const t=-3+6*i/120; ts.push(t+3);
-        ys.push(m2det([[A[0][0]+t*A[1][0],A[0][1]+t*A[1][1]],A[1]]));}
-      const hi=Math.max(1,...ys.map(Math.abs))*1.4;
-      const r=drawChart(b1,{tMax:6,yMin:-hi,yMax:hi,yLab:'det',xLab:'t + 3',
-        yDec:1,xDec:0,xStep:1,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k3,label:'det(t)'},
-          {ts:[this.t+3,this.t+3],ys:[-hi,ys[Math.round((this.t+3)/6*120)]||0],
-            color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['det(t)',CLR.k3],['зараз',CLR.ink]],3);
-    }
-    const b2=cvx('m3cs');
-    if(b2){
-      const ts=[],ys=[];
-      for(let i=0;i<=120;i++){const l=-3+6*i/120; ts.push(l+3);
-        ys.push(m2det([[A[0][0]*l,A[0][1]*l],A[1]]));}
-      const hi=Math.max(1,...ys.map(Math.abs))*1.2;
-      const r=drawChart(b2,{tMax:6,yMin:-hi,yMax:hi,yLab:'det',xLab:'λ + 3',
-        yDec:1,xDec:0,xStep:1,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k1,label:'det(λ)'},
-          {ts:[this.lam+3,this.lam+3],ys:[-hi,this.lam*m2det(A)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['det(λ)',CLR.k1],['зараз',CLR.ink]],3);
-    }
-  }
 };
 
 /* ===================== МОДУЛЬ 4 · зведення до трикутного ===================== */
@@ -1763,20 +1647,18 @@ const M4={
   n:3,
   A3:[[2,-1,3],[4,4,-2],[1,1,5]],
   A4:[[2,-1,3,1],[4,4,-2,0],[1,1,5,2],[0,3,1,-1]],
-  k:0, t:0, play:true,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  k:0,
   M(){return {x:40,y:104};},
   init(){
     grip('m4scene',this,()=>this.grips());
     matIn('m4mx',{st:this, M:()=>this.M(), A:()=>this.src(), m:()=>this.n, n:()=>this.n,
-      lo:-9, hi:9, step:1, dec:0, after:function(){this.k=0; this.t=0;}});
-    seg('m4n',v=>{this.n=+v; this.k=0; this.t=0;});
-    $('m4play').addEventListener('click',()=>{
-      this.play=!this.play; $('m4play').textContent=this.play?'⏸':'▶';
-    });
-    $('m4re').addEventListener('click',()=>{this.k=0; this.t=0;});
-    this.tip1=makeTip('m4ccw'); hover('m4cc',this.h1);
-    this.tip2=makeTip('m4cpw'); hover('m4cp',this.h2);
+      lo:-9, hi:9, step:1, dec:0, after:function(){this.k=0;}});
+    seg('m4n',v=>{this.n=+v; this.k=0;});
+    /* Кроки перебирають стрілками, а не дивляться, як вони самі йдуть по колу:
+       зациклена анімація не дає ані затриматися на кроці, ані повернутися. */
+    $('m4prev').addEventListener('click',()=>{this.k=Math.max(0,this.k-1);});
+    $('m4next').addEventListener('click',()=>{this.k=Math.min(this.run().length-1,this.k+1);});
+    $('m4re').addEventListener('click',()=>{this.k=0;});
   },
   src(){return this.n===3?this.A3:this.A4;},
   /* Повний протокол прямого ходу: кожен крок — знімок матриці плюс те,
@@ -1834,15 +1716,13 @@ const M4={
   grips(){
     return [];
   },
-  tick(dt){
-    const S=this.run();
-    if(this.play){
-      this.t+=dt;
-      if(this.t>1.0){this.t=0; this.k=(this.k+1)%S.length;}
-    }
+  tick(){
+    /* крок міняють кнопками; тут лише не даємо номеру вилетіти за межі,
+       коли матрицю набрали заново й кроків стало менше */
+    this.k=clamp(this.k,0,this.run().length-1);
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m4scene'); if(!b) return;
     const {g,w}=b;
@@ -1916,68 +1796,51 @@ const M4={
       Array.from({length:n},(_,i)=>fmt(S[S.length-1].A[i][i],2)).join('·')+' = <b>'+
       fmt(this.detGauss(),3)+'</b>';
   },
-  charts(){
-    const b1=cvx('m4cc');
-    if(b1){
-      const ts=[],y1=[],y2=[];
-      for(let n=2;n<=12;n++){
-        const c=this.costs(n);
-        ts.push(n); y1.push(Math.log10(Math.max(1,c[0]))); y2.push(Math.log10(Math.max(1,c[1])));
-      }
-      const hi=Math.max(...y1)*1.12+0.3;
-      const r=drawChart(b1,{tMax:12,yMin:0,yMax:hi,yLab:'log₁₀ N',xLab:'n',
-        yDec:1,xDec:0,xStep:2,hover:this.h1.x,
-        series:[{ts,ys:y1,color:CLR.k2,label:'розклад'},{ts,ys:y2,color:CLR.k1,label:'Гаусс'},
-          {ts:[this.n,this.n],ys:[0,hi*0.95],color:CLR.ink,label:'n',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['розклад',CLR.k2],['Гаусс',CLR.k1],['n',CLR.ink]],2);
-    }
-    const b2=cvx('m4cp');
-    if(b2){
-      const S=this.run(), ts=[],ys=[];
-      S.forEach((s,i)=>{ts.push(i); ys.push(s.mul);});
-      const hi=Math.max(1,...ys)*1.2;
-      const r=drawChart(b2,{tMax:Math.max(1,S.length-1),yMin:0,yMax:hi,yLab:'множень',xLab:'крок',
-        yDec:0,xDec:0,xStep:Math.max(1,Math.round((S.length-1)/5)),hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k3,label:'накопичено'},
-          {ts:[this.k,this.k],ys:[0,S[Math.min(this.k,S.length-1)].mul],color:CLR.ink,label:'крок',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['множень',CLR.k3],['крок',CLR.ink]],0);
-    }
-  }
 };
 
-/* ===================== МОДУЛЬ 5 · практика: площа ділянки ===================== */
-/* Координати межових точок у метрах від умовного реперного знака. */
+/* ===================== МОДУЛЬ 5 · практика: робота за цикл ===================== */
+/* Замкнутий цикл на pV-діаграмі: газ повертається у вихідний стан, а роботу
+   він устигає зробити. Ця робота дорівнює площі, охопленій циклом, — тій самій
+   сумі визначників 2×2, по одному на кожну пару сусідніх станів. Знак суми тут
+   не абстракція: у робочого циклу двигуна обхід іде за годинниковою стрілкою,
+   і саме тоді газ віддає роботу.
+   Одиниці підібрано так, що бар·л переводяться в джоулі множенням на 100. */
+const CYC={
+  rect:[[1,3],[4,3],[4,1],[1,1]],
+  tri:[[1,1],[1,3],[4,1]],
+  otto:[[1,3.6],[2,2.2],[4,1.2],[4,0.6],[1,1.4]]
+};
 const M5={
-  P:[[0,0],[186,-24],[248,132],[140,232],[-32,148]],
-  sh:0, i:0, t:0, play:true, mode:'tri',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  P:CYC.rect.map(p=>p.slice()),
+  i:0, mode:'tri',
+  MT(){return {x:20,y:106};},
   init(){
     grip('m5scene',this,()=>this.grips());
     seg('m5mode',v=>{this.mode=v;});
-    $('m5play').addEventListener('click',()=>{
-      this.play=!this.play; $('m5play').textContent=this.play?'⏸':'▶';
-    });
-    this.tip1=makeTip('m5ccw'); hover('m5cc',this.h1);
-    this.tip2=makeTip('m5csw'); hover('m5cs',this.h2);
+    seg('m5pre',v=>{this.P=CYC[v].map(p=>p.slice()); this.i=0;});
+    $('m5prev').addEventListener('click',()=>{
+      this.i=(this.i+this.P.length-1)%this.P.length;});
+    $('m5next').addEventListener('click',()=>{this.i=(this.i+1)%this.P.length;});
   },
-  shifted(sh){
-    const S=sh==null?this.sh:sh;
-    return this.P.map(p=>[p[0]+S,p[1]+S*0.4]);
-  },
-  term(k,sh){
-    const Q=this.shifted(sh), n=Q.length;
-    const a=Q[k], b=Q[(k+1)%n];
+  term(k){
+    const n=this.P.length, a=this.P[k], b=this.P[(k+1)%n];
     return a[0]*b[1]-b[0]*a[1];
   },
-  sum(sh){let s=0; for(let k=0;k<this.P.length;k++) s+=this.term(k,sh); return s;},
-  area(sh){return Math.abs(this.sum(sh))/2;},
-  perim(){
-    const n=this.P.length; let s=0;
-    for(let k=0;k<n;k++){const a=this.P[k], b=this.P[(k+1)%n]; s+=Math.hypot(b[0]-a[0],b[1]-a[1]);}
-    return s;
+  sum(){let s=0; for(let k=0;k<this.P.length;k++) s+=this.term(k); return s;},
+  /* площа, охоплена циклом, у бар·л */
+  encl(){return Math.abs(this.sum())/2;},
+  /* робота газу за цикл, Дж: за годинниковою стрілкою вона додатна,
+     а шнурівка при такому обході дає від'ємну суму — звідси мінус */
+  work(){return -this.sum()/2*100;},
+  clockwise(){return this.sum()<0;},
+  dV(){
+    const xs=this.P.map(p=>p[0]);
+    return Math.max(...xs)-Math.min(...xs);
   },
-  /* незалежна звірка: розбиття на трикутники віялом з першої вершини */
-  areaFan(){
+  /* середній тиск циклу: робота, поділена на розмах об'єму */
+  pmid(){const d=this.dV(); return d<1e-9?0:this.encl()/d;},
+  /* незалежна звірка: розбиття на трикутники віялом із першої вершини */
+  fan(){
     let s=0;
     for(let k=1;k+1<this.P.length;k++){
       const a=this.P[0], b=this.P[k], c=this.P[k+1];
@@ -1987,129 +1850,153 @@ const M5={
   },
   selfIntersect(){
     const n=this.P.length;
-    const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
-    const seg=(p1,p2,p3,p4)=>{
-      const d1=cross(p3,p4,p1), d2=cross(p3,p4,p2), d3=cross(p1,p2,p3), d4=cross(p1,p2,p4);
+    const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const sg=(p1,p2,p3,p4)=>{
+      const d1=cr(p3,p4,p1), d2=cr(p3,p4,p2), d3=cr(p1,p2,p3), d4=cr(p1,p2,p4);
       return ((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0));
     };
     for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){
       if(a===b||(a+1)%n===b||(b+1)%n===a) continue;
-      if(seg(this.P[a],this.P[(a+1)%n],this.P[b],this.P[(b+1)%n])) return true;
+      if(sg(this.P[a],this.P[(a+1)%n],this.P[b],this.P[(b+1)%n])) return true;
     }
     return false;
   },
-  gcol(b){return {x:[b.w-230], y0:b.h-28, dy:20, W:170};},
-  GG:[['sh','зсув початку координат',-200,200,5,'#2a78d6',null,'m5vSh',0,'м']],
-  geo(b){return planeGeo(this,b,()=>this.shifted().concat([[0,0]]),46);},
+  /* Кадр діаграми, а не геометричної площини: нуль стоїть у лівому нижньому
+     куті відведеного поля, від'ємних тисків і об'ємів не буває. Масштаб по
+     обох осях однаковий (§10) — одиниці підібрано так, що це має сенс. */
+  geo(b){return frozen(this,b,bb=>{
+    const left=214, x0=left+52, y0=bb.h-66;
+    const Vm=Math.max(5,...this.P.map(p=>p[0]))*1.14;
+    const pm=Math.max(4,...this.P.map(p=>p[1]))*1.14;
+    const sc=Math.min((bb.w-x0-46)/Vm,(y0-36)/pm);
+    return {sc,x0,y0,left,Vm,pm,H:bb.h,
+      SX:v=>x0+v*sc, SY:p=>y0-p*sc,
+      iX:px=>(px-x0)/sc, iY:py=>(y0-py)/sc};
+  });},
+  /* сітка з цінами поділок — своя, бо стандартна ставить нуль посередині */
+  grid(g,G){
+    const st=G.sc>60?0.5:1;
+    g.lineWidth=1;
+    for(let v=0;v<=G.Vm+1e-9;v+=st){
+      g.strokeStyle=v<1e-9?CLR.axis:CLR.grid;
+      g.beginPath(); g.moveTo(G.SX(v)+.5,G.SY(G.pm)); g.lineTo(G.SX(v)+.5,G.y0); g.stroke();
+      if(Math.abs(v/st%2)<1e-9)
+        txt(g,fmt(v,0),G.SX(v),G.y0+14,{color:CLR.mut,size:9.5,align:'center'});
+    }
+    for(let p=0;p<=G.pm+1e-9;p+=st){
+      g.strokeStyle=p<1e-9?CLR.axis:CLR.grid;
+      g.beginPath(); g.moveTo(G.x0,G.SY(p)+.5); g.lineTo(G.SX(G.Vm),G.SY(p)+.5); g.stroke();
+      if(Math.abs(p/st%2)<1e-9)
+        txt(g,fmt(p,0),G.x0-6,G.SY(p)+3,{color:CLR.mut,size:9.5,align:'right'});
+    }
+    txt(g,'V, л',G.SX(G.Vm),G.y0+26,{color:CLR.mut,size:11,align:'right'});
+    txt(g,'p, бар',G.x0-6,G.SY(G.pm)-8,{color:CLR.mut,size:11});
+  },
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
     const G=this.geo(b);
-    const out=this.P.map((p,k)=>({id:'p'+k, x:G.SX(p[0]+this.sh), y:G.SY(p[1]+this.sh*0.4),
-      r:9, color:CLR.k1, hint:'межова точка '+(k+1),
+    return this.P.map((p,k)=>({id:'s'+k, x:G.SX(p[0]), y:G.SY(p[1]), r:9, color:CLR.k1,
+      hint:'стан '+(k+1)+' циклу',
       move:(px,py)=>{
-        this.P[k]=[clamp(snap(G.iX(px)-this.sh,1),-400,400),
-                   clamp(snap(G.iY(py)-this.sh*0.4,1),-400,400)];
+        this.P[k]=[clamp(snap(G.iX(px),0.1),0.2,8), clamp(snap(G.iY(py),0.1),0.2,5)];
       }}));
-    out.push(...gaugeGrips(this.gcol(b),this.GG,this));
-    return out;
   },
-  tick(dt){
-    if(this.play){
-      this.t+=dt;
-      if(this.t>1.0){this.t=0; this.i=(this.i+1)%this.P.length;}
-    }
+  tick(){
+    this.i=((this.i%this.P.length)+this.P.length)%this.P.length;
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w}=b;
     g.clearRect(0,0,w,b.h);
-    const G=this.geo(b), h=G.H, Q=this.shifted(), n=Q.length;
-    planeGrid(g,G,w,h);
+    const G=this.geo(b), Q=this.P, n=Q.length;
+    /* матриця самого доданка: у стовпцях — два сусідні стани циклу */
+    const MT=this.MT(), ia=this.i, ib=(this.i+1)%n;
+    const T=[[Q[ia][0],Q[ib][0]],[Q[ia][1],Q[ib][1]]];
+    const tv=this.term(this.i);
+    mFrame(g,MT,2,2,tv>=0?CLR.k3:CLR.k2,'доданок '+(ia+1)+' з '+n,tv>=0?CLR.k3:CLR.k2);
+    mCells(g,MT,T,2,2,{dec:1,cellCol:(r,c2)=>c2?CLR.sec:CLR.ink});
+    txt(g,'стовпці — стани '+(ia+1)+' і '+(ib+1),MT.x-4,MT.y+2*MCH+20,
+      {color:CLR.mut,size:10.5});
+    txt(g,'рядок 1 — V, рядок 2 — p',MT.x-4,MT.y+2*MCH+34,{color:CLR.mut,size:10.5});
+    txt(g,'det = '+fmt(T[0][0],1)+'·'+fmt(T[1][1],1)+' − '+fmt(T[0][1],1)+'·'+fmt(T[1][0],1),
+      MT.x-4,MT.y+2*MCH+56,{color:CLR.ink,size:11,bold:true});
+    txt(g,'      = '+fmt(tv,2)+' бар·л',MT.x-4,MT.y+2*MCH+72,
+      {color:tv>=0?CLR.k3:CLR.k2,size:11.5,bold:true});
+    let acc=0;
+    for(let k=0;k<n;k++){
+      const v=this.term(k);
+      acc+=v;
+      const on=k===this.i;
+      txt(g,(k+1)+':  '+(v>=0?'+':'−')+fmt(Math.abs(v),2),
+        MT.x-4,MT.y+2*MCH+98+k*15,{color:on?CLR.ink:CLR.mut,size:on?11:10.5,bold:on});
+    }
+    txt(g,'сума '+fmt(acc,2)+' бар·л',MT.x-4,MT.y+2*MCH+98+n*15+6,
+      {color:CLR.k1,size:11,bold:true});
+    txt(g,'A = '+fmt(this.work(),0)+' Дж за цикл',MT.x-4,MT.y+2*MCH+98+n*15+22,
+      {color:CLR.ink,size:11.5,bold:true});
+    this.grid(g,G);
     if(this.mode==='tri'){
-      /* трикутник поточного доданка — з вершиною в початку координат */
-      const a=Q[this.i], c=Q[(this.i+1)%n], s=this.term(this.i);
+      const a=Q[ia], c=Q[ib];
       pathXY(g,G,[[0,0],a,c],true);
-      g.fillStyle=s>=0?'rgba(27,175,122,.20)':'rgba(235,104,52,.20)'; g.fill();
-      g.strokeStyle=s>=0?CLR.k3:CLR.k2; g.lineWidth=1.6; g.stroke();
-      pill(g,'доданок '+(this.i+1)+': '+fmt(s,0)+' м²',
-        G.SX((a[0]+c[0])/3),G.SY((a[1]+c[1])/3)+4,{color:s>=0?CLR.k3:CLR.k2,size:11,bold:true});
+      g.fillStyle=tv>=0?'rgba(27,175,122,.20)':'rgba(235,104,52,.20)'; g.fill();
+      g.strokeStyle=tv>=0?CLR.k3:CLR.k2; g.lineWidth=1.6; g.stroke();
     }
     pathXY(g,G,Q,true);
-    g.fillStyle='rgba(42,120,214,.10)'; g.fill();
+    g.fillStyle=this.clockwise()?'rgba(42,120,214,.12)':'rgba(235,104,52,.12)'; g.fill();
     g.strokeStyle=CLR.k1; g.lineWidth=2.4; g.stroke();
+    /* стрілки обходу — саме вони й показують напрям, від якого залежить знак */
+    for(let k=0;k<n;k++){
+      const a=Q[k], c=Q[(k+1)%n];
+      const p1=[G.SX(a[0]),G.SY(a[1])], p2=[G.SX(c[0]),G.SY(c[1])];
+      const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+      const dx=p2[0]-p1[0], dy=p2[1]-p1[1], Ln=Math.hypot(dx,dy)||1;
+      arrow(g,mx-dx/Ln*9,my-dy/Ln*9,mx+dx/Ln*9,my+dy/Ln*9,CLR.k1,2);
+    }
     for(let k=0;k<n;k++){
       const p=[G.SX(Q[k][0]),G.SY(Q[k][1])];
       dot(g,p[0],p[1],5.5,CLR.k1,'#fff');
-      txt(g,(k+1)+' ('+fmt(Q[k][0],0)+'; '+fmt(Q[k][1],0)+')',p[0]+9,p[1]-7,
+      txt(g,(k+1)+' ('+fmt(Q[k][0],1)+' л; '+fmt(Q[k][1],1)+' бар)',p[0]+9,p[1]-7,
         {color:CLR.sec,size:10.5,bold:true});
     }
-    /* сам початок координат — репер, від якого рахують доданки */
-    const O=[G.SX(0),G.SY(0)];
-    dot(g,O[0],O[1],4,CLR.mut);
-    txt(g,'репер O',O[0]+8,O[1]+13,{color:CLR.mut,size:10});
-    const S=this.area();
-    cap2(g,'Площа '+fmt(S,0)+' м² = '+fmt(S/10000,3)+' га',
-      this.sum()>=0?'обхід проти годинникової стрілки — сума додатна'
-                   :'обхід за годинниковою стрілкою — сума відʼємна',
-      this.sum()>=0?CLR.k1:CLR.k2);
-    gaugeCol(g,this.gcol(b),this.GG,this);
-    $('m5vSh').textContent=fmt(this.sh,0)+' м';
+    const A=this.work();
+    cap2(g,'Робота за цикл '+fmt(A,0)+' Дж',
+      this.clockwise()?'обхід за годинниковою стрілкою — газ віддає роботу'
+                      :'ви розвернули обхід: за такий цикл газ роботи не віддає',
+      this.clockwise()?CLR.k1:CLR.k2,214,20);
     for(const hh of this.grips()) drawGrip(g,hh,this);
-    $('m5state').textContent=fmt(S/10000,3)+' га';
+    $('m5state').textContent=fmt(A,0)+' Дж';
   },
   table(){
-    const S=this.area(), sum=this.sum();
-    const Q=this.shifted();
-    const a=Q[this.i], c=Q[(this.i+1)%Q.length];
-    $('m5vN').textContent=fmt(this.P.length,0);
-    $('m5vI').textContent=(this.i+1)+' з '+this.P.length;
-    $('m5kTerm').textContent=fmt(a[0],0)+'·'+fmt(c[1],0)+' − '+fmt(c[0],0)+'·'+fmt(a[1],0)+
-      ' = '+fmt(this.term(this.i),0);
-    $('m5kSum').textContent=fmt(sum,0)+' м²';
-    $('m5kS').textContent=fmt(S,0)+' м²';
-    $('m5kHa').textContent=fmt(S/10000,4)+' га';
-    $('m5kDir').textContent=sum>=0?'проти годинникової стрілки':'за годинниковою стрілкою';
-    const s2=this.area(this.sh===0?100:0);
-    $('m5kInv').textContent=fmt(s2,0)+' м² — розбіжність '+fmt(Math.abs(s2-S),6)+' м²';
-    $('m5kPer').textContent=fmt(this.perim(),0)+' м';
-    const fan=this.areaFan();
-    $('m5kChk').textContent=fmt(fan,0)+' м² — розбіжність '+fmt(Math.abs(fan-S),6);
+    const A=this.work(), sum=this.sum(), n=this.P.length;
+    const a=this.P[this.i], c=this.P[(this.i+1)%n];
+    $('m5vN').textContent=fmt(n,0);
+    $('m5vI').textContent=(this.i+1)+' з '+n;
+    $('m5kTerm').textContent=fmt(a[0],1)+'·'+fmt(c[1],1)+' − '+fmt(c[0],1)+'·'+fmt(a[1],1)+
+      ' = '+fmt(this.term(this.i),2);
+    $('m5kSum').textContent=fmt(sum,2)+' бар·л';
+    $('m5kS').textContent=fmt(this.encl(),3)+' бар·л';
+    $('m5kA').textContent=fmt(A,0)+' Дж';
+    $('m5kDir').textContent=this.clockwise()?'за годинниковою — газ віддає роботу'
+                                            :'проти — роботи від газу немає';
+    /* робота не залежить від того, звідки міряти осі: доданки міняються, сума ні */
+    const shifted=this.P.map(p=>[p[0]+3,p[1]+2]);
+    let s2=0;
+    for(let k=0;k<n;k++){const u=shifted[k], v=shifted[(k+1)%n]; s2+=u[0]*v[1]-v[0]*u[1];}
+    $('m5kInv').textContent=fmt(Math.abs(s2)/2,3)+' бар·л — розбіжність '+
+      fmt(Math.abs(Math.abs(s2)/2-this.encl()),6);
+    $('m5kPmid').textContent=fmt(this.pmid(),3)+' бар';
+    $('m5kPow').textContent=fmt(Math.abs(A)*25,0)+' Вт при 25 циклах за секунду';
+    $('m5kChk').textContent=fmt(this.fan()*100,0)+' Дж — розбіжність '+
+      fmt(Math.abs(this.fan()*100-Math.abs(A)),6);
     $('m5kSelf').textContent=this.selfIntersect()
-      ? 'так — формула дає різницю площ, а не площу'
-      : 'ні — контур простий';
-    $('m5fx').innerHTML='S = ½·|Σ (x<sub>i</sub>y<sub>i+1</sub> − x<sub>i+1</sub>y<sub>i</sub>)| = '+
-      '½·|'+fmt(sum,0)+'| = <b>'+fmt(S,0)+' м²</b> = '+fmt(S/10000,3)+' га';
-  },
-  charts(){
-    const n=this.P.length;
-    const b1=cvx('m5cc');
-    if(b1){
-      const ts=[0],ys=[0],ys2=[];
-      let acc=0;
-      for(let k=0;k<n;k++){acc+=this.term(k); ts.push(k+1); ys.push(acc);}
-      for(let k=0;k<=n;k++) ys2.push(this.sum());
-      const all=ys.concat(ys2), lo=Math.min(...all,0), hi=Math.max(...all,0);
-      const pad=Math.max(1000,(hi-lo)*0.15);
-      const r=drawChart(b1,{tMax:n,yMin:lo-pad,yMax:hi+pad,yLab:'м²',xLab:'доданок',
-        yDec:0,xDec:0,xStep:1,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k2,label:'Σ'},
-          {ts:[0,n],ys:[this.sum(),this.sum()],color:CLR.k3,label:'2S',dash:[4,3]},
-          {ts:[this.i+1,this.i+1],ys:[lo-pad,ys[this.i+1]],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'м²',this.h1,[['Σ',CLR.k2],['2S',CLR.k3],['зараз',CLR.ink]],0);
-    }
-    const b2=cvx('m5cs');
-    if(b2){
-      const ts=[],ys=[];
-      for(let i=0;i<=80;i++){const sh=-200+400*i/80; ts.push(sh+200); ys.push(this.area(sh));}
-      const S=this.area();
-      const r=drawChart(b2,{tMax:400,yMin:0,yMax:Math.max(1,S*1.6),yLab:'м²',xLab:'зсув + 200, м',
-        yDec:0,xDec:0,xStep:100,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k1,label:'S'},
-          {ts:[this.sh+200,this.sh+200],ys:[0,S],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'м²',this.h2,[['S',CLR.k1],['зараз',CLR.ink]],0);
-    }
+      ? 'так — контур перекручений, формула дає різницю площ'
+      : 'ні — контур простий, сума дає саме охоплену площу';
+    $('m5fx').innerHTML='Робота за замкнутий цикл дорівнює охопленій площі: '+
+      '<b>A</b> = ½|Σ(V<sub>k</sub>p<sub>k+1</sub> − V<sub>k+1</sub>p<sub>k</sub>)|. '+
+      'Одиниці підібрано так, що 1 бар·л = 100 Дж. Знак суми каже про напрям обходу: '+
+      'у робочого циклу двигуна він за годинниковою стрілкою.';
   }
 };
 

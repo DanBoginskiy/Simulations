@@ -33,6 +33,8 @@ canvas{display:block}
 .seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
   font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
 .seg button:last-child{border-right:none}
+/* inline-flex перебиває hidden — повертаємо його, як і для .kv */
+.seg[hidden]{display:none}
 .seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
   box-shadow:inset 0 -2px 0 var(--c,#888)}
 /* icon buttons */
@@ -121,7 +123,7 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:430px}
+#m1scene{width:100%; height:500px}
 #m2scene{width:100%; height:430px}
 #m3scene{width:100%; height:440px}
 #m4scene{width:100%; height:450px}
@@ -149,9 +151,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
   <p class="caption">Пряма одна, а записів у неї шість. Тягніть дві точки — і дивіться,
-  як усі шість форм перераховуються разом. Найцікавіше — крайні випадки: коли пряма
-  вертикальна, кутового коефіцієнта не існує; коли проходить через початок координат,
-  немає запису у відрізках.</p>
+  як усі шість форм перераховуються разом. Під кресленням стоїть виведення того запису,
+  який ви обрали: звідки взявся кожен коефіцієнт, із підставленими координатами точок —
+  тож рядки перераховуються просто під час перетягування. Найцікавіше — крайні випадки:
+  коли пряма вертикальна, кутового коефіцієнта не існує; коли вона проходить через
+  початок координат, немає запису у відрізках, і виведення прямо каже, на чому воно
+  спіткнулося.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -167,17 +172,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <span class="lbl" id="m1state" style="font-weight:600"></span>
         </div>
         <div class="cvw"><canvas id="m1scene"></canvas><div class="mov" id="m1mx"></div></div>
-      </div>
-      <div class="panel">
-        <h3>Пряма в числах</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m1cvw"><h4>значення Ax + By + C уздовж перпендикуляра до прямої</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>Ax + By + C</span><span><span class="chip cI"></span>сама пряма</span></div>
-            <canvas id="m1cv"></canvas></div>
-          <div class="chartbox" id="m1cyw"><h4>пряма як графік y(x) — нахил k і зсув b</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>y = kx + b</span><span><span class="chip cI"></span>відрізок між точками</span></div>
-            <canvas id="m1cy"></canvas></div>
-        </div>
       </div>
     </div>
     <div class="side">
@@ -225,17 +219,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m2scene"></canvas><div class="mov" id="m2mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Кут залежно від нахилу другої прямої</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2caw"><h4>кут між прямими <var>φ</var>, °</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>φ(α₂)</span><span><span class="chip cI"></span>поточний нахил</span></div>
-            <canvas id="m2ca"></canvas></div>
-          <div class="chartbox" id="m2ckw"><h4>1 + k₁k₂ — нуль там, де прямі перпендикулярні</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>1 + k₁k₂</span><span><span class="chip cI"></span>поточний нахил</span></div>
-            <canvas id="m2ck"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -282,17 +265,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <span class="lbl" id="m3state" style="font-weight:600"></span>
         </div>
         <div class="cvw"><canvas id="m3scene"></canvas><div class="mov" id="m3mx"></div></div>
-      </div>
-      <div class="panel">
-        <h3>Як відстань залежить від положення точки</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3cdw"><h4>відстань <var>d</var> при русі точки по горизонталі</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>d(x₀)</span><span><span class="chip cI"></span>поточне x₀</span></div>
-            <canvas id="m3cd"></canvas></div>
-          <div class="chartbox" id="m3csw"><h4>та сама величина зі знаком — з якого боку прямої</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>(Ax₀+By₀+C)/√(A²+B²)</span><span><span class="chip cI"></span>поточне x₀</span></div>
-            <canvas id="m3cs"></canvas></div>
-        </div>
       </div>
     </div>
     <div class="side">
@@ -343,17 +315,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <div class="cvw"><canvas id="m4scene"></canvas><div class="mov" id="m4mx"></div></div>
       </div>
-      <div class="panel">
-        <h3>Пучок у числах</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4crw"><h4>залишок <var>A</var>x<sub>S</sub> + <var>B</var>y<sub>S</sub> + <var>C</var> для члена пучка</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>тотожний нуль</span><span><span class="chip cI"></span>поточне t</span></div>
-            <canvas id="m4cr"></canvas></div>
-          <div class="chartbox" id="m4caw"><h4>кут нахилу члена пучка, °</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>α(t)</span><span><span class="chip cI"></span>поточне t</span></div>
-            <canvas id="m4ca"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -401,17 +362,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <span class="lbl" id="m5state" style="font-weight:600"></span>
         </div>
         <div class="cvw"><canvas id="m5scene"></canvas><div class="mov" id="m5mx"></div></div>
-      </div>
-      <div class="panel">
-        <h3>Що дає метод найменших квадратів</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m5crw"><h4>залишки <var>U<sub>i</sub></var> − (<var>kI<sub>i</sub></var> + <var>b</var>), В</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>залишок</span><span><span class="chip cC"></span>нуль</span></div>
-            <canvas id="m5cr"></canvas></div>
-          <div class="chartbox" id="m5csw"><h4>сума квадратів залишків залежно від нахилу <var>k</var></h4>
-            <div class="legend sm"><span><span class="chip cB"></span>Σd²(k)</span><span><span class="chip cI"></span>мінімум — це і є R</span></div>
-            <canvas id="m5cs"></canvas></div>
-        </div>
       </div>
     </div>
     <div class="side">
@@ -771,6 +721,15 @@ function gaugeCol(g,C,list,st){
     g.beginPath(); g.moveTo(p.x,p.y+.5); g.lineTo(p.x+C.W,p.y+.5); g.stroke();
     g.strokeStyle=m[5]||CLR.k1; g.lineWidth=3;
     g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x+f*C.W,p.y); g.stroke();
+    /* позначка на смузі: значення, від якого величина нічого не робить —
+       множник 1, доданок 0. Без неї «нейтральне» місце доводиться вгадувати. */
+    if(m[10]!=null){
+      const fm=Math.max(0,Math.min(1,(m[10]-m[2])/(m[3]-m[2])));
+      const xm=p.x+fm*C.W;
+      g.strokeStyle=CLR.ink; g.lineWidth=1.4;
+      g.beginPath(); g.moveTo(xm,p.y-7); g.lineTo(xm,p.y+7); g.stroke();
+      txt(g,fmt(m[10],m[8]),xm,p.y-10,{color:CLR.ink,size:9.5,bold:true,align:'center'});
+    }
     txt(g,m[1],p.x-8,p.y+4,{color:CLR.sec,size:10,bold:true,align:'right'});
     txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+8,p.y+4,
       {color:CLR.mut,size:10});
@@ -1291,15 +1250,75 @@ function lstr(L,d){
 /* ===================== МОДУЛЬ 1 · шість записів ===================== */
 const M1={
   p:[-2.4,-1.2], q:[3.2,2.6], form:'gen',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m1scene',this,()=>this.grips());
     seg('m1form',v=>{this.form=v;});
-    this.tip1=makeTip('m1cvw'); hover('m1cv',this.h1);
-    this.tip2=makeTip('m1cyw'); hover('m1cy',this.h2);
   },
   L(){return lineThrough(this.p,this.q);},
-  geo(b){return planeGeo(this,b,()=>[this.p,this.q,[0,0]],12);},
+  geo(b){return planeGeo(this,b,()=>[this.p,this.q,[0,0]],96);},
+  /* Виведення обраного запису: не готова формула, а те, звідки взявся кожен
+     коефіцієнт. Числа підставлені з поточних положень точок, тож рядки
+     перераховуються просто під час перетягування. */
+  derive(){
+    const p=this.p, q=this.q, L=this.L(), N=lnorm(L);
+    const n=v=>v<0?'('+fmt(v,2)+')':fmt(v,2);
+    const n1=v=>v<0?'('+fmt(v,1)+')':fmt(v,1);
+    if(this.form==='gen') return [
+      'A = y₂ − y₁ = '+n1(q[1])+' − '+n1(p[1])+' = '+fmt(L.A,2),
+      'B = x₁ − x₂ = '+n1(p[0])+' − '+n1(q[0])+' = '+fmt(L.B,2),
+      'C = x₂y₁ − x₁y₂ = '+n1(q[0])+'·'+n1(p[1])+' − '+n1(p[0])+'·'+n1(q[1])+' = '+fmt(L.C,2),
+      'Ax + By + C = 0:   '+fmt(L.A,2)+'x '+(L.B<0?'− ':'+ ')+fmt(Math.abs(L.B),2)+'y '+
+        (L.C<0?'− ':'+ ')+fmt(Math.abs(L.C),2)+' = 0'
+    ];
+    if(this.form==='slope'){
+      if(Math.abs(L.B)<1e-9) return [
+        'k = (y₂ − y₁) / (x₂ − x₁), а тут x₂ − x₁ = '+fmt(q[0]-p[0],2),
+        'ділити на нуль не можна — у вертикальної прямої нахилу немає',
+        'її запис лишається загальним: x = '+fmt(p[0],2),
+        'саме тому загальний вигляд і вважають головним'
+      ];
+      const k=-L.A/L.B, b0=-L.C/L.B;
+      return [
+        'k = (y₂ − y₁) / (x₂ − x₁) = '+fmt(q[1]-p[1],2)+' / '+fmt(q[0]-p[0],2)+' = '+fmt(k,3),
+        'b = y₁ − k·x₁ = '+n1(p[1])+' − '+fmt(k,3)+'·'+n1(p[0])+' = '+fmt(b0,3),
+        'y = kx + b:   y = '+fmt(k,3)+'x '+(b0<0?'− ':'+ ')+fmt(Math.abs(b0),3),
+        'перевірка на M₂:  '+fmt(k,3)+'·'+n1(q[0])+' '+(b0<0?'− ':'+ ')+fmt(Math.abs(b0),3)+
+          ' = '+fmt(k*q[0]+b0,3)+' = y₂'
+      ];
+    }
+    if(this.form==='seg'){
+      if(Math.abs(L.C)<1e-9) return [
+        'a = −C/A, b = −C/B, а тут C = 0',
+        'обидва відрізки виходять нульовими — пряма йде через початок координат',
+        'запису у відрізках у неї немає',
+        'у цій формі можна записати лише пряму, що не проходить через нуль'
+      ];
+      if(Math.abs(L.A)<1e-9||Math.abs(L.B)<1e-9) return [
+        'a = −C/A = '+(Math.abs(L.A)<1e-9?'ділення на нуль':fmt(-L.C/L.A,3)),
+        'b = −C/B = '+(Math.abs(L.B)<1e-9?'ділення на нуль':fmt(-L.C/L.B,3)),
+        'пряма паралельна одній з осей і перетинає лише другу',
+        'запису у відрізках у неї теж немає'
+      ];
+      const a=-L.C/L.A, b0=-L.C/L.B;
+      return [
+        'ділимо Ax + By + C = 0 на −C = '+fmt(-L.C,2),
+        'a = −C/A = '+fmt(-L.C,2)+' / '+fmt(L.A,2)+' = '+fmt(a,3)+'   (перетин з віссю x)',
+        'b = −C/B = '+fmt(-L.C,2)+' / '+fmt(L.B,2)+' = '+fmt(b0,3)+'   (перетин з віссю y)',
+        'x/a + y/b = 1:   x/'+fmt(a,3)+' + y/'+fmt(b0,3)+' = 1'
+      ];
+    }
+    /* нормальний */
+    const sgn=L.C>0?-1:1;
+    const cosA=sgn*L.A/N, sinA=sgn*L.B/N, pp=Math.abs(L.C)/N;
+    return [
+      '|n| = √(A² + B²) = √('+fmt(L.A,2)+'² + '+fmt(L.B,2)+'²) = '+fmt(N,3),
+      'cos α = A/|n| = '+fmt(cosA,3)+',   sin α = B/|n| = '+fmt(sinA,3)+
+        '   (знак беремо так, щоб p ≥ 0)',
+      'p = |C| / |n| = '+fmt(Math.abs(L.C),2)+' / '+fmt(N,3)+' = '+fmt(pp,3),
+      'x·cos α + y·sin α − p = 0:   '+fmt(cosA,3)+'x '+(sinA<0?'− ':'+ ')+
+        fmt(Math.abs(sinA),3)+'y − '+fmt(pp,3)+' = 0'
+    ];
+  },
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const G=this.geo(b);
@@ -1314,7 +1333,7 @@ const M1={
     return [mk('p','p',CLR.k1,'точка M₁'), mk('q','q',CLR.k1,'точка M₂')];
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w}=b;
@@ -1387,6 +1406,13 @@ const M1={
       seg:'у відрізках x/a + y/b = 1: a і b — точки перетину з осями',
       norm:'нормальний запис: p — відстань до початку, α — кут нормалі'}[this.form],
       {gen:CLR.k1,slope:CLR.k2,seg:CLR.k3,norm:CLR.ink}[this.form]);
+    /* смуга виведення — під кресленням, у відведеній для неї висоті */
+    const nm={gen:'загальний вигляд',slope:'y = kx + b',
+              seg:'у відрізках',norm:'нормальний вигляд'}[this.form];
+    const col={gen:CLR.k1,slope:CLR.k2,seg:CLR.k3,norm:CLR.ink}[this.form];
+    txt(g,'Звідки береться '+nm,14,b.h-86,{color:col,size:12,bold:true});
+    this.derive().forEach((ln,i)=>
+      txt(g,ln,14,b.h-66+i*17,{color:i===3?CLR.ink:CLR.sec,size:11.5,bold:i===3}));
     for(const hh of this.grips()) drawGrip(g,hh,this);
     $('m1state').textContent=lstr(L,2);
   },
@@ -1429,52 +1455,13 @@ const M1={
     $('m1fx').innerHTML='A = y₂ − y₁ = '+fmt(s[1],1)+',  B = x₁ − x₂ = '+fmt(-s[0],1)+
       ',  C = x₂y₁ − x₁y₂ = '+fmt(L.C,2)+'. Нормальний вектор n = (A; B) завжди ⊥ прямій.';
   },
-  charts(){
-    const L=this.L(), N=lnorm(L);
-    const b1=cvx('m1cv');
-    if(b1){
-      const ts=[],ys=[];
-      const F=lfoot(L,[0,0]);
-      const nx=L.A/N, ny=L.B/N;
-      for(let i=0;i<=120;i++){const t=-5+10*i/120;
-        ts.push(t+5); ys.push(lval(L,[F[0]+nx*t, F[1]+ny*t]));}
-      const hi=Math.max(1,...ys.map(Math.abs))*1.15;
-      const r=drawChart(b1,{tMax:10,yMin:-hi,yMax:hi,yLab:'Ax+By+C',xLab:'крок по нормалі + 5',
-        yDec:1,xDec:0,xStep:2,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'значення'},
-          {ts:[5,5],ys:[-hi,0],color:CLR.ink,label:'пряма',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['значення',CLR.k1],['пряма',CLR.ink]],2);
-    }
-    const b2=cvx('m1cy');
-    if(b2){
-      const lo=-9, hi=9;
-      const ts=[],ys=[];
-      const vert=Math.abs(L.B)<1e-9;
-      if(!vert){
-        const k=-L.A/L.B, b0=-L.C/L.B;
-        for(let i=0;i<=120;i++){const x=lo+(hi-lo)*i/120; ts.push(x-lo); ys.push(k*x+b0);}
-      }
-      const all=ys.length?ys:[0];
-      const ylo=Math.min(...all,-1), yhi=Math.max(...all,1);
-      const pad=Math.max(1,(yhi-ylo)*0.12);
-      const r=drawChart(b2,{tMax:hi-lo,yMin:ylo-pad,yMax:yhi+pad,yLab:'y',xLab:'x + 9',
-        yDec:0,xDec:0,xStep:3,hover:this.h2.x,
-        series:vert?[{ts:[this.p[0]-lo,this.p[0]-lo],ys:[ylo-pad,yhi+pad],color:CLR.k2,label:'вертикальна'}]
-          :[{ts,ys,color:CLR.k2,label:'y(x)'},
-            {ts:[this.p[0]-lo,this.q[0]-lo],ys:[this.p[1],this.q[1]],color:CLR.ink,label:'M₁M₂',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,vert?[['вертикальна',CLR.k2]]:[['y(x)',CLR.k2],['M₁M₂',CLR.ink]],2);
-    }
-  }
 };
 
 /* ===================== МОДУЛЬ 2 · кут між прямими ===================== */
 const M2={
   S:[0.4,0.2], a1:20, a2:65,
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m2scene',this,()=>this.grips());
-    this.tip1=makeTip('m2caw'); hover('m2ca',this.h1);
-    this.tip2=makeTip('m2ckw'); hover('m2ck',this.h2);
   },
   /* пряму задаємо через точку й кут нахилу: так вертикальний випадок
      не вимагає окремої гілки, а кутовий коефіцієнт стає похідною величиною */
@@ -1514,7 +1501,7 @@ const M2={
     ];
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w}=b;
@@ -1577,51 +1564,14 @@ const M2={
       : 'Формула через k тут не працює, зате кут між нормалями рахується завжди: '+
         'cos φ = |n₁·n₂| / (|n₁||n₂|).';
   },
-  charts(){
-    const k1=this.k(1);
-    const b1=cvx('m2ca');
-    if(b1){
-      const ts=[],ys=[];
-      for(let i=0;i<=180;i++){
-        let d=Math.abs(i-this.a1)%180; if(d>90) d=180-d;
-        ts.push(i); ys.push(d);
-      }
-      const r=drawChart(b1,{tMax:180,yMin:0,yMax:98,yLab:'φ, °',xLab:'α₂, °',
-        yDec:0,xDec:0,xStep:45,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k3,label:'φ'},
-          {ts:[this.a2,this.a2],ys:[0,this.phi()],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'°',this.h1,[['φ',CLR.k3],['зараз',CLR.ink]],0);
-    }
-    const b2=cvx('m2ck');
-    if(b2){
-      const ts=[],ys=[];
-      const CAP=12;
-      for(let i=0;i<=180;i++){
-        const a=i*DEG;
-        const kk=Math.abs(Math.cos(a))<1e-6?Infinity:Math.tan(a);
-        const v=(isFinite(k1)&&isFinite(kk))?1+k1*kk:Infinity;
-        ts.push(i); ys.push(clamp(isFinite(v)?v:CAP,-CAP,CAP));
-      }
-      const k2=this.k(2);
-      const cur=(isFinite(k1)&&isFinite(k2))?clamp(1+k1*k2,-CAP,CAP):CAP;
-      const r=drawChart(b2,{tMax:180,yMin:-CAP,yMax:CAP,yLab:'1 + k₁k₂',xLab:'α₂, °',
-        yDec:0,xDec:0,xStep:45,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k2,label:'1 + k₁k₂'},
-          {ts:[this.a2,this.a2],ys:[-CAP,cur],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'',this.h2,[['1 + k₁k₂',CLR.k2],['зараз',CLR.ink]],2);
-    }
-  }
 };
 
 /* ===================== МОДУЛЬ 3 · відстань від точки до прямої ===================== */
 const M3={
   p:[-2.6,-1.4], q:[3.4,1.8], m0:[-1.2,2.8], mode:'perp',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m3scene',this,()=>this.grips());
     seg('m3mode',v=>{this.mode=v;});
-    this.tip1=makeTip('m3cdw'); hover('m3cd',this.h1);
-    this.tip2=makeTip('m3csw'); hover('m3cs',this.h2);
   },
   L(){return lineThrough(this.p,this.q);},
   geo(b){return planeGeo(this,b,()=>[this.p,this.q,this.m0,lfoot(this.L(),this.m0),[0,0]],12);},
@@ -1641,7 +1591,7 @@ const M3={
             mk('m0','m0',CLR.k2,'точка M₀')];
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m3scene'); if(!b) return;
     const {g,w}=b;
@@ -1715,45 +1665,14 @@ const M3={
       :(sd>0?'з боку, куди дивиться нормаль n':'з протилежного боку від нормалі n');
     $('m3fx').innerHTML='d = |'+fmt(lval(L,this.m0),3)+'| / '+fmt(N,3)+' = <b>'+fmt(d,4)+'</b>';
   },
-  charts(){
-    const L=this.L(), N=lnorm(L);
-    const b1=cvx('m3cd');
-    if(b1){
-      const ts=[],ys=[],ys2=[];
-      for(let i=0;i<=120;i++){const x=-9+18*i/120;
-        ts.push(x+9);
-        ys.push(ldist(L,[x,this.m0[1]]));
-        ys2.push(lsigned(L,[x,this.m0[1]]));
-      }
-      const hi=Math.max(1,...ys)*1.15;
-      const r=drawChart(b1,{tMax:18,yMin:0,yMax:hi,yLab:'d',xLab:'x₀ + 9',
-        yDec:1,xDec:0,xStep:3,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'d(x₀)'},
-          {ts:[this.m0[0]+9,this.m0[0]+9],ys:[0,ldist(L,this.m0)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['d',CLR.k1],['зараз',CLR.ink]],3);
-      const b2=cvx('m3cs');
-      if(b2){
-        const hi2=Math.max(1,...ys2.map(Math.abs))*1.15;
-        const r2=drawChart(b2,{tMax:18,yMin:-hi2,yMax:hi2,yLab:'зі знаком',xLab:'x₀ + 9',
-          yDec:1,xDec:0,xStep:3,hover:this.h2.x,
-          series:[{ts,ys:ys2,color:CLR.k2,label:'знакова'},
-            {ts:[this.m0[0]+9,this.m0[0]+9],ys:[-hi2,lsigned(L,this.m0)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-        showTip(this.tip2,r2,'',this.h2,[['знакова',CLR.k2],['зараз',CLR.ink]],3);
-      }
-    }
-    void N;
-  }
 };
 
 /* ===================== МОДУЛЬ 4 · пучок прямих ===================== */
 const M4={
   p1:[-3,-1], q1:[2.4,2.2], p2:[-2,3], q2:[3,-2], m:[3.4,3.2], t:0.6, mode:'pen',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m4scene',this,()=>this.grips());
     seg('m4mode',v=>{this.mode=v;});
-    this.tip1=makeTip('m4crw'); hover('m4cr',this.h1);
-    this.tip2=makeTip('m4caw'); hover('m4ca',this.h2);
   },
   L1(){return lineThrough(this.p1,this.q1);},
   L2(){return lineThrough(this.p2,this.q2);},
@@ -1805,7 +1724,7 @@ const M4={
     return out;
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m4scene'); if(!b) return;
     const {g,w}=b;
@@ -1871,36 +1790,6 @@ const M4={
     $('m4fx').innerHTML='λ(A₁x + B₁y + C₁) + μ(A₂x + B₂y + C₂) = 0. У точці S обидві дужки '+
       'нульові, тому будь-яка їхня комбінація теж нульова — і пряма проходить через S.';
   },
-  charts(){
-    const S=this.S();
-    const b1=cvx('m4cr');
-    if(b1){
-      const ts=[],ys=[];
-      for(let i=0;i<=120;i++){const t=-6+12*i/120;
-        ts.push(t+6); ys.push(S?lval(this.member(t),S):0);}
-      const hi=Math.max(1e-6,...ys.map(Math.abs))*1.4;
-      const r=drawChart(b1,{tMax:12,yMin:-hi,yMax:hi,yLab:'залишок',xLab:'t + 6',
-        yDec:6,xDec:0,xStep:2,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k3,label:'у точці S'},
-          {ts:[this.t+6,this.t+6],ys:[-hi,0],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,'',this.h1,[['залишок',CLR.k3],['зараз',CLR.ink]],6);
-    }
-    const b2=cvx('m4ca');
-    if(b2){
-      const ts=[],ys=[];
-      for(let i=0;i<=180;i++){const t=-6+12*i/180;
-        const L=this.member(t);
-        let a=Math.atan2(-L.A,L.B)/DEG; a=((a%180)+180)%180;
-        ts.push(t+6); ys.push(a);}
-      const Lc=this.member();
-      let ac=Math.atan2(-Lc.A,Lc.B)/DEG; ac=((ac%180)+180)%180;
-      const r=drawChart(b2,{tMax:12,yMin:0,yMax:190,yLab:'α, °',xLab:'t + 6',
-        yDec:0,xDec:0,xStep:2,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k2,label:'α(t)'},
-          {ts:[this.t+6,this.t+6],ys:[0,ac],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,'°',this.h2,[['α(t)',CLR.k2],['зараз',CLR.ink]],0);
-    }
-  }
 };
 
 /* ===================== МОДУЛЬ 5 · практика: калібрування приладу ===================== */
@@ -1909,12 +1798,9 @@ const M4={
 const M5={
   D:[[0.20,1.05],[0.50,2.55],[0.80,3.90],[1.10,5.30],[1.40,6.75],[1.70,8.10],[2.00,9.55]],
   kTry:4.0, mode:'fit',
-  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   init(){
     grip('m5scene',this,()=>this.grips());
     seg('m5mode',v=>{this.mode=v;});
-    this.tip1=makeTip('m5crw'); hover('m5cr',this.h1);
-    this.tip2=makeTip('m5csw'); hover('m5cs',this.h2);
   },
   /* класичні формули МНК; знаменник — розкид струмів, і він не може бути
      нулем, поки хоч дві точки мають різні I */
@@ -1973,7 +1859,7 @@ const M5={
     return out;
   },
   tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w}=b;
@@ -2014,8 +1900,11 @@ const M5={
       {color:CLR.ink,size:10.5,bold:true});
     pill(g,'U = '+fmt(f.k,3)+'·I '+(f.b<0?'− ':'+ ')+fmt(Math.abs(f.b),3),
       G.SX(G.x1*0.72),G.SY(f.k*G.x1*0.72+f.b)-14,{color:CLR.k1,size:11.5,bold:true});
+    /* підпис починається праворуч від осі ординат: на її місці стоїть
+       позначення «U, В», і два написи лягали один на одного */
     cap2(g,'Опір R = '+fmt(f.k,3)+' Ом',
-      'нахил калібрувальної прямої і є опір; вільний член — систематична похибка приладу',CLR.k1);
+      'нахил калібрувальної прямої і є опір; вільний член — систематична похибка приладу',
+      CLR.k1,84,18);
     if(this.mode==='try'){
       gaugeCol(g,this.gcol(b),this.GG,this);
       $('m5vk').textContent=fmt(this.kTry,2)+' Ом';
@@ -2042,32 +1931,6 @@ const M5={
     $('m5fx').innerHTML='k = (n·ΣIU − ΣI·ΣU) / (n·ΣI² − (ΣI)²) = <b>'+fmt(f.k,4)+
       ' Ом</b>;  b = (ΣU − k·ΣI)/n = '+fmt(f.b,4)+' В';
   },
-  charts(){
-    const f=this.fit();
-    const b1=cvx('m5cr');
-    if(b1){
-      const ts=[],ys=[],z=[];
-      this.D.forEach((p,i)=>{ts.push(i+1); ys.push(p[1]-(f.k*p[0]+f.b)); z.push(0);});
-      const hi=Math.max(0.05,...ys.map(Math.abs))*1.4;
-      const r=drawChart(b1,{tMax:this.D.length+0.5,yMin:-hi,yMax:hi,yLab:'В',xLab:'номер точки',
-        yDec:2,xDec:0,xStep:1,hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'залишок'},{ts,ys:z,color:CLR.k3,label:'0',dash:[4,3]}]});
-      showTip(this.tip1,r,'В',this.h1,[['залишок',CLR.k1],['нуль',CLR.k3]],3);
-    }
-    const b2=cvx('m5cs');
-    if(b2){
-      const ts=[],ys=[];
-      const k0=Math.max(0.5,f.k-3), k1=f.k+3;
-      for(let i=0;i<=120;i++){const k=k0+(k1-k0)*i/120;
-        ts.push(k-k0); ys.push(this.ss(k,this.bestB(k)));}
-      const hi=Math.max(1e-6,...ys)*1.1;
-      const r=drawChart(b2,{tMax:k1-k0,yMin:0,yMax:hi,yLab:'Σd², В²',xLab:'k − '+fmt(k0,1)+', Ом',
-        yDec:2,xDec:0,xStep:1,hover:this.h2.x,
-        series:[{ts,ys,color:CLR.k2,label:'Σd²(k)'},
-          {ts:[f.k-k0,f.k-k0],ys:[0,hi],color:CLR.ink,label:'мінімум',dash:[4,3]}]});
-      showTip(this.tip2,r,'В²',this.h2,[['Σd²',CLR.k2],['мінімум',CLR.ink]],4);
-    }
-  }
 };
 
 const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5};
