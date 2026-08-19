@@ -484,7 +484,9 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];});
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
+  for(const k in FRM) delete FRM[k];
+  for(const k in CHFIT) delete CHFIT[k];});
 
 function seg(id,cb){
   const el=$(id);
@@ -547,17 +549,41 @@ function fitBot(key,need){
   return FIT[key]=(cur==null||want<cur)?want:cur;
 }
 /* простий лінійний графік із перехрестям-підказкою */
+const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
   const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  /* ---- масштаб графіка не «дихає» ---------------------------------------
+     Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
+     тоді, коли крива справді вийшла за межі осей, і назад ніколи не
+     стискається — інакше та сама крива щокадру стрибала б угору-вниз.
+     Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
+     рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
+  let yMin=opt.yMin, yMax=opt.yMax;
+  {
+    const ckey=(box.el&&box.el.id)||opt.yLab||'';
+    const want=yMax-yMin, f=CHFIT[ckey];
+    if(ckey&&want>0){
+      if(f&&want<=f.span*4&&want*4>=f.span){
+        yMin=f.lo; yMax=f.hi;
+        let lo=Infinity,hi=-Infinity;
+        for(const s of (opt.series||[])) if(s&&s.ys)
+          for(const v of s.ys) if(isFinite(v)){if(v<lo)lo=v; if(v>hi)hi=v;}
+        const pad=(yMax-yMin)*0.04;
+        if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
+        if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
+      }
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin};
+    }
+  }
   const X=t=>L+t/opt.tMax*pw;
-  const Y=y=>T+(1-(y-opt.yMin)/(opt.yMax-opt.yMin))*ph;
+  const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
   g.clearRect(0,0,w,h);
   g.lineWidth=1;
   const yd=opt.yDec||0;
-  const st=niceStep((opt.yMax-opt.yMin)/4.5);
-  for(let y=Math.ceil(opt.yMin/st)*st;y<=opt.yMax+1e-9;y+=st){
+  const st=niceStep((yMax-yMin)/4.5);
+  for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
     txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
   }
@@ -567,7 +593,7 @@ function drawChart(box,opt){
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
     txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
   }
-  if(opt.yMin<0&&opt.yMax>0){
+  if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
@@ -736,8 +762,11 @@ function shelf(g,M,list,cur,lab){
 /* pre — префікс id: у сцені може бути дві полиці, і без префікса їхні ручки
    мали б однакові імена */
 function shelfGrips(M,list,set,pre){
+  /* shelf:true — це не величина, а вибір предмета: перемикач полиці. Кадр
+     сцени після нього законно перебудовується, тож перевірки сталості осей
+     такі ручки пропускають. */
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    bare:true, shelf:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (§1). */
@@ -762,6 +791,18 @@ function drawGrip(g,h,st){
    «скільки членів видно» не було б куди тягнути. */
 function seqGeo(b,nMax,lo,hi,o){
   o=o||{};
+  /* осі не «дихають»: див. коментар у plotGeo — тут те саме для кадру
+     послідовності, тільки вісь номерів рахується від нуля */
+  {
+    const fk=((b.el&&b.el.id)||'')+'|seq';
+    const sy=hi-lo, f=FRM[fk];
+    /* тримаємо тільки вісь значень: скільки членів показувати — це окрема
+       величина, якою керує сам модуль */
+    if(sy>0){
+      if(f&&sy<=f.sy*8&&sy*8>=f.sy){lo=Math.min(f.ya,lo); hi=Math.max(f.yb,hi);}
+      FRM[fk]={xa:0,xb:nMax,ya:lo,yb:hi,sx:nMax,sy:hi-lo};
+    }
+  }
   /* ліве поле ширше за потрібне для чисел: у ньому ще сидить ручка кандидата
      границі, і без запасу вона накрила б підписи поділок */
   const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
@@ -875,8 +916,35 @@ function seqLine(g,G,f,n1,n2,color,dash){
 /* Кадр площини (x, y). Вісь аргументу і вісь значень — величини різної
    природи, тож спільного масштабу в них не буває; що лишається чинним —
    розмах береться з фактичних значень, а не з константи. */
+const FRM={};                   /* запам'ятані кадри сцен */
 function plotGeo(b,xa,xb,ya,yb,o){
   o=o||{};
+  /* ---- осі не «дихають» -------------------------------------------------
+     Кадр, з яким сцена з'явилася, лишається сталим: доки все креслення в
+     нього влазить, поділки стоять на місці. Кадр розширюється тільки тоді,
+     коли об'єкт справді вийшов за осі, і назад не стискається — інакше
+     лінійка їхала б під пальцем. Перемкнули модуль на іншу величину
+     (розмах відрізняється в рази) — кадр беруть заново, один раз. */
+  {
+    const fk=(b.el&&b.el.id)||'';
+    const sx=xb-xa, sy=yb-ya, f=FRM[fk];
+    /* Кадр із однаковим масштабом по обох осях тримаємо цілком, інакше —
+       лише вісь значень: вісь аргументу модулі міняють навмисно (звужують
+       окіл, показують менше членів), і відбирати в них це право не можна. */
+    const linked=Math.abs(sx-sy)<=1e-6*Math.max(sx,sy);
+    if(fk&&sy>0){
+      if(f&&f.linked===linked&&sy<=f.sy*8&&sy*8>=f.sy&&
+         (!linked||(sx<=f.sx*8&&sx*8>=f.sx))){
+        ya=Math.min(f.ya,ya); yb=Math.max(f.yb,yb);
+        if(linked){
+          xa=Math.min(f.xa,xa); xb=Math.max(f.xb,xb);
+          const sp=Math.max(xb-xa,yb-ya), cx=(xa+xb)/2, cy=(ya+yb)/2;
+          xa=cx-sp/2; xb=cx+sp/2; ya=cy-sp/2; yb=cy+sp/2;
+        }
+      }
+      FRM[fk]={xa,xb,ya,yb,sx:xb-xa,sy:yb-ya,linked};
+    }
+  }
   const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
   const padT=o.padT==null?56:o.padT, padB=o.padB==null?48:o.padB;
   const x0=padL, x1=Math.max(padL+60,b.w-padR);

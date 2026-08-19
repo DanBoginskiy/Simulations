@@ -29,7 +29,8 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
-.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg{display:inline-flex; flex-wrap:wrap; max-width:100%; border:1px solid var(--line);
+  border-radius:8px; overflow:hidden; background:#fff}
 .seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
   font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
 .seg button:last-child{border-right:none}
@@ -467,9 +468,13 @@ function cvx(id){
   const d=window.devicePixelRatio||1;
   c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  /* логічний розмір кадру — щоб розкладач підписів не зсував напис за край */
+  g._cvw=r.width; g._cvh=r.height;
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];});
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
+  for(const k in FRM) delete FRM[k];
+  for(const k in CHFIT) delete CHFIT[k];});
 
 function seg(id,cb){
   const el=$(id);
@@ -479,11 +484,58 @@ function seg(id,cb){
     cb(b.dataset.v);
   });
 }
+/* ---- підписи не лягають один на одного -------------------------------------
+   Об'єкти на кресленні вільно сходяться в одну точку. Тримаємо реєстр зайнятих
+   прямокутників кадру й зсуваємо новий підпис по вертикалі, поки він не стане
+   на вільне місце. Кадр починається з clearRect — на ньому й скидаємо реєстр. */
+function labReg(g){
+  if(!g._lab){
+    g._lab=[];
+    const cr=g.clearRect.bind(g);
+    g.clearRect=function(x,y,w,h){g._lab.length=0; return cr(x,y,w,h);};
+  }
+  if(g._lab.length>400) g._lab.splice(0,g._lab.length-400);
+  return g._lab;
+}
+function labBox(g,s,x,y,o,pad){
+  const fs=o.size||11, h=fs*1.2;
+  g.font=(o.bold?'600 ':'')+fs+'px system-ui,sans-serif';
+  const w=g.measureText(String(s)).width+(pad||0);
+  const al=pad?'center':(o.align||'left');
+  const bs=o.base||'alphabetic';
+  const x0=al==='center'?x-w/2:(al==='right'?x-w:x);
+  const y0=bs==='middle'?y-h*0.5:(bs==='top'?y:(bs==='bottom'?y-h:y-h*0.8));
+  return {t:String(s),x:x0,y:y0,w,h};
+}
+function labHit(A,B){
+  return Math.min(A.x+A.w,B.x+B.w)-Math.max(A.x,B.x)>2 &&
+         Math.min(A.y+A.h,B.y+B.h)-Math.max(A.y,B.y)>2;
+}
+function labPlace(g,s,x,y,o,pad){
+  const R=labReg(g), box=labBox(g,s,x,y,o,pad);
+  const busy=q=>R.some(r=>labHit(q,r));
+  let dy=0;
+  if(busy(box)){
+    const same=R.some(r=>r.t===box.t&&Math.abs(r.x-box.x)<2&&Math.abs(r.y-box.y)<2);
+    if(!same){
+      const st=box.h+4, HH=g._cvh||1e9;
+      const fits=q=>q.y>=1&&q.y+q.h<=HH-1;
+      for(let k=1;k<=3&&dy===0;k++)
+        for(const d of [k*st,-k*st]){
+          const q={...box,y:box.y+d};
+          if(fits(q)&&!busy(q)){dy=d; break;}
+        }
+    }
+  }
+  box.y+=dy; R.push(box);
+  return y+dy;
+}
 function txt(g,s,x,y,o={}){
+  const yy=labPlace(g,s,x,y,o,0);
   g.fillStyle=o.color||CLR.ink;
   g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
   g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
-  g.fillText(s,x,y);
+  g.fillText(s,x,yy);
 }
 function arrow(g,x1,y1,x2,y2,color,w=2){
   const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
@@ -496,11 +548,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  const yy=labPlace(g,s,x,y,{size:11.5,...o},14);
   g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
-  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
-  txt(g,s,x,y+1,{...o,align:'center'});
+  g.beginPath(); g.roundRect(x-wd/2,yy-13,wd,19,9); g.fill();
+  g.fillStyle=o.color||CLR.ink;
+  g.textAlign='center'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,yy+1);
 }
 function dot(g,x,y,r,fill,ring){
   g.beginPath(); g.arc(x,y,r,0,7);
@@ -532,17 +587,41 @@ function fitBot(key,need){
   return FIT[key]=(cur==null||want<cur)?want:cur;
 }
 /* простий лінійний графік із перехрестям-підказкою */
+const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
   const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  /* ---- масштаб графіка не «дихає» ---------------------------------------
+     Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
+     тоді, коли крива справді вийшла за межі осей, і назад ніколи не
+     стискається — інакше та сама крива щокадру стрибала б угору-вниз.
+     Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
+     рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
+  let yMin=opt.yMin, yMax=opt.yMax;
+  {
+    const ckey=(box.el&&box.el.id)||opt.yLab||'';
+    const want=yMax-yMin, f=CHFIT[ckey];
+    if(ckey&&want>0){
+      if(f&&want<=f.span*4&&want*4>=f.span){
+        yMin=f.lo; yMax=f.hi;
+        let lo=Infinity,hi=-Infinity;
+        for(const s of (opt.series||[])) if(s&&s.ys)
+          for(const v of s.ys) if(isFinite(v)){if(v<lo)lo=v; if(v>hi)hi=v;}
+        const pad=(yMax-yMin)*0.04;
+        if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
+        if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
+      }
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin};
+    }
+  }
   const X=t=>L+t/opt.tMax*pw;
-  const Y=y=>T+(1-(y-opt.yMin)/(opt.yMax-opt.yMin))*ph;
+  const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
   g.clearRect(0,0,w,h);
   g.lineWidth=1;
   const yd=opt.yDec||0;
-  const st=niceStep((opt.yMax-opt.yMin)/4.5);
-  for(let y=Math.ceil(opt.yMin/st)*st;y<=opt.yMax+1e-9;y+=st){
+  const st=niceStep((yMax-yMin)/4.5);
+  for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
     txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
   }
@@ -552,7 +631,7 @@ function drawChart(box,opt){
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
     txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
   }
-  if(opt.yMin<0&&opt.yMax>0){
+  if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
@@ -575,7 +654,14 @@ function drawChart(box,opt){
   ends.sort((a,b)=>a.y-b.y);
   for(let i=1;i<ends.length;i++)
     if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
-  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+  /* підпис серії не сміє вилізти за правий край: там його просто зріже */
+  for(const e of ends){
+    g.font='600 11px system-ui,sans-serif';
+    const lw=g.measureText(e.label).width;
+    const right=e.x+7+lw<=w-2;
+    txt(g,e.label,right?e.x+7:e.x-7,Math.min(h-4,e.y+4),
+      {color:CLR.ink,size:11,bold:true,align:right?'left':'right'});
+  }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
     const t=(opt.hover-L)/pw*opt.tMax;
     const s0=opt.series[0];
@@ -721,20 +807,34 @@ function shelf(g,M,list,cur,lab){
 /* pre — префікс id: у сцені може бути дві полиці, і без префікса їхні ручки
    мали б однакові імена */
 function shelfGrips(M,list,set,pre){
+  /* shelf:true — це не величина, а вибір предмета: перемикач полиці. Кадр
+     сцени після нього законно перебудовується, тож перевірки сталості осей
+     такі ручки пропускають. */
   return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
-    bare:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+    bare:true, shelf:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
 }
 /* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
    лише при наведенні — у спокої креслення лишається чистим (§1). */
 function drawGrip(g,h,st){
   const on=st._over===h.id, gr=st._grab===h.id;
+  /* Кнопка полиці — не кружок: підсвічуємо саму кнопку рамкою. Коло радіуса
+     півкнопки вилазило за кадр і накривало сусідів. */
+  if(h.shelf){
+    if(on||gr){
+      const wd=2*(h.r+2)-6;
+      g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.4;
+      g.beginPath(); g.roundRect(h.x-wd/2,h.y-13,wd,26,6); g.stroke();
+    }
+    return;
+  }
   /* bare — ручкою є сам об'єкт сцени: свого кружка вона не малює, інакше
      накрила б те, за що тягнуть */
   if(!h.bare) dot(g,h.x,h.y,h.r,h.color,'#fff');
   if(on||gr){
+    const rr=Math.min(h.r,14)+4;
     g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.2;
-    g.beginPath(); g.arc(h.x,h.y,h.r+4,0,7); g.stroke();
-    if(h.hint) pill(g,h.hint,h.x,h.y-h.r-12,{color:CLR.ink,size:11,bold:true});
+    g.beginPath(); g.arc(h.x,h.y,rr,0,7); g.stroke();
+    if(h.hint) pill(g,h.hint,h.x,h.y-rr-8,{color:CLR.ink,size:11,bold:true});
   }
 }
 
@@ -747,6 +847,18 @@ function drawGrip(g,h,st){
    «скільки членів видно» не було б куди тягнути. */
 function seqGeo(b,nMax,lo,hi,o){
   o=o||{};
+  /* осі не «дихають»: див. коментар у plotGeo — тут те саме для кадру
+     послідовності, тільки вісь номерів рахується від нуля */
+  {
+    const fk=((b.el&&b.el.id)||'')+'|seq';
+    const sy=hi-lo, f=FRM[fk];
+    /* тримаємо тільки вісь значень: скільки членів показувати — це окрема
+       величина, якою керує сам модуль */
+    if(sy>0){
+      if(f&&sy<=f.sy*8&&sy*8>=f.sy){lo=Math.min(f.ya,lo); hi=Math.max(f.yb,hi);}
+      FRM[fk]={xa:0,xb:nMax,ya:lo,yb:hi,sx:nMax,sy:hi-lo};
+    }
+  }
   /* ліве поле ширше за потрібне для чисел: у ньому ще сидить ручка кандидата
      границі, і без запасу вона накрила б підписи поділок */
   const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
@@ -860,8 +972,35 @@ function seqLine(g,G,f,n1,n2,color,dash){
 /* Кадр площини (x, y). Вісь аргументу і вісь значень — величини різної
    природи, тож спільного масштабу в них не буває; що лишається чинним —
    розмах береться з фактичних значень, а не з константи. */
+const FRM={};                   /* запам'ятані кадри сцен */
 function plotGeo(b,xa,xb,ya,yb,o){
   o=o||{};
+  /* ---- осі не «дихають» -------------------------------------------------
+     Кадр, з яким сцена з'явилася, лишається сталим: доки все креслення в
+     нього влазить, поділки стоять на місці. Кадр розширюється тільки тоді,
+     коли об'єкт справді вийшов за осі, і назад не стискається — інакше
+     лінійка їхала б під пальцем. Перемкнули модуль на іншу величину
+     (розмах відрізняється в рази) — кадр беруть заново, один раз. */
+  {
+    const fk=(b.el&&b.el.id)||'';
+    const sx=xb-xa, sy=yb-ya, f=FRM[fk];
+    /* Кадр із однаковим масштабом по обох осях тримаємо цілком, інакше —
+       лише вісь значень: вісь аргументу модулі міняють навмисно (звужують
+       окіл, показують менше членів), і відбирати в них це право не можна. */
+    const linked=Math.abs(sx-sy)<=1e-6*Math.max(sx,sy);
+    if(fk&&sy>0){
+      if(f&&f.linked===linked&&sy<=f.sy*8&&sy*8>=f.sy&&
+         (!linked||(sx<=f.sx*8&&sx*8>=f.sx))){
+        ya=Math.min(f.ya,ya); yb=Math.max(f.yb,yb);
+        if(linked){
+          xa=Math.min(f.xa,xa); xb=Math.max(f.xb,xb);
+          const sp=Math.max(xb-xa,yb-ya), cx=(xa+xb)/2, cy=(ya+yb)/2;
+          xa=cx-sp/2; xb=cx+sp/2; ya=cy-sp/2; yb=cy+sp/2;
+        }
+      }
+      FRM[fk]={xa,xb,ya,yb,sx:xb-xa,sy:yb-ya,linked};
+    }
+  }
   const padL=o.padL==null?70:o.padL, padR=o.padR==null?96:o.padR;
   const padT=o.padT==null?56:o.padT, padB=o.padB==null?48:o.padB;
   const x0=padL, x1=Math.max(padL+60,b.w-padR);
@@ -1074,7 +1213,7 @@ const M1={
     const out=[
       {id:'M',x:G.x1+14,y:G.SY(this.M),r:9,color:CLR.k2,hint:'стеля M',
         move:(px,py)=>{this.M=clamp(snap(G.iY(py),0.05),-2,8); this.t=0;}},
-      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1-14,r:8,color:CLR.k3,hint:'скільки членів видно',
         move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.t=0;}}
     ];
     return out.concat(shelfGrips(this.shelfM(b),MON.map((m,i)=>[m[0],i]),i=>this.pick(i),'mn'));
@@ -1095,7 +1234,7 @@ const M1={
     const yM=G.SY(this.M);
     g.strokeStyle=CLR.k2; g.lineWidth=1.8; g.setLineDash([6,4]);
     g.beginPath(); g.moveTo(G.x0,yM+.5); g.lineTo(G.x1+10,yM+.5); g.stroke(); g.setLineDash([]);
-    txt(g,'M = '+fmt(this.M,2),G.x1+30,yM+4,{color:'#b8431a',size:11,bold:true});
+    txt(g,'M = '+fmt(this.M,2),G.x1-6,yM-6,{color:'#b8431a',size:11,bold:true,align:'right'});
     g.fillStyle='rgba(235,104,52,.06)';
     g.fillRect(G.x0,G.y0,G.x1+10-G.x0,Math.max(0,yM-G.y0));
     /* точна верхня межа */
@@ -1200,7 +1339,7 @@ const M2={
     const ye=G.SY(Math.E);
     g.strokeStyle=CLR.ink; g.lineWidth=1.4; g.setLineDash([2,3]);
     g.beginPath(); g.moveTo(G.x0,ye+.5); g.lineTo(G.x1+10,ye+.5); g.stroke(); g.setLineDash([]);
-    txt(g,'e = 2,718282',G.x1+30,ye+4,{color:CLR.ink,size:11,bold:true});
+    txt(g,'e = 2,718282',G.x1-6,ye-6,{color:CLR.ink,size:11,bold:true,align:'right'});
     /* вилка як заштрихована область між двома послідовностями */
     clipPlot(g,G);
     g.beginPath();
@@ -1317,7 +1456,7 @@ const M3={
     const b=cvx('m3scene'); if(!b) return [];
     const G=this.geo(b);
     return gaugeGrips(this.gcol(b),this.GG,this)
-      .concat([{id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k2,hint:'скільки членів видно',
+      .concat([{id:'nmax',x:G.SX(this.nMax),y:G.y1-14,r:8,color:CLR.k2,hint:'скільки членів видно',
         move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,120); this.t=0;}}])
       .concat(shelfGrips(this.shelfM(b),SUB.map((s,i)=>[s[0],i]),i=>{this.k=i; this.t=0;},'sb'));
   },
@@ -1338,7 +1477,7 @@ const M3={
       const y=G.SY(v);
       g.strokeStyle=CLR.k3; g.lineWidth=1.2; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(G.x0,y+.5); g.lineTo(G.x1+10,y+.5); g.stroke(); g.setLineDash([]);
-      txt(g,lab+' = '+fmt(v,3),G.x1+30,y+4,{color:'#0d7a55',size:10.5,bold:true});
+      txt(g,lab+' = '+fmt(v,3),G.x1-6,y-6,{color:'#0d7a55',size:10.5,bold:true,align:'right'});
     }
     /* усі члени сірим, відібрані — кольором */
     const sh=this.shown();
@@ -1588,7 +1727,7 @@ const M5={
         move:(px,py)=>{this.eps=clamp(snap(2*Math.abs(G.iY(py)-c),0.01),0.02,3); this.t=0;}},
       {id:'N',x:G.SX(this.N),y:G.y0+8,r:9,color:CLR.k1,hint:'початок хвоста N',
         move:px=>{this.N=clamp(Math.round(G.iX(px)),1,this.nMax-1); this.t=0;}},
-      {id:'nmax',x:G.SX(this.nMax),y:G.y1,r:8,color:CLR.k3,hint:'скільки членів видно',
+      {id:'nmax',x:G.SX(this.nMax),y:G.y1-14,r:8,color:CLR.k3,hint:'скільки членів видно',
         move:px=>{this.nMax=clamp(Math.round(G.iX(px)),10,200); this.t=0;}}
     ].concat(shelfGrips(this.shelfM(b),CAU.map((s,i)=>[s[0],i]),
       i=>{this.k=i; this.t=0; this.eps=0.2;},'cq'));
