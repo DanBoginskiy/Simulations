@@ -102,7 +102,8 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:250px}
+/* touch-action — бо ручки m1scene тягнуть пальцем, а полотно стоїть поза .pgrid */
+#m1scene{width:100%; height:250px; touch-action:none}
 #m2scene{width:100%; height:330px}
 #m3scene{width:100%; height:560px}
 #m4scene{width:100%; height:340px}
@@ -889,12 +890,14 @@ const M1={
      на екрані нічого: візок однаково проходив би ту саму смугу пікселів. */
   tMax(){const a=this.a(); return a>1e-9?Math.min(this.T,Math.sqrt(2*this.SPATH/a)):this.T;},
   /* Масштаби беруться з верхніх меж діапазонів, а не з поточних значень (§10):
-     траса стала, стрілка сили — від FMAX, стрілка ваги — від MMAX. */
+     траса стала, стрілка сили — від FMAX, стрілка ваги — від MMAX.
+     Горизонтальні сили (F, f, R) ділять один масштаб і лишаються порівнянними;
+     вертикальні (P, N) вкорочені окремо, щоб не залазити під шкалу шляху. */
   geo(b){return frozen(this,b,bb=>{
     const sTot=this.SPATH;
     const sc=fitScale(bb.w,bb.h,150,0,sTot+1.6,0,0,0);
-    const k=84/Math.max(this.FMAX,this.MMAX*G);
-    return {sTot,sc,gy:bb.h-40,k,vk:30/(this.MMAX*G),
+    const k=96/this.FMAX;
+    return {sTot,sc,gy:bb.h-40,k,vk:38/(this.MMAX*G),
       SX:x=>60+x*sc, cx:60+this.vals(this.t).s*sc,
       bw:40+this.m*6, bh:14+this.m*4,
       mu:{y:24,x0:bb.w-4*62-6,dx:62}};
@@ -964,34 +967,37 @@ const M1={
     g.fillStyle='rgba(235,104,52,.08)'; g.strokeStyle=CLR.k2; g.lineWidth=2;
     g.beginPath(); g.roundRect(cx-bw/2,cy-bh,bw,bh,4); g.fill(); g.stroke();
     dot(g,cx-bw/2+11,gy-6,6,'#fff',CLR.k2); dot(g,cx+bw/2-11,gy-6,6,'#fff',CLR.k2);
-    txt(g,fmt(this.m,1)+' кг',cx,cy-bh-14,{color:CLR.sec,size:11,bold:true,align:'center'});
+    /* підпис маси — ліворуч від візка: над ним тепер стоїть вектор N із ЦМ */
+    txt(g,fmt(this.m,1)+' кг',cx-bw/2-8,cy-bh-12,{color:CLR.sec,size:11,bold:true,align:'right'});
     /* сили: спільний масштаб, щоб довжини стрілок можна було порівнювати.
        Вертикальні вкорочені окремо — інакше вага перекриває шкалу шляху */
     const k=Q.k, vk=Q.vk;
     const ay=cy-bh/2;
     if(this.F>0.05){
-      arrow(g,cx+bw/2,ay,cx+bw/2+this.F*k,ay,CLR.k1,2.5);
-      txt(g,'F = '+fmt(this.F,1)+' Н',cx+bw/2+this.F*k+6,ay-6,{color:'#1c5cab',size:11.5,bold:true});
+      arrow(g,cx+bw/2,ay,cx+bw/2+this.F*k,ay,CLR.k1,3.5);
+      txt(g,'F = '+fmt(this.F,1)+' Н',cx+bw/2+this.F*k+7,ay-8,{color:'#1c5cab',size:12.5,bold:true});
     }
     if(q.f>0.05){
       const fl=Math.min(q.f,this.F)*k;
-      arrow(g,cx-bw/2,ay,cx-bw/2-fl,ay,CLR.k3,2.5);
-      txt(g,'f = '+fmt(Math.min(q.f,this.F),1)+' Н',cx-bw/2-fl-6,ay-6,
-        {color:'#0d7a55',size:11.5,bold:true,align:'right'});
+      arrow(g,cx-bw/2,ay,cx-bw/2-fl,ay,CLR.k3,3.5);
+      txt(g,'f = '+fmt(Math.min(q.f,this.F),1)+' Н',cx-bw/2-fl-7,ay-8,
+        {color:'#0d7a55',size:12.5,bold:true,align:'right'});
     }
     const vl=this.m*G*vk;
-    arrow(g,cx,ay,cx,ay+vl,CLR.k3,2);
-    txt(g,'P = '+fmt(this.m*G,1)+' Н',cx+7,ay+vl-2,{color:'#0d7a55',size:10.5});
-    arrow(g,cx-10,gy,cx-10,gy-vl,CLR.k3,2);
-    txt(g,'N',cx-16,gy-vl-4,{color:'#0d7a55',size:10.5,bold:true,align:'right'});
+    arrow(g,cx,ay,cx,ay+vl,CLR.k3,3);
+    txt(g,'P = '+fmt(this.m*G,1)+' Н',cx+8,ay+vl-2,{color:'#0d7a55',size:12,bold:true});
+    /* нормальна реакція прикладена до ЦМ тіла — на одній осі з вагою P */
+    arrow(g,cx,ay,cx,ay-vl,CLR.k3,3);
+    txt(g,'N',cx+8,ay-vl+1,{color:'#0d7a55',size:12,bold:true});
+    dot(g,cx,ay,3,CLR.ink,'#fff');
     if(q.R>0.05){
       const ry=ay-56;
-      arrow(g,cx,ry,cx+q.R*k,ry,CLR.ink,3);
-      txt(g,'рівнодійна R = '+fmt(q.R,1)+' Н',cx+q.R*k+7,ry+4,{color:CLR.ink,size:11.5,bold:true});
+      arrow(g,cx,ry,cx+q.R*k,ry,CLR.ink,4);
+      txt(g,'рівнодійна R = '+fmt(q.R,1)+' Н',cx+q.R*k+8,ry+4,{color:CLR.ink,size:12.5,bold:true});
     }
     if(q.v>0.02){
-      arrow(g,cx,ay+18,cx+Math.min(70,q.v*7),ay+18,CLR.k2,2.5);
-      txt(g,'v = '+fmt(q.v,1)+' м/с',cx+Math.min(70,q.v*7)+6,ay+22,{color:'#b8431a',size:11,bold:true});
+      arrow(g,cx,ay+18,cx+Math.min(80,q.v*8),ay+18,CLR.k2,3);
+      txt(g,'v = '+fmt(q.v,1)+' м/с',cx+Math.min(80,q.v*8)+7,ay+22,{color:'#b8431a',size:12,bold:true});
     }
     const moving=q.a>1e-9;
     txt(g,moving?'візок розганяється':'візок стоїть',12,20,{color:moving?CLR.k2:CLR.k3,size:12.5,bold:true});
@@ -1720,8 +1726,10 @@ const M4={
     txt(g,fmt(this.m,0)+' кг',bx,cy-Rm-12,{color:CLR.ink,size:11,bold:true,align:'center'});
     arrow(g,bx,cy,bx-len,cy,CLR.k3,3);
     txt(g,Ftxt,bx-len-6,cy+16,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
-    arrow(g,cx+rp,cy+24,cx+rp+len,cy+24,CLR.k3,3);
-    txt(g,'та сама F діє на планету',cx+rp+2,cy+40,{color:'#0d7a55',size:10.5});
+    /* протидія прикладена до ЦМ планети: обидві сили лежать на осі центрів
+       і перпендикулярні до поверхонь обох тіл */
+    arrow(g,cx,cy,cx+len,cy,CLR.k3,3);
+    txt(g,'та сама F діє на планету',cx+8,cy+34,{color:'#0d7a55',size:10.5});
     txt(g,'тяжіння спадає як 1/r²',12,20,{color:CLR.k3,size:12.5,bold:true});
     txt(g,'на подвоєній відстані від центра сила вчетверо менша',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);

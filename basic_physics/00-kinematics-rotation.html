@@ -111,7 +111,7 @@ table.read tr:last-child td{border-bottom:none}
 #m4earth{width:100%; height:250px}
 .clockbox canvas{width:100%; height:186px}
 /* ============ модуль 5 ============ */
-.m5grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.m5grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
 .m5grid canvas{width:100%; height:330px; touch-action:none; cursor:grab}
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -167,6 +167,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <input type="range" id="m1pv" min="8" max="25" step="0.5" value="18"><output id="m1pvo"></output></label>
         <label class="sl"><span><var>α</var> — кут кидка до горизонту</span>
           <input type="range" id="m1pa" min="15" max="80" step="1" value="55"><output id="m1pao"></output></label>
+        <div class="toolbar" style="margin:10px 0 4px">
+          <span class="lbl">опір повітря:</span>
+          <div class="seg" id="m1drag">
+            <button data-v="off" class="active">без опору</button>
+            <button data-v="on" style="--c:var(--k3)">з опором −kmv</button>
+          </div>
+        </div>
+        <div class="grp" id="m1kdW" hidden>
+          <label class="sl"><span><var>k</var> — коефіцієнт опору повітря</span>
+            <input type="range" id="m1kd" min="0.05" max="1.2" step="0.05" value="0.4"><output id="m1kdo"></output></label>
+        </div>
       </div>
       <div class="grp" id="m1gCirc" hidden>
         <label class="sl"><span><var>R</var> — радіус кола</span>
@@ -325,6 +336,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="скинути">↺</button>
           <span class="lbl" id="m3t"></span>
+          <span class="lbl">торкніться всередині колеса — переставите вільну точку <b>C</b></span>
         </div>
         <canvas id="m3scene"></canvas>
       </div>
@@ -362,6 +374,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <div class="kv"><span>умова кочення <var>ω</var> = <var>v</var><sub>c</sub>/<var>R</var></span><b id="m3kOm"></b></div>
         <div class="kv"><span>швидкість точки P зараз</span><b id="m3kVp"></b></div>
+        <div class="kv"><span>вільна точка C: швидкість</span><b id="m3kVc"></b></div>
+        <div class="kv"><span>C: прискорення <var>a</var> = <var>ω</var>²<var>ρ</var><span class="badge">до центра</span></span><b id="m3kAc"></b></div>
         <div class="kv"><span>верхня точка: <var>v</var> = 2<var>v</var><sub>c</sub></span><b id="m3kTop"></b></div>
         <div class="kv"><span>точка дотику<span class="badge">миттєвий центр швидкостей</span></span><b id="m3kBot">0,0 м/с</b></div>
         <div class="kv"><span>шлях центра за оберт: 2π<var>R</var></span><b id="m3kLc"></b></div>
@@ -447,6 +461,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <p class="caption">Положення на Землі задають широта <var>φ</var> і довгота <var>λ</var>; положення світила на небі —
   схилення <var>δ</var> і пряме сходження <var>α</var>. Земля обертається під нерухомою небесною сферою,
   і зоряний час <var>S</var> показує, наскільки вона вже повернулася.
+  Третя сфера — ті самі координати мовою математики: сферична система (<var>r</var>, <var>θ</var>, <var>φ</var>).
   Перетягуйте будь-яку сферу, щоб змінити точку огляду.</p>
 
   <div class="pgrid">
@@ -472,6 +487,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <span class="cc"><var class="c2">t</var> = <b id="m5rT"></b></span>
           </div>
           <div class="formulas"><i>t</i> = <i>S</i> − <i>α</i> — годинний кут; світило кульмінує при <i>t</i> = 0</div>
+        </div>
+        <div class="panel">
+          <h3>Сферичні координати — <span class="c1">полярний кут θ</span>, <span class="c2">азимут φ</span>, <var>r</var></h3>
+          <canvas id="m5sph"></canvas>
+          <div class="coords">
+            <span class="cc"><var>r</var> = <b id="m5rMr"></b></span>
+            <span class="cc"><var class="c1">θ</var> = <b id="m5rMth"></b></span>
+            <span class="cc"><var class="c2">φ</var><sub>сф</sub> = <b id="m5rMph"></b></span>
+          </div>
+          <div class="formulas">той самий P: <i>θ</i> = 90° − <i>φ</i><sub>геогр</sub>, <i>φ</i><sub>сф</sub> = <i>λ</i>;
+            <i>x</i> = <i>r</i> sin<i>θ</i> cos<i>φ</i> · <i>y</i> = <i>r</i> sin<i>θ</i> sin<i>φ</i> · <i>z</i> = <i>r</i> cos<i>θ</i></div>
         </div>
       </div>
       <div class="panel">
@@ -832,7 +858,7 @@ function dragSphere(id,st,onDrag){
 
 /* ===================== МОДУЛЬ 1 · матеріальна точка ===================== */
 const M1={
-  mode:'proj', m:2,
+  mode:'proj', m:2, drag:false, kd:0.4,
   lv:7, lb:24, pv:18, pa:55, cR:6, cw:1.1,
   t:0, playing:true, waitT:0,
   hist:null, rng:null,
@@ -840,29 +866,50 @@ const M1={
 
   T(){
     if(this.mode==='line') return 3.5;
-    if(this.mode==='proj') return 2*this.pv*Math.sin(this.pa*DEG)/G;
+    if(this.mode==='proj') return this.projT();
     return 2*Math.PI/this.cw;
   },
+  /* час польоту кидка: без опору — аналітично; з опором y(t) = 0 шукаємо
+     діленням навпіл між апексом і часом польоту без опору (лінійний опір
+     завжди скорочує політ, тож корінь лежить у цьому проміжку) */
+  projT(){
+    const vy=this.pv*Math.sin(this.pa*DEG);
+    if(!this.drag) return 2*vy/G;
+    const k=this.kd;
+    let lo=Math.log(1+k*vy/G)/k, hi=2*vy/G+0.1;
+    while(this.pos(hi).y>0&&hi<60) hi*=1.4;
+    for(let i=0;i<50;i++){const m=(lo+hi)/2; if(this.pos(m).y>0) lo=m; else hi=m;}
+    return (lo+hi)/2;
+  },
   cen(){return {x:0,y:this.cR+1};},
+  /* кидок з опором повітря: сила −kmv, прискорення не залежить від маси;
+     рівняння лінійні, тож координати й швидкість пишемо замкнено */
   pos(t){
     if(this.mode==='line'){const b=this.lb*DEG;
       return {x:-12+this.lv*Math.cos(b)*t, y:2+this.lv*Math.sin(b)*t};}
-    if(this.mode==='proj'){const a=this.pa*DEG;
-      return {x:this.pv*Math.cos(a)*t, y:this.pv*Math.sin(a)*t-G*t*t/2};}
+    if(this.mode==='proj'){const a=this.pa*DEG,vx=this.pv*Math.cos(a),vy=this.pv*Math.sin(a);
+      if(this.drag){const k=this.kd,E=1-Math.exp(-k*t);
+        return {x:vx*E/k, y:(vy+G/k)*E/k-G*t/k};}
+      return {x:vx*t, y:vy*t-G*t*t/2};}
     const c=this.cen(),f=this.cw*t;
     return {x:c.x+this.cR*Math.cos(f), y:c.y+this.cR*Math.sin(f)};
   },
   vel(t){
     if(this.mode==='line'){const b=this.lb*DEG;
       return {x:this.lv*Math.cos(b), y:this.lv*Math.sin(b)};}
-    if(this.mode==='proj'){const a=this.pa*DEG;
-      return {x:this.pv*Math.cos(a), y:this.pv*Math.sin(a)-G*t};}
+    if(this.mode==='proj'){const a=this.pa*DEG,vx=this.pv*Math.cos(a),vy=this.pv*Math.sin(a);
+      if(this.drag){const k=this.kd,e=Math.exp(-k*t);
+        return {x:vx*e, y:(vy+G/k)*e-G/k};}
+      return {x:vx, y:vy-G*t};}
     const f=this.cw*t,k=this.cR*this.cw;
     return {x:-k*Math.sin(f), y:k*Math.cos(f)};
   },
   acc(t){
     if(this.mode==='line') return {x:0,y:0};
-    if(this.mode==='proj') return {x:0,y:-G};
+    if(this.mode==='proj'){
+      if(this.drag){const v=this.vel(t); return {x:-this.kd*v.x, y:-G-this.kd*v.y};}
+      return {x:0,y:-G};
+    }
     const f=this.cw*t,k=this.cR*this.cw*this.cw;
     return {x:-k*Math.cos(f), y:-k*Math.sin(f)};
   },
@@ -925,7 +972,9 @@ const M1={
     $('m1gCirc').hidden=this.mode!=='circ';
     $('m1note').innerHTML={
       line:'рух рівномірний: <b>a = 0</b>, шлях дорівнює модулю переміщення. Точку веде напрямна, тому повна енергія не стала.',
-      proj:'єдина сила — тяжіння: <b>a = g = 9,8 м/с²</b> сталий, повна енергія зберігається.',
+      proj:this.drag
+        ?'сили — тяжіння та опір повітря <b>F = −kmv</b>: прискорення змінне, траєкторія несиметрична, повна енергія спадає.'
+        :'єдина сила — тяжіння: <b>a = g = 9,8 м/с²</b> сталий, повна енергія зберігається.',
       circ:'модуль швидкості сталий: <b>a<sub>τ</sub> = 0</b>, лишається лише доцентрове <b>a<sub>n</sub> = ω²R</b>. Точку тримає в\'язь, тому повна енергія не стала.'
     }[this.mode];
   },
@@ -935,6 +984,9 @@ const M1={
     slider('m1lb','°',0,v=>{this.lb=v; this.reset();});
     slider('m1pv','м/с',1,v=>{this.pv=v; this.reset();});
     slider('m1pa','°',0,v=>{this.pa=v; this.reset();});
+    seg('m1drag',v=>{this.drag=v==='on'; $('m1kdW').hidden=!this.drag;
+      this.showGroups(); this.reset();});
+    slider('m1kd','1/с',2,v=>{this.kd=v; this.reset();});
     slider('m1cr','м',1,v=>{this.cR=v; this.reset();});
     slider('m1cw','рад/с',2,v=>{this.cw=v; this.reset();});
     slider('m1m','кг',1,v=>{this.m=v; this.reset();});
@@ -1050,7 +1102,9 @@ const M1={
     txt(g,'P',px-(v.x>=0?12:-12),py-11,{color:CLR.ink,size:12.5,bold:true,align:v.x>=0?'right':'left'});
     /* підпис сцени */
     const nm={line:['рівномірний прямолінійний рух',CLR.k1,'вектор швидкості сталий, прискорення немає'],
-              proj:['рівноприскорений рух — кидок під кутом',CLR.k2,'прискорення стале й вертикальне, траєкторія — парабола'],
+              proj:this.drag
+                ?['кидок під кутом з опором повітря',CLR.k2,'опір −kmv гальмує точку: траєкторія несиметрична, спуск крутіший за підйом']
+                :['рівноприскорений рух — кидок під кутом',CLR.k2,'прискорення стале й вертикальне, траєкторія — парабола'],
               circ:['рівномірний рух по колу',CLR.k3,'модуль швидкості сталий, прискорення весь час до центра']}[this.mode];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
@@ -1070,7 +1124,7 @@ const M1={
     $('m1rEk').textContent=fmt(q.ek)+' Дж';
     $('m1rEp').textContent=fmt(q.ep)+' Дж';
     $('m1rE').textContent=fmt(q.e)+' Дж';
-    $('m1bE').hidden=this.mode!=='proj';
+    $('m1bE').hidden=this.mode!=='proj'||this.drag;
     $('m1fx').innerHTML=
       '<i>v</i> = √('+fmt(q.vx)+'² + '+fmt(q.vy)+'²) = <b>'+fmt(q.v)+' м/с</b> &nbsp;·&nbsp; '+
       '<i>E</i> = '+fmt(q.ek)+' + '+fmt(q.ep)+' = <b>'+fmt(q.e)+' Дж</b>';
@@ -1310,10 +1364,16 @@ const M2={
 /* ===================== МОДУЛЬ 3 · кочення колеса ===================== */
 const M3={
   vc:1, R:0.35, th0:0, frame:'road',
+  fC:0.55, psiC:2.4,   /* вільна точка C: ρ = f_C·R від центра, фаза ψ від точки P */
   t:0, playing:true, waitT:0, REV:1.15,
   hist:null,
   hv:{x:null}, hy:{x:null}, tipv:null, tipy:null,
   om(){return this.vc/this.R;},
+  /* швидкість точки C у СВ дороги: центр + обертання */
+  velC(t){
+    const om=this.om(),ph=this.th(t)+this.psiC,rho=this.fC*this.R;
+    return {x:this.vc-rho*om*Math.cos(ph), y:rho*om*Math.sin(ph)};
+  },
   /* при v_c = 0 колесо стоїть і оберт не настає ніколи: беремо власне вікно часу,
      інакше межа графіків стала б нескінченністю */
   T(){const o=this.om(); return o>1e-6?this.REV*2*Math.PI/o:6;},
@@ -1344,7 +1404,38 @@ const M3={
     $('m3re').onclick=()=>this.reset();
     this.tipv=makeTip('m3cvw'); this.tipy=makeTip('m3cyw');
     hover('m3cv',this.hv); hover('m3cy',this.hy);
+    this.drag();
     this.reset();
+  },
+  /* спільна геометрія кадру для scene() і перетягування точки C */
+  geo(b){
+    const R=this.R, wheel=this.frame==='wheel';
+    const Wworld=this.REV*2*Math.PI*R+2.4*R, Hworld=2.6*R;
+    const sc=Math.min((b.w-40)/Wworld,(b.h-56)/Hworld);
+    const xc=this.vc*this.t;
+    const camX=wheel?xc-(b.w/2)/sc:-R-0.3-20/sc;
+    const yBase=b.h-30;
+    return {sc,xc,camX,yBase,Wworld,SX:x=>(x-camX)*sc,SY:y=>yBase-y*sc};
+  },
+  /* дотик у межах колеса ставить вільну точку C; далі вона тягнеться за пальцем */
+  drag(){
+    const c=$('m3scene'); let on=false;
+    const put=e=>{
+      const b=cvx('m3scene'); if(!b) return;
+      const Q=this.geo(b), r=c.getBoundingClientRect();
+      const wx=(e.clientX-r.left)/Q.sc+Q.camX;
+      const wy=(Q.yBase-(e.clientY-r.top))/Q.sc;
+      const dx=wx-Q.xc, dy=wy-this.R, d=Math.hypot(dx,dy);
+      if(!on&&d>this.R+18/Q.sc) return;
+      on=true;
+      this.fC=Math.max(0.08,Math.min(1,d/this.R));
+      /* позиція відносно центра: (−ρ sin φ, −ρ cos φ) → φ = atan2(−dx, −dy) */
+      this.psiC=Math.atan2(-dx,-dy)-this.th(this.t);
+    };
+    c.addEventListener('pointerdown',e=>{put(e); if(on) c.setPointerCapture(e.pointerId);});
+    c.addEventListener('pointermove',e=>{if(on) put(e);});
+    const off=()=>{on=false;};
+    c.addEventListener('pointerup',off); c.addEventListener('pointercancel',off);
   },
   tick(dt){
     const T=this.T();
@@ -1363,15 +1454,11 @@ const M3={
     const {g,w,h}=b,t=this.t,R=this.R,wheel=this.frame==='wheel';
     /* масштаб рахується з повного шляху в СВ дороги — однаковий в обох СВ,
        щоб колесо не міняло розміру при перемиканні;
-       запас по висоті пропорційний R, інакше при малому колесі кадр порожніє */
-    /* v_c·T = 1,15·2πR — шлях центра за оберт від швидкості не залежить; пишемо його
-       прямо, щоб кадр не стрибав, коли колесо спиняють (v_c = 0) */
-    const Wworld=this.REV*2*Math.PI*R+2.4*R, Hworld=2.6*R;
-    const sc=Math.min((w-40)/Wworld,(h-56)/Hworld);
-    const xc=this.vc*t;
-    const camX=wheel?xc-(w/2)/sc:-R-0.3-20/sc;
-    const yBase=h-30;
-    const SX=x=>(x-camX)*sc, SY=y=>yBase-y*sc;
+       запас по висоті пропорційний R, інакше при малому колесі кадр порожніє;
+       v_c·T = 1,15·2πR — шлях центра за оберт від швидкості не залежить */
+    const Q=this.geo(b);
+    const Wworld=Q.Wworld, sc=Q.sc, xc=Q.xc, camX=Q.camX;
+    const SX=Q.SX, SY=Q.SY;
     g.clearRect(0,0,w,h);
     /* дорога */
     g.fillStyle=CLR.ground; g.fillRect(0,SY(0),w,h-SY(0));
@@ -1443,6 +1530,38 @@ const M3={
     }
     dot(g,px,py,6,CLR.ink,'#fff');
     txt(g,'P',px+9,py+14,{color:CLR.ink,size:12.5,bold:true});
+    /* вільна точка C всередині колеса: розклад швидкості, як у P,
+       і доцентрове прискорення ω²ρ — воно однакове в обох СВ */
+    const omC=this.om(), phC=this.th(t)+this.psiC, rhoC=this.fC*R;
+    const cxp=SX(xc-rhoC*Math.sin(phC)), cyp=SY(R-rhoC*Math.cos(phC));
+    const vrC={x:-rhoC*omC*Math.cos(phC), y:rhoC*omC*Math.sin(phC)};
+    const vtC={x:this.vc+vrC.x, y:vrC.y};
+    if(!wheel){
+      g.setLineDash([3,3]); g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath();
+      g.moveTo(cxp+this.vc*kv,cyp); g.lineTo(cxp+vtC.x*kv,cyp-vtC.y*kv);
+      g.moveTo(cxp+vrC.x*kv,cyp-vrC.y*kv); g.lineTo(cxp+vtC.x*kv,cyp-vtC.y*kv);
+      g.stroke(); g.setLineDash([]);
+      arrow(g,cxp,cyp,cxp+this.vc*kv,cyp,CLR.k1,2);
+      arrow(g,cxp,cyp,cxp+vrC.x*kv,cyp-vrC.y*kv,CLR.k2,2);
+      arrow(g,cxp,cyp,cxp+vtC.x*kv,cyp-vtC.y*kv,CLR.ink,2.5);
+      pill(g,'v_C = '+fmt(Math.hypot(vtC.x,vtC.y),2)+' м/с',
+        cxp+vtC.x*kv+(vtC.x<0?-52:52),cyp-vtC.y*kv-10,{color:CLR.ink,size:11,bold:true});
+    } else {
+      arrow(g,cxp,cyp,cxp+vrC.x*kv,cyp-vrC.y*kv,CLR.k2,2.5);
+      pill(g,'v_C = ωρ = '+fmt(rhoC*omC,2)+' м/с',
+        cxp+vrC.x*kv+(vrC.x<0?-58:58),cyp-vrC.y*kv-10,{color:'#b8431a',size:11,bold:true});
+    }
+    const aC=omC*omC*rhoC;
+    const kaC=Math.min(rp*1.1,64)/Math.max(1e-6,omC*omC*R);
+    const acx=SX(xc)-cxp, acy=SY(R)-cyp, acl=Math.hypot(acx,acy)||1;
+    if(aC*kaC>4){
+      arrow(g,cxp,cyp,cxp+acx/acl*aC*kaC,cyp+acy/acl*aC*kaC,CLR.k3,2.5);
+      txt(g,'a = ω²ρ',cxp+acx/acl*aC*kaC*0.5-acy/acl*15,cyp+acy/acl*aC*kaC*0.5+acx/acl*15+4,
+        {color:'#0d7a55',size:10.5,bold:true,align:'center'});
+    }
+    dot(g,cxp,cyp,5.5,'#fff',CLR.ink);
+    txt(g,'C',cxp-9,cyp-9,{color:CLR.ink,size:12.5,bold:true,align:'right'});
     const fr=wheel?['СВ центра колеса',CLR.k2,'центр нерухомий — точка обода описує коло зі сталою за модулем швидкістю ωR']
                   :['СВ дороги',CLR.k1,'траєкторія точки обода — циклоїда: унизу швидкість 0, угорі 2v_c'];
     txt(g,fr[0],12,20,{color:fr[1],size:12.5,bold:true});
@@ -1453,6 +1572,9 @@ const M3={
     $('m3t').textContent='t = '+fmt(t,2)+' с · θ = '+fmt(this.th(t)/DEG%360,0)+'°';
     $('m3kOm').textContent=fmt(om,1)+' рад/с';
     $('m3kVp').textContent=fmt(this.speedP(t),2)+' м/с';
+    const vC=this.velC(t);
+    $('m3kVc').textContent=fmt(Math.hypot(vC.x,vC.y),2)+' м/с';
+    $('m3kAc').textContent=fmt(om*om*this.fC*this.R,2)+' м/с²';
     $('m3kTop').textContent=fmt(2*this.vc,1)+' м/с';
     $('m3kLc').textContent=fmt(2*Math.PI*this.R,2)+' м';
     $('m3kLp').textContent=fmt(8*this.R,2)+' м';
@@ -1712,6 +1834,7 @@ const M5={
     };
     dragSphere('m5globe',this);
     dragSphere('m5sky',this);
+    dragSphere('m5sph',this);
     this.tip1=makeTip('m5c1w'); this.tip2=makeTip('m5c2w');
     hover('m5c1',this.h1); hover('m5c2',this.h2);
     this.h1.xlab='φ'; this.h1.xunit='°'; this.h1.xdec=0;
@@ -1724,7 +1847,7 @@ const M5={
     }
     this.render();
   },
-  render(){this.globe(); this.sky(); this.table(); this.charts();},
+  render(){this.globe(); this.sky(); this.msphere(); this.table(); this.charts();},
   /* висота світила над горизонтом при годинному куті t (год) */
   alt(tH){
     const p=this.phi*DEG, d=this.de*DEG, t=tH*15*DEG;
@@ -1799,7 +1922,55 @@ const M5={
     if(gr.front) txt(g,'Гринвіч',gr.x+(grRight?-9:9),gr.y-6,
       {color:'#b8431a',size:10.5,bold:true,align:grRight?'right':'left'});
     txt(g,'Земля обертається',12,20,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'широта — від екватора, довгота — від Гринвіцького меридіана',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'широта — від екватора, довгота — від Гринвіча',12,36,{color:CLR.mut,size:10.5});
+  },
+  /* та сама точка P мовою математики: сферична система (r, θ, φ) —
+     у стилі сусідніх глобусів, з тим самим перетягуванням камери */
+  msphere(){
+    const b=cvx('m5sph'); if(!b) return;
+    const {g,w,h}=b;
+    const V=this.V(b,0);               /* координатна сфера нерухома, як небесна */
+    const th=90-this.phi, lam=this.lam;
+    g.clearRect(0,0,w,h);
+    sphBase(g,V,'#f6f6f3');
+    /* площина xy — «екватор» системи */
+    sphCurve(g,V,u=>[0,u*360],180,CLR.axis,1.8);
+    /* осі: z — через полюси, x — при φ = 0, y — при φ = 90° */
+    const O={x:V.cx,y:V.cy};
+    const axis=(la,lo,name)=>{
+      const p=sphPt(la,lo,V);
+      const ex=O.x+(p.x-O.x)*1.22, ey=O.y+(p.y-O.y)*1.22;
+      g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash(p.front?[]:[3,3]);
+      g.beginPath(); g.moveTo(O.x,O.y); g.lineTo(p.x,p.y); g.stroke(); g.setLineDash([]);
+      arrow(g,p.x,p.y,ex,ey,CLR.sec,1.6);
+      txt(g,name,ex+(ex>O.x?6:-6),ey+4,{color:CLR.sec,size:11.5,bold:true,align:ex>O.x?'left':'right'});
+    };
+    axis(90,0,'z'); axis(0,0,'x'); axis(0,90,'y');
+    /* меридіанна півплощина точки */
+    sphCurve(g,V,u=>[-90+u*180,lam],90,CLR.grid,1.5,{dash:[5,4]});
+    /* дуга полярного кута θ — від осі z вздовж меридіана точки */
+    sphCurve(g,V,u=>[90-u*th,lam],40,CLR.k1,3.5);
+    /* дуга азимута φ — по «екватору» від осі x */
+    sphCurve(g,V,u=>[0,u*lam],60,CLR.k2,3.5);
+    /* точка M, її радіус-вектор r і проєкція на площину xy */
+    const P=sphPt(this.phi,lam,V);
+    const E=sphPt(0,lam,V);
+    const s=Math.sin(th*DEG);
+    const PR={x:O.x+(E.x-O.x)*s, y:O.y+(E.y-O.y)*s};
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(P.x,P.y); g.lineTo(PR.x,PR.y);
+    g.moveTo(O.x,O.y); g.lineTo(PR.x,PR.y); g.stroke(); g.setLineDash([]);
+    arrow(g,O.x,O.y,P.x,P.y,CLR.ink,2.5);
+    txt(g,'r',(O.x+P.x)/2+7,(O.y+P.y)/2-4,{color:CLR.ink,size:12.5,bold:true});
+    const mT=sphPt(90-th/2,lam,V);
+    if(mT.front&&Math.abs(th)>6) txt(g,'θ',mT.x+8,mT.y+2,{color:'#1c5cab',size:12.5,bold:true});
+    const mF=sphPt(0,lam/2,V);
+    if(mF.front&&Math.abs(lam)>8) txt(g,'φ',mF.x,mF.y+16,{color:'#b8431a',size:12.5,bold:true,align:'center'});
+    dot(g,P.x,P.y,P.front?6:4.5,P.front?CLR.ink:'#fff',P.front?'#fff':CLR.mut);
+    txt(g,'M',P.x+9,P.y-7,{color:CLR.ink,size:12.5,bold:true});
+    txt(g,'та сама точка мовою математики',12,20,{color:CLR.ink,size:12.5,bold:true});
+    txt(g,'θ — від осі z, φ — від осі x у площині xy',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'θ = 90° − φ_геогр · φ_сф = λ',12,h-10,{color:CLR.mut,size:10.5});
   },
   sky(){
     const b=cvx('m5sky'); if(!b) return;
@@ -1845,7 +2016,7 @@ const M5={
     const SM=sphPt(0,S*15,V);
     dot(g,SM.x,SM.y,4.5,SM.front?CLR.k2:'#fff',SM.front?'#fff':CLR.k2);
     txt(g,'небесна сфера нерухома',12,20,{color:CLR.k3,size:12.5,bold:true});
-    txt(g,'меридіан спостерігача біжить по ній — це і є зоряний час',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'меридіан біжить по сфері — це і є зоряний час',12,36,{color:CLR.mut,size:10.5});
     /* годинний кут — у зоряному часі; переводимо в звичайні (сонячні) хвилини */
     const ha=this.HA();
     txt(g,Math.abs(ha)<0.02?'світило кульмінує зараз: t = 0'
@@ -1857,6 +2028,9 @@ const M5={
     $('m5rPhi').textContent=fmt(Math.abs(this.phi),1)+'° '+(this.phi>=0?'пн':'пд');
     $('m5rLam').textContent=fmt(Math.abs(this.lam),1)+'° '+(this.lam>=0?'сх':'зх');
     $('m5rV').textContent=fmt(this.vLin(),1)+' м/с';
+    $('m5rMr').textContent=fmt(R_E/1e3,0)+' км';
+    $('m5rMth').textContent=fmt(90-this.phi,1)+'°';
+    $('m5rMph').textContent=fmt(((this.lam%360)+360)%360,1)+'°';
     $('m5rAl').textContent=hm24(this.al);
     $('m5rDe').textContent=fmt(this.de,0)+'°';
     $('m5rS').textContent=hm24(this.S());
