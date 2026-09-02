@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Відносність руху і кінематика · дощ на трамваї · човни на річці · кулька в ліфті · відскоки по похилій</title>
+<style>
+:root{
+  --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{background:var(--paper); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
+h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
+h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
+.tabs{display:flex; gap:6px; margin:12px 0 16px; border-bottom:1px solid var(--grid); padding-bottom:0; flex-wrap:wrap}
+.tabs button{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:8px 14px 10px; font:600 14px/1 system-ui,sans-serif; color:var(--sec); cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--ink)}
+.module{display:none}
+.module.active{display:block}
+.caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
+canvas{display:block}
+/* segmented control */
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
+  font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
+  box-shadow:inset 0 -2px 0 var(--c,#888)}
+/* icon buttons */
+.ibtn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:34px; height:30px; cursor:pointer; font-size:13px; color:var(--ink)}
+.ibtn:hover{border-color:var(--axis)}
+.btn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  padding:6px 11px; cursor:pointer; font:600 12.5px/1 system-ui,sans-serif; color:var(--ink)}
+.btn:hover{border-color:var(--axis)}
+.btn small{display:block; font-weight:400; color:var(--mut); margin-top:3px}
+/* sliders */
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin:9px 0}
+.sl>span{font-size:13px; color:var(--sec); grid-column:1/3}
+.sl input[type=range]{width:100%; accent-color:var(--ink)}
+.sl output{font-size:13px; font-variant-numeric:tabular-nums; color:var(--ink); min-width:74px; text-align:right}
+.grp[hidden]{display:none}
+/* key-value readouts */
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:5px 0; border-bottom:1px dashed var(--grid); font-size:13px}
+.kv:last-child{border-bottom:none}
+/* display:flex перебиває приховування атрибутом hidden — повертаємо його */
+.kv[hidden]{display:none}
+.kv span{color:var(--sec)}
+.kv b{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
+  border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
+.badge[hidden]{display:none}
+.chip{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.cA{background:var(--k1)} .cB{background:var(--k2)} .cC{background:var(--k3)} .cI{background:var(--ink)}
+.formulas{font-size:12.5px; color:var(--mut); margin-top:8px; font-style:italic}
+.formulas i{font-family:Georgia,serif}
+.formulas b{color:var(--ink); font-style:normal}
+var{font-family:Georgia,serif; font-style:italic}
+/* toolbars, tables, charts — спільні для всіх модулів */
+.toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.toolbar .lbl{font-size:12.5px; color:var(--mut)}
+.toolbar .lbl b{font-variant-numeric:tabular-nums}
+table.read{width:100%; border-collapse:collapse; font-size:13.5px}
+table.read th{font:600 11.5px/1 system-ui,sans-serif; color:var(--mut); text-align:right; padding:4px 8px; border-bottom:1px solid var(--grid)}
+table.read th:first-child{text-align:left}
+table.read td{padding:5px 8px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px dashed var(--grid)}
+table.read td:first-child{text-align:left; white-space:nowrap}
+table.read td.f{color:var(--mut); font-size:12.5px; text-align:left}
+table.read td.f var{color:var(--sec)}
+table.read tr:last-child td{border-bottom:none}
+.legend{display:flex; gap:18px; font-size:12.5px; color:var(--sec); margin-bottom:8px; flex-wrap:wrap}
+.legend.sm{gap:12px; font-size:11.5px; margin-bottom:5px}
+.chartrow{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+.chartbox{position:relative}
+.chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.chartbox canvas{width:100%; height:186px}
+.tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
+  border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+.tip .th{color:var(--mut); margin-bottom:3px}
+.tip div{line-height:1.5}
+.pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
+.pgrid .scene canvas{width:100%; touch-action:none}
+.side .panel{padding:12px 14px}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.coords{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:13.5px}
+.coords .cc{font-variant-numeric:tabular-nums; white-space:nowrap}
+.coords .cc b{font-weight:600}
+.c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
+
+/* ============ сітки й полотна цієї теми ============ */
+#m1scene{width:100%; height:450px}
+#m2scene{width:100%; height:470px}
+#m3scene{width:100%; height:460px}
+#m4scene{width:100%; height:516px}
+.ansbox{margin-top:10px}
+.ansbox[hidden]{display:none}
+.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
+  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond b{color:var(--ink); font-weight:600}
+
+footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+@media (max-width:900px){
+  .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Відносність руху і кінематика<small>задачі 1.3 · 1.6 · 1.14 · 1.22 компенсаційного курсу</small></h1>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-m="m1" class="active">1 · Дощ на склі трамвая</button>
+  <button data-m="m2">2 · Човни на річці</button>
+  <button data-m="m3">3 · Кулька в ліфті</button>
+  <button data-m="m4">4 · Відскоки по похилій</button>
+</nav>
+
+<!-- ================= МОДУЛЬ 1 ================= -->
+<section class="module active" id="m1">
+  <p class="caption">Краплі одні й ті самі, дощ один і той самий — а слід на склі різний у кожного трамвая.
+  Кут сліду показує напрям швидкості краплі <b>відносно того скла</b>, по якому вона біжить.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m1mode">
+            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
+            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
+          </div>
+          <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m1re" title="заново">↺</button>
+          <span class="lbl" id="m1hint"></span>
+        </div>
+        <canvas id="m1scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Як кут сліду залежить від умов</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m1cbw">
+            <h4>кут на склі зустрічного від кута на нерухомому, °</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>β(α): tg β = 2 tg α</span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m1cb"></canvas>
+          </div>
+          <div class="chartbox" id="m1cvw">
+            <h4>кути слідів на трьох склах від швидкості трамвая, °</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>нерухомий</span><span><span class="chip cB"></span>попутний</span><span><span class="chip cC"></span>зустрічний</span></div>
+            <canvas id="m1cv"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова задачі 1.3</h3>
+        <p class="cond">Сліди дощових крапель на бічному склі трамвая <b>вертикальні</b> під час руху
+        і відхилені на кут <b>α = 30°</b> при зупинці. Визначити кут <b>β</b>, на який відхилені сліди
+        на склі зустрічного трамвая, що рухається з такою самою швидкістю.</p>
+        <div class="kv"><span><var>u</var> — швидкість крапель униз відносно землі</span><b id="m1vu"></b></div>
+        <div class="kv"><span><var>w</var> — горизонтальна швидкість крапель відносно землі<span class="badge" id="m1bw" hidden>= <var>v</var></span></span><b id="m1vw"></b></div>
+        <div class="kv"><span><var>v</var> — швидкість трамвая відносно землі</span><b id="m1vv"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <button class="btn" id="m1ans">показати відповідь<small>кут β на зустрічному склі</small></button>
+        <div class="ansbox" id="m1ansBox" hidden>
+          <div class="kv"><span>кут на нерухомому склі <var>α</var></span><b id="m1rAl"></b></div>
+          <div class="kv"><span>кут на попутному склі</span><b id="m1rTr"></b></div>
+          <div class="kv"><span>кут на зустрічному склі <var>β</var></span><b id="m1rBe"></b></div>
+          <div class="formulas" id="m1fx"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Швидкість краплі відносно скла<span class="badge">відносно землі — та сама</span></h3>
+        <div class="kv"><span><span class="chip cA"></span>нерухомий: горизонтальна <var>w</var></span><b id="m1kA"></b></div>
+        <div class="kv"><span><span class="chip cB"></span>попутний: <var>w</var> − <var>v</var></span><b id="m1kB"></b></div>
+        <div class="kv"><span><span class="chip cC"></span>зустрічний: <var>w</var> + <var>v</var></span><b id="m1kC"></b></div>
+        <div class="kv"><span>модуль швидкості краплі відносно землі</span><b id="m1kU"></b></div>
+        <div class="formulas">кут сліду відлічуємо від вертикалі: tg = горизонтальна / <i>u</i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 2 ================= -->
+<section class="module" id="m2">
+  <p class="caption">Два човни проходять однакову відстань туди й назад — один за течією, другий поперек неї.
+  У системі відліку води обидва просто йдуть прямими з однаковою швидкістю, і різниця часів
+  стає геометрією: це той самий дослід, що й у Майкельсона — Морлі.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m2mode">
+            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
+            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
+          </div>
+          <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m2re" title="заново">↺</button>
+          <span class="lbl" id="m2t"></span>
+        </div>
+        <canvas id="m2scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Перегони в числах</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m2crw">
+            <h4>відношення часів від η = v/u</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>τ₁/τ₂ = η/√(η²−1)</span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m2cr"></canvas>
+          </div>
+          <div class="chartbox" id="m2cdw">
+            <h4>відстань човна від бакена, м</h4>
+            <div class="legend sm"><span><span class="chip cI"></span>за течією</span><span><span class="chip cC"></span>поперек</span></div>
+            <canvas id="m2cd"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова задачі 1.6</h3>
+        <p class="cond">Від бакена, що стоїть посеред ріки, одночасно відпливають два човни:
+        один <b>за</b>, а другий — <b>поперек</b> течії. Пройшовши однакову відстань, човни вертаються
+        назад тими самими шляхами. Визначити відношення часів руху <b>τ₁/τ₂</b>, якщо їхня швидкість
+        відносно води в <b>η = 1,8</b> разів перевищує швидкість течії.</p>
+        <div class="kv"><span><var>v</var> — швидкість човна відносно води<span class="badge">однакова в обох</span></span><b id="m2vv"></b></div>
+        <div class="kv"><span><var>u</var> — швидкість течії відносно берега</span><b id="m2vu"></b></div>
+        <div class="kv"><span><var>L</var> — відстань до поворотної позначки</span><b id="m2vL"></b></div>
+        <div class="kv"><span><var>η</var> = <var>v</var>/<var>u</var></span><b id="m2vEt"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <button class="btn" id="m2ans">показати відповідь<small>відношення часів τ₁/τ₂</small></button>
+        <div class="ansbox" id="m2ansBox" hidden>
+          <div class="kv"><span>час човна за течією <var>τ</var><sub>1</sub></span><b id="m2rT1"></b></div>
+          <div class="kv"><span>час човна поперек <var>τ</var><sub>2</sub></span><b id="m2rT2"></b></div>
+          <div class="kv"><span>відношення <var>τ</var><sub>1</sub>/<var>τ</var><sub>2</sub></span><b id="m2rR"></b></div>
+          <div class="formulas" id="m2fx"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Чому поперек швидше</h3>
+        <div class="kv"><span>за течією: <var>v</var> + <var>u</var></span><b id="m2kD"></b></div>
+        <div class="kv"><span>проти течії: <var>v</var> − <var>u</var></span><b id="m2kU"></b></div>
+        <div class="kv"><span>поперек: √(<var>v</var>² − <var>u</var>²)<span class="badge">в обидва боки</span></span><b id="m2kX"></b></div>
+        <div class="kv"><span>кут курсу поперек, проти течії</span><b id="m2kAng"></b></div>
+        <div class="formulas">човен «за течією» втрачає на зворотному шляху більше, ніж виграє за течією</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 3 ================= -->
+<section class="module" id="m3">
+  <p class="caption">Кулька відривається від стелі кабіни, що вже їде вгору. Пасажир бачить просте падіння
+  на підлогу; спостерігач у шахті бачить, що кулька спершу <b>піднімається</b> — і саме тому шлях
+  і переміщення в нього різні.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m3mode">
+            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
+            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
+          </div>
+          <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m3re" title="заново">↺</button>
+          <span class="lbl" id="m3t"></span>
+        </div>
+        <canvas id="m3scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Дві СВ поруч</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m3cyw">
+            <h4>висота кульки від точки відриву, м</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>відносно шахти</span><span><span class="chip cB"></span>відносно кабіни</span></div>
+            <canvas id="m3cy"></canvas>
+          </div>
+          <div class="chartbox" id="m3csw">
+            <h4>шлях і переміщення відносно шахти, м</h4>
+            <div class="legend sm"><span><span class="chip cI"></span>шлях <var>S</var></span><span><span class="chip cA"></span>|переміщення| <var>l</var></span></div>
+            <canvas id="m3cs"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова задачі 1.14</h3>
+        <p class="cond">Кабіна ліфта висотою <b>h = 2,25 м</b> починає підійматись із прискоренням
+        <b>a = 0,5 м/с²</b>. На момент, коли її швидкість досягла <b>v₀ = 2,5 м/с</b>, зі стелі відірвалася
+        пластилінова кулька. Визначити час <b>τ</b> падіння на підлогу, модуль переміщення <b>l</b>
+        та шлях <b>S</b> кульки відносно шахти.</p>
+        <div class="kv"><span><var>h</var> — висота кабіни</span><b id="m3vh"></b></div>
+        <div class="kv"><span><var>a</var> — прискорення кабіни, вгору додатне</span><b id="m3va"></b></div>
+        <div class="kv"><span><var>v</var><sub>0</sub> — швидкість кабіни в мить відриву</span><b id="m3vv"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <button class="btn" id="m3ans">показати відповідь<small>час, переміщення, шлях</small></button>
+        <div class="ansbox" id="m3ansBox" hidden>
+          <div class="kv"><span>час падіння <var>τ</var><span class="badge">однаковий в обох СВ</span></span><b id="m3rT"></b></div>
+          <div class="kv"><span>переміщення відносно шахти <var>l</var></span><b id="m3rL"></b></div>
+          <div class="kv"><span>шлях відносно шахти <var>S</var></span><b id="m3rS"></b></div>
+          <div class="formulas" id="m3fx"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Що бачить кожен спостерігач</h3>
+        <div class="kv"><span><span class="chip cB"></span>у кабіні: <var>g</var><sub>еф</sub> = <var>g</var> + <var>a</var></span><b id="m3kGe"></b></div>
+        <div class="kv"><span><span class="chip cB"></span>у кабіні: шлях = переміщення = <var>h</var></span><b id="m3kCab"></b></div>
+        <div class="kv"><span><span class="chip cA"></span>у шахті: підйом до найвищої точки</span><b id="m3kUp"></b></div>
+        <div class="kv"><span><span class="chip cA"></span>у шахті: шлях зараз</span><b id="m3kS"></b></div>
+        <div class="kv"><span><span class="chip cA"></span>у шахті: переміщення зараз</span><b id="m3kL"></b></div>
+        <div class="formulas">шлях і переміщення розходяться рівно з миті, коли кулька розвертається</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 4 ================= -->
+<section class="module" id="m4">
+  <p class="caption">Поверніть осі вздовж дошки — і задача перестає бути «складною».
+  У повернутих осях це звичайний похилий кидок, тільки тяжіння розкладене на дві сталі складові,
+  а відскок — просто зміна знака нормальної швидкості.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m4mode">
+            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
+            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
+          </div>
+          <div class="seg" id="m4axes">
+            <button data-v="lab" class="active" style="--c:var(--k1)">звичайні осі</button>
+            <button data-v="rot" style="--c:var(--k2)">осі вздовж дошки</button>
+          </div>
+          <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m4re" title="заново">↺</button>
+          <span class="lbl" id="m4t"></span>
+        </div>
+        <canvas id="m4scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Що дає прогресія</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m4clw">
+            <h4>відстань між сусідніми ударами, м</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>Lₙ</span><span><span class="chip cA"></span>n·L₁ — арифметична прогресія</span></div>
+            <canvas id="m4cl"></canvas>
+          </div>
+          <div class="chartbox" id="m4cnw">
+            <h4>відстань кульки від дошки, м</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>нормальна координата</span></div>
+            <canvas id="m4cn"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова задачі 1.22</h3>
+        <p class="cond">Кулька, що вільно падає з висоти <b>h = 80 см</b>, пружно відбивається від похилої
+        площини з кутом нахилу до горизонту <b>α = 30°</b>. Визначити, через який час <b>τ</b> і на якій
+        відстані <b>L</b> від точки падіння кулька вперше знов зіткнеться з площиною, та величину
+        й напрям швидкості відскоку.</p>
+        <div class="kv"><span><var>h</var> — висота падіння над точкою удару</span><b id="m4vh"></b></div>
+        <div class="kv"><span><var>α</var> — кут нахилу дошки до горизонту</span><b id="m4val"></b></div>
+        <div class="kv"><span><var>k</var> — коефіцієнт відновлення<span class="badge" id="m4bk" hidden>1 — удар пружний</span></span><b id="m4vk"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <button class="btn" id="m4ans">показати відповідь<small>час, відстань і швидкість відскоку</small></button>
+        <div class="ansbox" id="m4ansBox" hidden>
+          <div class="kv"><span>час до другого удару <var>τ</var></span><b id="m4rT"></b></div>
+          <div class="kv"><span>відстань <var>L</var> уздовж дошки</span><b id="m4rL"></b></div>
+          <div class="kv"><span>швидкість відскоку</span><b id="m4rV"></b></div>
+          <div class="kv"><span>напрям відскоку до горизонту</span><b id="m4rB"></b></div>
+          <div class="formulas" id="m4fx"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>У повернутих осях</h3>
+        <div class="kv"><span>швидкість падіння <var>v</var> = √(2<var>gh</var>)</span><b id="m4kV"></b></div>
+        <div class="kv"><span>уздовж дошки: <var>v</var>·sin <var>α</var>, розганяє</span><b id="m4kVt"></b></div>
+        <div class="kv"><span>поперек дошки: <var>v</var>·cos <var>α</var>, відбивається</span><b id="m4kVn"></b></div>
+        <div class="kv"><span>складові <var>g</var>: <var>g</var>sin <var>α</var> / <var>g</var>cos <var>α</var></span><b id="m4kG"></b></div>
+        <div class="kv"><span>час між ударами<span class="badge" id="m4bt" hidden>не залежить від α</span></span><b id="m4kTau"></b></div>
+        <div class="kv"><span>відстані L₁ : L₂ : L₃</span><b id="m4kProg"></b></div>
+        <div class="formulas" id="m4fx2"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Допоміжний матеріал з механіки · відносність руху · системи відліку · рух із постійним прискоренням</footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Ролі кольорів у цьому файлі (брендбук §2.1 — усі чотири задачі про
+   зміну системи відліку або осей, тож базовий мапінг працює як є).
+   Призначені один раз і не міняються між вкладками:
+
+     --k1  нерухома зовнішня СВ: земля, берег, шахта ліфта, звичайні осі
+     --k2  перша рухома СВ: попутний трамвай, вода, кабіна ліфта,
+           осі, повернуті вздовж дошки
+     --k3  друга рухома СВ: зустрічний трамвай; і зовнішні умови досліду
+     --ink результат: шукана величина й саме тіло — крапля, човен,
+           кулька, м'яч
+     --sec пройдена траєкторія, штрих [2,3]
+   ===================================================================== */
+
+/* ===================== спільні утиліти ===================== */
+const $=id=>document.getElementById(id);
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+  grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
+  water:'#e2edfa',drop:'#86b6ef'};
+const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
+const DEG=Math.PI/180;
+const G=9.8;
+
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sci(n,d=3){
+  if(!isFinite(n)||n===0) return fmt(0,d);
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  return fmt(n/Math.pow(10,e),d)+'·10'+String(e).split('').map(c=>SUP[c]||c).join('');
+}
+/* час доби в годинній мірі: 14 г 32 хв 07 с */
+function hms24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*3600);
+  if(tot>=86400) tot-=86400;
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return h+' г '+String(m).padStart(2,'0')+' хв '+String(s).padStart(2,'0')+' с';
+}
+function hm24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*60);
+  if(tot>=1440) tot-=1440;
+  return Math.floor(tot/60)+' г '+String(tot%60).padStart(2,'0')+' хв';
+}
+/* тривалість: 2 год 02 хв 00 с або 47 хв 12 с */
+function durHM(min){
+  const tot=Math.round(Math.abs(min)*60);
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return (h?h+' год '+String(m).padStart(2,'0')+' хв ':m+' хв ')+String(s).padStart(2,'0')+' с';
+}
+
+const CV={};
+function cvx(id){
+  if(CV[id]) return CV[id];
+  const c=$(id); const r=c.getBoundingClientRect();
+  if(r.width<2||r.height<2) return null;
+  const d=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
+  const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  return CV[id]={g,w:r.width,h:r.height,el:c};
+}
+window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];});
+
+function seg(id,cb){
+  const el=$(id);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    cb(b.dataset.v);
+  });
+}
+function slider(id,unit,dec,cb){
+  const i=$(id),o=$(id+'o');
+  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  i.addEventListener('input',()=>{show(); cb(+i.value);});
+  show();
+  return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
+}
+function txt(g,s,x,y,o={}){
+  g.fillStyle=o.color||CLR.ink;
+  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,y);
+}
+function arrow(g,x1,y1,x2,y2,color,w=2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
+  if(Math.hypot(x2-x1,y2-y1)<1.5) return;
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*L*0.6,y2-Math.sin(a)*L*0.6); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2);
+  g.lineTo(x2-L*Math.cos(a-0.44),y2-L*Math.sin(a-0.44));
+  g.lineTo(x2-L*Math.cos(a+0.44),y2-L*Math.sin(a+0.44));
+  g.closePath(); g.fill();
+}
+function pill(g,s,x,y,o={}){
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14;
+  g.fillStyle=o.bg||'rgba(252,252,251,.92)';
+  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  txt(g,s,x,y+1,{...o,align:'center'});
+}
+function dot(g,x,y,r,fill,ring){
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.fillStyle=fill; g.fill();
+  if(ring){g.strokeStyle=ring; g.lineWidth=2; g.stroke();}
+}
+function niceStep(raw){
+  if(!(raw>0)) return 1;
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+/* дуга кута навколо точки (x,y): від a1 до a2 в екранних радіанах */
+function arc(g,x,y,r,a1,a2,color,w=1.2){
+  g.strokeStyle=color; g.lineWidth=w;
+  g.beginPath(); g.arc(x,y,r,a1,a2,a2<a1); g.stroke();
+}
+/* простий лінійний графік із перехрестям-підказкою */
+const CHFIT={};                 /* запам'ятані рамки графіків */
+function drawChart(box,opt){
+  const {g,w,h}=box;
+  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  /* ---- масштаб графіка не «дихає» ---------------------------------------
+     Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
+     тоді, коли крива справді вийшла за межі осей, і назад ніколи не
+     стискається — інакше та сама крива щокадру стрибала б угору-вниз.
+     Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
+     рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
+  let yMin=opt.yMin, yMax=opt.yMax;
+  {
+    const ckey=(box.el&&box.el.id)||opt.yLab||'';
+    const want=yMax-yMin, f=CHFIT[ckey];
+    if(ckey&&want>0){
+      if(f&&want<=f.span*4&&want*4>=f.span){
+        yMin=f.lo; yMax=f.hi;
+        let lo=Infinity,hi=-Infinity;
+        for(const s of (opt.series||[])) if(s&&s.ys)
+          for(const v of s.ys) if(isFinite(v)){if(v<lo)lo=v; if(v>hi)hi=v;}
+        const pad=(yMax-yMin)*0.04;
+        if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
+        if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
+      }
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin};
+    }
+  }
+  const X=t=>L+t/opt.tMax*pw;
+  const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
+  g.clearRect(0,0,w,h);
+  g.lineWidth=1;
+  const yd=opt.yDec||0;
+  const st=niceStep((yMax-yMin)/4.5);
+  for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
+    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+  }
+  const xs=opt.xStep||niceStep(opt.tMax/5);
+  for(let t=0;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
+    g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
+    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+  }
+  if(yMin<0&&yMax>0){
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  }
+  /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
+     наїжджають то на верхню поділку, то на прямий підпис серії */
+  txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
+  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  const ends=[];
+  for(const s of opt.series){
+    if(!s.ts||s.ts.length<2) continue;
+    g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
+    g.beginPath();
+    for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
+    g.stroke(); g.setLineDash([]);
+    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    dot(g,lx,ly,3,s.color);
+    ends.push({x:lx,y:ly,label:s.label});
+  }
+  /* прямі підписи серій розводимо по вертикалі — інакше при близьких
+     значеннях вони лягають один на одного і жоден не читається */
+  ends.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<ends.length;i++)
+    if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
+  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+  if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
+    const t=(opt.hover-L)/pw*opt.tMax;
+    const s0=opt.series[0];
+    const tc=Math.min(t,s0.ts[s0.ts.length-1]);
+    const hx=X(tc);
+    g.strokeStyle=CLR.axis; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(hx+.5,T); g.lineTo(hx+.5,T+ph); g.stroke(); g.setLineDash([]);
+    const vals=[];
+    for(const s of opt.series){
+      let i=s.ts.length-1;
+      while(i>0&&s.ts[i]>tc) i--;
+      const v=s.ys[Math.min(i+(s.ts[i]<tc?1:0),s.ys.length-1)];
+      dot(g,hx,Y(v),3.5,'#fff',s.color); vals.push(v);
+    }
+    return {t:tc,vals,px:hx};
+  }
+  return null;
+}
+function makeTip(wrapId){
+  const w=$(wrapId); const d=document.createElement('div');
+  d.className='tip'; w.appendChild(d); return d;
+}
+function hover(canvasId,state){
+  const c=$(canvasId);
+  c.addEventListener('pointermove',e=>{
+    const r=c.getBoundingClientRect(); state.x=e.clientX-r.left; state.cy=e.clientY-r.top;
+  });
+  c.addEventListener('pointerleave',()=>{state.x=null;});
+}
+/* показати підказку графіка; names = [[підпис,колір],…] */
+function showTip(el,r,unit,st,names,dec){
+  if(!r){el.style.display='none'; return;}
+  el.innerHTML='<div class="th">'+(st.xlab||'t')+' = '+fmt(r.t,st.xdec==null?1:st.xdec)+' '+(st.xunit||'с')+'</div>'+
+    r.vals.map((v,i)=>'<div><span class="chip" style="background:'+names[i][1]+'"></span>'+
+      names[i][0]+' — '+fmt(v,dec==null?1:dec)+' '+unit+'</div>').join('');
+  el.style.display='block';
+  const bw=el.offsetWidth;
+  el.style.left=Math.min(r.px+14,el.parentElement.clientWidth-bw-4)+'px';
+  el.style.top=Math.max(20,(st.cy||60)-10)+'px';
+}
+/* ---------- пряме керування на сцені ---------- */
+const clamp=(v,lo,hi)=>v<lo?lo:(v>hi?hi:v);
+const snap=(v,st)=>Math.round(v/st)*st;
+/* Реєстр ручок — гачок для оснастки: харнес бере звідси список і синтетично
+   тягне кожну ручку в крайні положення кадру. Без реєстру перевірка осліпла б
+   тієї ж миті, коли керування переїхало з повзунків на полотно. */
+const GRIPS=[];
+/* Масштаб сцени рахується з фактичного розмаху (§10). Але щойно ми тягнемо
+   величину, від якої той розмах залежить, виникає контур: палець рухає
+   величину → росте розмах → падає sc → ручка тікає з-під пальця. Тому на час
+   жесту кадр заморожується: geo() віддає знімок, зроблений на pointerdown,
+   і світ не перемасштабовується посеред руху. Після відпускання масштаб
+   перепідбирається один раз. Правило §10 не порушене — воно просто не
+   застосовується 60 разів за секунду посеред жесту. */
+function frozen(st,b,calc){
+  const f=st._froz;
+  if(f&&f.w===b.w&&f.h===b.h) return f.G;
+  const G=calc(b);
+  if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
+  return G;
+}
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+}
+/* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
+   (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
+   у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
+   listFn() мусить бути чистою: її кличе і scene() (щоб намалювати ручки),
+   і цей хелпер (щоб влучити) — одна геометрія, один код, жодного дублювання. */
+function grip(id,st,listFn){
+  const c=$(id);
+  GRIPS.push({id,st,listFn});
+  const pos=e=>{const r=c.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
+  const pick=(px,py)=>{
+    let best=null,bd=1e9;
+    for(const h of listFn()){
+      const d=Math.hypot(px-h.x,py-h.y);
+      if(d<=h.r+6&&d<bd){bd=d; best=h;}
+    }
+    /* у ручку діаметром 16 px влучити важко. Якщо схибили — приймаємо дотик
+       у межах доріжки шкали: ручка стрибає під палець. Ручки на самій сцені
+       зони hit не мають, тож їх це не зачіпає. */
+    if(!best) for(const h of listFn()) if(h.hit&&h.hit(px,py)){best=h; break;}
+    return best;
+  };
+  c.addEventListener('pointerdown',e=>{
+    const p=pos(e), h=pick(p[0],p[1]);
+    if(!h) return;
+    st._grab=h.id; st._over=h.id; st._froz=null;
+    if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
+    /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
+       geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
+       заморожувався б кадр, порахований уже за новим значенням, — і сцени,
+       де жест скидає час розгортки, стрибали б на першому ж дотику. */
+    listFn();
+    h.move(p[0],p[1]);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('pointermove',e=>{
+    const p=pos(e);
+    if(st._grab!=null){
+      for(const h of listFn()) if(h.id===st._grab){h.move(p[0],p[1]); break;}
+      c.style.cursor='grabbing';
+    } else {
+      const h=pick(p[0],p[1]);
+      st._over=h?h.id:null;
+      c.style.cursor=h?'grab':'';
+    }
+  });
+  const off=()=>{st._grab=null; st._froz=null; c.style.cursor=st._over?'grab':'';};
+  c.addEventListener('pointerup',off);
+  c.addEventListener('pointercancel',off);
+  c.addEventListener('pointerleave',()=>{st._over=null; if(st._grab==null) c.style.cursor='';});
+  /* Клавіатура. 298 повзунків були доступні з клавіатури, полотно саме по собі —
+     ні; без цього переїзд на сцену був би системною регресією доступності (§14).
+     Tab всередині полотна перебирає ручки, стрілки зсувають на 4 px, Shift — на 16. */
+  c.tabIndex=0;
+  c.addEventListener('keydown',e=>{
+    const L=listFn(); if(!L.length) return;
+    const k=e.key;
+    if(k==='Tab'){
+      const i=L.findIndex(h=>h.id===st._over);
+      st._over=L[(i+(e.shiftKey?-1:1)+L.length+1)%L.length].id;
+      if(e.preventDefault) e.preventDefault();
+      return;
+    }
+    const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(!d) return;
+    const h=L.filter(x=>x.id===st._over)[0]||L[0];
+    st._over=h.id;
+    const s=e.shiftKey?16:4;
+    h.move(h.x+d[0]*s,h.y+d[1]*s);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('blur',()=>{if(st._grab==null) st._over=null;});
+}
+/* Полиця зразків. Властивість речовини — коефіцієнт тертя, проникність,
+   питомий опір — не має розміру, який можна потягнути: її обирають клацанням
+   по підписаному зразку. M = {x0, y, dx}; list = [[назва, значення, підпис?], …].
+   Полиця живе на сцені поруч із тілом, а не в бічній колонці — щоб вибір
+   речовини лишався частиною креслення. */
+function shelf(g,M,list,cur,lab){
+  if(lab) txt(g,lab,M.x0-8,M.y+4,{color:CLR.mut,size:10,align:'right'});
+  list.forEach((m,i)=>{
+    const x=M.x0+i*M.dx, on=Math.abs(cur-m[1])<1e-9;
+    g.fillStyle=on?'rgba(27,175,122,.16)':'#fff';
+    g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+    g.beginPath(); g.roundRect(x+3,M.y-13,M.dx-6,26,6); g.fill(); g.stroke();
+    txt(g,m[0],x+M.dx/2,M.y-1,{color:on?CLR.ink:CLR.sec,size:10.5,bold:on,align:'center'});
+    txt(g,m[2]==null?fmt(m[1],2):m[2],x+M.dx/2,M.y+11,{color:CLR.mut,size:9.5,align:'center'});
+  });
+}
+/* Смуга керування під кресленням. Це не повзунки з бічної колонки: смуга
+   лежить у тому самому кадрі, під самою сценою, тягнеться пальцем і
+   перебирається з клавіатури нарівні з рештою ручок. Її беруть тоді, коли
+   величина не має власного розміру в кресленні (частота, кількість витків,
+   коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
+   Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
+function gpos(C,i){
+  return {x:C.x[i%C.cols], y:C.y0+Math.floor(i/C.cols)*C.dy};
+}
+/* Розкладка смуги. Скільки полотна вона з'їдає — рахується з кількості шкал,
+   а не з наперед узятих 90 px: при п'яти рядах смуга лізла на сцену, а нижче
+   межі чистки сцени не чистив ніхто, тож ручка лишала за собою всі свої
+   попередні положення. Тепер сцена малює вище gtop, смуга — нижче, і кожна
+   чистить рівно свою частину. На вузькому екрані дві колонки не влазять —
+   смуга стає одноколонковою. */
+function gcolOf(b,n){
+  const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
+  const gtop=b.h-(n?rows*38+22:0);
+  const W=two?b.w*0.5-210:Math.max(120,b.w-230);
+  return {W, x:two?[110,b.w*0.5+110]:[110,110], cols, dy:38, rows, gtop,
+    w:b.w, h:b.h, y0:gtop+26};
+}
+/* Повзунок-жолоб. Тонка лінія з крапкою радіуса 8 px була незручна: у неї
+   важко влучити й неможливо вести значення пальцем. Тепер це широкий жолоб
+   із великим повзунком, підписаними межами й значенням поруч; уся доріжка —
+   зона захоплення, тож повзунок стрибає під палець. */
+function slideTrack(g,x,y,W,f,col,vertical){
+  const F=Math.max(0,Math.min(1,f));
+  g.fillStyle='#eceae3';
+  g.beginPath();
+  if(vertical) g.roundRect(x-6,y-W,12,W,6); else g.roundRect(x,y-6,W,12,6);
+  g.fill();
+  g.strokeStyle=CLR.axis; g.lineWidth=1;
+  g.beginPath();
+  if(vertical) g.roundRect(x-5.5,y-W+.5,11,W-1,5.5); else g.roundRect(x+.5,y-5.5,W-1,11,5.5);
+  g.stroke();
+  g.fillStyle=col; g.globalAlpha=0.34;
+  g.beginPath();
+  if(vertical) g.roundRect(x-6,y-Math.max(12,F*W),12,Math.max(12,F*W),6);
+  else g.roundRect(x,y-6,Math.max(12,F*W),12,6);
+  g.fill(); g.globalAlpha=1;
+  for(let q=0;q<=4;q++){
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.beginPath();
+    if(vertical){const ty=y-q*W/4; g.moveTo(x+9,ty+.5); g.lineTo(x+12,ty+.5);}
+    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+9); g.lineTo(tx+.5,y+12);}
+    g.stroke();
+  }
+  const hx=vertical?x:x+F*W, hy=vertical?y-F*W:y;
+  g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=3;
+  g.beginPath(); g.arc(hx,hy,10,0,7); g.fill(); g.stroke();
+  g.fillStyle=col;
+  g.beginPath(); g.arc(hx,hy,3.5,0,7); g.fill();
+  return {hx,hy};
+}
+function gaugeGrips(C,list,st){
+  return list.map((m,i)=>{
+    const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
+    return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
+      hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      move:(px,py)=>{
+        st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+        if(m[6]) m[6].call(st);
+      }};
+  });
+}
+function gaugeCol(g,C,list,st){
+  g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+  if(!list.length) return;
+  g.strokeStyle=CLR.grid; g.lineWidth=1;
+  g.beginPath(); g.moveTo(8,C.gtop+8.5);
+  g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.gtop+8.5); g.stroke();
+  list.forEach((m,i)=>{
+    const p=gpos(C,i);
+    slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
+    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right'});
+    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
+    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
+    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
+      {color:CLR.ink,size:12,bold:true});
+  });
+}
+/* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
+   і саме за його верхівку задають температуру. Повертає екранну висоту
+   верхівки, щоб туди сіла ручка. frac ∈ [0,1]. */
+function therm(g,x,yb,H,frac,col,lab){
+  g.strokeStyle=CLR.axis; g.lineWidth=1.8;
+  g.beginPath(); g.roundRect(x-7,yb-H-6,14,H+6,7); g.stroke();
+  const fh=Math.max(0,Math.min(1,frac))*H;
+  g.fillStyle=col; g.globalAlpha=0.5;
+  g.beginPath(); g.roundRect(x-4,yb-fh,8,fh,4); g.fill(); g.globalAlpha=1;
+  dot(g,x,yb+6,9,col);
+  if(lab) txt(g,lab,x,yb+30,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+  return yb-fh;
+}
+/* pre — префікс id: у сцені може бути дві полиці (речовина тіла й речовина
+   опори), і без префікса їхні ручки мали б однакові імена */
+function shelfGrips(M,list,set,pre){
+  return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+}
+/* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
+   лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
+function drawGrip(g,h,st){
+  const on=st._over===h.id, gr=st._grab===h.id;
+  /* bare — ручкою є сам об'єкт сцени (заряд, тіло): свого кружка вона не малює,
+     інакше накрила б те, за що тягнуть */
+  if(!h.bare) dot(g,h.x,h.y,h.r,h.color,'#fff');
+  if(on||gr){
+    g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.2;
+    g.beginPath(); g.arc(h.x,h.y,h.r+4,0,7); g.stroke();
+    if(h.hint) pill(g,h.hint,h.x,h.y-h.r-12,{color:CLR.ink,size:11,bold:true});
+  }
+}
+
+
+/* ===================== МОДУЛЬ 1 · дощ на склі трамвая ===================== */
+const M1={
+  mode:'task', u:6, w:0, v:0, t:0, playing:true, showAns:false,
+  /* верхні межі діапазонів ручок — з них і рахується масштаб векторів (§10) */
+  UMIN:2, UMAX:12, WMAX:8, VMAX:8,
+  TASK:{al:30, u:6},
+  hb:{x:null}, hv:{x:null}, tipb:null, tipv:null,
+  /* кут сліду від вертикалі на склі, що рухається зі швидкістю vs відносно землі */
+  ang(vs){return Math.atan2(this.w-vs,this.u)/DEG;},
+  alpha(){return this.ang(0);},
+  beta(){return this.ang(-this.v);},
+  setTask(){
+    const a=this.TASK.al*DEG;
+    this.u=this.TASK.u; this.w=this.u*Math.tan(a); this.v=this.w;
+  },
+  reset(){this.t=0; this.playing=true; this.updBtn();},
+  updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
+  setMode(m){
+    this.mode=m;
+    if(m==='task') this.setTask();
+    this.showAns=m!=='task';
+    this.syncAns();
+    this.reset();
+  },
+  syncAns(){
+    const task=this.mode==='task';
+    $('m1ans').hidden=!task||this.showAns;
+    $('m1ansBox').hidden=task&&!this.showAns;
+    $('m1hint').textContent=task
+      ? 'числа з умови задачі; сліди на рухомому склі вертикальні'
+      : 'перетягуйте вістря вектора дощу та вістря швидкості трамвая';
+  },
+  init(){
+    seg('m1mode',v=>this.setMode(v));
+    grip('m1scene',this,()=>this.grips());
+    $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m1play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
+    $('m1re').onclick=()=>this.reset();
+    this.tipb=makeTip('m1cbw'); this.tipv=makeTip('m1cvw');
+    hover('m1cb',this.hb); hover('m1cv',this.hv);
+    this.hb.xlab='α'; this.hb.xunit='°'; this.hb.xdec=0;
+    this.hv.xlab='v'; this.hv.xunit='м/с'; this.hv.xdec=1;
+    this.setTask(); this.syncAns(); this.reset();
+  },
+  /* Кадр: три колонки однакової ширини, спільний масштаб векторів для всіх
+     трьох діаграм — інакше трикутники поруч не можна порівнювати (§15). */
+  geo(b){return frozen(this,b,bb=>{
+    const pad=8, colW=(bb.w-2*pad)/3;
+    const vsc=fitScale(colW,132,150,24,this.WMAX+this.VMAX,this.UMAX,0,0);
+    return {pad,colW,vsc, cxOf:i=>pad+colW*(i+0.5),
+      ttl:58, wy:106, wh:104, gy:236, vy:264, ox:-35, oy:288};
+  });},
+  /* три спостерігачі: власна швидкість відносно землі й колір СВ */
+  OBS(){return [
+    {vs:0,      col:CLR.k1, tc:'#1c5cab', n:'нерухомий трамвай', s:'слід відхилений на α'},
+    {vs:this.v, col:CLR.k2, tc:'#b8431a', n:'попутний, v',       s:'слід вертикальний при w = v'},
+    {vs:-this.v,col:CLR.k3, tc:'#0d7a55', n:'зустрічний, −v',    s:'слід відхилений на β'}
+  ];},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m1scene'); if(!b) return [];
+    const Q=this.geo(b);
+    const O0={x:Q.cxOf(0)+Q.ox, y:Q.oy};
+    const O1={x:Q.cxOf(1)+Q.ox, y:Q.oy};
+    return [
+      /* вістря результуючого вектора дощу в СВ землі: по горизонталі — w,
+         по вертикалі — u; початок трикутника нерухомий, тож осі не змішуються */
+      {id:'rain', x:O0.x+this.w*Q.vsc, y:O0.y+this.u*Q.vsc, r:10, color:CLR.ink,
+       hint:'швидкість краплі відносно землі',
+       move:(px,py)=>{
+         this.w=clamp(snap((px-O0.x)/Q.vsc,0.1),0,this.WMAX);
+         this.u=clamp(snap((py-O0.y)/Q.vsc,0.1),this.UMIN,this.UMAX);
+         this.t=0;}},
+      /* швидкість трамвая — вістря стрілки під другою колонкою */
+      {id:'v', x:O1.x+this.v*Q.vsc, y:Q.vy, r:10, color:CLR.k2, hint:'швидкість трамвая',
+       move:px=>{this.v=clamp(snap((px-O1.x)/Q.vsc,0.1),0,this.VMAX); this.t=0;}}
+    ];
+  },
+  tick(dt){
+    if(this._grab==null&&this.playing) this.t+=dt;
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m1scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b);
+    g.clearRect(0,0,w,h);
+    txt(g,'Три спостерігачі — один і той самий дощ',12,20,{color:CLR.ink,size:12.5,bold:true});
+    txt(g,'кут сліду на склі задає горизонтальна швидкість краплі відносно цього скла',
+      12,36,{color:CLR.mut,size:10.5});
+    const obs=this.OBS();
+    for(let i=0;i<3;i++) this.column(g,Q,i,obs[i]);
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  column(g,Q,i,o){
+    const cx=Q.cxOf(i), colW=Q.colW;
+    const dx=this.w-o.vs;                  /* горизонтальна швидкість краплі відносно скла */
+    const th=Math.atan2(dx,this.u);        /* кут сліду від вертикалі */
+    const sp=Math.hypot(dx,this.u);
+    txt(g,o.n,cx,Q.ttl,{color:o.tc,size:12,bold:true,align:'center'});
+    txt(g,o.s,cx,Q.ttl+15,{color:CLR.mut,size:10,align:'center'});
+    /* корпус трамвая: дах зі струмознімачем, бічне скло, двері, колеса */
+    const bw=Math.min(colW-24,176), bx=cx-bw/2, by=Q.wy, bh=Q.wh;
+    g.strokeStyle=o.col; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx-9,by-13); g.lineTo(cx,by-4); g.lineTo(cx+9,by-13);
+    g.stroke();
+    g.beginPath(); g.moveTo(cx-16,by-13); g.lineTo(cx+16,by-13); g.stroke();
+    g.fillStyle='rgba(252,252,251,.92)';
+    g.beginPath(); g.roundRect(bx,by,bw,bh,8); g.fill(); g.stroke();
+    g.fillStyle=o.col; g.globalAlpha=0.12;
+    g.beginPath(); g.roundRect(bx,by,bw,11,[8,8,0,0]); g.fill(); g.globalAlpha=1;
+    /* двері праворуч — щоб корпус читався як вагон, а не як рамка */
+    g.strokeStyle='rgba(11,11,11,.16)'; g.lineWidth=1;
+    g.beginPath();
+    g.moveTo(bx+bw-26,by+13); g.lineTo(bx+bw-26,by+bh-4);
+    g.moveTo(bx+bw-13,by+13); g.lineTo(bx+bw-13,by+bh-4); g.stroke();
+    /* бічне скло зі слідами крапель */
+    const gx=bx+11, gy=by+15, gw=bw-42, gh=bh-28;
+    g.save();
+    g.beginPath(); g.roundRect(gx,gy,gw,gh,4); g.clip();
+    g.fillStyle='#eef4fb'; g.fillRect(gx,gy,gw,gh);
+    const dirx=Math.sin(th), diry=Math.cos(th), per=30, NS=7;
+    const span=Math.abs(dirx)*gh;
+    g.lineCap='round';
+    for(let j=0;j<NS;j++){
+      const ph=((this.t*sp*11)+j*11)%per;
+      const sx=gx-span+(j+0.5)*(gw+2*span)/NS;
+      for(let m=-1;m<gh/per+1;m++){
+        const d=ph+m*per, x1=sx+dirx*d, y1=gy-12+diry*d;
+        g.strokeStyle='rgba(134,182,239,.9)'; g.lineWidth=1.6;
+        g.beginPath(); g.moveTo(x1,y1); g.lineTo(x1+dirx*12,y1+diry*12); g.stroke();
+        dot(g,x1+dirx*12,y1+diry*12,1.8,CLR.drop);
+      }
+    }
+    g.restore();
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.roundRect(gx,gy,gw,gh,4); g.stroke();
+    /* кут сліду просто на склі: вертикаль-орієнтир і дуга до напряму сліду */
+    const ax=gx+gw/2, ay=gy+gh-13;
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax,ay-34); g.stroke(); g.setLineDash([]);
+    g.strokeStyle=o.col; g.lineWidth=2;
+    g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax+dirx*34,ay-diry*34); g.stroke();
+    arc(g,ax,ay,20,-Math.PI/2,-Math.PI/2+th,o.col,1.4);
+    pill(g,fmt(Math.abs(th/DEG),1)+'°',ax+(dx<0?-30:30),ay-24,{color:o.tc,size:11.5,bold:true});
+    /* колеса й дорога */
+    g.fillStyle='rgba(11,11,11,.05)';
+    g.beginPath(); g.roundRect(bx+14,by+bh,bw-28,7,2); g.fill();
+    dot(g,bx+30,by+bh+9,7,'#fff',o.col); dot(g,bx+bw-30,by+bh+9,7,'#fff',o.col);
+    g.fillStyle=CLR.ground; g.fillRect(cx-colW/2+4,Q.gy,colW-8,26);
+    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(cx-colW/2+4,Q.gy+.5); g.lineTo(cx+colW/2-4,Q.gy+.5); g.stroke();
+    /* стовпи — орієнтири, нерухомі відносно землі: у СВ трамвая вони біжать (§7.2) */
+    const step=46, shift=((-o.vs*this.t*9)%step+step)%step;
+    for(let k=-1;k<colW/step+1;k++){
+      const px=cx-colW/2+6+k*step+shift;
+      if(px<cx-colW/2+4||px>cx+colW/2-4) continue;
+      g.strokeStyle=CLR.mut; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(px+.5,Q.gy); g.lineTo(px+.5,Q.gy-13); g.stroke();
+      dot(g,px+.5,Q.gy-18,4,'#e9e8e2','#b9b7ae');
+    }
+    /* швидкість трамвая відносно землі */
+    const O={x:cx+Q.ox, y:Q.oy}, vpx=o.vs*Q.vsc;
+    if(Math.abs(vpx)>1.5){
+      arrow(g,O.x,Q.vy,O.x+vpx,Q.vy,o.col,2.5);
+      txt(g,fmt(Math.abs(o.vs),1)+' м/с',O.x+vpx+(vpx<0?-7:7),Q.vy+4,
+        {color:o.tc,size:11,bold:true,align:vpx<0?'right':'left'});
+    } else txt(g,'стоїть',O.x+6,Q.vy+4,{color:o.tc,size:11,bold:true});
+    /* трикутник швидкостей краплі в цій СВ: складові — кольором СВ,
+       результуюча — чорнилом (§8) */
+    const ux=this.u*Q.vsc, hx=dx*Q.vsc;
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath();
+    g.moveTo(O.x,O.y+ux); g.lineTo(O.x+hx,O.y+ux);
+    g.moveTo(O.x+hx,O.y); g.lineTo(O.x+hx,O.y+ux);
+    g.stroke(); g.setLineDash([]);
+    arrow(g,O.x,O.y,O.x,O.y+ux,o.col,2);
+    txt(g,'u',O.x-7,O.y+ux/2+4,{color:o.tc,size:11,bold:true,align:'right'});
+    if(Math.abs(hx)>1.5){
+      arrow(g,O.x,O.y,O.x+hx,O.y,o.col,2);
+      txt(g,i===0?'w':(i===1?'w − v':'w + v'),O.x+hx/2,O.y-6,
+        {color:o.tc,size:11,bold:true,align:'center'});
+    }
+    arrow(g,O.x,O.y,O.x+hx,O.y+ux,CLR.ink,2.5);
+    arc(g,O.x,O.y,17,Math.PI/2,Math.atan2(ux,hx),CLR.mut,1.2);
+    txt(g,fmt(sp,1)+' м/с',O.x+hx+(hx<0?-8:8),O.y+ux+13,
+      {color:CLR.ink,size:11.5,bold:true,align:hx<0?'right':'left'});
+    txt(g,'швидкість краплі відносно скла',cx,O.y+this.UMAX*Q.vsc+22,
+      {color:CLR.mut,size:9.5,align:'center'});
+  },
+  table(){
+    const al=this.alpha(), be=this.beta(), tr=this.ang(this.v);
+    $('m1vu').textContent=fmt(this.u,1)+' м/с';
+    $('m1vw').textContent=fmt(this.w,1)+' м/с';
+    $('m1vv').textContent=fmt(this.v,1)+' м/с';
+    $('m1bw').hidden=Math.abs(this.w-this.v)>0.05;
+    $('m1rAl').textContent=fmt(al,1)+'°';
+    $('m1rTr').textContent=fmt(tr,1)+'°';
+    $('m1rBe').textContent=fmt(be,1)+'°';
+    $('m1kA').textContent=fmt(this.w,1)+' м/с';
+    $('m1kB').textContent=fmt(this.w-this.v,1)+' м/с';
+    $('m1kC').textContent=fmt(this.w+this.v,1)+' м/с';
+    $('m1kU').textContent=fmt(Math.hypot(this.w,this.u),1)+' м/с';
+    const gen='tg <i>β</i> = (<i>w</i> + <i>v</i>)/<i>u</i> = '+
+      fmt(this.w+this.v,1)+' / '+fmt(this.u,1)+' = '+fmt(Math.tan(be*DEG),3)+
+      ' &nbsp;→&nbsp; <b>β = '+fmt(be,1)+'°</b>';
+    $('m1fx').innerHTML=Math.abs(this.w-this.v)<0.05
+      ? 'при <i>w</i> = <i>v</i>: tg <i>β</i> = 2 tg <i>α</i> = 2·'+fmt(Math.tan(al*DEG),3)+
+        ' = '+fmt(2*Math.tan(al*DEG),3)+' &nbsp;→&nbsp; <b>β = '+fmt(be,1)+'°</b>'
+      : gen;
+  },
+  charts(){
+    const al=this.alpha(), be=this.beta();
+    const bb=cvx('m1cb');
+    if(bb){
+      const ts=[],ys=[];
+      for(let i=0;i<=70;i++){const a=70*i/70; ts.push(a); ys.push(Math.atan(2*Math.tan(a*DEG))/DEG);}
+      const r=drawChart(bb,{tMax:70,yMin:0,yMax:90,yLab:'β, °',xLab:'α, °',xStep:10,
+        hover:this.hb.x,
+        series:[{ts,ys,color:CLR.k3,label:'β'},
+                {ts:[al,al],ys:[0,Math.atan(2*Math.tan(al*DEG))/DEG],color:CLR.ink,label:'α',dash:[4,3]}]});
+      showTip(this.tipb,r,'°',this.hb,[['β',CLR.k3],['зараз',CLR.ink]],1);
+    }
+    const bv=cvx('m1cv');
+    if(bv){
+      const ts=[],y0=[],y1=[],y2=[];
+      for(let i=0;i<=60;i++){
+        const vv=this.VMAX*i/60; ts.push(vv);
+        y0.push(Math.atan2(this.w,this.u)/DEG);
+        y1.push(Math.atan2(this.w-vv,this.u)/DEG);
+        y2.push(Math.atan2(this.w+vv,this.u)/DEG);
+      }
+      const r=drawChart(bv,{tMax:this.VMAX,yMin:-70,yMax:90,yLab:'кут, °',xLab:'v, м/с',
+        xStep:2,hover:this.hv.x,
+        series:[{ts,ys:y0,color:CLR.k1,label:'α'},
+                {ts,ys:y1,color:CLR.k2,label:'попутний'},
+                {ts,ys:y2,color:CLR.k3,label:'β'},
+                {ts:[this.v,this.v],ys:[-70,be],color:CLR.ink,label:'v',dash:[4,3]}]});
+      showTip(this.tipv,r,'°',this.hv,
+        [['нерухомий',CLR.k1],['попутний',CLR.k2],['зустрічний',CLR.k3],['зараз',CLR.ink]],1);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 2 · човни на річці ===================== */
+const M2={
+  mode:'task', u:2, v:3.6, L:25,
+  t:0, playing:true, waitT:0, showAns:false, SPD:3,
+  LMAX:30, LMIN:8, UMAX:5, UMIN:0.2, VMAX:6,
+  hr:{x:null}, hd:{x:null}, tipr:null, tipd:null,
+  TASK:{u:2, eta:1.8, L:25},
+  /* швидкість поперек течії: складова, що лишається після компенсації зносу */
+  cross(){return Math.sqrt(Math.max(1e-6,this.v*this.v-this.u*this.u));},
+  eta(){return this.v/this.u;},
+  t1(){return this.L/(this.v+this.u)+this.L/(this.v-this.u);},
+  t2(){return 2*this.L/this.cross();},
+  ratio(){return this.t1()/this.t2();},
+  T(){return this.t1()*1.06;},
+  setTask(){const T=this.TASK; this.u=T.u; this.v=T.u*T.eta; this.L=T.L;},
+  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
+  setMode(m){
+    this.mode=m;
+    if(m==='task') this.setTask();
+    this.showAns=m!=='task';
+    this.syncAns(); this.reset();
+  },
+  syncAns(){
+    const task=this.mode==='task';
+    $('m2ans').hidden=!task||this.showAns;
+    $('m2ansBox').hidden=task&&!this.showAns;
+  },
+  init(){
+    seg('m2mode',v=>this.setMode(v));
+    grip('m2scene',this,()=>this.grips());
+    $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m2play').onclick=()=>{
+      if(!this.playing&&this.t>=this.T()) this.reset();
+      else {this.playing=!this.playing; this.updBtn();}
+    };
+    $('m2re').onclick=()=>this.reset();
+    this.tipr=makeTip('m2crw'); this.tipd=makeTip('m2cdw');
+    hover('m2cr',this.hr); hover('m2cd',this.hd);
+    this.hr.xlab='η'; this.hr.xunit=''; this.hr.xdec=2;
+    this.setTask(); this.syncAns(); this.reset();
+  },
+  /* Кадр: ширина ріки — 2·L_max, щоб поворотна позначка човна «поперек»
+     завжди лишалася в воді; масштаб береться з верхньої межі L (§10). */
+  geo(b){return frozen(this,b,bb=>{
+    const LM=this.LMAX, colW=bb.w/2;
+    /* обидві СВ поруч і в одному масштабі — інакше довжини й ширини
+       в двох панелях не можна порівнювати очима (§15) */
+    const sc=fitScale(colW,bb.h,30,104,1.9*LM,2.4*LM,0,0);
+    const oy=bb.h-34, yF=oy-2*LM*sc;
+    return {sc,oy,LM,colW,yF,vsc:62/this.VMAX,
+      oxOf:i=>colW*i+colW*0.26,
+      SY:y=>oy-y*sc,
+      ux0:colW*0.30, uy0:yF-16, vx0:colW*1.30, vy0:yF-16};
+  });},
+  /* положення човнів у СВ берега: (x уздовж течії, y поперек від бакена) */
+  boat1(t){
+    const ta=this.L/(this.v+this.u), tb=this.t1();
+    if(t<=ta) return {x:(this.v+this.u)*t, y:0, back:false, done:false};
+    if(t<=tb) return {x:this.L-(this.v-this.u)*(t-ta), y:0, back:true, done:false};
+    return {x:0, y:0, back:true, done:true};
+  },
+  boat2(t){
+    const c=this.cross(), th=this.t2()/2;
+    if(t<=th) return {x:0, y:c*t, back:false, done:false};
+    if(t<=2*th) return {x:0, y:this.L-c*(t-th), back:true, done:false};
+    return {x:0, y:0, back:true, done:true};
+  },
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m2scene'); if(!b) return [];
+    const Q=this.geo(b);
+    const dr=0;
+    return [
+      {id:'u', x:Q.ux0+this.u*Q.vsc, y:Q.uy0, r:10, color:CLR.k2, hint:'швидкість течії',
+       move:px=>{this.u=clamp(snap((px-Q.ux0)/Q.vsc,0.1),this.UMIN,this.v/1.02); this.reset();}},
+      {id:'v', x:Q.vx0+this.v*Q.vsc, y:Q.vy0, r:10, color:CLR.ink,
+       hint:'швидкість човна відносно води',
+       move:px=>{this.v=clamp(snap((px-Q.vx0)/Q.vsc,0.1),this.u*1.02,this.VMAX); this.reset();}},
+      /* Поворотна позначка: тягнеться вздовж течії, та сама відстань і для
+         човна поперек — у задачі шляхи однакові. Позначка прив'язана до берега,
+         тож у СВ води вона зноситься разом із ним — ручка їде за нею. */
+      {id:'L', x:Q.oxOf(0)+this.L*Q.sc, y:Q.SY(Q.LM), r:10, color:CLR.k1,
+       hint:'відстань до повороту',
+       move:px=>{this.L=clamp(snap((px-Q.oxOf(0))/Q.sc,1),this.LMIN,this.LMAX); this.reset();}}
+    ];
+  },
+  tick(dt){
+    const T=this.T();
+    if(this._grab==null){
+      if(this.playing){
+        this.t=Math.min(T,this.t+dt*this.SPD);
+        if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=T){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+    }
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m2scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b);
+    g.clearRect(0,0,w,h);
+    this.panel(g,Q,0); this.panel(g,Q,1);
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Q.colW+.5,46); g.lineTo(Q.colW+.5,h-6); g.stroke();
+    /* вектори, якими задають швидкості — над панеллю, до якої вони належать */
+    arrow(g,Q.ux0,Q.uy0,Q.ux0+this.u*Q.vsc,Q.uy0,CLR.k2,2.5);
+    txt(g,'течія u = '+fmt(this.u,1)+' м/с',Q.ux0,Q.uy0-9,{color:'#b8431a',size:11,bold:true});
+    arrow(g,Q.vx0,Q.vy0,Q.vx0+this.v*Q.vsc,Q.vy0,CLR.ink,2.5);
+    txt(g,'човен відносно води v = '+fmt(this.v,1)+' м/с',Q.vx0,Q.vy0-9,
+      {color:CLR.ink,size:11,bold:true});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  panel(g,Q,i){
+    const water=i===1, t=this.t, LM=Q.LM, sc=Q.sc, ox=Q.oxOf(i), SY=Q.SY;
+    const x0=Q.colW*i, x1=x0+Q.colW;
+    /* у СВ води береги й бакен зносяться ліворуч, вода стоїть */
+    const drOf=tt=>water?-this.u*tt:0;
+    const SX=x=>ox+x*sc;
+    const yF=SY(2*LM), yN=SY(0);
+    g.save(); g.beginPath(); g.rect(x0,42,Q.colW,Q.oy+18-42); g.clip();
+    g.fillStyle=CLR.ground; g.fillRect(x0,42,Q.colW,yF-42); g.fillRect(x0,yN,Q.colW,Q.oy+18-yN);
+    g.fillStyle=CLR.water; g.fillRect(x0,yF,Q.colW,yN-yF);
+    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(x0,yF+.5); g.lineTo(x1,yF+.5);
+    g.moveTo(x0,yN+.5); g.lineTo(x1,yN+.5); g.stroke();
+    /* кущі на берегах — нерухомі відносно берега; у СВ води вони пливуть (§7.2) */
+    const dr=drOf(t);
+    for(let k=-3;k<12;k++){
+      const bx=SX(k*0.5*LM-0.9*LM+dr);
+      if(bx<x0-14||bx>x1+14) continue;
+      for(const yy of [yF-12,yN+14]){
+        g.fillStyle='#e4e3db'; g.strokeStyle='#c9c7bd'; g.lineWidth=1;
+        g.beginPath(); g.arc(bx,yy,7,0,7); g.fill(); g.stroke();
+      }
+    }
+    /* течія: у СВ води вода стоїть — стрілок немає, і саме це видно */
+    if(!water){
+      for(let k=0;k<5;k++){
+        const ax=x0+22+k*(Q.colW-44)/4.5, ay=yF+(yN-yF)*(0.14+0.7*((k*2)%5)/5);
+        arrow(g,ax,ay,ax+Math.min(34,this.u*Q.vsc*0.45),ay,CLR.drop,2);
+      }
+    }
+    /* пройдені шляхи */
+    const P=(bx,by,tt)=>({x:SX(bx+drOf(tt)), y:SY(LM+by)});
+    for(const f of ['boat1','boat2']){
+      g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([2,3]); g.beginPath();
+      for(let k=0;k<=60;k++){
+        const tt=t*k/60, q=this[f](tt), pp=P(q.x,q.y,tt);
+        k?g.lineTo(pp.x,pp.y):g.moveTo(pp.x,pp.y);
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+    /* бакен і поворотні позначки — нерухомі відносно берега */
+    const bu=P(0,0,t), m1=P(this.L,0,t), m2=P(0,this.L,t);
+    for(const m of [m1,m2]){
+      g.strokeStyle=CLR.k1; g.lineWidth=1.5; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(m.x,m.y-10); g.lineTo(m.x,m.y+10); g.stroke(); g.setLineDash([]);
+      dot(g,m.x,m.y,4,'#fff',CLR.k1);
+    }
+    g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(bu.x,bu.y); g.lineTo(bu.x,bu.y-15); g.stroke();
+    dot(g,bu.x,bu.y-17,4,CLR.k1);
+    dot(g,bu.x,bu.y,5.5,'#fff',CLR.k1);
+    if(!water) txt(g,'бакен',bu.x-9,bu.y+15,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    if(!water) txt(g,'L = '+fmt(this.L,0)+' м',m1.x,m1.y-16,
+      {color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    /* човни */
+    const drawBoat=(q,col,tc,name,tau,dy)=>{
+      const pp=P(q.x,q.y,t);
+      g.save(); g.translate(pp.x,pp.y); g.rotate(q.back?Math.PI:0);
+      g.fillStyle=col===CLR.ink?'rgba(11,11,11,.10)':'rgba(27,175,122,.12)';
+      g.strokeStyle=col; g.lineWidth=2;
+      g.beginPath(); g.moveTo(-10,-4.5); g.lineTo(6,-4.5); g.lineTo(11,0);
+      g.lineTo(6,4.5); g.lineTo(-10,4.5); g.closePath(); g.fill(); g.stroke();
+      g.restore();
+      pill(g,fmt(Math.min(t,tau),1)+' с'+(q.done?' ✓':''),pp.x,pp.y+dy,
+        {color:tc,size:11,bold:true});
+    };
+    drawBoat(this.boat2(t),CLR.k3,'#0d7a55','поперек',this.t2(),-14);
+    drawBoat(this.boat1(t),CLR.ink,CLR.ink,'за течією',this.t1(),24);
+    g.restore();
+    const fr=water
+      ? ['СВ води',CLR.k2,'обидва човни йдуть прямими з тією самою швидкістю v']
+      : ['СВ берега',CLR.k1,'човен за течією виграє туди рівно стільки, скільки втрачає назад'];
+    txt(g,fr[0],x0+12,20,{color:fr[1],size:12.5,bold:true});
+    txt(g,fr[2],x0+12,36,{color:CLR.mut,size:10.5});
+  },
+  table(){
+    const t1=this.t1(), t2=this.t2(), c=this.cross(), et=this.eta();
+    $('m2t').textContent='t = '+fmt(this.t,1)+' с з '+fmt(this.T(),1)+' с';
+    $('m2vv').textContent=fmt(this.v,1)+' м/с';
+    $('m2vu').textContent=fmt(this.u,1)+' м/с';
+    $('m2vL').textContent=fmt(this.L,0)+' м';
+    $('m2vEt').textContent=fmt(et,2);
+    $('m2rT1').textContent=fmt(t1,1)+' с';
+    $('m2rT2').textContent=fmt(t2,1)+' с';
+    $('m2rR').textContent=fmt(t1/t2,3);
+    $('m2kD').textContent=fmt(this.v+this.u,1)+' м/с';
+    $('m2kU').textContent=fmt(this.v-this.u,1)+' м/с';
+    $('m2kX').textContent=fmt(c,1)+' м/с';
+    $('m2kAng').textContent=fmt(Math.asin(Math.min(1,this.u/this.v))/DEG,1)+'°';
+    $('m2fx').innerHTML='<i>τ</i><sub>1</sub>/<i>τ</i><sub>2</sub> = <i>η</i>/√(<i>η</i>² − 1) = '+
+      fmt(et,2)+' / √('+fmt(et*et,2)+' − 1) = <b>'+fmt(t1/t2,3)+'</b>';
+  },
+  charts(){
+    const et=this.eta(), t1=this.t1(), t2=this.t2();
+    const br=cvx('m2cr');
+    if(br){
+      const ts=[],ys=[];
+      for(let i=0;i<=90;i++){
+        const e=1.05+(5-1.05)*i/90; ts.push(e); ys.push(e/Math.sqrt(e*e-1));
+      }
+      const r=drawChart(br,{tMax:5,yMin:0,yMax:5,yLab:'τ₁/τ₂',xLab:'η = v/u',xStep:1,
+        yDec:1,hover:this.hr.x,
+        series:[{ts,ys,color:CLR.k3,label:'τ₁/τ₂'},
+                {ts:[et,et],ys:[0,et/Math.sqrt(et*et-1)],color:CLR.ink,label:'η',dash:[4,3]}]});
+      showTip(this.tipr,r,'',this.hr,[['τ₁/τ₂',CLR.k3],['зараз',CLR.ink]],3);
+    }
+    const bd=cvx('m2cd');
+    if(bd){
+      const N=70, ts=[],d1=[],d2=[];
+      for(let i=0;i<=N;i++){
+        const tt=this.t*i/N; ts.push(tt);
+        d1.push(Math.abs(this.boat1(tt).x)); d2.push(Math.abs(this.boat2(tt).y));
+      }
+      if(this.t<1e-6){ts.push(1e-6); d1.push(0); d2.push(0);}
+      const r=drawChart(bd,{tMax:this.T(),yMin:0,yMax:this.LMAX*1.08,yLab:'м',xDec:1,
+        hover:this.hd.x,
+        series:[{ts,ys:d1,color:CLR.ink,label:'за течією'},
+                {ts,ys:d2,color:CLR.k3,label:'поперек'}]});
+      showTip(this.tipd,r,'м',this.hd,[['за течією',CLR.ink],['поперек',CLR.k3]],1);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 3 · кулька в ліфті ===================== */
+const M3={
+  mode:'task', h:2.25, a:0.5, v0:2.5,
+  t:0, playing:true, waitT:0, showAns:false,
+  HMIN:1.8, HMAX:3.0, AMIN:-3, AMAX:2, VMIN:0.5, VMAX:3,
+  hy:{x:null}, hs:{x:null}, tipy:null, tips:null,
+  TASK:{h:2.25, a:0.5, v0:2.5},
+  gEff(){return G+this.a;},
+  tau(){return Math.sqrt(2*this.h/this.gEff());},
+  T(){return this.tau();},
+  cabFloor(t){return this.v0*t+this.a*t*t/2;},
+  ball(t){return this.h+this.v0*t-G*t*t/2;},      /* висота кульки над початковою підлогою */
+  tTop(){return this.v0/G;},                       /* мить розвороту в СВ шахти */
+  yTop(){return this.v0*this.v0/(2*G);},
+  /* шлях відносно шахти: до розвороту — підйом, після — підйом плюс спуск */
+  pathShaft(t){
+    const tt=Math.min(this.tTop(),this.tau()), y=this.ball(t)-this.h;
+    return t<=tt?y:2*(this.v0*tt-G*tt*tt/2)-y;
+  },
+  dispShaft(t){return Math.abs(this.ball(t)-this.h);},
+  setTask(){const T=this.TASK; this.h=T.h; this.a=T.a; this.v0=T.v0;},
+  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
+  setMode(m){
+    this.mode=m;
+    if(m==='task') this.setTask();
+    this.showAns=m!=='task';
+    this.syncAns(); this.reset();
+  },
+  syncAns(){
+    const task=this.mode==='task';
+    $('m3ans').hidden=!task||this.showAns;
+    $('m3ansBox').hidden=task&&!this.showAns;
+  },
+  init(){
+    seg('m3mode',v=>this.setMode(v));
+    grip('m3scene',this,()=>this.grips());
+    $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m3play').onclick=()=>{
+      if(!this.playing&&this.t>=this.T()) this.reset();
+      else {this.playing=!this.playing; this.updBtn();}
+    };
+    $('m3re').onclick=()=>this.reset();
+    this.tipy=makeTip('m3cyw'); this.tips=makeTip('m3csw');
+    hover('m3cy',this.hy); hover('m3cs',this.hs);
+    this.setTask(); this.syncAns(); this.reset();
+  },
+  /* Кадр спільний для обох СВ (§15): світова висота береться з верхніх меж —
+     найбільша кабіна плюс найбільший підйом за час падіння. */
+  geo(b){return frozen(this,b,bb=>{
+    /* Світова висота — з верхніх меж: найвищий підйом кабіни за час падіння
+       (v0 max із a max) плюс найбільша кабіна, і найглибший провал при a < 0. */
+    const RISE=2.8, DOWN=1.1, span=this.HMAX+RISE+DOWN+0.4, CW=1.8;
+    const sc=fitScale(bb.w/2,bb.h,215,86,CW,span,0,0);
+    const colW=bb.w/2, oy=bb.h-24-0*sc;
+    return {sc,oy,colW,span,CW,DOWN,
+      cxOf:i=>colW*i+colW*0.46, SY:y=>oy-(y+DOWN)*sc};
+  });},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m3scene'); if(!b) return [];
+    const Q=this.geo(b), cx=Q.cxOf(0), hw=Q.CW/2*Q.sc, f=this.cabFloor(this.t);
+    const my=Q.SY(f+this.h/2), kv=Q.sc*0.62;
+    return [
+      /* стелю тягнуть угору — вище стеля, вища кабіна */
+      {id:'h', x:cx, y:Q.SY(f+this.h), r:10, color:CLR.k2, hint:'висота кабіни',
+       move:(px,py)=>{
+         this.h=clamp(snap((Q.oy-py)/Q.sc-Q.DOWN-f,0.05),this.HMIN,this.HMAX); this.reset();}},
+      /* вістря швидкості кабіни в мить відриву */
+      {id:'v0', x:cx-hw-58, y:my-(this.v0-this.VMIN)*kv, r:13, bare:true, color:CLR.k2,
+       hint:'швидкість кабіни в мить відриву',
+       hit:(px,py)=>Math.abs(px-(cx-hw-58))<=18&&py>=my-(this.VMAX-this.VMIN)*kv-16&&py<=my+16,
+       move:(px,py)=>{
+         this.v0=clamp(snap((my-py)/kv+this.VMIN,0.1),this.VMIN,this.VMAX); this.reset();}},
+      /* шкала прискорення: нуль — навпроти середини кабіни, вгору додатне */
+      {id:'a', x:cx-hw-110, y:my-(this.a-this.AMIN)*kv, r:13, bare:true, color:CLR.k3,
+       hint:'прискорення кабіни',
+       hit:(px,py)=>Math.abs(px-(cx-hw-110))<=18&&py>=my-(this.AMAX-this.AMIN)*kv-16&&py<=my+16,
+       move:(px,py)=>{
+         this.a=clamp(snap((my-py)/kv+this.AMIN,0.1),this.AMIN,this.AMAX); this.reset();}}
+    ];
+  },
+  tick(dt){
+    const T=this.T();
+    if(this._grab==null){
+      if(this.playing){
+        this.t=Math.min(T,this.t+dt);
+        if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=T){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+    }
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b), t=this.t;
+    g.clearRect(0,0,w,h);
+    this.panel(g,Q,0,t); this.panel(g,Q,1,t);
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Q.colW+.5,46); g.lineTo(Q.colW+.5,h-8); g.stroke();
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  panel(g,Q,i,t){
+    const cab=i===1, sc=Q.sc, cx=Q.cxOf(i), hw=Q.CW/2*sc;
+    const f=this.cabFloor(t), yb=this.ball(t);
+    /* у СВ кабіни віднімаємо рух кабіни: підлога стоїть, шахта біжить */
+    const sh=cab?-f:0;
+    const SY=y=>Q.SY(y+sh);
+    const col=cab?CLR.k2:CLR.k1, tc=cab?'#b8431a':'#1c5cab';
+    const x0=Q.colW*i;
+    txt(g,cab?'СВ кабіни':'СВ шахти',x0+12,20,{color:tc,size:12.5,bold:true});
+    txt(g,cab?'кулька просто падає з g + a = '+fmt(this.gEff(),1)+' м/с²'
+             :'кулька спершу піднімається — шлях більший за переміщення',
+      x0+12,36,{color:CLR.mut,size:10.5});
+    const wl=cx-hw-15, wr=cx+hw+15, top=46;
+    g.save(); g.beginPath(); g.rect(x0,top,Q.colW,Q.oy+16-top); g.clip();
+    /* шахта: стіни, поверхи з дверима й номерами — усе нерухоме відносно шахти */
+    g.fillStyle='#f6f6f3'; g.fillRect(wl,top,wr-wl,Q.oy+16-top);
+    g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(wl+.5,top); g.lineTo(wl+.5,Q.oy+16);
+    g.moveTo(wr+.5,top); g.lineTo(wr+.5,Q.oy+16); g.stroke();
+    for(let n=-1;n<=5;n++){
+      const py=SY(n*1.5);
+      if(py<top-30||py>Q.oy+20) continue;
+      g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(wl,py+.5); g.lineTo(wr,py+.5); g.stroke();
+      /* стулки дверей поверху */
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath();
+      g.moveTo(wl+4,py-30); g.lineTo(wl+4,py); g.moveTo(cx,py-30); g.lineTo(cx,py);
+      g.moveTo(wr-4,py-30); g.lineTo(wr-4,py); g.moveTo(wl+4,py-30); g.lineTo(wr-4,py-30);
+      g.stroke();
+      txt(g,String(n+1),wl-6,py-4,{color:CLR.mut,size:9.5,align:'right',bold:true});
+    }
+    txt(g,'поверх',wl-6,top+10,{color:CLR.mut,size:9,align:'right'});
+    /* трос і кабіна — тіло, що несе СВ (§7.1) */
+    const cf=SY(f), cc=SY(f+this.h);
+    g.strokeStyle=CLR.sec; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(cx,cc); g.lineTo(cx,top); g.stroke();
+    g.fillStyle='rgba(235,104,52,.07)'; g.strokeStyle=CLR.k2; g.lineWidth=2.5;
+    g.beginPath(); g.roundRect(cx-hw,cc,2*hw,cf-cc,5); g.fill(); g.stroke();
+    g.strokeStyle='rgba(235,104,52,.35)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(cx,cc+7); g.lineTo(cx,cf-7); g.stroke();
+    txt(g,'h = '+fmt(this.h,2)+' м',cx-hw+6,(cc+cf)/2+4,{color:'#b8431a',size:10.5,bold:true});
+    /* слід кульки — пройдена траєкторія (§7.4) */
+    g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([2,3]); g.beginPath();
+    for(let k=0;k<=50;k++){
+      const tt=t*k/50, yy=this.ball(tt)+(cab?-this.cabFloor(tt):0);
+      const py=Q.SY(yy), px=cx+hw*0.45;
+      k?g.lineTo(px,py):g.moveTo(px,py);
+    }
+    g.stroke(); g.setLineDash([]);
+    dot(g,cx+hw*0.45,SY(yb),6,CLR.ink,'#fff');
+    g.restore();
+    /* мірні рейки: шлях і переміщення від точки відриву, у масштабі сцени */
+    const y0=SY(this.h);
+    const S=cab?this.h-(yb+sh):this.pathShaft(t);
+    const l=cab?this.h-(yb+sh):this.dispShaft(t);
+    const rx=wr+34;
+    const rod=(x,val,color,lab,dec)=>{
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x,y0); g.lineTo(x,y0+2.4*sc); g.stroke();
+      for(let q=0;q<=2.4;q+=0.5){
+        g.strokeStyle=CLR.grid; g.lineWidth=1;
+        g.beginPath(); g.moveTo(x-3,y0+q*sc+.5); g.lineTo(x+3,y0+q*sc+.5); g.stroke();
+      }
+      g.strokeStyle=color; g.lineWidth=7; g.lineCap='butt';
+      g.beginPath(); g.moveTo(x,y0); g.lineTo(x,y0+Math.max(0,val)*sc); g.stroke();
+      txt(g,lab,x,y0-17,{color:CLR.sec,size:10,bold:true,align:'center'});
+      txt(g,fmt(val,dec)+' м',x,y0-4,{color:color,size:11,bold:true,align:'center'});
+    };
+    rod(rx,S,CLR.ink,'шлях',3);
+    if(!cab) rod(rx+52,l,CLR.k1,'|Δr|',3);
+    else txt(g,'шлях = |Δr|',rx+16,y0+2.4*sc+16,{color:CLR.mut,size:10});
+    /* ручки задають величини ліворуч від шахти — там вільно */
+    if(i===0){
+      const my=SY(f+this.h/2), kv=sc*0.62;
+      const sl=(x,lo,hi,val,col,lab,unit)=>{
+        const W=(hi-lo)*kv;
+        slideTrack(g,x,my,W,(val-lo)/(hi-lo),col,true);
+        txt(g,lab,x,my-W-20,{color:col===CLR.k2?'#b8431a':'#0d7a55',size:11,bold:true,align:'center'});
+        txt(g,fmt(val,1)+' '+unit,x,my-W-7,{color:CLR.ink,size:10.5,bold:true,align:'center'});
+        txt(g,fmt(lo,1),x,my+18,{color:CLR.mut,size:9,align:'center'});
+      };
+      sl(cx-hw-58,this.VMIN,this.VMAX,this.v0,CLR.k2,'v₀','м/с');
+      sl(cx-hw-110,this.AMIN,this.AMAX,this.a,CLR.k3,'a','м/с²');
+    }
+  },
+  table(){
+    const t=this.t, tau=this.tau();
+    $('m3t').textContent='t = '+fmt(t,2)+' с з '+fmt(tau,2)+' с';
+    $('m3vh').textContent=fmt(this.h,2)+' м';
+    $('m3va').textContent=fmt(this.a,1)+' м/с²';
+    $('m3vv').textContent=fmt(this.v0,1)+' м/с';
+    const l=this.dispShaft(tau), S=this.pathShaft(tau);
+    $('m3rT').textContent=fmt(tau,3)+' с';
+    $('m3rL').textContent=fmt(l,3)+' м';
+    $('m3rS').textContent=fmt(S,3)+' м';
+    $('m3kGe').textContent=fmt(this.gEff(),1)+' м/с²';
+    $('m3kCab').textContent=fmt(this.h,2)+' м';
+    $('m3kUp').textContent=fmt(this.yTop(),3)+' м';
+    $('m3kS').textContent=fmt(this.pathShaft(t),3)+' м';
+    $('m3kL').textContent=fmt(this.dispShaft(t),3)+' м';
+    $('m3fx').innerHTML=
+      '<i>τ</i> = √(2<i>h</i>/(<i>g</i>+<i>a</i>)) = √(2·'+fmt(this.h,2)+' / '+fmt(this.gEff(),1)+
+      ') = <b>'+fmt(tau,3)+' с</b><br>'+
+      '<i>l</i> = |<i>v</i><sub>0</sub><i>τ</i> − <i>gτ</i>²/2| = <b>'+fmt(l,3)+' м</b>'+
+      ' &nbsp;·&nbsp; <i>S</i> = 2<i>h</i><sub>під</sub> + <i>l</i> = <b>'+fmt(S,3)+' м</b>';
+  },
+  charts(){
+    const tau=this.tau(), N=60;
+    const ts=[],ysh=[],ycab=[],S=[],L=[];
+    for(let i=0;i<=N;i++){
+      const tt=this.t*i/N; ts.push(tt);
+      ysh.push(this.ball(tt)-this.h);
+      ycab.push(this.ball(tt)-this.cabFloor(tt)-this.h);
+      S.push(this.pathShaft(tt)); L.push(this.dispShaft(tt));
+    }
+    if(this.t<1e-6){ts.push(1e-6); ysh.push(0); ycab.push(0); S.push(0); L.push(0);}
+    const lo=-this.HMAX*1.05, hi=Math.max(0.35,this.yTop()*1.35);
+    const by=cvx('m3cy');
+    if(by){
+      const r=drawChart(by,{tMax:tau,yMin:lo,yMax:hi,yLab:'м',xDec:2,yDec:1,hover:this.hy.x,
+        series:[{ts,ys:ysh,color:CLR.k1,label:'шахта'},
+                {ts,ys:ycab,color:CLR.k2,label:'кабіна'}]});
+      showTip(this.tipy,r,'м',this.hy,[['відносно шахти',CLR.k1],['відносно кабіни',CLR.k2]],3);
+    }
+    const bs=cvx('m3cs');
+    if(bs){
+      const top=Math.max(0.4,2*this.yTop()+this.HMAX*0.6);
+      const r=drawChart(bs,{tMax:tau,yMin:0,yMax:top,yLab:'м',xDec:2,yDec:1,hover:this.hs.x,
+        series:[{ts,ys:S,color:CLR.ink,label:'S'},
+                {ts,ys:L,color:CLR.k1,label:'|Δr|'}]});
+      showTip(this.tips,r,'м',this.hs,[['шлях S',CLR.ink],['переміщення',CLR.k1]],3);
+    }
+  }
+};
+
+/* ===================== МОДУЛЬ 4 · відскоки по похилій ===================== */
+const M4={
+  mode:'task', axes:'lab', h:0.8, al:30, k:1,
+  t:0, playing:true, waitT:0, showAns:false,
+  HMIN:0.4, HMAX:0.9, ALMIN:10, ALMAX:35,
+  hl:{x:null}, hn:{x:null}, tipl:null, tipn:null,
+  TASK:{h:0.8, al:30, k:1},
+  GG:[['k','k відновлення',0.5,1,0.01,CLR.k3,null,'m4vk',2,'']],
+  v(){return Math.sqrt(2*G*this.h);},
+  tFall(){return Math.sqrt(2*this.h/G);},
+  /* Відскоки в осях, повернутих уздовж дошки: нормальна складова міняє знак
+     і множиться на k, тангенціальна лишається й розганяється складовою g. */
+  bounces(){
+    const a=this.al*DEG, v=this.v(), gx=G*Math.sin(a), gn=G*Math.cos(a);
+    const out=[];
+    let t0=this.tFall(), xi=0, vxi=v*Math.sin(a), ven=this.k*v*Math.cos(a);
+    for(let n=1;n<=6;n++){
+      const tau=2*ven/gn, L=vxi*tau+gx*tau*tau/2;
+      out.push({n,t0,tau,xi,vxi,ven,L});
+      t0+=tau; xi+=L; vxi+=gx*tau; ven*=this.k;
+      if(tau<1e-4) break;
+    }
+    return out;
+  },
+  NRUN:3,                              /* скільки відскоків показує сценарій */
+  T(){const B=this.bounces(), L=B[Math.min(this.NRUN,B.length)-1]; return L.t0+L.tau;},
+  /* Кадр стоїть, камера їде вздовж дошки за кулькою: інакше або масштаб
+     розчавить дугу в смужку, або прогресія обірветься на першому ударі. */
+  camOf(Q){return Math.max(0,this.st(this.t).xi-Q.viewXi*0.42);},
+  /* положення в повернутих осях: ξ — уздовж дошки вниз, η — від дошки */
+  st(t){
+    const a=this.al*DEG, gx=G*Math.sin(a), gn=G*Math.cos(a), tf=this.tFall();
+    if(t<=tf){
+      const d=this.h-G*t*t/2;
+      return {xi:-d*Math.sin(a), eta:d*Math.cos(a), fall:true};
+    }
+    for(const b of this.bounces()){
+      if(t<=b.t0+b.tau+1e-9){
+        const s=t-b.t0;
+        return {xi:b.xi+b.vxi*s+gx*s*s/2, eta:Math.max(0,b.ven*s-gn*s*s/2), fall:false};
+      }
+    }
+    const B=this.bounces(), L=B[B.length-1];
+    return {xi:L.xi+L.L, eta:0, fall:false};
+  },
+  /* швидкість відскоку в лабораторних осях: модуль kv, кут 90° − 2α до горизонту */
+  vBounce(){return this.k*this.v();},
+  angBounce(){return 90-2*this.al;},
+  setTask(){const T=this.TASK; this.h=T.h; this.al=T.al; this.k=T.k;},
+  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  updBtn(){$('m4play').textContent=this.playing?'⏸':'▶';},
+  setMode(m){
+    this.mode=m;
+    if(m==='task') this.setTask();
+    this.showAns=m!=='task';
+    this.syncAns(); this.reset();
+  },
+  syncAns(){
+    const task=this.mode==='task';
+    $('m4ans').hidden=!task||this.showAns;
+    $('m4ansBox').hidden=task&&!this.showAns;
+    $('m4bk').hidden=Math.abs(this.k-1)>1e-9;
+  },
+  init(){
+    seg('m4mode',v=>this.setMode(v));
+    seg('m4axes',v=>{this.axes=v; this._froz=null;});   /* зміна осей час не скидає */
+    grip('m4scene',this,()=>this.grips());
+    $('m4ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m4play').onclick=()=>{
+      if(!this.playing&&this.t>=this.T()) this.reset();
+      else {this.playing=!this.playing; this.updBtn();}
+    };
+    $('m4re').onclick=()=>this.reset();
+    this.tipl=makeTip('m4clw'); this.tipn=makeTip('m4cnw');
+    hover('m4cl',this.hl); hover('m4cn',this.hn);
+    this.hl.xlab='удар №'; this.hl.xunit=''; this.hl.xdec=0;
+    this.setTask(); this.syncAns(); this.reset();
+  },
+  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Кадр залежить від обраних осей — а це режим, і масштабу дозволено від нього
+     залежати (§10). В осях уздовж дошки картина плеската й широка, у звичайних —
+     висока: спільний масштаб лишив би одну з них смужкою в порожньому полі. */
+  geo(b){return frozen(this,b,bb=>{
+    const C=this.gcol(bb), H=C.gtop-46;
+    const a=this.ALMAX*DEG, LM=8*this.HMAX*Math.sin(a);   /* найбільша L₁ діапазону */
+    const rot=this.axes==='rot';
+    const SP=LM;                         /* сценарій — один проліт: L₁ */
+    const wx=rot?SP*1.30+1.2:SP*Math.cos(a)+1.3;
+    const wy=rot?this.HMAX*1.5:SP*Math.sin(a)+this.HMAX*1.7;
+    const sc=fitScale(bb.w,H,74,50,wx,wy,0,0);
+    const ox=44+0.9*this.HMAX*sc, oy=rot?46+H*0.80:56+this.HMAX*1.35*sc;
+    return {sc,ox,oy,rot,C,LM,wx,wy,SP,viewXi:SP*1.15,
+      /* єдине перетворення для всього креслення (§10): дошка, слід, ручки */
+      M:(xi,eta)=>{
+        const A=this.al*DEG;
+        if(rot) return {x:ox+xi*sc, y:oy-eta*sc};
+        return {x:ox+(xi*Math.cos(A)+eta*Math.sin(A))*sc,
+                y:oy-(-xi*Math.sin(A)+eta*Math.cos(A))*sc};
+      }};
+  });},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m4scene'); if(!b) return [];
+    const Q=this.geo(b), cam=this.camOf(Q), A=this.al*DEG;
+    const M=(xi,eta)=>Q.M(xi-cam,eta);
+    const xa=cam+Q.viewXi*0.08, O=M(xa,0);
+    const xr=-this.h*Math.sin(A);
+    const P0=M(xr,this.h*Math.cos(A));
+    /* точка на дузі кута: тягнеш її — нахиляється сама дошка (§19) */
+    const R=58, sg=Q.rot?-1:1;
+    /* вертикаль лабораторії в повернутих осях нахилена — тому h читаємо
+       через cos α, інакше та сама ручка давала б різні висоти в двох режимах */
+    const kh=Q.sc*(Q.rot?Math.cos(A):1);
+    const O0=M(0,0);
+    /* точку старту видно, лише поки камера не поїхала: далі висоту міняють
+       після ↺ — обіцяти жест, якого не видно, не можна (§15) */
+    const hVisible=xr>cam-1.0&&xr<cam+Q.viewXi;
+    return [
+      hVisible?{id:'h', x:P0.x, y:P0.y, r:10, bare:true, color:CLR.ink, hint:'висота падіння',
+       move:(px,py)=>{
+         this.h=clamp(snap((O0.y-py)/kh,0.05),this.HMIN,this.HMAX); this.reset();}}:null,
+      {id:'al', x:O.x+(R+16)*Math.cos(A), y:O.y+sg*(R+16)*Math.sin(A),
+       r:10, color:CLR.k3, hint:'кут нахилу дошки',
+       move:(px,py)=>{
+         this.al=clamp(snap(sg*Math.atan2(py-O.y,Math.max(8,px-O.x))/DEG,1),
+           this.ALMIN,this.ALMAX);
+         this.reset();}}
+    ].filter(Boolean).concat(gaugeGrips(this.gcol(b),this.GG,this));
+  },
+  tick(dt){
+    const T=this.T();
+    if(this._grab==null){
+      if(this.playing){
+        this.t=Math.min(T,this.t+dt*0.6);
+        if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=T){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+    }
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
+  gdraw(){
+    const b=cvx('m4scene'); if(!b) return;
+    const C=this.gcol(b);
+    if(this.mode==='free'){
+      gaugeCol(b.g,C,this.GG,this);
+      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
+    } else {
+      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+      b.g.beginPath(); b.g.moveTo(8,C.y0-16+.5); b.g.lineTo(C.w-8,C.y0-16+.5); b.g.stroke();
+      txt(b.g,'k = 1,00 — удар пружний, як в умові задачі',C.w/2,C.y0+4,
+        {color:CLR.mut,size:10.5,align:'center'});
+    }
+    $('m4vk').textContent=fmt(this.k,2);
+  },
+  /* швидкість у повернутих осях */
+  vel(t){
+    const a=this.al*DEG, gx=G*Math.sin(a), gn=G*Math.cos(a), tf=this.tFall();
+    if(t<=tf) return {vxi:G*t*Math.sin(a), veta:-G*t*Math.cos(a)};
+    for(const b of this.bounces())
+      if(t<=b.t0+b.tau+1e-9){const s=t-b.t0; return {vxi:b.vxi+gx*s, veta:b.ven-gn*s};}
+    return {vxi:0, veta:0};
+  },
+  scene(){
+    const b=cvx('m4scene'); if(!b) return;
+    const {g,w}=b, Q=this.geo(b), t=this.t, A=this.al*DEG;
+    const cam=this.camOf(Q), M=(xi,eta)=>Q.M(xi-cam,eta);
+    const H=Q.C.gtop;
+    g.clearRect(0,0,w,H);
+    const B=this.bounces(), L1=B[0].L;
+    const x0=cam-1.05, x1=cam+Q.viewXi+0.4;
+    /* дошка: сама пряма η = 0 і брусок під нею — усе через M() (§10) */
+    const P1=M(x0,0), P2=M(x1,0), nrm=M(0,-0.14), nO0=M(0,0);
+    const nx=nrm.x-nO0.x, ny=nrm.y-nO0.y;
+    g.save(); g.beginPath(); g.rect(0,44,w,H-44); g.clip();
+    g.fillStyle=CLR.ground;
+    g.beginPath(); g.moveTo(P1.x,P1.y); g.lineTo(P2.x,P2.y);
+    g.lineTo(P2.x+nx,P2.y+ny); g.lineTo(P1.x+nx,P1.y+ny); g.closePath(); g.fill();
+    g.strokeStyle=CLR.axis; g.lineWidth=2;
+    g.beginPath(); g.moveTo(P1.x,P1.y); g.lineTo(P2.x,P2.y); g.stroke();
+    /* позначки вздовж дошки — орієнтири, нерухомі відносно неї: по них і
+       видно, що камера їде, а дошка стоїть (§7.2) */
+    const stp=niceStep(Q.viewXi/6);
+    for(let x=Math.ceil(x0/stp)*stp;x<=x1;x+=stp){
+      const p=M(x,0), q=M(x,-0.07);
+      g.strokeStyle=CLR.mut; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(q.x,q.y); g.stroke();
+      txt(g,fmt(x,stp<1?1:0),q.x+(Q.rot?0:6),q.y+11,{color:CLR.mut,size:9.5,align:'center'});
+    }
+    /* горизонт і дуга кута нахилу — біля лівого краю вікна, щоб не поїхали з кадру */
+    const sg=Q.rot?-1:1, R=58, xa=cam+Q.viewXi*0.08, nO=M(xa,0);
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(nO.x,nO.y); g.lineTo(nO.x+92,nO.y+(Q.rot?-92*Math.tan(A):0));
+    g.stroke(); g.setLineDash([]);
+    arc(g,nO.x,nO.y,R,Q.rot?-A:0,Q.rot?0:A,CLR.k3,1.8);
+    g.strokeStyle=CLR.k3; g.lineWidth=1.4;
+    g.beginPath(); g.moveTo(nO.x,nO.y);
+    g.lineTo(nO.x+(R+16)*Math.cos(A),nO.y+sg*(R+16)*Math.sin(A)); g.stroke();
+    txt(g,'α = '+fmt(this.al,0)+'°',nO.x+R+22,nO.y+sg*R*Math.sin(A)/2+4,
+      {color:'#0d7a55',size:11.5,bold:true});
+    if(Q.rot) txt(g,'горизонт',nO.x+96,nO.y-92*Math.tan(A)-5,{color:CLR.mut,size:10});
+    /* уся траєкторія — допоміжна геометрія, пройдена частина — слід (§7.4) */
+    const T=this.T();
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]); g.beginPath();
+    for(let i=0;i<=240;i++){const q=this.st(T*i/240), p=M(q.xi,q.eta); i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y);}
+    g.stroke(); g.setLineDash([]);
+    g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([2,3]); g.beginPath();
+    for(let i=0;i<=180;i++){const q=this.st(t*i/180), p=M(q.xi,q.eta); i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y);}
+    g.stroke(); g.setLineDash([]);
+    /* точки ударів і розмірні лінії — прогресія росте просто на кресленні */
+    const hits=[0]; for(const q of B) hits.push(q.xi+q.L);
+    hits.forEach((x,n)=>{
+      if(x<x0-0.4||x>x1) return;
+      const p=M(x,0);
+      dot(g,p.x,p.y,5,'#fff',CLR.k2);
+      txt(g,String(n+1),p.x,p.y-13,{color:'#b8431a',size:10.5,bold:true,align:'center'});
+    });
+    const hd=this.HMAX*1.02;
+    for(let n=0;n<Math.min(this.NRUN,B.length);n++){
+      const xa1=hits[n], xb1=hits[n+1];
+      if(xb1<x0||xa1>x1) continue;
+      const a1=M(xa1,hd), a2=M(xb1,hd), b1=M(xa1,0), b2=M(xb1,0);
+      g.strokeStyle=CLR.k2; g.lineWidth=1; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(b1.x,b1.y); g.lineTo(a1.x,a1.y);
+      g.moveTo(b2.x,b2.y); g.lineTo(a2.x,a2.y); g.stroke(); g.setLineDash([]);
+      arrow(g,a1.x,a1.y,a2.x,a2.y,CLR.k2,1.6);
+      arrow(g,a2.x,a2.y,a1.x,a1.y,CLR.k2,1.6);
+      pill(g,(n?'L'+'₁₂₃₄₅₆'[n]:'L')+' = '+fmt(B[n].L,2)+' м',
+        (a1.x+a2.x)/2,(a1.y+a2.y)/2-2,{color:'#b8431a',size:11.5,bold:true});
+    }
+    /* точка старту й вертикаль вільного падіння */
+    const xr=-this.h*Math.sin(A);
+    if(xr>x0-0.4&&xr<x1){
+      const S0=this.st(0), PS=M(S0.xi,S0.eta), O0=M(0,0);
+      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(PS.x,PS.y); g.lineTo(O0.x,O0.y); g.stroke(); g.setLineDash([]);
+      dot(g,PS.x,PS.y,4,'#fff',CLR.ink);
+      txt(g,'h = '+fmt(this.h,2)+' м',PS.x-8,(PS.y+O0.y)/2+4,
+        {color:CLR.sec,size:10.5,bold:true,align:'right'});
+    }
+    /* кулька і її швидкість */
+    const q=this.st(t), P=M(q.xi,q.eta), V=this.vel(t), kv=42/Math.sqrt(2*G*this.HMAX);
+    const PV=M(q.xi+V.vxi*kv/Q.sc,q.eta+V.veta*kv/Q.sc);
+    if(Q.rot&&Math.hypot(V.vxi,V.veta)>0.2){
+      const Px=M(q.xi+V.vxi*kv/Q.sc,q.eta), Pn=M(q.xi,q.eta+V.veta*kv/Q.sc);
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(Px.x,Px.y); g.lineTo(PV.x,PV.y);
+      g.moveTo(Pn.x,Pn.y); g.lineTo(PV.x,PV.y); g.stroke(); g.setLineDash([]);
+      arrow(g,P.x,P.y,Px.x,Px.y,CLR.k2,2);
+      arrow(g,P.x,P.y,Pn.x,Pn.y,CLR.k2,2);
+    }
+    arrow(g,P.x,P.y,PV.x,PV.y,CLR.ink,2.5);
+    dot(g,P.x,P.y,6,CLR.ink,'#fff');
+    txt(g,fmt(Math.hypot(V.vxi,V.veta),2)+' м/с',PV.x+7,PV.y-5,{color:CLR.ink,size:11,bold:true});
+    if(!Q.rot){
+      const gO=M(cam+Q.viewXi*0.62,Q.wy*0.72);
+      arrow(g,gO.x,gO.y,gO.x,gO.y+42,CLR.sec,2.5);
+      txt(g,'g',gO.x+7,gO.y+32,{color:CLR.sec,size:12,bold:true});
+    }
+    g.restore();
+    if(Q.rot) this.hitDiagram(g,84,74,Q.C.w);
+    const fr=Q.rot
+      ? ['осі вздовж дошки',CLR.k2,'звичайний похилий кидок: уздовж — розгін g sin α, поперек — відскок']
+      : ['звичайні осі x, y',CLR.k1,'кулька падає вертикально й відбивається під кутом 2α до вертикалі'];
+    txt(g,fr[0],12,20,{color:fr[1],size:12.5,bold:true});
+    txt(g,fr[2],12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) if(hh.id==='h'||hh.id==='al') drawGrip(g,hh,this);
+  },
+  /* Що саме відбувається на ударі: нормальна складова міняє знак і множиться
+     на k, тангенціальна не змінюється зовсім. Власний масштаб діаграми (§8). */
+  hitDiagram(g,x,y,W){
+    const a=this.al*DEG, v=this.v(), k=74/v;
+    const vt=v*Math.sin(a)*k, vn=v*Math.cos(a)*k;
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.roundRect(x-64,y-26,300,186,8); g.stroke();
+    txt(g,'що робить удар',x-52,y-8,{color:CLR.sec,size:11.5,bold:true});
+    const yb=y+134;
+    /* сама дошка в діаграмі */
+    g.strokeStyle=CLR.axis; g.lineWidth=2;
+    g.beginPath(); g.moveTo(x-52,yb+.5); g.lineTo(x+220,yb+.5); g.stroke();
+    const px=x+62;
+    /* до удару */
+    g.setLineDash([3,3]); g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath();
+    g.moveTo(px-vt,yb-vn); g.lineTo(px-vt,yb); g.moveTo(px-vt,yb-vn); g.lineTo(px,yb-vn);
+    g.stroke(); g.setLineDash([]);
+    arrow(g,px-vt,yb-vn,px,yb,CLR.ink,2.5);
+    arrow(g,px-vt,yb-vn,px-vt,yb,CLR.k2,1.8);
+    arrow(g,px-vt,yb-vn,px,yb-vn,CLR.k2,1.8);
+    txt(g,'до',px-vt-6,yb-vn-5,{color:CLR.mut,size:10,align:'right'});
+    /* після удару: тангенціальна та сама, нормальна вгору й помножена на k */
+    arrow(g,px,yb,px+vt,yb-vn*this.k,CLR.ink,2.5);
+    g.setLineDash([3,3]); g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath();
+    g.moveTo(px,yb); g.lineTo(px+vt,yb); g.lineTo(px+vt,yb-vn*this.k);
+    g.stroke(); g.setLineDash([]);
+    arrow(g,px,yb,px+vt,yb,CLR.k3,1.8);
+    txt(g,'v·sin α',px+vt+5,yb+12,{color:'#0d7a55',size:10,bold:true});
+    txt(g,'після',px+vt+5,yb-vn*this.k-4,{color:CLR.mut,size:10});
+    dot(g,px,yb,4,CLR.k2);
+    txt(g,'нормальна ×(−k), тангенціальна без змін',x-52,y+154,{color:CLR.mut,size:9.5});
+    /* розклад тяжіння — праворуч від діаграми, у вільному полі кадру */
+    const gx0=Math.min(W-118,x+352), gy0=y+52, kg=42/G;
+    const ga=[gx0+G*Math.sin(a)*kg,gy0], gn=[gx0,gy0+G*Math.cos(a)*kg];
+    const gt=[ga[0],gn[1]];
+    g.setLineDash([3,3]); g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(ga[0],ga[1]); g.lineTo(gt[0],gt[1]);
+    g.moveTo(gn[0],gn[1]); g.lineTo(gt[0],gt[1]); g.stroke(); g.setLineDash([]);
+    arrow(g,gx0,gy0,ga[0],ga[1],CLR.k3,2);
+    txt(g,'g sin α',ga[0]+6,ga[1]+4,{color:'#0d7a55',size:10.5,bold:true});
+    arrow(g,gx0,gy0,gn[0],gn[1],CLR.k3,2);
+    txt(g,'g cos α',gn[0]-6,gn[1]+12,{color:'#0d7a55',size:10.5,bold:true,align:'right'});
+    arrow(g,gx0,gy0,gt[0],gt[1],CLR.sec,2.5);
+    txt(g,'g',gt[0]+7,gt[1]+2,{color:CLR.sec,size:12,bold:true});
+    txt(g,'тяжіння — дві сталі складові',gx0-40,gy0-16,{color:CLR.mut,size:9.5});
+  },
+  table(){
+    const B=this.bounces(), v=this.v(), a=this.al*DEG, tau=B[0].tau, L1=B[0].L;
+    $('m4t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.T(),2)+' с';
+    $('m4vh').textContent=fmt(this.h,2)+' м';
+    $('m4val').textContent=fmt(this.al,0)+'°';
+    $('m4rT').textContent=fmt(tau,3)+' с';
+    $('m4rL').textContent=fmt(L1,3)+' м';
+    $('m4rV').textContent=fmt(this.vBounce(),2)+' м/с';
+    $('m4rB').textContent=fmt(this.angBounce(),0)+'° до горизонту';
+    $('m4kV').textContent=fmt(v,2)+' м/с';
+    $('m4kVt').textContent=fmt(v*Math.sin(a),2)+' м/с';
+    $('m4kVn').textContent=fmt(v*Math.cos(a),2)+' м/с';
+    $('m4kG').textContent=fmt(G*Math.sin(a),2)+' / '+fmt(G*Math.cos(a),2)+' м/с²';
+    $('m4kTau').textContent=fmt(tau,3)+' с';
+    $('m4bt').hidden=Math.abs(this.k-1)>1e-9?true:false;
+    $('m4kProg').textContent=B.length>2
+      ? fmt(B[0].L,2)+' : '+fmt(B[1].L,2)+' : '+fmt(B[2].L,2)+' м' : '—';
+    $('m4fx').innerHTML=
+      '<i>τ</i> = 2<i>kv</i>/<i>g</i> = 2·'+fmt(this.k,2)+'·'+fmt(v,2)+' / 9,8 = <b>'+fmt(tau,3)+' с</b><br>'+
+      '<i>L</i> = 4<i>v</i>²sin α/<i>g</i> = 8<i>h</i> sin α = 8·'+fmt(this.h,2)+'·'+
+      fmt(Math.sin(a),3)+' = <b>'+fmt(8*this.h*Math.sin(a),3)+' м</b>';
+    $('m4fx2').innerHTML=Math.abs(this.k-1)<1e-9
+      ? 'при пружному ударі <i>τ</i> = 2<i>v</i>/<i>g</i> — кут нахилу в цю формулу не входить'
+      : 'при <i>k</i> &lt; 1 нормальна швидкість спадає як <i>k</i><sup>n</sup>, і прогресія вже не арифметична';
+  },
+  charts(){
+    const B=this.bounces(), L1=B[0].L;
+    const bl=cvx('m4cl');
+    if(bl){
+      const ts=[],ys=[],yn=[];
+      for(const q of B){ts.push(q.n); ys.push(q.L); yn.push(q.n*L1);}
+      const hi=Math.max(...ys,...yn)*1.15;
+      const r=drawChart(bl,{tMax:5,yMin:0,yMax:hi,yLab:'м',xLab:'номер удару',xStep:1,
+        yDec:1,hover:this.hl.x,
+        series:[{ts,ys,color:CLR.k2,label:'Lₙ'},
+                {ts,ys:yn,color:CLR.k1,label:'n·L₁',dash:[5,4]}]});
+      showTip(this.tipl,r,'м',this.hl,[['Lₙ',CLR.k2],['n·L₁',CLR.k1]],2);
+    }
+    const bn=cvx('m4cn');
+    if(bn){
+      const T=this.T(), N=80, ts=[],ys=[];
+      for(let i=0;i<=N;i++){const tt=T*i/N; ts.push(tt); ys.push(this.st(tt).eta);}
+      const r=drawChart(bn,{tMax:T,yMin:0,yMax:this.HMAX*1.12,yLab:'м',xDec:2,yDec:1,
+        hover:this.hn.x,
+        series:[{ts,ys,color:CLR.k3,label:'η'}]});
+      showTip(this.tipn,r,'м',this.hn,[['від дошки',CLR.k3]],3);
+    }
+  }
+};
+
+/* ===================== завантаження ===================== */
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4};
+let ACT='m1';
+function activate(id){
+  if(!MODULES[id]) return;
+  ACT=id;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.m===id));
+  document.querySelectorAll('.module').forEach(s=>s.classList.toggle('active',s.id===id));
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) activate(b.dataset.m);
+});
+for(const m of Object.values(MODULES)) m.init();
+(function(){
+  const hs=location.hash.replace('#','');
+  if(MODULES[hs]) activate(hs);
+})();
+let LAST=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
+  MODULES[ACT].tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
