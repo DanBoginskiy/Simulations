@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,8 +101,8 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:580px}
-#m2scene{width:100%; height:520px}
+#m1scene{width:100%; height:clamp(510px,64.4vh,1015px)}
+#m2scene{width:100%; height:clamp(458px,57.8vh,910px)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
@@ -111,7 +111,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -136,10 +136,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m1ser">
             <button data-v="all" class="active" style="--c:var(--ink)">усі серії</button>
             <button data-v="1" style="--c:var(--k3)">Лаймана</button>
@@ -210,10 +206,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m2fr">
             <button data-v="lab" class="active" style="--c:var(--k1)">СВ камери</button>
             <button data-v="cm" style="--c:var(--k2)">СВ центра мас</button>
@@ -767,7 +759,7 @@ const bandOf=l=>l<380?'ультрафіолет':(l>780?'інфрачервон�
 
 /* ===================== МОДУЛЬ 1 · спектр водню ===================== */
 const M1={
-  mode:'task', n:5, ser:'all', showAns:false,
+  mode:'free', n:5, ser:'all', showAns:true,
   NMAX:8, E1:-13.605693,
   LMIN:90, LMAX:4500,                 /* межі спектральної шкали, нм */
   hn:{x:null}, he:{x:null}, tipn:null, tipe:null,
@@ -790,7 +782,6 @@ const M1={
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     seg('m1ser',v=>{this.ser=v;});
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1021,32 +1012,57 @@ function segSet(id,v){
 
 /* ===================== МОДУЛЬ 2 · ядерна реакція ===================== */
 const M2={
-  mode:'task', fr:'lab', Ta:4.0, Tp:2.09, th:60, showAns:false, playing:true, t:0,
-  CYCLE:2.8,
-  mA:4.001506, mN:14.003074, mO:16.999132, mP:1.007276,
+  mode:'free', fr:'lab', Ta:4.0, thcm:68.25, showAns:true, playing:true, t:0,
+  CYCLE:4.2,
+  /* Маси — усі АТОМНІ, узгоджено. Раніше для гелію й водню стояли маси ЯДРА
+     (4.001506 і 1.007276), а для азоту й кисню — атомні: ліворуч 7 електронів,
+     праворуч 8. Зайвий електрон давав Q = −1.703 МеВ замість довідкових
+     −1.19 МеВ, тобто помилку рівно в масу електрона. */
+  mA:4.002603, mN:14.003074, mO:16.999132, mP:1.007825,
   ha:{x:null}, he:{x:null}, tipa:null, tipe:null,
-  GG:[['Ta','енергія α, МеВ',1,10,0.1,CLR.k1,null,'m2vta',1,'МеВ'],
-      ['Tp','енергія p, МеВ',0.5,5,0.01,CLR.ink,null,'m2vtp',2,'МеВ'],
-      ['th','кут протона θ',10,170,1,CLR.k2,null,'m2vth',0,'°']],
+  /* Кути й енергії продуктів більше не задаються: вони наслідок. Вільних
+     параметрів рівно два — енергія пучка й кут розсіяння в СЦМ (він задається
+     ядерною взаємодією, а не спостерігачем). Усе інше випливає із законів
+     збереження, тож суперечливий набір задати неможливо. */
+  GG:[['Ta','енергія α, МеВ',1.6,10,0.1,CLR.k1,null,'m2vta',1,'МеВ'],
+      ['thcm','кут розсіяння в СЦМ',0,180,1,CLR.k2,null,'m2vth',0,'°']],
+  M(m){return m*UMEV;},
   p(m,T){return Math.sqrt(2*m*UMEV*T);},               /* МеВ/c */
   pa(){return this.p(this.mA,this.Ta);},
-  pp(){return this.p(this.mP,this.Tp);},
-  px(){return this.pa()-this.pp()*Math.cos(this.th*DEG);},
-  py(){return -this.pp()*Math.sin(this.th*DEG);},
-  pO(){return Math.hypot(this.px(),this.py());},
-  phi(){return Math.atan2(-this.py(),this.px())/DEG;},
-  TO(){const p=this.pO(); return p*p/(2*this.mO*UMEV);},
-  vO(){return this.pO()/(this.mO*UMEV)*CLIGHT;},
   Q(){return (this.mN+this.mA-this.mO-this.mP)*UMEV;},
+  Ethr(){return -this.Q()*(this.mA+this.mN)/this.mN;}, /* поріг реакції */
   bcm(){return this.pa()/((this.mA+this.mN)*UMEV);},   /* β центра мас */
   Vcm(){return this.bcm()*CLIGHT;},
-  setTask(){this.Ta=4.0; this.Tp=2.09; this.th=60; this.t=0;},
+  Ecm(){return this.Ta*this.mN/(this.mA+this.mN)+this.Q();},  /* енергія в СЦМ після */
+  open(){return this.Ecm()>0;},
+  pStar(){const mu=this.M(this.mO)*this.M(this.mP)/(this.M(this.mO)+this.M(this.mP));
+    return Math.sqrt(2*mu*Math.max(0,this.Ecm()));},
+  /* повний кінематичний розв'язок: усе з двох вільних параметрів */
+  sol(){
+    const V=this.pa()/(this.M(this.mO)+this.M(this.mP));
+    const ps=this.pStar(), a=this.thcm*DEG;
+    const ppx=ps*Math.cos(a)+this.M(this.mP)*V, ppy=ps*Math.sin(a);
+    const pox=-ps*Math.cos(a)+this.M(this.mO)*V, poy=-ps*Math.sin(a);
+    return {ppx,ppy,pox,poy,V,ps,
+      Tp:(ppx*ppx+ppy*ppy)/(2*this.M(this.mP)),
+      TO:(pox*pox+poy*poy)/(2*this.M(this.mO)),
+      th:Math.atan2(ppy,ppx)/DEG, phi:Math.atan2(-poy,pox)/DEG};
+  },
+  Tp(){return this.sol().Tp;},
+  TO(){return this.sol().TO;},
+  th(){return this.sol().th;},
+  phi(){return this.sol().phi;},
+  pp(){const s=this.sol(); return Math.hypot(s.ppx,s.ppy);},
+  pO(){const s=this.sol(); return Math.hypot(s.pox,s.poy);},
+  px(){return this.sol().pox;},
+  py(){return this.sol().poy;},
+  vO(){return this.pO()/(this.mO*UMEV)*CLIGHT;},
+  setTask(){this.Ta=4.0; this.thcm=68.25; this.t=0;},
   setMode(m){this.mode=m; if(m==='task') this.setTask(); this.t=0;
     this.showAns=m!=='task'; this.syncAns();},
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     seg('m2fr',v=>{this.fr=v;});                       /* зміна СВ час не скидає */
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1060,7 +1076,7 @@ const M2={
     this.setTask(); this.syncAns();
   },
   geo(b){return frozen(this,b,bb=>{
-    const C=gcolOf(bb,3), H=C.gtop-46;
+    const C=gcolOf(bb,2), H=C.gtop-46;
     const R=Math.min(bb.w*0.33,(H-80)*0.50);
     return {C,H, cx:bb.w*0.40, cy:46+H*0.56, R,
       bx:16, by:60, bw:bb.w-32, bh:H-58};
@@ -1068,17 +1084,8 @@ const M2={
   grips(){
     if(this.mode!=='free') return [];
     const b=cvx('m2scene'); if(!b) return [];
-    const Q=this.geo(b), out=gaugeGrips(gcolOf(b,3),this.GG,this);
-    if(this.fr==='lab'){
-      const L=Q.R*0.95, a=this.th*DEG;
-      out.push({id:'th', x:Q.cx+Math.cos(a)*L, y:Q.cy-Math.sin(a)*L, r:11, color:CLR.k2,
-        hint:'напрям протона: кут θ',
-        move:(px,py)=>{
-          const ang=Math.atan2(Q.cy-py,px-Q.cx)/DEG;
-          this.th=clamp(snap(ang,1),10,170);
-        }});
-    }
-    return out;
+    /* ручки на напрямі протона більше немає: кут вильоту — результат */
+    return gaugeGrips(gcolOf(b,2),this.GG,this);
   },
   tick(dt){
     if(this.playing) this.t+=dt;
@@ -1088,7 +1095,7 @@ const M2={
   render(){this.scene(); this.table(); this.charts(); this.gdraw();},
   gdraw(){
     const b=cvx('m2scene'); if(!b) return;
-    const C=gcolOf(b,3);
+    const C=gcolOf(b,2);
     if(this.mode==='free'){
       gaugeCol(b.g,C,this.GG,this);
       for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
@@ -1139,11 +1146,15 @@ const M2={
     txt(g,lab?'спостерігач нерухомий, ядро Нітрогену до удару стоїть на місці'
              :'спостерігач летить із центром мас: сумарний імпульс тут нульовий',
       14,40,{color:CLR.sec,size:10.5});
-    const p=this.t/this.CYCLE, HIT=0.22;
-    /* треки виростають швидко й далі стоять: на фотографії вони не зникають */
-    const inF=Math.min(1,p/HIT), outF=Math.max(0,Math.min(1,(p-HIT)/0.14));
+    /* Перебіг реакції трьома фазами: підліт α · складене ядро ¹⁸F* живе
+       коротку мить і встигає пролетіти з швидкістю центра мас · розпад на
+       ¹⁷O і p. Раніше показувалися тільки треки до і після, самої реакції
+       в кадрі не було. */
+    const p=this.t/this.CYCLE, HIT=0.30, BRK=0.46;
+    const inF=Math.min(1,p/HIT), outF=Math.max(0,Math.min(1,(p-BRK)/0.16));
+    const cmpF=p>=HIT&&p<BRK?(p-HIT)/(BRK-HIT):(p<HIT?0:1);
     const cx=Q.cx, cy=Q.cy, R=Q.R;
-    const th=this.th*DEG, ph=this.phi()*DEG;
+    const th=this.th()*DEG, ph=this.phi()*DEG;
     /* довжина трека: більша енергія — довший слід, більший заряд —
        коротший й товстий, як на фотографіях Блеккета */
     const rng=(T,z)=>R*0.95*Math.min(1.2,Math.sqrt(T/4)*(3.2/Math.sqrt(z)));
@@ -1156,11 +1167,25 @@ const M2={
         dot(g,cx,cy,7,CLR.k3,'#fff');
         txt(g,'₇¹⁴N у спокої',cx+12,cy+22,{color:CLR.k3,size:10.5,bold:true});
       }
-      if(p>=HIT){
-        this.trk(g,cx,cy,th,rng(this.Tp,1),3,CLR.ink,outF);
-        this.trk(g,cx,cy,-ph,rng(this.TO(),8),8,CLR.k3,outF);
-        const ep=this.trk(g,cx,cy,th,rng(this.Tp,1),3,CLR.ink,outF);
-        txt(g,'p · ₁¹H · '+fmt(this.Tp,2)+' МеВ',ep.x+8,ep.y-6,
+      /* складене ядро: летить уперед зі швидкістю центра мас і «дихає» */
+      if(p>=HIT&&p<BRK){
+        const cxd=cx+cmpF*R*0.14;
+        const puls=1+0.16*Math.sin(cmpF*Math.PI*6);
+        g.globalAlpha=0.9;
+        dot(g,cxd,cy,11*puls,'rgba(235,104,52,.35)',CLR.k2);
+        g.globalAlpha=1;
+        dot(g,cxd,cy,5,CLR.k2);
+        txt(g,'складене ядро ₉¹⁸F*',cxd+16,cy-16,{color:'#b8431a',size:10.5,bold:true});
+        txt(g,'збуджене: Tα·m_N/(m_α+m_N) + Q = '+fmt(this.Ecm(),2)+' МеВ у СЦМ',
+          cxd+16,cy-2,{color:CLR.mut,size:9.5});
+        txt(g,'летить уперед з V_цм = '+sci(this.Vcm(),2)+' м/с',
+          cxd+16,cy+12,{color:CLR.sec,size:9.5});
+      }
+      if(p>=BRK){
+        this.trk(g,cx+R*0.14,cy,th,rng(this.Tp(),1),3,CLR.ink,outF);
+        this.trk(g,cx+R*0.14,cy,-ph,rng(this.TO(),8),8,CLR.k3,outF);
+        const ep=this.trk(g,cx+R*0.14,cy,th,rng(this.Tp(),1),3,CLR.ink,outF);
+        txt(g,'p · ₁¹H · '+fmt(this.Tp(),2)+' МеВ',ep.x+8,ep.y-6,
           {color:CLR.ink,size:10.5,bold:true});
         const LO=rng(this.TO(),8);
         const eo={x:cx+Math.cos(-ph)*LO, y:cy-Math.sin(-ph)*LO};
@@ -1168,7 +1193,7 @@ const M2={
           {color:CLR.k3,size:10.5,bold:true});
         /* кути — те, що вимірювали прямо на фотографії */
         arc(g,cx,cy,40,-th,0,CLR.k2,1.5);
-        txt(g,'θ = '+fmt(this.th,0)+'°',cx+Math.cos(th/2)*52,cy-Math.sin(th/2)*52,
+        txt(g,'θ = '+fmt(this.th(),0)+'°',cx+Math.cos(th/2)*52,cy-Math.sin(th/2)*52,
           {color:CLR.k2,size:11,bold:true});
         arc(g,cx,cy,74,0,ph,CLR.k3,1.5);
         txt(g,'φ = '+fmt(this.phi(),1)+'°',cx+Math.cos(ph/2)*86,cy+Math.sin(ph/2)*86+4,
@@ -1212,24 +1237,28 @@ const M2={
       txt(g,'центр мас летить у камері зі швидкістю '+sci(this.Vcm(),3)+' м/с',
         Q.bx+10,cy+Q.bh*0.38,{color:CLR.sec,size:10.5});
     }
-    /* реакція текстом */
-    pill(g,'₇¹⁴N + ₂⁴He → ₈¹⁷O + ₁¹H',cx,Q.by+Q.bh-16,{color:CLR.ink,size:12,bold:true});
+    /* реакція текстом і стан порога */
+    pill(g,'₇¹⁴N + ₂⁴He → ₈¹⁷O + ₁¹H · Q = '+fmt(this.Q(),2)+' МеВ',
+      cx,Q.by+Q.bh-16,{color:CLR.ink,size:12,bold:true});
+    if(!this.open())
+      pill(g,'нижче порога '+fmt(this.Ethr(),2)+' МеВ — реакція не йде',
+        cx,Q.by+Q.bh-40,{color:CLR.k2,size:11,bold:true});
     for(const hh of this.grips()) if(hh.id==='th') drawGrip(g,hh,this);
   },
   table(){
     const px=this.px(), py=this.py();
-    $('m2t').textContent='Tα = '+fmt(this.Ta,1)+' МеВ · θ = '+fmt(this.th,0)+'°';
+    $('m2t').textContent='Tα = '+fmt(this.Ta,1)+' МеВ · θ = '+fmt(this.th(),0)+'°';
     $('m2vta').textContent=fmt(this.Ta,1)+' МеВ';
-    $('m2vtp').textContent=fmt(this.Tp,2)+' МеВ';
-    $('m2vth').textContent=fmt(this.th,0)+'°';
+    $('m2vtp').textContent=fmt(this.Tp(),2)+' МеВ';
+    $('m2vth').textContent=fmt(this.thcm,0)+'° (СЦМ) → '+fmt(this.th(),1)+'° у камері';
     $('m2rx').textContent='₈¹⁷O (Оксиген-17)';
     $('m2rv').textContent=sci(this.vO(),3)+' м/с';
     $('m2rf').textContent=fmt(this.phi(),1)+'° по інший бік від осі';
     $('m2ba').textContent='✓ 18 = 18';
     $('m2bz').textContent='✓ 9 = 9';
     $('m2bx').textContent='✓ '+fmt(this.pa(),1)+' = '+
-      fmt(this.pp()*Math.cos(this.th*DEG),1)+' + '+fmt(px,1);
-    $('m2by').textContent='✓ 0 = '+fmt(this.pp()*Math.sin(this.th*DEG),1)+' − '+
+      fmt(this.sol().ppx,1)+' + '+fmt(px,1);
+    $('m2by').textContent='✓ 0 = '+fmt(this.sol().ppy,1)+' − '+
       fmt(-py,1);
     $('m2kp').textContent=fmt(this.pO(),1)+' МеВ/c';
     $('m2kt').textContent=fmt(this.TO(),3)+' МеВ';
@@ -1259,7 +1288,7 @@ const M2={
       const r=drawChart(ba,{tMax:180,yMin:0,yMax:40,yLab:'°',xLab:'кут протона θ, °',
         xStep:30,yDec:0,hover:this.ha.x,
         series:[{ts,ys,color:CLR.k3,label:'φ'},
-                {ts:[this.th,this.th],ys:[0,40],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+                {ts:[this.th(),this.th()],ys:[0,40],color:CLR.ink,label:'зараз',dash:[4,3]}]});
       showTip(this.tipa,r,'°',this.ha,[['кут ядра',CLR.k3],['зараз',CLR.ink]],1);
     }
     const be=cvx('m2ce');
@@ -1275,7 +1304,7 @@ const M2={
       const r=drawChart(be,{tMax:180,yMin:0,yMax:top,yLab:'МеВ',xLab:'кут протона θ, °',
         xStep:30,yDec:2,hover:this.he.x,
         series:[{ts,ys,color:CLR.k2,label:'T ядра'},
-                {ts:[this.th,this.th],ys:[0,top],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+                {ts:[this.th(),this.th()],ys:[0,top],color:CLR.ink,label:'зараз',dash:[4,3]}]});
       showTip(this.tipe,r,' МеВ',this.he,[['енергія ядра',CLR.k2],['зараз',CLR.ink]],3);
     }
   }

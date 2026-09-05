@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,10 +101,10 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:480px}
-#m2scene{width:100%; height:470px}
-#m3scene{width:100%; height:500px}
-#m4scene{width:100%; height:470px}
+#m1scene{width:100%; height:clamp(422px,53.3vh,840px)}
+#m2scene{width:100%; height:clamp(414px,52.2vh,822px)}
+#m3scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m4scene{width:100%; height:clamp(414px,52.2vh,822px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -112,7 +112,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -139,10 +139,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m1case">
             <button data-v="c1" class="active" style="--c:var(--k1)">σ₁ = σ, σ₂ = 2σ</button>
             <button data-v="c2" style="--c:var(--k2)">σ₁ = σ, σ₂ = −σ</button>
@@ -212,10 +208,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -283,10 +275,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m3mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
           <span class="lbl" id="m3t"></span>
@@ -354,10 +342,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m4mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m4re" title="заново">↺</button>
           <span class="lbl" id="m4t"></span>
         </div>
@@ -884,7 +868,7 @@ const QE=1.602176634e-19, ME=9.1093837015e-31;
 
 /* ===================== МОДУЛЬ 1 · дві заряджені пластини ===================== */
 const M1={
-  mode:'task', cse:'c1', s1:1, s2:2, d:5, showAns:false,
+  mode:'free', cse:'c1', s1:1, s2:2, d:5, showAns:true,
   SMIN:-3, SMAX:3, DMIN:2, DMAX:9,      /* σ у одиницях σ = 10⁻⁸ Кл/м², d у см */
   SI:1e-8,
   he:{x:null}, hf:{x:null}, tipe:null, tipf:null,
@@ -908,7 +892,6 @@ const M1={
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;
     $('m1bcap').hidden=Math.abs(this.s1+this.s2)>1e-9;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     seg('m1case',v=>{this.cse=v; if(this.mode==='task') this.setTask();});
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1053,8 +1036,9 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · кільце із зарядом ===================== */
 const M2={
-  mode:'task', R:0.10, q:10, r:0.07, NEL:16,
-  t:0, playing:true, showAns:false,
+  mode:'free', R:0.10, q:10, r:0.07, zp:0, NEL:16,
+  NSUM:240,                            /* елементів у чисельній сумі по кільцю */
+  t:0, playing:true, showAns:true,
   RMIN:0.05, RMAX:0.16, QMIN:2, QMAX:20, RRMAX:0.36,
   he:{x:null}, hc:{x:null}, tipe:null, tipc:null,
   GG:[['Rcm','радіус R, см',5,16,0.5,CLR.k1,null,'m2vR',1,'см'],
@@ -1062,9 +1046,24 @@ const M2={
   /* смуга керує сантиметрами, фізика рахує в метрах — акцесор тримає їх узгодженими */
   get Rcm(){return this.R*100;}, set Rcm(v){this.R=v/100;},
   E(r){return KE*this.q*1e-9*r/Math.pow(this.R*this.R+r*r,1.5);},
+  /* Поле в довільній точці (x уздовж осі, y — зсув від осі). Поза віссю
+     аналітичної формули немає, тож підсумовуємо по кільцю чисельно. Складова
+     впоперек площини малюнка гаситься за симетрією — лишаються дві. */
+  Evec(x,y){
+    const R=this.R, N=this.NSUM, kq=KE*this.q*1e-9/N;
+    let ex=0, ey=0;
+    for(let i=0;i<N;i++){
+      const a=2*Math.PI*i/N, sy=y+R*Math.sin(a);
+      const d2=x*x+sy*sy+R*R*Math.cos(a)*Math.cos(a);
+      const d3=Math.pow(Math.max(1e-12,d2),1.5);
+      ex+=kq*x/d3; ey+=kq*sy/d3;
+    }
+    return {ex,ey,mag:Math.hypot(ex,ey)};
+  },
+  onAxis(){return Math.abs(this.zp)<this.R*0.02;},
   rMax(){return this.R/Math.SQRT2;},
   Emax(){return this.E(this.rMax());},
-  setTask(){this.R=0.10; this.q=10; this.r=0.07;},
+  setTask(){this.R=0.10; this.q=10; this.r=0.07; this.zp=0;},
   reset(){this.t=0; this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
@@ -1072,7 +1071,6 @@ const M2={
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
@@ -1096,9 +1094,15 @@ const M2={
     const Q=this.geo(b);
     return [
       /* пробний заряд возять уздовж осі кільця */
-      {id:'r', x:Q.ox+this.r*Q.sc, y:Q.oy, r:11, bare:true, color:CLR.ink,
-       hint:'де стоїть пробний заряд',
-       move:px=>{this.r=clamp(snap((px-Q.ox)/Q.sc,0.005),0,this.RRMAX);}}
+      /* точку возять по площині: уздовж осі і впоперек неї */
+      {id:'r', x:Q.ox+this.r*Q.sc, y:Q.oy-this.zp*Q.sc, r:11, bare:true, color:CLR.ink,
+       hint:'точку можна вести і вздовж осі, і вбік від неї',
+       move:(px,py)=>{
+         this.r=clamp(snap((px-Q.ox)/Q.sc,0.005),0,this.RRMAX);
+         const lim=this.RMAX*1.5;
+         this.zp=clamp(snap((Q.oy-py)/Q.sc,0.005),-lim,lim);
+         if(Math.abs(this.zp)<this.R*0.02) this.zp=0;   /* вісь трохи «липка» */
+       }}
     ].concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
   tick(dt){if(this._grab==null&&this.playing) this.t+=dt; this.render();},
@@ -1133,24 +1137,35 @@ const M2={
     g.strokeStyle=CLR.k1; g.lineWidth=2.5;
     g.beginPath(); g.ellipse(ox,oy,R*sc*ky,R*sc,0,0,7); g.stroke();
     /* елементи кільця та їхні внески в точку спостереження */
-    const P={x:ox+r*sc,y:oy};
-    const Etot=this.E(r), kE=Math.min(120,r*sc+60)/Math.max(1e-9,this.Emax()*1.6);
+    const zp=this.zp, P={x:ox+r*sc,y:oy-zp*sc};
+    const Ev=this.Evec(r,zp);
+    const kE=Math.min(120,r*sc+60)/Math.max(1e-9,this.Emax()*1.6);
     for(let i=0;i<this.NEL;i++){
       const a=2*Math.PI*i/this.NEL+this.t*0.25;
       const ex=ox+R*sc*ky*Math.cos(a), ey=oy+R*sc*Math.sin(a);
       dot(g,ex,ey,3,CLR.k1);
-      /* внесок одного елемента спрямований від нього до точки */
+      /* внесок одного елемента: напрям — від нього до точки, довжина — за
+         справжньою тривимірною відстанню, а не за осьовою формулою */
       const dx=P.x-ex, dy=P.y-ey, L=Math.hypot(dx,dy)||1;
-      const dE=KE*(this.q*1e-9/this.NEL)/Math.max(1e-6,(R*R+r*r));
+      const sy=zp+R*Math.sin(a);
+      const d2=r*r+sy*sy+R*R*Math.cos(a)*Math.cos(a);
+      const dE=KE*(this.q*1e-9/this.NEL)/Math.max(1e-9,d2);
       const len=dE*kE*this.NEL*0.5;
       g.globalAlpha=0.5;
       arrow(g,P.x,P.y,P.x+dx/L*len,P.y+dy/L*len,CLR.k3,1.4);
       g.globalAlpha=1;
     }
-    /* результуючий вектор — уздовж осі */
-    arrow(g,P.x,P.y,P.x+Etot*kE,P.y,CLR.ink,3);
+    /* результуючий вектор: на осі він уздовж неї, поза віссю — уже ні */
+    arrow(g,P.x,P.y,P.x+Ev.ex*kE,P.y-Ev.ey*kE,CLR.ink,3);
     dot(g,P.x,P.y,6,CLR.ink,'#fff');
-    pill(g,fmt(Etot/1000,2)+' кВ/м',P.x+Etot*kE+52,oy-16,{color:CLR.ink,size:11.5,bold:true});
+    pill(g,fmt(Ev.mag/1000,2)+' кВ/м',P.x+Ev.ex*kE+52,P.y-Ev.ey*kE-16,
+      {color:CLR.ink,size:11.5,bold:true});
+    if(!this.onAxis()){
+      g.strokeStyle=CLR.k2; g.lineWidth=1.2; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(P.x,oy); g.lineTo(P.x,P.y); g.stroke(); g.setLineDash([]);
+      pill(g,'y = '+fmt(zp*100,1)+' см',P.x+40,(oy+P.y)/2+4,
+        {color:'#b8431a',size:10.5,bold:true});
+    }
     /* позначка максимуму на осі */
     const xm=ox+this.rMax()*sc;
     g.strokeStyle=CLR.k3; g.lineWidth=1.5; g.setLineDash([5,4]);
@@ -1164,16 +1179,22 @@ const M2={
     txt(g,'R = '+fmt(this.Rcm,1)+' см',ox-R*sc*ky-10,oy-R*sc-8,
       {color:'#1c5cab',size:11,bold:true,align:'right'});
     const near=Math.abs(r-this.rMax())<this.R*0.06;
-    txt(g,r<1e-6?'у центрі кільця поля немає':(near?'тут поле найбільше':'точка на осі кільця'),
-      12,20,{color:near?CLR.k3:CLR.ink,size:12.5,bold:true});
-    txt(g,'поперечні складові внесків гасяться попарно — лишається тільки осьова',
+    const ax=this.onAxis();
+    txt(g,!ax?'точка поза віссю — поле вже не вздовж осі'
+      :(r<1e-6?'у центрі кільця поля немає':(near?'тут поле найбільше':'точка на осі кільця')),
+      12,20,{color:!ax?CLR.k2:(near?CLR.k3:CLR.ink),size:12.5,bold:true});
+    txt(g,ax?'поперечні складові внесків гасяться попарно — лишається тільки осьова'
+      :'симетрія порушена: поперечні складові вже не гасяться, формула для осі не працює',
       12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='r') drawGrip(g,hh,this);
   },
   table(){
-    const r=this.r, E=this.E(r), L=Math.sqrt(this.R*this.R+r*r);
-    $('m2t').textContent='r = '+fmt(r*100,1)+' см';
-    $('m2vr').textContent=fmt(r*100,1)+' см';
+    const r=this.r, L=Math.sqrt(this.R*this.R+r*r);
+    const Ev=this.Evec(r,this.zp), E=Ev.mag;
+    $('m2t').textContent=this.onAxis()?'r = '+fmt(r*100,1)+' см'
+      :'x = '+fmt(r*100,1)+' см, y = '+fmt(this.zp*100,1)+' см';
+    $('m2vr').textContent=this.onAxis()?fmt(r*100,1)+' см'
+      :fmt(r*100,1)+' см (зсув '+fmt(this.zp*100,1)+' см)';
     $('m2rRm').textContent=fmt(this.rMax()*100,2)+' см = R/√2';
     $('m2rEm').textContent=fmt(this.Emax()/1000,2)+' кВ/м';
     $('m2kL').textContent=fmt(L*100,2)+' см';
@@ -1223,8 +1244,8 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · електрон у смузі поля ===================== */
 const M3={
-  mode:'task', U0:2000, Ecm:100, al:30, d:0.10,
-  t:0, playing:true, waitT:0, showAns:false,
+  mode:'free', U0:2000, Ecm:100, al:30, d:0.10,
+  t:0, playing:true, waitT:0, showAns:true,
   UMIN:1000, UMAX:3000, EMIN:40, EMAX:250, ALMIN:0, ALMAX:45, DMIN:0.05, DMAX:0.15,
   hb:{x:null}, hv:{x:null}, tipb:null, tipv:null,
   GG:[['U0','U₀, В',500,4000,50,CLR.k1,null,'m3vu',0,'В'],
@@ -1268,7 +1289,6 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3mode',v=>this.setMode(v));
     grip('m3scene',this,()=>this.grips());
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3play').onclick=()=>{
@@ -1447,7 +1467,7 @@ const M3={
 
 /* ===================== МОДУЛЬ 4 · корисна потужність і ККД ===================== */
 const M4={
-  mode:'task', emf:10, r:2, R:2, showAns:false,
+  mode:'free', emf:10, r:2, R:2, showAns:true,
   EMFMIN:2, EMFMAX:24, RMIN:0.5, RMAX:8, RRMAX:40,
   hp:{x:null}, he:{x:null}, tipp:null, tipe:null,
   GG:[['emf','ЕРС ℰ, В',2,24,0.5,CLR.k1,null,'m4ve',1,'В'],
@@ -1463,7 +1483,6 @@ const M4={
   syncAns(){const task=this.mode==='task';
     $('m4ans').hidden=!task||this.showAns; $('m4ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m4mode',v=>this.setMode(v));
     grip('m4scene',this,()=>this.grips());
     $('m4ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m4re').onclick=()=>this.setTask();
@@ -1488,7 +1507,10 @@ const M4={
     const x0=Q.cx-Q.cw/2+30, ww=Q.cw-60;
     const f=Math.log(1+this.R)/Math.log(1+this.RRMAX);
     return [
-      {id:'R', x:x0+f*ww, y:Q.cy-Q.ch/2, r:12, bare:true, color:CLR.k2, hint:'опір реостата',
+      /* Движок реостата — з видимою ручкою, а не невидимою зоною на дроті */
+      {id:'R', x:x0+f*ww, y:Q.cy-Q.ch/2-26, r:11, color:CLR.k2,
+       hint:'опір реостата: тягніть движок',
+       hit:(px,py)=>Math.abs(px-(x0+f*ww))<=16&&py>=Q.cy-Q.ch/2-40&&py<=Q.cy-Q.ch/2+14,
        move:px=>{
          const ff=clamp((px-x0)/ww,0,1);
          this.R=clamp(snap(Math.exp(ff*Math.log(1+this.RRMAX))-1,0.1),0,this.RRMAX);}}
@@ -1543,10 +1565,38 @@ const M4={
       g.strokeStyle='rgba(235,104,52,.4)'; g.lineWidth=1.4;
       g.beginPath(); g.moveTo(zx,yT-8); g.lineTo(zx,yT+8); g.stroke();
     }
+    /* Доріжка движка з підписаними кінцями й позначкою R = r, де потужність
+       максимальна. Шкала логарифмічна: цікава ділянка біля r — це кілька омів
+       із сорока, на лінійній доріжці вона була б завширшки в кілька пікселів. */
     const f=Math.log(1+this.R)/Math.log(1+this.RRMAX);
-    g.strokeStyle=CLR.k2; g.lineWidth=2.5;
-    g.beginPath(); g.moveTo(rx0+f*rw,yT-11); g.lineTo(rx0+f*rw,yT-26); g.stroke();
-    txt(g,'R = '+fmt(this.R,2)+' Ом',Q.cx,yT-34,{color:'#b8431a',size:12,bold:true,align:'center'});
+    const kx=rx0+f*rw, ty=yT-26;
+    g.strokeStyle=CLR.grid; g.lineWidth=3; g.lineCap='round';
+    g.beginPath(); g.moveTo(rx0,ty); g.lineTo(rx0+rw,ty); g.stroke();
+    g.strokeStyle=CLR.k2; g.lineWidth=3;
+    g.beginPath(); g.moveTo(rx0,ty); g.lineTo(kx,ty); g.stroke(); g.lineCap='butt';
+    for(const v of [0.1,1,10,this.RRMAX]){
+      const vf=Math.log(1+v)/Math.log(1+this.RRMAX);
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(rx0+vf*rw,ty+5); g.lineTo(rx0+vf*rw,ty+9); g.stroke();
+      txt(g,fmt(v,v<1?1:0),rx0+vf*rw,ty+20,{color:CLR.mut,size:9,align:'center'});
+    }
+    /* R = r — точка узгодження, у ній корисна потужність найбільша */
+    const mf=Math.log(1+this.r)/Math.log(1+this.RRMAX);
+    g.strokeStyle=CLR.k3; g.lineWidth=1.6; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(rx0+mf*rw,ty-11); g.lineTo(rx0+mf*rw,ty+11); g.stroke();
+    g.setLineDash([]);
+    txt(g,'R = r',rx0+mf*rw,ty-15,{color:'#0d7a55',size:9.5,bold:true,align:'center'});
+    /* сам движок: видима ручка плюс тяга до тіла реостата */
+    g.strokeStyle=CLR.k2; g.lineWidth=2;
+    g.beginPath(); g.moveTo(kx,ty); g.lineTo(kx,yT-11); g.stroke();
+    g.fillStyle='#fff'; g.strokeStyle=CLR.k2; g.lineWidth=2.4;
+    g.beginPath(); g.roundRect(kx-9,ty-9,18,18,4); g.fill(); g.stroke();
+    g.strokeStyle=CLR.k2; g.lineWidth=1.4;
+    g.beginPath();
+    g.moveTo(kx-3.5,ty-4); g.lineTo(kx-3.5,ty+4);
+    g.moveTo(kx+3.5,ty-4); g.lineTo(kx+3.5,ty+4); g.stroke();
+    txt(g,'R = '+fmt(this.R,2)+' Ом',Q.cx,ty-30,{color:'#b8431a',size:12,bold:true,align:'center'});
+    txt(g,'реостат',rx0-6,ty+4,{color:CLR.mut,size:10,align:'right'});
     /* струм по колу — крапки, розмір яких показує силу струму */
     const kI=Math.min(1,I/(this.EMFMAX/this.RMIN));
     for(let i=0;i<12;i++){

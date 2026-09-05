@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,9 +101,9 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:500px}
-#m2scene{width:100%; height:520px}
-#m3scene{width:100%; height:500px}
+#m1scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m2scene{width:100%; height:clamp(458px,57.8vh,910px)}
+#m3scene{width:100%; height:clamp(440px,55.6vh,875px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -111,7 +111,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -137,10 +137,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m1kind">
             <button data-v="conv" class="active" style="--c:var(--k1)">опукле дзеркало</button>
             <button data-v="conc" style="--c:var(--k2)">увігнуте дзеркало</button>
@@ -210,10 +206,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m2light">
             <button data-v="mono" class="active" style="--c:var(--k1)">монохроматичне</button>
             <button data-v="white" style="--c:var(--k2)">біле світло</button>
@@ -283,10 +275,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m3mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m3re" title="заново">↺</button>
           <span class="lbl" id="m3t"></span>
         </div>
@@ -827,8 +815,8 @@ function wlName(l){
 
 /* ===================== МОДУЛЬ 1 · мураха біля дзеркала ===================== */
 const M1={
-  mode:'task', kind:'conv', F0:0.20, v:5, d:0.30,
-  t:0, playing:true, showAns:false,
+  mode:'free', kind:'conv', F0:0.20, v:5, d:0.30,
+  t:0, playing:true, showAns:true,
   FMIN:0.10, FMAX:0.35, VMIN:1, VMAX:12, DMIN:0.06, DMAX:0.80,
   hv:{x:null}, hf:{x:null}, tipv:null, tipf:null,
   GG:[['F0cm','фокус |F|, см',10,35,1,CLR.k1,null,'m1vf',0,'см'],
@@ -848,7 +836,6 @@ const M1={
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     seg('m1kind',v=>{this.kind=v; this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1019,7 +1006,7 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · дослід Юнга ===================== */
 const M2={
-  mode:'task', light:'mono', lam:620, d:0.4, L:0.5, showAns:false,
+  mode:'free', light:'mono', lam:620, d:0.4, L:0.5, showAns:true,
   LAMMIN:400, LAMMAX:700, DMIN:0.15, DMAX:1.2, LMIN:0.3, LMAX:1.2,
   hi:{x:null}, hd:{x:null}, tipi:null, tipd:null,
   GG:[['lam','довжина хвилі, нм',400,700,5,CLR.k2,null,'m2vl',0,'нм'],
@@ -1033,7 +1020,6 @@ const M2={
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     seg('m2light',v=>{this.light=v;});
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1188,7 +1174,7 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · мильна плівка ===================== */
 const M3={
-  mode:'task', n:1.33, al:30, d:0.6491, showAns:false,
+  mode:'free', n:1.33, al:30, d:0.6491, showAns:true,
   NMIN:1.2, NMAX:1.6, ALMIN:0, ALMAX:70, DMIN:0.02, DMAX:1.6,
   hr:{x:null}, hd:{x:null}, tipr:null, tipd:null,
   GG:[['n','показник n',1.2,1.6,0.01,CLR.k1,null,'m3vn',2,''],
@@ -1222,7 +1208,6 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3mode',v=>this.setMode(v));
     grip('m3scene',this,()=>this.grips());
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3re').onclick=()=>this.setTask();

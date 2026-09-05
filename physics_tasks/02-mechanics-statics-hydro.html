@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,8 +101,8 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:470px}
-#m2scene{width:100%; height:470px}
+#m1scene{width:100%; height:clamp(414px,52.2vh,822px)}
+#m2scene{width:100%; height:clamp(470px,60vh,960px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -110,7 +110,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -135,10 +135,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m1body">
             <button data-v="cyl" class="active" style="--c:var(--k1)">циліндр</button>
             <button data-v="cone" style="--c:var(--k2)">конус</button>
@@ -209,10 +205,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m2play" title="наливати / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="злити воду">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -737,9 +729,17 @@ const SHAPES={
   box :{n:'брусок',  cg:0.5,  col:'k3', tc:'#0d7a55'}
 };
 const M1={
-  mode:'task', body:'cyl', k:2, mu:0.6, phi:0,
-  playing:true, waitT:0, showAns:false, SPD:9,
+  mode:'free', body:'cyl', k:2, mu:0.6, phi:0,
+  /* після критичного кута тіло не завмирає, а справді падає або їде:
+     rot — поворот навколо нижнього ребра, slid — зсув уздовж дошки */
+  rot:0, rotV:0, slid:0, slidV:0, phase:'tilt',
+  playing:true, waitT:0, showAns:true, SPD:9,
   KMIN:0.6, KMAX:3,
+  /* Тертя спокою й тертя ковзання — різні. Зрив стається саме тоді, коли
+     tg φ = μ_сп, і якби ковзання рахувалося з тим самим μ, прискорення в
+     цю мить вийшло б рівно нулем: тіло зривалося б і завмирало. Ковзне
+     тертя менше за тертя спокою — беремо типові 0.8 від нього. */
+  MUK:0.8,
   hk:{x:null}, hm:{x:null}, tipk:null, tipm:null,
   MU:[['лід',0.05],['сталь',0.2],['дерево',0.45],['гума',0.9]],
   TASK:{k:2, mu:0.9},
@@ -749,19 +749,19 @@ const M1={
   slideAng(){return Math.atan(this.mu)/DEG;},
   critAng(){return Math.min(this.tipAng(this.k,this.cg()),this.slideAng());},
   setTask(){this.k=this.TASK.k; this.mu=this.TASK.mu;},
-  reset(){this.phi=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.phi=0; this.waitT=0; this.rot=0; this.rotV=0; this.slid=0; this.slidV=0;
+    this.phase='tilt'; this.playing=true; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     seg('m1body',v=>{this.body=v; this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m1play').onclick=()=>{
-      if(!this.playing&&this.phi>=this.critAng()) this.reset();
+      if(!this.playing&&this.phase==='done') this.reset();
       else {this.playing=!this.playing; this.updBtn();}};
     $('m1re').onclick=()=>this.reset();
     this.tipk=makeTip('m1ckw'); this.tipm=makeTip('m1cmw');
@@ -792,12 +792,39 @@ const M1={
     ].concat(shelfGrips(Q.mu,this.MU,v=>{this.mu=v; this.reset();}));
   },
   tick(dt){
-    const cr=this.critAng();
+    const cr=this.critAng(), a=this.phi*DEG;
+    const stop=()=>{this.phase='done'; this.playing=false; this.waitT=0; this.updBtn();};
     if(this._grab==null){
       if(this.playing){
-        this.phi=Math.min(cr,this.phi+dt*this.SPD);
-        if(this.phi>=cr){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.phi>=cr){this.waitT+=dt; if(this.waitT>2.0) this.reset();}
+        if(this.phase==='tilt'){
+          this.phi=Math.min(cr,this.phi+dt*this.SPD);
+          /* дійшли до критичного кута — далі вирішує те, що настало раніше */
+          if(this.phi>=cr-1e-9){
+            this.phase=this.tipAng(this.k,this.cg())<=this.slideAng()?'tip':'slide';
+            this.rotV=0.25; this.slidV=0;
+          }
+        } else if(this.phase==='tip'){
+          /* Обертання навколо нижнього ребра опори. Тіло беремо як точкову
+             масу в центрі ваги на сталій відстані r від ребра; момент сили
+             ваги дає горизонтальне зміщення центра ваги відносно ребра. */
+          const cg=this.cg(), u0=0.5, n0=this.k*cg, r2=u0*u0+n0*n0;
+          const n=4, hh=dt/n;
+          for(let i=0;i<n;i++){
+            const c=Math.cos(this.rot), sn=Math.sin(this.rot);
+            const uu=u0*c-n0*sn, nn=u0*sn+n0*c;
+            this.rotV+=-G*(uu*Math.cos(a)-nn*Math.sin(a))/r2*hh;
+            this.rot+=this.rotV*hh;
+          }
+          if(this.rot<0){this.rot=0; this.rotV=0;}
+          if(this.rot>=Math.PI/2){this.rot=Math.PI/2; stop();}
+        } else if(this.phase==='slide'){
+          /* ковзання вниз по дошці: a = g(sin φ − μ_ковз cos φ) */
+          const acc=G*(Math.sin(a)-this.MUK*this.mu*Math.cos(a));
+          this.slidV+=Math.max(0,acc)*dt*1.8;   /* темп показу, як і SPD нахилу */
+          this.slid-=this.slidV*dt;
+          if(this.slid<=-1.4){this.slid=-1.4; stop();}
+        } else stop();
+      } else if(this.phase==='done'){this.waitT+=dt; if(this.waitT>2.0) this.reset();}
     }
     this.render();
   },
@@ -830,10 +857,20 @@ const M1={
     const ux=Math.cos(a), uy=-Math.sin(a);        /* уздовж дошки */
     const nx=-Math.sin(a), ny=-Math.cos(a);       /* нормаль до дошки */
     const P=(du,dn)=>({x:bx+ux*du*sc+nx*dn*sc, y:by+uy*du*sc+ny*dn*sc});
+    /* Pb — те саме, але з урахуванням анімації: спершу поворот навколо
+       нижнього ребра (du = −0.5), потім зсув уздовж дошки. */
+    const Pb=(du,dn)=>{
+      let u0=du, n0=dn;
+      if(this.rot>0){
+        const c=Math.cos(this.rot), sn=Math.sin(this.rot);
+        u0=-0.5+(du+0.5)*c-dn*sn; n0=(du+0.5)*sn+dn*c;
+      }
+      return P(u0+this.slid,n0);
+    };
     const col=CLR[S.col];
     g.fillStyle=col.replace(')',',.10)').replace('#','rgba(').length>40?col:col;
     g.globalAlpha=0.10; g.fillStyle=col;
-    const A=P(-0.5,0), B=P(0.5,0), C=P(0.5,this.k), Dp=P(-0.5,this.k), Tp=P(0,this.k);
+    const A=Pb(-0.5,0), B=Pb(0.5,0), C=Pb(0.5,this.k), Dp=Pb(-0.5,this.k), Tp=Pb(0,this.k);
     g.beginPath();
     if(this.body==='cone'){g.moveTo(A.x,A.y); g.lineTo(B.x,B.y); g.lineTo(Tp.x,Tp.y);}
     else {g.moveTo(A.x,A.y); g.lineTo(B.x,B.y); g.lineTo(C.x,C.y); g.lineTo(Dp.x,Dp.y);}
@@ -841,11 +878,11 @@ const M1={
     g.strokeStyle=col; g.lineWidth=2.5; g.stroke();
     if(this.body==='cyl'){
       g.strokeStyle=col; g.lineWidth=1;
-      const E1=P(-0.5,this.k-0.12), E2=P(0.5,this.k-0.12);
+      const E1=Pb(-0.5,this.k-0.12), E2=Pb(0.5,this.k-0.12);
       g.beginPath(); g.moveTo(E1.x,E1.y); g.lineTo(E2.x,E2.y); g.stroke();
     }
     /* центр ваги і прямовисна з нього — критерій перекидання */
-    const CG=P(0,this.k*cg);
+    const CG=Pb(0,this.k*cg);
     dot(g,CG.x,CG.y,6,'#fff',CLR.ink);
     dot(g,CG.x,CG.y,2.5,CLR.ink);
     g.strokeStyle=tipping?CLR.k2:CLR.ink; g.lineWidth=tipping?2.5:1.6;
@@ -855,11 +892,19 @@ const M1={
     /* межа опори — ребро, навколо якого тіло перекидається */
     g.strokeStyle=tipping?CLR.k2:CLR.axis; g.lineWidth=tipping?4:2.5;
     g.beginPath(); g.moveTo(A.x,A.y); g.lineTo(B.x,B.y); g.stroke();
-    dot(g,B.x,B.y,5,tipping?CLR.k2:'#fff',tipping?'#fff':CLR.k2);
-    txt(g,'межа опори',B.x+8,B.y+16,{color:tipping?'#b8431a':CLR.mut,size:10,bold:tipping});
+    /* Перекидається тіло ВНИЗ по схилу, тож ребро опори — нижнє (A).
+       Саме за нього виходить прямовисна з центра ваги. */
+    dot(g,A.x,A.y,5,tipping?CLR.k2:'#fff',tipping?'#fff':CLR.k2);
+    txt(g,'межа опори',A.x-8,A.y+16,
+      {color:tipping?'#b8431a':CLR.mut,size:10,bold:tipping,align:'right'});
     shelf(g,Q.mu,this.MU,this.mu,'поверхня');
-    const st=tipping?['перекидається',CLR.k2,'прямовисна з центра ваги вийшла за межу опори']
-      :sliding?['зісковзує',CLR.k3,'тертя вичерпалося раніше, ніж настало перекидання']
+    const st=this.phase==='tip'||this.phase==='done'&&this.rot>0
+        ?['перекидається',CLR.k2,'прямовисна з центра ваги вийшла за межу опори']
+      :this.phase==='slide'||this.phase==='done'&&this.slid<0
+        ?['зісковзує',CLR.k3,'тертя вичерпалося раніше, ніж настало перекидання: '+
+          fmt(this.slideAng(),1)+'° проти '+fmt(this.tipAng(this.k,this.cg()),1)+'°']
+      :tipping?['на межі перекидання',CLR.k2,'прямовисна з центра ваги дійшла до ребра опори']
+      :sliding?['на межі ковзання',CLR.k3,'тертя вичерпалося']
       :['стоїть стійко',CLR.k1,'прямовисна з центра ваги ще всередині опори'];
     txt(g,st[0],12,20,{color:st[1],size:12.5,bold:true});
     txt(g,st[2],12,36,{color:CLR.mut,size:10.5});
@@ -924,7 +969,7 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · циліндр у ртуті під водою ===================== */
 const M2={
-  mode:'task', h:5, rho:7.8, lev:0, playing:true, waitT:0, showAns:false, showT:0,
+  mode:'free', h:5, rho:7.8, lev:0, playing:true, waitT:0, showAns:true, showT:0,
   RHO_HG:13.6, RHO_W:1.0, HMIN:2, HMAX:5.5, LEVMAX:3.5,
   BODY:[['сталь',7.8],['мідь',8.9],['цинк',7.1],['олово',7.3]],
   hh:{x:null}, hp:{x:null}, tiph:null, tipp:null,
@@ -948,7 +993,6 @@ const M2={
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2play').onclick=()=>{
@@ -964,9 +1008,12 @@ const M2={
   geo(b){return frozen(this,b,bb=>{
     /* Глибина ртуті береться така, щоб найважчий циліндр діапазону не проткнув
        дно; висота кадру — рівень води плюс ця глибина (§10). */
-    const HG=3.8, sc=fitScale(bb.w*0.46,bb.h,170,92,4,HG+this.LEVMAX+0.4,0,0);
+    /* Посудині віддано більшу частку кадру: світова ширина обрізана до самої
+       посудини (3.4 замість 4), бічний відступ зменшено, а частка ширини під
+       сцену піднята з 0.46 до 0.56 — діаграма сил відсунулася праворуч. */
+    const HG=3.8, sc=fitScale(bb.w*0.56,bb.h,120,92,3.4,HG+this.LEVMAX+0.4,0,0);
     return {sc,cx:bb.w*0.29,y0:46+(this.LEVMAX+0.4)*sc,vw:3.1*sc,HG,
-      fx:bb.w*0.66,fy:80,fh:Math.min(190,bb.h*0.42),
+      fx:bb.w*0.71,fy:80,fh:Math.min(190,bb.h*0.42),
       body:{y:bb.h-22,x0:86,dx:74}};
   });},
   grips(){

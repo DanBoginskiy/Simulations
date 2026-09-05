@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,8 +101,8 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:500px}
-#m2scene{width:100%; height:490px}
+#m1scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m2scene{width:100%; height:clamp(431px,54.4vh,858px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -110,7 +110,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -135,10 +135,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
           <span class="lbl" id="m1t"></span>
@@ -204,10 +200,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m2dir">
             <button data-v="head" class="active" style="--c:var(--k1)">назустріч</button>
             <button data-v="away" style="--c:var(--k2)">навздогін</button>
@@ -733,8 +725,8 @@ function drawGrip(g,h,st){
 
 /* ===================== МОДУЛЬ 1 · надзвуковий літак ===================== */
 const M1={
-  mode:'task', H:4000, M:1.7695, v:330,
-  t:0, playing:true, showAns:false, showT:0,
+  mode:'free', H:4000, M:1.7695, v:330,
+  t:0, playing:true, showAns:true, showT:0,
   MMIN:0.4, MMAX:2.6, HMIN:1500, HMAX:5000,
   ht:{x:null}, ha:{x:null}, tipt:null, tipa:null,
   GG:[['M','число Маха M',0.4,2.6,0.02,CLR.k2,null,'m1vm',2,''],
@@ -754,7 +746,6 @@ const M1={
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;
     $('m1bcone').hidden=this.M>1;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m1play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
@@ -929,8 +920,20 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · два авто із сиренами ===================== */
 const M2={
-  mode:'task', dir:'head', v1:25, v2:16.667, n10:400, n20:500, v:340, D:260,
-  t:0, playing:true, showAns:false,
+  mode:'free', dir:'head', v1:25, v2:16.667, n10:400, n20:500, v:340, D:260,
+  t:0, playing:true, showAns:true,
+  /* Показ уповільнено: справжній звук долає кадр (260 м) за 0,76 с, і за цей
+     час авто встигає проїхати менш ніж метр — фронти видно, а зміщення їхніх
+     центрів ні. Уповільнюємо звук і авто ОДНАКОВО, тож відношення v_авто/v_зв,
+     яке й задає всю картину, лишається точним. */
+  VSHOW:39, PER:6,
+  K(){return this.VSHOW/this.v;},
+  /* Положення авто інтегруються, а не рахуються як v·t, і кожен випущений
+     фронт запам'ятовує, ДЕ була сирена в мить випуску. Інакше зміна швидкості
+     заднім числом переставляла б і авто, і центри всіх старих кіл — причина
+     миттєво переписувала б наслідок, якого вона ще не встигла набігти. */
+  cyc:0, x1:0, x2:0, hist:null,
+  startPos(){this.x1=this.D*0.12; this.x2=this.D*0.88;},
   V1MIN:0, V1MAX:45, V2MIN:0, V2MAX:45, NMIN:200, NMAX:900,
   hf:{x:null}, hs:{x:null}, tipf:null, tips:null,
   GG:[['v1kh','v₁, км/год',0,160,5,CLR.k1,null,'m2v1',0,'км/год'],
@@ -946,14 +949,14 @@ const M2={
   onlySrc(){return this.n10*this.v/(this.v-this.v1);},
   setTask(){this.dir='head'; this.v1=25; this.v2=60/3.6; this.n10=400; this.n20=500;
     document.querySelectorAll('#m2dir button').forEach(b=>b.classList.toggle('active',b.dataset.v==='head'));},
-  reset(){this.t=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.cyc=0; this.startPos(); this.hist=[];
+    this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     seg('m2dir',v=>{this.dir=v; this.reset();});
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -976,7 +979,19 @@ const M2={
     const b=cvx('m2scene'); if(!b) return [];
     return gaugeGrips(this.gcol(b),this.GG,this);
   },
-  tick(dt){if(this._grab==null&&this.playing) this.t+=dt; this.render();},
+  tick(dt){
+    if(this._grab==null&&this.playing){
+      const d=Math.min(0.05,dt), K=this.K(), s=this.s();
+      this.t+=d; this.cyc+=d;
+      if(this.cyc>this.PER){this.cyc=0; this.startPos(); this.hist=[];}
+      this.x1+=this.v1*K*d;
+      this.x2-=s*this.v2*K*d;
+      /* слід сирен: кожен запис — де вона була в цю мить */
+      this.hist.push({t:this.cyc,x1:this.x1,x2:this.x2});
+      if(this.hist.length>900) this.hist.shift();
+    }
+    this.render();
+  },
   render(){this.scene(); this.table(); this.charts(); this.gdraw();},
   gdraw(){
     const b=cvx('m2scene'); if(!b) return;
@@ -998,10 +1013,9 @@ const M2={
   scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, SX=Q.SX, cy=Q.cy;
-    const s=this.s(), t=this.t, D=this.D;
-    /* авто зближуються (або розходяться), але лишаються в кадрі: рух зациклено */
-    const per=6, ph=(t%per)/per;
-    const x1=D*0.10+this.v1*ph*2.2, x2=D*0.90-s*this.v2*ph*2.2;
+    const s=this.s(), D=this.D;
+    if(!this.hist) this.hist=[];
+    const ts=this.cyc, x1=this.x1, x2=this.x2;
     g.clearRect(0,0,w,H);
     /* дорога */
     g.fillStyle=CLR.ground; g.fillRect(0,cy+26,w,H-cy-26-40);
@@ -1012,20 +1026,33 @@ const M2={
       g.strokeStyle=CLR.mut; g.lineWidth=2;
       g.beginPath(); g.moveTo(px,cy+40); g.lineTo(px+18,cy+40); g.stroke();
     }
-    /* фронти від кожної сирени: попереду стиснуті, позаду розріджені */
-    const front=(x0,vs,col,dirs)=>{
-      for(let i=0;i<9;i++){
-        const te=t-i*0.34, r=this.v*(t-te);
-        if(r<=0) continue;
-        const xe=x0-vs*dirs*(t-te);
-        g.strokeStyle=col; g.globalAlpha=0.30;
-        g.lineWidth=1.2;
-        g.beginPath(); g.arc(SX(xe),cy,r*Q.sc,0,7); g.stroke();
-        g.globalAlpha=1;
+    /* Фронти — як у модулі 1: у кожну мить у минулому сирена випустила сферу,
+       яка відтоді росла зі швидкістю звуку, а джерело тим часом поїхало далі.
+       Центри йдуть за авто, тому попереду кола збігаються, позаду розходяться. */
+    const NF=11, hst=this.hist;
+    const front=(key,col)=>{
+      if(hst.length<2) return;
+      for(let i=0;i<=NF;i++){
+        const e=hst[Math.min(hst.length-1,Math.round(i/NF*(hst.length-1)))];
+        const r=this.VSHOW*(ts-e.t);
+        if(r<=0.4) continue;
+        const newest=i===NF;
+        g.strokeStyle=col;
+        g.globalAlpha=newest?0.85:0.22+0.30*(i/NF);
+        g.lineWidth=newest?1.8:1.2;
+        g.beginPath(); g.arc(SX(e[key]),cy,r*Q.sc,0,7); g.stroke();
       }
+      g.globalAlpha=1;
     };
-    front(x1,this.v1,CLR.k1,1);
-    front(x2,this.v2,CLR.k2,-s);
+    front('x1',CLR.k1);
+    front('x2',CLR.k2);
+    /* Довжина хвилі попереду і позаду першого авто — те, що власне міряють.
+       Береться з формули, а не з піксельних відстаней. */
+    const lf=(this.v-this.v1)/this.n10, lb=(this.v+this.v1)/this.n10;
+    pill(g,'λ попереду '+fmt(lf*100,1)+' см',SX(x1)+70,cy-52,
+      {color:CLR.k1,size:10.5,bold:true});
+    pill(g,'λ позаду '+fmt(lb*100,1)+' см',SX(x1)-70,cy-52,
+      {color:CLR.sec,size:10.5,bold:true});
     /* авто */
     const car=(x,dirs,col,tc,lab,f)=>{
       const px=SX(x);
@@ -1046,6 +1073,9 @@ const M2={
       12,20,{color:head?CLR.k1:CLR.k2,size:12.5,bold:true});
     txt(g,'попереду кожного авто фронти стиснуті, позаду — розріджені',
       12,36,{color:CLR.mut,size:10.5});
+    txt(g,'показ уповільнено в '+fmt(1/this.K(),0)+' разів — і звук, і авто однаково, '+
+      'тож відношення швидкостей і вся картина фронтів точні',
+      12,H-10,{color:CLR.mut,size:10.5});
   },
   table(){
     const nI=this.nI(), nII=this.nII();

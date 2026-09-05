@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,9 +101,9 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:410px}
-#m2scene{width:100%; height:490px}
-#m3scene{width:100%; height:520px}
+#m1scene{width:100%; height:clamp(361px,45.6vh,718px)}
+#m2scene{width:100%; height:clamp(431px,54.4vh,858px)}
+#m3scene{width:100%; height:clamp(458px,57.8vh,910px)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
@@ -112,7 +112,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -137,10 +137,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m1pp" title="пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
           <span class="lbl" id="m1t"></span>
@@ -206,10 +202,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m2pp" title="пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -276,10 +268,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m3mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m3sc">
             <button data-v="lab" class="active" style="--c:var(--k1)">частинка в лабораторії</button>
             <button data-v="sky" style="--c:var(--k3)">мюон з атмосфери</button>
@@ -806,7 +794,7 @@ const gamOf=b=>1/Math.sqrt(1-b*b);
 
 /* ===================== МОДУЛЬ 1 · похилий стрижень ===================== */
 const M1={
-  mode:'task', be:0.50, l:100, th:45, showAns:false, playing:true, t:0, drift:0,
+  mode:'free', be:0.50, l:100, th:45, showAns:true, playing:true, t:0, drift:0,
   LMAX:120, BMAX:0.85, SLEEP:40,               /* крок шпал у лабораторії, см */
   ha:{x:null}, hl:{x:null}, tipa:null, tipl:null,
   GG:[['be','швидкість β',0,0.85,0.01,CLR.k2,null,'m1vb',2,'c']],
@@ -822,7 +810,6 @@ const M1={
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m1re').onclick=()=>{this.t=0; this.drift=0;};
@@ -959,6 +946,16 @@ const M1={
       txt(g,fmt(P.i?this.th:this.th0(),1)+'°',bx+R+6,by-8,
         {color:P.i?CLR.k1:CLR.k2,size:11,bold:true});
       txt(g,'крок шпал '+fmt(P.step,1)+' см',x0+14,yb+26,{color:CLR.mut,size:10});
+      /* розрахунок швидкості в кожній СВ */
+      const g1=this.gam(), fy=yb+52;
+      if(P.i)
+        fxBlock(g,x0+14,fy,'β = '+fmt(this.be,2)+' · γ = 1/√(1 − β²)',
+          '1/√(1 − '+fmt(this.be*this.be,3)+') = '+fmt(g1,3),
+          'v = βc = '+sci(this.be*CLIGHT,3)+' м/с',CLR.k1);
+      else
+        fxBlock(g,x0+14,fy,'β = √(1 − (lₓ/l₀ₓ)²)',
+          '√(1 − ('+fmt(this.lx(),1)+'/'+fmt(this.l0x(),1)+')²) = '+fmt(this.be,3),
+          'поперечна складова однакова, тож β дає лише поздовжня',CLR.k2);
     }
     for(const hh of this.grips()) if(hh.id==='tip') drawGrip(g,hh,this);
   },
@@ -1024,7 +1021,7 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · зустрічні частинки ===================== */
 const M2={
-  mode:'task', b1:0.50, b2:0.75, showAns:false, playing:true, t:0,
+  mode:'free', b1:0.50, b2:0.75, showAns:true, playing:true, t:0,
   D:10,                                        /* початкова відстань, світлові секунди */
   BMAX:0.99,
   hs:{x:null}, he:{x:null}, tips:null, tipe:null,
@@ -1042,7 +1039,6 @@ const M2={
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2re').onclick=()=>{this.t=0;};
@@ -1060,9 +1056,21 @@ const M2={
     return gaugeGrips(gcolOf(b,this.GG.length),this.GG,this);
   },
   geo(b){return frozen(this,b,bb=>{
-    const C=gcolOf(bb,2), H=C.gtop-46, half=bb.w/2;
-    return {C,H,half, pad:34, tw:half-68,
-      yTrack:[46+H*0.22,46+H*0.22], ySpd:46+H*0.62};
+    const C=gcolOf(bb,2), H=C.gtop-46, half=bb.w/2, pad=34;
+    /* Дві СВ поруч потребують щонайменше 300 px на панель: підписи в них
+       завширшки близько 210 px. На вузькій канві половина виходила 166 px,
+       і рядки заголовка перелазили через середину в сусідню панель. Тому
+       нижче цієї межі панелі стають одна під одною. */
+    const stack=bb.w<760;
+    const tw=stack?bb.w-2*pad-16:half-68;
+    const col=P=>{
+      if(stack){
+        const yb=46+P*H*0.5;
+        return {x0:pad, yTop:yb, yTrack:yb+H*0.13, ySpd:yb+H*0.30, tw};
+      }
+      return {x0:P*half+pad, yTop:46, yTrack:46+H*0.22, ySpd:46+H*0.62, tw};
+    };
+    return {C,H,half,pad,tw,stack,col};
   });},
   tick(dt){
     if(this.playing) this.t+=dt*0.6;
@@ -1122,20 +1130,25 @@ const M2={
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
     g.clearRect(0,0,w,H);
     g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.moveTo(Q.half+.5,30); g.lineTo(Q.half+.5,H-6); g.stroke();
+    if(Q.stack){
+      const ym=46+Q.H*0.5-6;
+      g.beginPath(); g.moveTo(10,ym+.5); g.lineTo(w-10,ym+.5); g.stroke();
+    } else {
+      g.beginPath(); g.moveTo(Q.half+.5,30); g.lineTo(Q.half+.5,H-6); g.stroke();
+    }
     const Tl=this.Tlab(), p=isFinite(Tl)?Math.min(1,this.t/Tl):0;
     const rel=this.rel(), clo=this.clos();
     for(const P of [0,1]){
-      const x0=P*Q.half+Q.pad, tw=Q.tw, y=Q.yTrack[P];
+      const L=Q.col(P), x0=L.x0, tw=L.tw, y=L.yTrack, yT=L.yTop, ySpd=L.ySpd;
       const sc=tw/this.D;                       /* сталий масштаб: уся сцена = D св·с */
       if(P===0){
-        txt(g,'Лабораторна СВ',x0-20,24,{color:CLR.k1,size:12.5,bold:true});
-        txt(g,'спостерігач нерухомий між частинками',x0-20,40,{color:CLR.sec,size:10.5});
-        txt(g,'проміжок скорочується зі швидкістю β₁ + β₂',x0-20,54,{color:CLR.mut,size:10.5});
+        txt(g,'Лабораторна СВ',x0-20,yT-22,{color:CLR.k1,size:12.5,bold:true});
+        txt(g,'спостерігач нерухомий між частинками',x0-20,yT-6,{color:CLR.sec,size:10.5});
+        txt(g,'проміжок скорочується зі швидкістю β₁ + β₂',x0-20,yT+8,{color:CLR.mut,size:10.5});
       } else {
-        txt(g,'СВ першої частинки',x0-20,24,{color:CLR.k2,size:12.5,bold:true});
-        txt(g,'спостерігач летить разом із першою',x0-20,40,{color:CLR.sec,size:10.5});
-        txt(g,'друга наближається зі швидкістю β',x0-20,54,{color:CLR.mut,size:10.5});
+        txt(g,'СВ першої частинки',x0-20,yT-22,{color:CLR.k2,size:12.5,bold:true});
+        txt(g,'спостерігач летить разом із першою',x0-20,yT-6,{color:CLR.sec,size:10.5});
+        txt(g,'друга наближається зі швидкістю β',x0-20,yT+8,{color:CLR.mut,size:10.5});
       }
       /* трек із позначками — орієнтири §7.2 */
       g.strokeStyle=CLR.axis; g.lineWidth=1.5;
@@ -1166,19 +1179,37 @@ const M2={
         {color:CLR.ink,size:10.5,bold:true,align:'center'});
       /* годинник цієї СВ */
       const tt=P===0?p*Tl:p*this.Tp();
-      txt(g,'годинник цієї СВ: '+fmt(isFinite(tt)?tt:0,2)+' с',x0+tw,24,
+      txt(g,'годинник цієї СВ: '+fmt(isFinite(tt)?tt:0,2)+' с',x0+tw,yT-22,
         {color:P?CLR.k2:CLR.k1,size:11,bold:true,align:'right'});
       /* смуга швидкості */
-      this.speedo(g,x0,Q.ySpd,Math.max(60,tw-70),P===0?clo:rel,P===0?CLR.sec:CLR.ink,
+      this.speedo(g,x0,ySpd,Math.max(60,tw-70),P===0?clo:rel,P===0?CLR.sec:CLR.ink,
         P===0?'швидкість зближення β₁ + β₂':'швидкість другої відносно першої');
       if(P===0&&clo>1)
         txt(g,'більше за c — і це не порушує СТВ: це швидкість зміни відстані,',
-          x0,Q.ySpd+42,{color:'#c0392b',size:10});
+          x0,ySpd+42,{color:'#c0392b',size:10});
       if(P===0&&clo>1)
-        txt(g,'а не швидкість жодного тіла',x0,Q.ySpd+55,{color:'#c0392b',size:10});
+        txt(g,'а не швидкість жодного тіла',x0,ySpd+55,{color:'#c0392b',size:10});
       if(P===1)
-        txt(g,'ніколи не досягає c, хоч би якими були β₁ і β₂',x0,Q.ySpd+42,
+        txt(g,'ніколи не досягає c, хоч би якими були β₁ і β₂',x0,ySpd+42,
           {color:CLR.k3,size:10});
+      /* Розрахунок швидкості просто під її смугою: символьний запис, потім той
+         самий вираз із підставленими числами, потім результат у м/с. Обидві
+         формули стоять поруч у своїх СВ — видно, звідки береться різниця. */
+      const fy=ySpd+(P===0&&clo>1?74:60);
+      const fx2=(sym,num,tail,col)=>{
+        txt(g,sym,x0,fy,{color:col,size:11.5,bold:true});
+        txt(g,num,x0,fy+16,{color:CLR.sec,size:10.5});
+        if(tail) txt(g,tail,x0,fy+31,{color:CLR.mut,size:10});
+      };
+      if(P===0)
+        fx2('β_збл = β₁ + β₂',
+          fmt(this.b1,2)+' + '+fmt(this.b2,2)+' = '+fmt(clo,3)+' c',
+          '= '+sci(clo*CLIGHT,3)+' м/с · це швидкість зміни відстані',CLR.sec);
+      else
+        fx2('β = (β₁ + β₂)/(1 + β₁·β₂)',
+          fmt(clo,3)+' / (1 + '+fmt(this.b1*this.b2,3)+') = '+
+          fmt(clo,3)+' / '+fmt(1+this.b1*this.b2,3)+' = '+fmt(rel,4)+' c',
+          '= '+sci(rel*CLIGHT,3)+' м/с · γ = '+fmt(gamOf(Math.min(0.999999,rel)),3),CLR.ink);
     }
   },
   table(){
@@ -1236,6 +1267,15 @@ const M2={
   }
 };
 
+/* Блок розрахунку прямо на сцені: символьний запис, той самий вираз із
+   підставленими числами, і результат в одиницях СІ. Спільний для всіх модулів,
+   щоб формули виглядали однаково там, де рахують швидкість. */
+function fxBlock(g,x,y,sym,num,tail,col){
+  txt(g,sym,x,y,{color:col,size:11.5,bold:true});
+  txt(g,num,x,y+16,{color:CLR.sec,size:10.5});
+  if(tail) txt(g,tail,x,y+31,{color:CLR.mut,size:10});
+}
+
 /* перемикач .seg іноді треба переставити з коду, а не кліком */
 function segSet(id,v){
   const el=$(id); if(!el||!el.querySelectorAll) return;
@@ -1244,8 +1284,8 @@ function segSet(id,v){
 
 /* ===================== МОДУЛЬ 3 · час життя і пробіг ===================== */
 const M3={
-  mode:'task', sc:'lab', gam:2, tau:10, L:12, N:60,
-  showAns:false, playing:true, t:0, CYCLE:7,
+  mode:'free', sc:'lab', gam:2, tau:10, L:12, N:60,
+  showAns:true, playing:true, t:0, CYCLE:7,
   RNG:{lab:{g:[1.05,20,0.05],tau:[2,40,1],L:[1,30,0.5],max:30},
        sky:{g:[1.05,20,0.05],tau:[500,4000,50],L:[2000,20000,500],max:20000}},
   hn:{x:null}, hl:{x:null}, tipn:null, tipl:null,
@@ -1282,7 +1322,6 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3mode',v=>this.setMode(v));
     seg('m3sc',v=>this.setSc(v));
     grip('m3scene',this,()=>this.grips());
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1419,6 +1458,10 @@ const M3={
       g.lineTo(x0+tw-10,y+22); g.closePath(); g.fill();
     }
     if(G>1) txt(g,'крок позначок стиснуто в γ разів',x0,y+42,{color:CLR.mut,size:9});
+    fxBlock(g,x0,y+64,'β = √(1 − 1/γ²)',
+      '√(1 − 1/'+fmt(this.gam*this.gam,2)+') = '+fmt(this.beta(),4),
+      'v = '+sci(this.beta()*CLIGHT,3)+' м/с · пробіг γβcΔt₀ = '+
+      fmt(this.path(),1)+' м',CLR.k2);
   },
   table(){
     const sky=this.sc==='sky', be=this.beta(), l=this.path();

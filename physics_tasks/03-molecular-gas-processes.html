@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,9 +101,9 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:500px}
-#m2scene{width:100%; height:430px}
-#m3scene{width:100%; height:470px}
+#m1scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m2scene{width:100%; height:clamp(378px,47.8vh,752px)}
+#m3scene{width:100%; height:clamp(414px,52.2vh,822px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -111,7 +111,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -137,10 +137,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <div class="seg" id="m1mem">
             <button data-v="h2" class="active" style="--c:var(--k1)">пропускає водень</button>
             <button data-v="all" style="--c:var(--k2)">пропускає все</button>
@@ -212,10 +208,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -285,10 +277,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m3mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
           <span class="lbl" id="m3t"></span>
@@ -322,6 +310,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>l</var> — початкова висота стовпа повітря</span><b id="m3vl"></b></div>
         <div class="kv"><span><var>t</var><sub>2</sub> — до якої температури нагріли</span><b id="m3vt2"></b></div>
         <div class="kv"><span><var>S</var> — площа поршня</span><b id="m3vS"></b></div>
+        <div class="kv"><span><var>m</var> — маса покладеної гирі<span class="badge">задаєте ви</span></span><b id="m3vm"></b></div>
       </div>
       <div class="panel">
         <h3>Відповідь</h3>
@@ -339,6 +328,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>етап 2: ізотерма<span class="badge">T = const</span></span><b id="m3kS2"></b></div>
         <div class="kv"><span>потрібний тиск</span><b id="m3kP2"></b></div>
         <div class="kv"><span>надлишок над атмосферним</span><b id="m3kDP"></b></div>
+        <div class="kv"><span>тиск від вашої гирі</span><b id="m3kPa"></b></div>
+        <div class="kv"><span>висота стовпа з нею</span><b id="m3kLe"></b></div>
         <div class="kv"><span>стан повернувся?</span><b id="m3kBack"></b></div>
         <div class="formulas" id="m3fx2"></div>
       </div>
@@ -810,8 +801,9 @@ function drawGrip(g,h,st){
 
 /* ===================== МОДУЛЬ 1 · напівпроникна мембрана ===================== */
 const M1={
-  mode:'task', mem:'h2', N:90, P0:100,
-  t:0, playing:true, showAns:false, SPD:1,
+  mode:'free', mem:'h2', N:90, P0:100,
+  mp:1.0, MPMIN:0.45, MPMAX:1.55,       /* положення мембрани в одиницях коробки */
+  t:0, playing:true, showAns:true, SPD:1,
   NMIN:30, NMAX:150,
   hp:{x:null}, hn:{x:null}, tipp:null, tipn:null,
   GG:[['N','молекул',30,150,5,CLR.sec,function(){this.build();},'m1vn',0,'']],
@@ -834,14 +826,17 @@ const M1={
   counts(){
     let h1=0,h2=0,e1=0,e2=0;
     for(const p of this.P){
-      if(p.h){ p.x<1?h1++:h2++; } else { p.x<1?e1++:e2++; }
+      if(p.h){ p.x<this.mp?h1++:h2++; } else { p.x<this.mp?e1++:e2++; }
     }
     return {h1,h2,e1,e2};
   },
-  /* тиск пропорційний числу молекул у половині: T і V сталі */
+  /* Тиск — не просто число молекул: мембрану можна пересувати, тож об'єми
+     половин різні. P = (N/V)·k, і при mp = 1 це збігається зі старим виразом. */
+  V1(){return this.mp;},
+  V2(){return 2-this.mp;},
   press(){
     const c=this.counts(), k=this.P0/(2*this.N);
-    return {p1:(c.h1+c.e1)*k, p2:(c.h2+c.e2)*k, c};
+    return {p1:(c.h1+c.e1)*k/this.V1(), p2:(c.h2+c.e2)*k/this.V2(), c};
   },
   push(){
     const q=this.press(), c=q.c;
@@ -850,14 +845,13 @@ const M1={
   },
   setTask(){this.mem='h2'; this.N=90;
     document.querySelectorAll('#m1mem button').forEach(b=>b.classList.toggle('active',b.dataset.v==='h2'));},
-  reset(){this.t=0; this.playing=true; this.build(); this.updBtn();},
+  reset(){this.t=0; this.mp=1.0; this.playing=true; this.build(); this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     seg('m1mem',v=>{this.mem=v; this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -874,10 +868,31 @@ const M1={
     const bw=Math.min(bb.w*0.62,Math.max(120,(H-150)*2)), bh=bw/2;
     return {C,bx:36,by:56,bw,bh};
   });},
+  /* Мембрана як поршень: молекули, для яких вона глуха, стискаються разом
+     зі своєю половиною — їхні координати перераховуються в нові межі. Ті, що
+     проходять крізь мембрану, лишаються де були. */
+  moveMem(M){
+    M=clamp(M,this.MPMIN,this.MPMAX);
+    const O=this.mp; if(Math.abs(M-O)<1e-6) return;
+    for(const p of this.P){
+      const pass=this.mem==='all'||(this.mem==='h2'&&p.h);
+      if(pass) continue;
+      if(p.x<O) p.x=0.012+(p.x-0.012)*(M-0.027)/Math.max(1e-6,O-0.027);
+      else      p.x=1.988-(1.988-p.x)*(1.988-M-0.015)/Math.max(1e-6,1.988-O-0.015);
+      p.x=clamp(p.x,0.012,1.988);
+    }
+    this.mp=M;
+  },
   grips(){
     if(this.mode!=='free') return [];
     const b=cvx('m1scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b), sc=Q.bw/2;
+    return [
+      {id:'mem', x:Q.bx+this.mp*sc, y:Q.by+Q.bh*0.5, r:11, color:CLR.sec,
+       hint:'пересуньте мембрану — об\'єми половин зміняться',
+       hit:(px,py)=>Math.abs(px-(Q.bx+this.mp*sc))<=13&&py>=Q.by-6&&py<=Q.by+Q.bh+6,
+       move:px=>this.moveMem((px-Q.bx)/sc)}
+    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
   tick(dt){
     if(this._grab==null&&this.playing){
@@ -891,8 +906,9 @@ const M1={
         /* мембрана посередині: чи пройде саме ця молекула */
         const pass=this.mem==='all'||(this.mem==='h2'&&p.h);
         if(!pass){
-          if(p.x>0.985&&p.x<1.0){p.x=0.985; p.vx=-Math.abs(p.vx);}
-          if(p.x<1.015&&p.x>1.0){p.x=1.015; p.vx=Math.abs(p.vx);}
+          const M=this.mp;
+          if(p.x>M-0.015&&p.x<M){p.x=M-0.015; p.vx=-Math.abs(p.vx);}
+          if(p.x<M+0.015&&p.x>=M){p.x=M+0.015; p.vx=Math.abs(p.vx);}
         }
       }
       this.t+=d;
@@ -926,7 +942,7 @@ const M1={
     g.fillStyle='#fbfbf9'; g.fillRect(Q.bx,Q.by,Q.bw,Q.bh);
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.strokeRect(Q.bx+.5,Q.by+.5,Q.bw-1,Q.bh-1);
-    const mx=X(1);
+    const mx=X(this.mp);
     if(this.mem==='none'){
       g.strokeStyle=CLR.sec; g.lineWidth=4;
       g.beginPath(); g.moveTo(mx,Q.by); g.lineTo(mx,Q.by+Q.bh); g.stroke();
@@ -941,6 +957,12 @@ const M1={
     for(const p of this.P){
       dot(g,X(p.x),Y(p.y),p.h?2.6:3.6,p.h?CLR.k1:CLR.k3);
     }
+    /* об'єми половин підписуємо просто в них */
+    txt(g,'V₁ = '+fmt(this.V1(),2),(Q.bx+mx)/2,Q.by+Q.bh-9,
+      {color:CLR.mut,size:10,align:'center'});
+    txt(g,'V₂ = '+fmt(this.V2(),2),(mx+Q.bx+Q.bw)/2,Q.by+Q.bh-9,
+      {color:CLR.mut,size:10,align:'center'});
+    for(const hh of this.grips()) if(hh.id==='mem') drawGrip(g,hh,this);
     /* два манометри — тиск як показ приладу, а не як формула */
     const gauge2=(cx,val,lab,col,tc)=>{
       const r=Math.min(46,Q.bh*0.3);
@@ -1013,8 +1035,8 @@ const M1={
 /* ===================== МОДУЛЬ 2 · редактор процесу P ~ T^k ===================== */
 const R_GAS=8.314;
 const M2={
-  mode:'task', k:0.5, nu:1, u:0.35,
-  t:0, playing:true, showAns:false,
+  mode:'free', k:0.5, nu:1, u:0.35,
+  t:0, playing:true, showAns:true,
   T1:250, T2:520,
   hpv:{x:null}, hpt:{x:null}, hvt:{x:null}, tippv:null, tippt:null, tipvt:null,
   GG:[['k','показник k',-1.5,2,0.05,CLR.k2,null,'m2vk',2,''],
@@ -1033,7 +1055,6 @@ const M2={
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;
     $('m2bk').hidden=Math.abs(this.k-0.5)>1e-9;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
@@ -1201,24 +1222,33 @@ const M2={
 /* ===================== МОДУЛЬ 3 · поршень і гиря ===================== */
 const MMHG=101325/760;                 /* один міліметр ртутного стовпа, Па */
 const M3={
-  mode:'task', l:30, t2:63, S:100, m:0,
-  t:0, playing:true, waitT:0, showAns:false,
+  mode:'free', l:30, t2:63, S:100, m:20.7,
+  t:0, playing:true, waitT:0, showAns:true,
   T1K:280, LMIN:15, LMAX:45, T2MIN:20, T2MAX:120, SMIN:40, SMAX:200,
   hpv:{x:null}, hm:{x:null}, tippv:null, tipm:null,
+  /* Маса гирі — окрема ручка. Раніше єдиним важелем була площа S, і вона
+     тягла за собою і масу (через mNeed), і розмір намальованої гирі: одна
+     ручка міняла дві незалежні величини. Тепер S задає площу, m — масу, а
+     mNeed лишається відповіддю, з якою можна звірятися. */
   GG:[['t2','t₂, °C',20,120,1,CLR.k2,null,'m3vt2',0,'°C'],
-      ['S','площа S, см²',40,200,5,CLR.k1,null,'m3vS',0,'см²']],
+      ['S','площа S, см²',40,200,5,CLR.k1,null,'m3vS',0,'см²'],
+      ['m','маса гирі m, кг',0,100,0.5,CLR.k3,null,'m3vm',1,'кг']],
   T2K(){return 273+this.t2;},
   l2(){return this.l*this.T2K()/this.T1K;},        /* ізобарне нагрівання */
   /* тиск, потрібний щоб при T₂ повернути поршень у початкове положення */
   P2mm(){return 760*this.l2()/this.l;},
   mNeed(){return (this.P2mm()-760)*MMHG*this.S*1e-4/G;},
+  /* тиск, який реально створює покладена гиря, і висота стовпа при ньому */
+  P2act(){return 760+this.m*G/(this.S*1e-4)/MMHG;},
+  lEnd(){return this.l2()*760/this.P2act();},
   /* сценарій: 0…1 нагрівання, 1…2 стиснення гирею */
   TT:5.4,
   stage(){return this.t<this.TT*0.5?0:1;},
   lNow(){
     const u=this.t/this.TT;
     if(u<0.5) return this.l+(this.l2()-this.l)*Math.min(1,u/0.45);
-    return this.l2()+(this.l-this.l2())*Math.min(1,(u-0.5)/0.45);
+    /* стискає не «скільки треба», а саме та гиря, яку поклали */
+    return this.l2()+(this.lEnd()-this.l2())*Math.min(1,(u-0.5)/0.45);
   },
   Pnow(){
     const u=this.t/this.TT;
@@ -1226,7 +1256,7 @@ const M3={
     return 760*this.l2()/Math.max(1e-6,this.lNow());
   },
   Tnow(){return this.t/this.TT<0.45?this.T1K+(this.T2K()-this.T1K)*(this.t/this.TT/0.45):this.T2K();},
-  setTask(){this.l=30; this.t2=63; this.S=100;},
+  setTask(){this.l=30; this.t2=63; this.S=100; this.m=this.mNeed();},
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
   setMode(mo){this.mode=mo; if(mo==='task') this.setTask();
@@ -1234,7 +1264,6 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3mode',v=>this.setMode(v));
     grip('m3scene',this,()=>this.grips());
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3play').onclick=()=>{
@@ -1287,6 +1316,7 @@ const M3={
     }
     $('m3vt2').textContent=fmt(this.t2,0)+' °C';
     $('m3vS').textContent=fmt(this.S,0)+' см²';
+    $('m3vm').textContent=fmt(this.m,1)+' кг';
   },
   scene(){
     const b=cvx('m3scene'); if(!b) return;
@@ -1303,11 +1333,11 @@ const M3={
     /* поршень і гиря на ньому */
     g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(Q.cx-cw/2-2,yT-12,cw+4,12,2); g.fill(); g.stroke();
-    if(st===1){
-      const mm=this.mNeed(), bw2=Math.min(cw*0.8,26+mm*1.6);
+    if(st===1&&this.m>0.05){
+      const bw2=Math.min(cw*0.8,26+this.m*1.6);
       g.fillStyle='rgba(27,175,122,.16)'; g.strokeStyle=CLR.k3; g.lineWidth=2;
       g.beginPath(); g.roundRect(Q.cx-bw2/2,yT-12-26,bw2,26,3); g.fill(); g.stroke();
-      txt(g,fmt(mm,1)+' кг',Q.cx,yT-25,{color:'#0d7a55',size:11.5,bold:true,align:'center'});
+      txt(g,fmt(this.m,1)+' кг',Q.cx,yT-25,{color:'#0d7a55',size:11.5,bold:true,align:'center'});
     }
     /* мітки початкового й нагрітого положень */
     const mark=(y,col,tc,lab)=>{
@@ -1318,6 +1348,8 @@ const M3={
     };
     mark(Q.yb-this.l*sc,CLR.k1,'#1c5cab','початок, '+fmt(this.l,0)+' см');
     mark(Q.yb-this.l2()*sc,CLR.k2,'#b8431a','після нагріву, '+fmt(this.l2(),1)+' см');
+    if(Math.abs(this.lEnd()-this.l)>0.15)
+      mark(Q.yb-this.lEnd()*sc,CLR.k3,'#0d7a55','ця гиря дає '+fmt(this.lEnd(),1)+' см');
     /* висота стовпа як розмір */
     arrow(g,Q.cx-cw/2-16,Q.yb,Q.cx-cw/2-16,yT,CLR.sec,1.6);
     arrow(g,Q.cx-cw/2-16,yT,Q.cx-cw/2-16,Q.yb,CLR.sec,1.6);
@@ -1334,8 +1366,12 @@ const M3={
     txt(g,'P',px0,Q.yb-Math.min(200,Q.H-70)-30,{color:'#1c5cab',size:11,bold:true,align:'center'});
     txt(g,fmt(this.Pnow(),0)+' мм',px0,Q.yb-Math.min(200,Q.H-70)-16,
       {color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    const dl=this.lEnd()-this.l;
     const ph=st===0?['нагрівання при сталому тиску',CLR.k2,'поршень вільний — газ розширюється, P = 760 мм']
-      :['стиснення гирею при сталій температурі',CLR.k3,'об\'єм повернувся, а тиск уже інший — стан не той самий'];
+      :Math.abs(dl)<=0.15
+        ?['стиснення гирею при сталій температурі',CLR.k3,'об\'єм повернувся, а тиск уже інший — стан не той самий']
+        :['гиря не та',CLR.k2,(dl>0?'замало маси: поршень став на ':'забагато маси: поршень провалився на ')+
+          fmt(this.lEnd(),1)+' см замість '+fmt(this.l,0)+'; потрібно '+fmt(this.mNeed(),1)+' кг'];
     txt(g,ph[0],12,20,{color:ph[1],size:12.5,bold:true});
     txt(g,ph[2],12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='l') drawGrip(g,hh,this);
@@ -1351,7 +1387,11 @@ const M3={
     $('m3kS2').textContent='P₂V₁ = P₁V₂';
     $('m3kP2').textContent=fmt(this.P2mm(),0)+' мм рт.ст.';
     $('m3kDP').textContent=fmt(this.P2mm()-760,0)+' мм = '+fmt((this.P2mm()-760)*MMHG/1000,1)+' кПа';
-    $('m3kBack').textContent='об\'єм — так, тиск і температура — ні';
+    $('m3kPa').textContent=fmt(this.P2act(),0)+' мм рт.ст.';
+    $('m3kLe').textContent=fmt(this.lEnd(),2)+' см';
+    $('m3kBack').textContent=Math.abs(this.lEnd()-this.l)<=0.15
+      ? 'об\'єм — так, тиск і температура — ні'
+      : 'ні: гиря '+fmt(this.m,1)+' кг замість '+fmt(mm,1)+' кг';
     $('m3fx').innerHTML=
       '<i>h</i> = <i>l</i>(<i>T</i><sub>2</sub>/<i>T</i><sub>1</sub> − 1) = '+fmt(this.l,0)+
       '·('+fmt(this.T2K(),0)+'/'+fmt(this.T1K,0)+' − 1) = <b>'+fmt(l2-this.l,2)+' см</b><br>'+

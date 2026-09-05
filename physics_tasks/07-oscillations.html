@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -101,9 +101,9 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; height:500px}
-#m2scene{width:100%; height:500px}
-#m3scene{width:100%; height:470px}
+#m1scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m2scene{width:100%; height:clamp(440px,55.6vh,875px)}
+#m3scene{width:100%; height:clamp(414px,52.2vh,822px)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
 .cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
@@ -111,7 +111,7 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
-@media (max-width:900px){
+@media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
 }
 </style>
@@ -137,10 +137,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m1mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
           <span class="lbl" id="m1t"></span>
@@ -206,10 +202,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -241,7 +233,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         коливань поршня внаслідок незначного поштовху.</p>
         <div class="kv"><span><var>P</var> — початковий тиск у половинах</span><b id="m2vp"></b></div>
         <div class="kv"><span><var>m</var> — маса поршня</span><b id="m2vm"></b></div>
-        <div class="kv"><span>амплітуда поштовху</span><b id="m2va"></b></div>
+        <div class="kv"><span>амплітуда<span class="badge">задається поршнем</span></span><b id="m2va"></b></div>
       </div>
       <div class="panel">
         <h3>Відповідь</h3>
@@ -276,10 +268,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m3mode">
-            <button data-v="task" class="active" style="--c:var(--k1)">умова задачі</button>
-            <button data-v="free" style="--c:var(--k2)">свій дослід</button>
-          </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
           <span class="lbl" id="m3t"></span>
@@ -801,8 +789,8 @@ function drawGrip(g,h,st){
 
 /* ===================== МОДУЛЬ 1 · пластилін на пружину ===================== */
 const M1={
-  mode:'task', M:1.5, m:0.5, k:250, h:0.2,
-  t:0, playing:true, waitT:0, showAns:false, TT:4.2,
+  mode:'free', M:1.5, m:0.5, k:250, h:0.2,
+  t:0, playing:true, waitT:0, showAns:true, TT:4.2,
   mMIN:0.2, mMAX:1.0, KMIN:150, KMAX:400, HMIN:0.05, HMAX:0.4,
   hx:{x:null}, he:{x:null}, tipx:null, tipe:null,
   GG:[['m','маса пластиліну, кг',0.2,1,0.05,CLR.k2,null,'m1vm',2,'кг'],
@@ -841,7 +829,6 @@ const M1={
   syncAns(){const task=this.mode==='task';
     $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m1mode',v=>this.setMode(v));
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m1play').onclick=()=>{
@@ -1019,15 +1006,18 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · газова пружина ===================== */
 const M2={
-  mode:'task', P:5000, S:50e-4, m:2, l:1, amp:0.05,
-  t:0, playing:true, showAns:false, th:0, om0:0,
+  mode:'free', P:5000, S:50e-4, m:2, l:1, amp:0.05,
+  t:0, playing:true, showAns:true, th:0, om0:0,
   PMIN:2000, PMAX:20000, MMIN:0.5, MMAX:6, AMPMIN:0.02, AMPMAX:0.6,
   hf:{x:null}, hx:{x:null}, tipf:null, tipx:null,
+  /* Амплітуда — не параметр системи, а початкова умова: вона з'являється
+     тоді, коли поршень відтягнули й відпустили. Окремим повзунком вона нічого
+     не спричиняла (зміна не діяла до скидання) і при цьому вдавала, ніби
+     задається нарівні з тиском і масою. Тепер її задають самим поршнем. */
   GG:[['Pk','тиск P, кПа',2,20,0.5,CLR.k1,null,'m2vp',1,'кПа'],
-      ['m','маса поршня, кг',0.5,6,0.1,CLR.k3,null,'m2vm',1,'кг'],
-      ['ampcm','амплітуда, см',2,60,1,CLR.k2,null,'m2va',0,'см']],
+      ['m','маса поршня, кг',0.5,6,0.1,CLR.k3,null,'m2vm',1,'кг']],
   get Pk(){return this.P/1000;}, set Pk(v){this.P=v*1000;},
-  get ampcm(){return this.amp*100;}, set ampcm(v){this.amp=v/100;},
+  get ampcm(){return this.amp*100;},
   kEff(){return 2*this.P*this.S/this.l;},
   T0(){return 2*Math.PI*Math.sqrt(this.m/this.kEff());},
   /* точна повертальна сила при ізотермічному стисненні половин */
@@ -1045,7 +1035,6 @@ const M2={
   syncAns(){const task=this.mode==='task';
     $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m2mode',v=>this.setMode(v));
     grip('m2scene',this,()=>this.grips());
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
@@ -1064,7 +1053,19 @@ const M2={
   grips(){
     if(this.mode!=='free') return [];
     const b=cvx('m2scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b);
+    return [
+      /* Поршень і є ручкою: відтягуєте — швидкість гаситься, амплітудою стає
+         те зміщення, на якому ви його відпустили. */
+      {id:'x', x:Q.cx+this.x*Q.sc, y:Q.cy, r:12, bare:true, color:CLR.ink,
+       hint:'відтягніть поршень і відпустіть',
+       hit:(px,py)=>Math.abs(px-(Q.cx+this.x*Q.sc))<=14&&
+                    Math.abs(py-Q.cy)<=Q.ch/2+8,
+       move:px=>{
+         this.x=clamp(snap((px-Q.cx)/Q.sc,0.005),-this.AMPMAX,this.AMPMAX);
+         this.v=0; this.amp=Math.abs(this.x); this.t=0;
+       }}
+    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
   tick(dt){
     if(this._grab==null&&this.playing){
@@ -1094,7 +1095,7 @@ const M2={
     }
     $('m2vp').textContent=fmt(this.Pk,1)+' кПа';
     $('m2vm').textContent=fmt(this.m,1)+' кг';
-    $('m2va').textContent=fmt(this.ampcm,0)+' см';
+    $('m2va').textContent=fmt(this.ampcm,1)+' см';
   },
   scene(){
     const b=cvx('m2scene'); if(!b) return;
@@ -1120,6 +1121,12 @@ const M2={
     /* поршень */
     g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(px-6,cy-ch/2-3,12,ch+6,3); g.fill(); g.stroke();
+    /* насічка — знак того, що поршень можна тягнути */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.2;
+    for(const dy of [-5,0,5]){
+      g.beginPath(); g.moveTo(px-2.5,cy+dy); g.lineTo(px+2.5,cy+dy); g.stroke();
+    }
+    for(const hh of this.grips()) if(hh.id==='x') drawGrip(g,hh,this);
     /* повертальна сила: точна й лінійна поруч */
     const F=this.F(x), Fl=this.Flin(x);
     const kF=Math.min(90,ch)/Math.max(1e-6,Math.abs(this.F(this.AMPMAX*0.9)));
@@ -1199,8 +1206,8 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · маятник зі стінкою ===================== */
 const M3={
-  mode:'task', A:0.10, T0:1.2, L:0.05,
-  t:0, playing:true, showAns:false, TT:5.0,
+  mode:'free', A:0.10, T0:1.2, L:0.05,
+  t:0, playing:true, showAns:true, TT:5.0,
   AMIN:0.05, AMAX:0.16, T0MIN:0.6, T0MAX:2.4,
   hx:{x:null}, ht:{x:null}, tipx:null, tipt:null,
   GG:[['Acm','амплітуда A, см',5,16,0.5,CLR.k1,null,'m3va',1,'см'],
@@ -1227,7 +1234,6 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3mode',v=>this.setMode(v));
     grip('m3scene',this,()=>this.grips());
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
@@ -1284,21 +1290,30 @@ const M3={
     const xw=cx-this.AMAX*sc-70;
     g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.beginPath(); g.roundRect(xw-14,cy-42,14,84,2); g.fill(); g.stroke();
-    /* пружина до вантажа */
-    const bx=cx+x*sc;
+    /* Координата x — це та грань вантажа, якою він зустрічає стінку, а не його
+       центр. Раніше вантаж малювався центром у x і при x = L заходив у стінку
+       на половину свого корпусу. Тепер він тягнеться від x ліворуч, тож у мить
+       дотику грань і площина стінки збігаються. */
+    const bx=cx+x*sc, BW=48;
     g.strokeStyle=CLR.k3; g.lineWidth=2; g.beginPath();
     g.moveTo(xw,cy);
     const nT=12;
-    for(let i=1;i<nT;i++) g.lineTo(xw+(bx-24-xw)*i/nT,cy+(i%2?-11:11));
-    g.lineTo(bx-24,cy); g.stroke();
+    for(let i=1;i<nT;i++) g.lineTo(xw+(bx-BW-xw)*i/nT,cy+(i%2?-11:11));
+    g.lineTo(bx-BW,cy); g.stroke();
     /* вантаж */
     g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
-    g.beginPath(); g.roundRect(bx-24,cy-20,48,40,4); g.fill(); g.stroke();
+    g.beginPath(); g.roundRect(bx-BW,cy-20,BW,40,4); g.fill(); g.stroke();
     /* стінка */
     const wx=cx+this.L*sc;
     g.fillStyle='rgba(235,104,52,.16)'; g.strokeStyle=CLR.k2; g.lineWidth=3;
     g.beginPath(); g.roundRect(wx,cy-46,10,92,2); g.fill(); g.stroke();
     txt(g,'стінка',wx+16,cy-52,{color:'#b8431a',size:11,bold:true});
+    /* мить удару: грань і стінка збіглися */
+    if(this.L<=this.A&&Math.abs(x-this.L)<this.A*0.012){
+      g.strokeStyle=CLR.k2; g.lineWidth=3;
+      g.beginPath(); g.moveTo(wx-1,cy-30); g.lineTo(wx-1,cy+30); g.stroke();
+      pill(g,'удар',wx-16,cy-56,{color:CLR.k2,size:10.5,bold:true});
+    }
     /* рівновага, амплітуда й розмір L */
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(cx,cy-56); g.lineTo(cx,yb); g.stroke();
