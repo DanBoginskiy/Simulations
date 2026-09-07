@@ -111,8 +111,40 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+/* ============ адаптив: сторінка перебудовується під дисплей ============ */
+@media (max-width:1360px){
+  .pgrid{grid-template-columns:1fr 264px}
+}
 @media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .wrap{max-width:100vw; padding:14px 11px 30px}
+  h1{font-size:19px}
+  h1 small{display:block; margin:5px 0 0; font-size:12.5px}
+  .tabs{gap:2px; margin:10px 0 13px}
+  .tabs button{padding:7px 9px 9px; font-size:12.5px}
+  .panel{padding:11px 12px}
+  .side .panel{padding:10px 12px}
+  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .toolbar{gap:9px}
+  .coords{gap:11px; font-size:12.5px}
+  table.read{font-size:12.5px}
+  table.read th,table.read td{padding:4px 5px}
+}
+@media (max-width:480px){
+  html,body{font-size:14px}
+  .caption{font-size:12.5px}
+  .sl output{min-width:62px; font-size:12px}
+  .kv{font-size:12px}
+  .legend,.legend.sm{gap:10px; font-size:11.5px}
+}
+/* Висота сцени йде за висотою вікна. У альбомній орієнтації телефона
+   вертикального місця обмаль, і сцена, розрахована на 466+ px, вилазить
+   за екран — тут вона стискається під те, що є. */
+@media (max-height:560px) and (orientation:landscape){
+  .scene canvas,.pgrid .scene canvas{height:clamp(230px,86vh,560px)!important}
+  .chartbox canvas{height:clamp(120px,42vh,186px)}
 }
 </style>
 </head>
@@ -140,7 +172,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="seg" id="m1mem">
             <button data-v="h2" class="active" style="--c:var(--k1)">пропускає водень</button>
             <button data-v="all" style="--c:var(--k2)">пропускає все</button>
-            <button data-v="none" style="--c:var(--k3)">глуха стінка</button>
           </div>
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
@@ -348,7 +379,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
      --k1  те, що можна відкачати або перепустити: водень, тиск, об'єм
      --k2  те, що гріє й тисне: температура, ізобара, показник процесу
-     --k3  те, що не пускає й не пропускає: гелій, глуха стінка, гиря
+     --k3  те, що не пускає й не пропускає: гелій, гиря
      --ink результат: шукана величина, сам поршень, стан газу
      --sec пройдена траєкторія, штрих [2,3]
    ===================================================================== */
@@ -388,17 +419,53 @@ function durHM(min){
 }
 
 const CV={};
+/* Кегль підписів рахується від ширини полотна, а не сталою в пікселях: напис
+   на 11 px, доречний на широкому кадрі, на телефоні накриває півсцени. TK —
+   множник поточного полотна, який txt(), pill(), slideTrack() і поля графіка
+   чіпляють до будь-якого розміру. TKREF — ширина, з якої місця вже вдосталь,
+   тож на десктопі TK рівно 1 і жоден кадр не змінюється. */
+const TKREF=560, TKMIN=0.62;
+let TK=1;
+const tkOf=w=>Math.max(TKMIN,Math.min(1,w/TKREF));
 function cvx(id){
-  if(CV[id]) return CV[id];
+  if(CV[id]){TK=CV[id].tk; return CV[id];}
   const c=$(id); const r=c.getBoundingClientRect();
   if(r.width<2||r.height<2) return null;
   const d=window.devicePixelRatio||1;
   c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
-  return CV[id]={g,w:r.width,h:r.height,el:c};
+  TK=tkOf(r.width);
+  return CV[id]={g,w:r.width,h:r.height,el:c,tk:TK};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Кадр застаріває не лише від вікна: полотно міняє розмір і коли розгортається
+   панель відповіді, і коли перемикається вкладка, і коли телефон повертають,
+   і коли вікно переносять на монітор з іншим DPR. Ловимо все — інакше сцена
+   лишається намальованою під учорашній розмір і тягнеться інтерполяцією. */
+function dropCV(){for(const k in CV) delete CV[k]; for(const k in CHFIT) delete CHFIT[k];}
+addEventListener('resize',dropCV);
+addEventListener('orientationchange',dropCV);
+if(window.visualViewport) visualViewport.addEventListener('resize',dropCV);
+/* Зміна devicePixelRatio події resize не дає — її ловить одноразова
+   підписка на медіазапит, яка щоразу переоформлюється на новий DPR. */
+(function dpr(){
+  if(!window.matchMedia) return;
+  const mq=matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)');
+  const on=()=>{dropCV(); dpr();};
+  if(mq.addEventListener) mq.addEventListener('change',on,{once:true});
+  else if(mq.addListener) mq.addListener(on);
+})();
+/* ResizeObserver — єдиний, хто бачить зміну самого об'єкта, а не вікна:
+   полотно змінює розмір і без жодної події вікна. Скидаємо тільки той кадр,
+   що справді змінився; рамки графіків — усі, вони прив'язані до кегля. */
+if(window.ResizeObserver){
+  const RO=new ResizeObserver(es=>{
+    for(const e of es) if(e.target.id) delete CV[e.target.id];
+    for(const k in CHFIT) delete CHFIT[k];
+  });
+  const watch=()=>document.querySelectorAll('canvas[id]').forEach(c=>RO.observe(c));
+  addEventListener('DOMContentLoaded',watch);
+  watch();
+}
 
 function seg(id,cb){
   const el=$(id);
@@ -415,11 +482,21 @@ function slider(id,unit,dec,cb){
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
 }
+/* Будь-який кегль проходить через TK — множник поточного полотна. Додатково
+   o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
+   предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
 function txt(g,s,x,y,o={}){
+  let sz=(o.size||11)*TK;
+  const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
   g.fillStyle=o.color||CLR.ink;
-  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.font=F(sz);
+  if(o.max>0){
+    const wd=g.measureText(s).width;
+    if(wd>o.max){sz=Math.max(sz*0.55,sz*o.max/wd); g.font=F(sz);}
+  }
   g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
   g.fillText(s,x,y);
+  return sz;
 }
 function arrow(g,x1,y1,x2,y2,color,w=2){
   const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
@@ -432,10 +509,10 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
-  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
-  const wd=g.measureText(s).width+14;
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
-  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  g.beginPath(); g.roundRect(x-wd/2,y-13*TK,wd,19*TK,9*TK); g.fill();
   txt(g,s,x,y+1,{...o,align:'center'});
 }
 function dot(g,x,y,r,fill,ring){
@@ -458,7 +535,7 @@ function arc(g,x,y,r,a1,a2,color,w=1.2){
 const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
-  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  const L=44*TK,R=54*TK,T=12*TK,B=26*TK,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
   /* ---- масштаб графіка не «дихає» ---------------------------------------
      Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
@@ -467,11 +544,21 @@ function drawChart(box,opt){
      Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
      рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
   let yMin=opt.yMin, yMax=opt.yMax;
-  {
+  /* opt.yFix — рамка задана навмисно (наприклад, за шириною щілини), і
+     підганяти її під криву не можна: крива тут із асимптотою, вона мусить
+     іти за кадр, а не тягти кадр за собою. */
+  if(!opt.yFix){
     const ckey=(box.el&&box.el.id)||opt.yLab||'';
     const want=yMax-yMin, f=CHFIT[ckey];
     if(ckey&&want>0){
-      if(f&&want<=f.span*4&&want*4>=f.span){
+      /* Замовлену рамку звіряємо із ЗАМОВЛЕНОЮ, а не з уже розтягнутою.
+         Інакше власний розтяг вибиває цю ж перевірку: кадр розширився під
+         криву більш ніж учетверо → наступного кадру «замовлення не збігається»
+         → рамку беруть заново → і так щокадру, туди-сюди. Саме це блимання
+         видно у фільтрі Віна, щойно довжина переростає ~7 мм і Δy біля краю
+         пучка йде на сотні міліметрів. */
+      const req=f&&f.req>0?f.req:want;
+      if(f&&want<=req*4&&want*4>=req){
         yMin=f.lo; yMax=f.hi;
         let lo=Infinity,hi=-Infinity;
         for(const s of (opt.series||[])) if(s&&s.ys)
@@ -480,10 +567,14 @@ function drawChart(box,opt){
         if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
         if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
       }
-      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin};
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin,req:want};
     }
   }
-  const X=t=>L+t/opt.tMax*pw;
+  /* Вікно по осі x може починатися не з нуля: є графіки, де вся суть в'яжеться
+     у вузькій смузі аргументу, і показувати її від початку координат означає
+     стиснути криву в вертикальну риску. Без tMin усе як було. */
+  const t0=opt.tMin||0, tSpan=Math.max(1e-12,opt.tMax-t0);
+  const X=t=>L+(t-t0)/tSpan*pw;
   const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
   g.clearRect(0,0,w,h);
   g.lineWidth=1;
@@ -491,29 +582,44 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
   }
-  const xs=opt.xStep||niceStep(opt.tMax/5);
-  for(let t=0;t<=opt.tMax+1e-9;t+=xs){
-    g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
+  const xs=opt.xStep||niceStep(tSpan/5);
+  for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
+  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
+    /* Криву ріжемо рамкою осей. Ряд, що йде далеко за межі кадру (Δy на краю
+       пучка — десятки міліметрів там, де кадр міряється одиницями), інакше
+       малюється поверх підписів осей і поза полем графіка. */
+    g.save();
+    g.beginPath(); g.rect(L,T,pw,ph); g.clip();
     g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
     g.beginPath();
     for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
     g.stroke(); g.setLineDash([]);
-    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    g.restore();
+    /* Якір прямого підпису — остання точка, що ЩЕ в кадрі, а не остання
+       взагалі. Крива, яка пішла за нижню межу, тягла підпис у правий нижній
+       кут, і той сідав просто на вісь, читаючись як її назва. Якщо в кадрі
+       немає жодної точки ряду, немає й підпису — підписувати нічого. */
+    const inFrame=i=>s.ts[i]>=t0-1e-9&&s.ts[i]<=opt.tMax+1e-9&&
+      s.ys[i]>=yMin&&s.ys[i]<=yMax;
+    let k=s.ts.length-1;
+    while(k>0&&!inFrame(k)) k--;
+    if(!inFrame(k)) continue;
+    const lx=X(s.ts[k]),ly=Y(s.ys[k]);
     dot(g,lx,ly,3,s.color);
     ends.push({x:lx,y:ly,label:s.label});
   }
@@ -521,10 +627,21 @@ function drawChart(box,opt){
      значеннях вони лягають один на одного і жоден не читається */
   ends.sort((a,b)=>a.y-b.y);
   for(let i=1;i<ends.length;i++)
-    if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
-  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+    if(ends[i].y-ends[i-1].y<13*TK) ends[i].y=ends[i-1].y+13*TK;
+  /* Підпис серії стає праворуч від кінця кривої, а коли там уже немає місця —
+     перекидається ліворуч від неї: інакше на вузькому графіку він виїжджає
+     за праву межу полотна й обрізається. */
+  for(const e of ends){
+    /* Крива може вийти за праву межу осей (ряд довший за tMax) — тоді якорем
+       підпису стає сама межа, а не кінець кривої десь за кадром. */
+    const ex=Math.min(e.x,L+pw);
+    const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room});
+    else txt(g,e.label,ex-7*TK,ly,
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3)});
+  }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
-    const t=(opt.hover-L)/pw*opt.tMax;
+    const t=t0+(opt.hover-L)/pw*tSpan;
     const s0=opt.series[0];
     const tc=Math.min(t,s0.ts[s0.ts.length-1]);
     const hx=X(tc);
@@ -591,7 +708,14 @@ function frozen(st,b,calc){
    (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
 function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
   const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
-  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+  /* Поля лишають місце під підписи, а підписи тепер стискаються разом із
+     полотном — отже, стискаються й поля. Без цього на вузькому екрані поле
+     з'їдало всю ширину, різниця йшла в мінус і сцена виверталась навиворіт. */
+  const pw=Math.min(padW*TK,w*0.62), ph=Math.min(padH*TK,h*0.62);
+  /* Нижньої межі в самого масштабу немає: у сценах, де вісь міряється
+     метрами тисячами (радіус петлі), sc законно менший за одиницю. Від
+     від'ємного значення рятує вже той факт, що поле не більше за 0,62 кадру. */
+  return Math.min((w-pw)/Math.max(1e-6,X),(h-ph)/Math.max(1e-6,Y));
 }
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
@@ -696,6 +820,29 @@ function gpos(C,i){
    попередні положення. Тепер сцена малює вище gtop, смуга — нижче, і кожна
    чистить рівно свою частину. На вузькому екрані дві колонки не влазять —
    смуга стає одноколонковою. */
+/* Полотно лише для вимірювання тексту: gaugeGrips() малює не сам, а мусить
+   знати ширину підпису так само, як gaugeCol(), інакше доріжка й ручка
+   роз'їдуться. Один контекст на сторінку, нічого не малює. */
+const MEAS=document.createElement('canvas').getContext('2d');
+function labWidth(s,size,bold){
+  MEAS.font=(bold?'600 ':'')+size+'px system-ui,sans-serif';
+  return MEAS.measureText(s).width;
+}
+/* Ліва поличка під підписи повзунків. Була стала — 110 px, — і довгий підпис
+   («поверхневий натяг σ, мН/м», «маса пластиліну, кг») просто звисав за лівий
+   край кадру. Тепер доріжка з'їжджає праворуч рівно на стільки, скільки
+   бракує, і рівно на стільки ж коротшає: її правий кінець і підпис значення
+   лишаються на місці. */
+function gfit(C,list){
+  let need=0;
+  for(const m of list) need=Math.max(need,labWidth(m[1],11*TK,true));
+  /* Зсовуємось не більше, ніж дозволяє сама доріжка: її правий кінець і
+     підпис значення мусять лишитися на місці, інакше замість підпису за
+     лівий край поїде число за правий. Далі підпис стискається кеглем. */
+  const d=Math.min(Math.ceil(need)+22-C.x[0],Math.max(0,C.W-60));
+  if(d<=0) return C;
+  return {...C, x:C.x.map(v=>v+d), W:Math.max(60,C.W-d)};
+}
 function gcolOf(b,n){
   const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
   const gtop=b.h-(n?rows*38+22:0);
@@ -708,34 +855,39 @@ function gcolOf(b,n){
    із великим повзунком, підписаними межами й значенням поруч; уся доріжка —
    зона захоплення, тож повзунок стрибає під палець. */
 function slideTrack(g,x,y,W,f,col,vertical){
+  /* Жолоб міряється тим самим TK, що й підписи: інакше на телефоні
+     дванадцятипіксельна смуга лишається завширшки з половину сцени. */
   const F=Math.max(0,Math.min(1,f));
+  const TH=12*TK, hT=TH/2, R=10*TK, mn=Math.min(TH,W);
   g.fillStyle='#eceae3';
   g.beginPath();
-  if(vertical) g.roundRect(x-6,y-W,12,W,6); else g.roundRect(x,y-6,W,12,6);
+  if(vertical) g.roundRect(x-hT,y-W,TH,W,hT); else g.roundRect(x,y-hT,W,TH,hT);
   g.fill();
   g.strokeStyle=CLR.axis; g.lineWidth=1;
   g.beginPath();
-  if(vertical) g.roundRect(x-5.5,y-W+.5,11,W-1,5.5); else g.roundRect(x+.5,y-5.5,W-1,11,5.5);
+  if(vertical) g.roundRect(x-hT+.5,y-W+.5,TH-1,W-1,hT-.5);
+  else g.roundRect(x+.5,y-hT+.5,W-1,TH-1,hT-.5);
   g.stroke();
   g.fillStyle=col; g.globalAlpha=0.34;
   g.beginPath();
-  if(vertical) g.roundRect(x-6,y-Math.max(12,F*W),12,Math.max(12,F*W),6);
-  else g.roundRect(x,y-6,Math.max(12,F*W),12,6);
+  if(vertical) g.roundRect(x-hT,y-Math.max(mn,F*W),TH,Math.max(mn,F*W),hT);
+  else g.roundRect(x,y-hT,Math.max(mn,F*W),TH,hT);
   g.fill(); g.globalAlpha=1;
   for(let q=0;q<=4;q++){
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.beginPath();
-    if(vertical){const ty=y-q*W/4; g.moveTo(x+9,ty+.5); g.lineTo(x+12,ty+.5);}
-    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+9); g.lineTo(tx+.5,y+12);}
+    if(vertical){const ty=y-q*W/4; g.moveTo(x+hT+3*TK,ty+.5); g.lineTo(x+hT+6*TK,ty+.5);}
+    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+hT+3*TK); g.lineTo(tx+.5,y+hT+6*TK);}
     g.stroke();
   }
   const hx=vertical?x:x+F*W, hy=vertical?y-F*W:y;
   g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=3;
-  g.beginPath(); g.arc(hx,hy,10,0,7); g.fill(); g.stroke();
+  g.beginPath(); g.arc(hx,hy,R,0,7); g.fill(); g.stroke();
   g.fillStyle=col;
-  g.beginPath(); g.arc(hx,hy,3.5,0,7); g.fill();
+  g.beginPath(); g.arc(hx,hy,R*0.35,0,7); g.fill();
   return {hx,hy};
 }
-function gaugeGrips(C,list,st){
+function gaugeGrips(C0,list,st){
+  const C=gfit(C0,list);
   return list.map((m,i)=>{
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
@@ -746,16 +898,17 @@ function gaugeGrips(C,list,st){
       }};
   });
 }
-function gaugeCol(g,C,list,st){
-  g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+function gaugeCol(g,C0,list,st){
+  g.clearRect(0,C0.gtop,C0.w,C0.h-C0.gtop);
   if(!list.length) return;
+  const C=gfit(C0,list);
   g.strokeStyle=CLR.grid; g.lineWidth=1;
   g.beginPath(); g.moveTo(8,C.gtop+8.5);
   g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.gtop+8.5); g.stroke();
   list.forEach((m,i)=>{
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
-    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right'});
+    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
     txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
     txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
     txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
@@ -809,7 +962,7 @@ const M1={
   GG:[['N','молекул',30,150,5,CLR.sec,function(){this.build();},'m1vn',0,'']],
   P:null,                              /* частинки: {x,y,vx,vy,h} — h = водень */
   hist:null,
-  MEM:{h2:'пропускає лише водень', all:'пропускає обидва гази', none:'глуха стінка'},
+  MEM:{h2:'пропускає лише водень', all:'пропускає обидва гази'},
   /* Коробка в умовних одиницях: ширина 2 (дві половини по 1), висота 1. */
   build(){
     this.P=[];
@@ -943,16 +1096,10 @@ const M1={
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.strokeRect(Q.bx+.5,Q.by+.5,Q.bw-1,Q.bh-1);
     const mx=X(this.mp);
-    if(this.mem==='none'){
-      g.strokeStyle=CLR.sec; g.lineWidth=4;
-      g.beginPath(); g.moveTo(mx,Q.by); g.lineTo(mx,Q.by+Q.bh); g.stroke();
-    } else {
-      g.strokeStyle=this.mem==='h2'?CLR.k1:CLR.k2; g.lineWidth=3; g.setLineDash([7,5]);
-      g.beginPath(); g.moveTo(mx,Q.by); g.lineTo(mx,Q.by+Q.bh); g.stroke(); g.setLineDash([]);
-    }
+    g.strokeStyle=this.mem==='h2'?CLR.k1:CLR.k2; g.lineWidth=3; g.setLineDash([7,5]);
+    g.beginPath(); g.moveTo(mx,Q.by); g.lineTo(mx,Q.by+Q.bh); g.stroke(); g.setLineDash([]);
     txt(g,this.MEM[this.mem],mx,Q.by-10,
-      {color:this.mem==='h2'?'#1c5cab':(this.mem==='all'?'#b8431a':CLR.sec),
-       size:11,bold:true,align:'center'});
+      {color:this.mem==='h2'?'#1c5cab':'#b8431a',size:11,bold:true,align:'center'});
     /* молекули: водень — синій і швидший, гелій — зелений */
     for(const p of this.P){
       dot(g,X(p.x),Y(p.y),p.h?2.6:3.6,p.h?CLR.k1:CLR.k3);

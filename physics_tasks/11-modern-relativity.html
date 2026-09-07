@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Спеціальна теорія відносності · похилий стрижень · додавання швидкостей · мюони</title>
+<title>Спеціальна теорія відносності · похилий стрижень · додавання швидкостей · мюони · драбина в сараї</title>
 <style>
 :root{
   --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
@@ -104,6 +104,7 @@ table.read tr:last-child td{border-bottom:none}
 #m1scene{width:100%; height:clamp(361px,45.6vh,718px)}
 #m2scene{width:100%; height:clamp(431px,54.4vh,858px)}
 #m3scene{width:100%; height:clamp(458px,57.8vh,910px)}
+#m4scene{width:100%; height:clamp(474px,59.8vh,942px)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
@@ -112,20 +113,53 @@ table.read tr:last-child td{border-bottom:none}
 .cond b{color:var(--ink); font-weight:600}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+/* ============ адаптив: сторінка перебудовується під дисплей ============ */
+@media (max-width:1360px){
+  .pgrid{grid-template-columns:1fr 264px}
+}
 @media (max-width:1100px){
   .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .wrap{max-width:100vw; padding:14px 11px 30px}
+  h1{font-size:19px}
+  h1 small{display:block; margin:5px 0 0; font-size:12.5px}
+  .tabs{gap:2px; margin:10px 0 13px}
+  .tabs button{padding:7px 9px 9px; font-size:12.5px}
+  .panel{padding:11px 12px}
+  .side .panel{padding:10px 12px}
+  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .toolbar{gap:9px}
+  .coords{gap:11px; font-size:12.5px}
+  table.read{font-size:12.5px}
+  table.read th,table.read td{padding:4px 5px}
+}
+@media (max-width:480px){
+  html,body{font-size:14px}
+  .caption{font-size:12.5px}
+  .sl output{min-width:62px; font-size:12px}
+  .kv{font-size:12px}
+  .legend,.legend.sm{gap:10px; font-size:11.5px}
+}
+/* Висота сцени йде за висотою вікна. У альбомній орієнтації телефона
+   вертикального місця обмаль, і сцена, розрахована на 466+ px, вилазить
+   за екран — тут вона стискається під те, що є. */
+@media (max-height:560px) and (orientation:landscape){
+  .scene canvas,.pgrid .scene canvas{height:clamp(230px,86vh,560px)!important}
+  .chartbox canvas{height:clamp(120px,42vh,186px)}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>Спеціальна теорія відносності<small>задачі 1.1 · 1.3 · 1.2 компенсаційного курсу</small></h1>
+  <h1>Спеціальна теорія відносності<small>задачі 1.1 · 1.3 · 1.2 компенсаційного курсу · парадокс драбини</small></h1>
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Похилий стрижень</button>
   <button data-m="m2">2 · Зустрічні частинки</button>
   <button data-m="m3">3 · Час життя й пробіг</button>
+  <button data-m="m4">4 · Драбина в сараї</button>
 </nav>
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
@@ -327,7 +361,85 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   </div>
 </section>
 
-<footer>Допоміжний матеріал із сучасної фізики · СТВ · скорочення довжин · додавання швидкостей · розтяг часу</footer>
+<!-- ================= МОДУЛЬ 4 ================= -->
+<section class="module" id="m4">
+  <p class="caption">Драбина довша за сарай — і все ж на великій швидкості вона цілком
+  уміщується всередині, коли обидві брами зачинено. У власній системі драбини сарай
+  іще коротший, і вона не вміщується ніколи. Обидва спостерігачі мають рацію: зачинити
+  <b>одночасно</b> — це твердження про одну систему відліку, а не про світ.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m4prev" title="крок назад">⏮</button>
+          <button class="ibtn" id="m4pp" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m4next" title="крок уперед">⏭</button>
+          <button class="ibtn" id="m4re" title="заново">↺</button>
+          <div class="seg" id="m4spd">
+            <button data-v="1" style="--c:var(--k1)">×1</button>
+            <button data-v="0.3" class="active" style="--c:var(--k2)">×⅓</button>
+            <button data-v="0" style="--c:var(--k3)">покадрово</button>
+          </div>
+          <span class="lbl" id="m4t"></span>
+        </div>
+        <canvas id="m4scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Де межа й де розходяться годинники</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m4clw">
+            <h4>довжина драбини в СВ сарая проти довжини сарая, м</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>драбина <var>L</var><sub>0</sub>/γ</span><span><span class="chip cA"></span>сарай <var>D</var><sub>0</sub></span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m4cl"></canvas>
+          </div>
+          <div class="chartbox" id="m4ctw">
+            <h4>у СВ драбини: розрив між зачиненнями проти тривалості, нс</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>розрив Δ<var>t</var>′</span><span><span class="chip cC"></span>як довго зачинено</span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m4ct"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова</h3>
+        <p class="cond">Драбина власною довжиною <b>L₀</b> влітає у сарай власною довжиною
+        <b>D₀ &lt; L₀</b> зі швидкістю <b>β = v/c</b>. Обидві брами зачиняються
+        <b>одночасно за годинником сарая</b> — рівно тоді, коли драбина всередині.
+        Питання не «чи вміститься», а <b>чи є суперечність</b>.</p>
+        <div class="kv"><span><var>L</var><sub>0</sub> — власна довжина драбини</span><b id="m4vL"></b></div>
+        <div class="kv"><span><var>D</var><sub>0</sub> — власна довжина сарая</span><b id="m4vD"></b></div>
+        <div class="kv"><span>швидкість <var>β</var> = <var>v</var>/<var>c</var></span><b id="m4vb"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Що бачить кожен</h3>
+        <div class="kv"><span>лоренц-фактор <var>γ</var></span><b id="m4kg"></b></div>
+        <div class="kv"><span>драбина в СВ сарая <var>L</var><sub>0</sub>/γ</span><b id="m4kLc"></b></div>
+        <div class="kv"><span>сарай у СВ драбини <var>D</var><sub>0</sub>/γ</span><b id="m4kDc"></b></div>
+        <div class="kv"><span>вміщується в СВ сарая<span class="badge" id="m4bfit" hidden>так</span></span><b id="m4kFit"></b></div>
+        <div class="kv"><span>найменша <var>β</var>, за якої вміщується</span><b id="m4kBmin"></b></div>
+        <div class="kv"><span>обидві брами зачинені (СВ сарая)</span><b id="m4kTin"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Чому суперечності немає</h3>
+        <div class="kv"><span>розрив одночасності Δ<var>t</var>′ = γβ<var>D</var><sub>0</sub>/<var>c</var></span><b id="m4kDt"></b></div>
+        <div class="kv"><span>як довго брама зачинена (СВ драбини)</span><b id="m4kWin"></b></div>
+        <div class="kv"><span>проміжок між зачиненнями</span><b id="m4kGap"></b></div>
+        <div class="kv"><span>чи бували зачинені разом<span class="badge">у СВ драбини</span></span><b id="m4kBoth"></b></div>
+        <p class="formulas" id="m4fx"></p>
+      </div>
+      <div class="panel">
+        <h3>Пояснення</h3>
+        <p class="formulas" id="m4why1"></p>
+        <p class="formulas" id="m4why2"></p>
+        <p class="formulas" id="m4why3"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Допоміжний матеріал із сучасної фізики · СТВ · скорочення довжин · додавання швидкостей · розтяг часу · відносність одночасності</footer>
 </div>
 
 <script>
@@ -378,17 +490,53 @@ function durHM(min){
 }
 
 const CV={};
+/* Кегль підписів рахується від ширини полотна, а не сталою в пікселях: напис
+   на 11 px, доречний на широкому кадрі, на телефоні накриває півсцени. TK —
+   множник поточного полотна, який txt(), pill(), slideTrack() і поля графіка
+   чіпляють до будь-якого розміру. TKREF — ширина, з якої місця вже вдосталь,
+   тож на десктопі TK рівно 1 і жоден кадр не змінюється. */
+const TKREF=560, TKMIN=0.62;
+let TK=1;
+const tkOf=w=>Math.max(TKMIN,Math.min(1,w/TKREF));
 function cvx(id){
-  if(CV[id]) return CV[id];
+  if(CV[id]){TK=CV[id].tk; return CV[id];}
   const c=$(id); const r=c.getBoundingClientRect();
   if(r.width<2||r.height<2) return null;
   const d=window.devicePixelRatio||1;
   c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
-  return CV[id]={g,w:r.width,h:r.height,el:c};
+  TK=tkOf(r.width);
+  return CV[id]={g,w:r.width,h:r.height,el:c,tk:TK};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Кадр застаріває не лише від вікна: полотно міняє розмір і коли розгортається
+   панель відповіді, і коли перемикається вкладка, і коли телефон повертають,
+   і коли вікно переносять на монітор з іншим DPR. Ловимо все — інакше сцена
+   лишається намальованою під учорашній розмір і тягнеться інтерполяцією. */
+function dropCV(){for(const k in CV) delete CV[k]; for(const k in CHFIT) delete CHFIT[k];}
+addEventListener('resize',dropCV);
+addEventListener('orientationchange',dropCV);
+if(window.visualViewport) visualViewport.addEventListener('resize',dropCV);
+/* Зміна devicePixelRatio події resize не дає — її ловить одноразова
+   підписка на медіазапит, яка щоразу переоформлюється на новий DPR. */
+(function dpr(){
+  if(!window.matchMedia) return;
+  const mq=matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)');
+  const on=()=>{dropCV(); dpr();};
+  if(mq.addEventListener) mq.addEventListener('change',on,{once:true});
+  else if(mq.addListener) mq.addListener(on);
+})();
+/* ResizeObserver — єдиний, хто бачить зміну самого об'єкта, а не вікна:
+   полотно змінює розмір і без жодної події вікна. Скидаємо тільки той кадр,
+   що справді змінився; рамки графіків — усі, вони прив'язані до кегля. */
+if(window.ResizeObserver){
+  const RO=new ResizeObserver(es=>{
+    for(const e of es) if(e.target.id) delete CV[e.target.id];
+    for(const k in CHFIT) delete CHFIT[k];
+  });
+  const watch=()=>document.querySelectorAll('canvas[id]').forEach(c=>RO.observe(c));
+  addEventListener('DOMContentLoaded',watch);
+  watch();
+}
 
 function seg(id,cb){
   const el=$(id);
@@ -405,11 +553,21 @@ function slider(id,unit,dec,cb){
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
 }
+/* Будь-який кегль проходить через TK — множник поточного полотна. Додатково
+   o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
+   предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
 function txt(g,s,x,y,o={}){
+  let sz=(o.size||11)*TK;
+  const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
   g.fillStyle=o.color||CLR.ink;
-  g.font=(o.bold?'600 ':'')+(o.size||11)+'px system-ui,sans-serif';
+  g.font=F(sz);
+  if(o.max>0){
+    const wd=g.measureText(s).width;
+    if(wd>o.max){sz=Math.max(sz*0.55,sz*o.max/wd); g.font=F(sz);}
+  }
   g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
   g.fillText(s,x,y);
+  return sz;
 }
 function arrow(g,x1,y1,x2,y2,color,w=2){
   const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
@@ -422,10 +580,10 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
-  g.font=(o.bold?'600 ':'')+(o.size||11.5)+'px system-ui,sans-serif';
-  const wd=g.measureText(s).width+14;
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
-  g.beginPath(); g.roundRect(x-wd/2,y-13,wd,19,9); g.fill();
+  g.beginPath(); g.roundRect(x-wd/2,y-13*TK,wd,19*TK,9*TK); g.fill();
   txt(g,s,x,y+1,{...o,align:'center'});
 }
 function dot(g,x,y,r,fill,ring){
@@ -448,7 +606,7 @@ function arc(g,x,y,r,a1,a2,color,w=1.2){
 const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
-  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  const L=44*TK,R=54*TK,T=12*TK,B=26*TK,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
   /* ---- масштаб графіка не «дихає» ---------------------------------------
      Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
@@ -457,11 +615,21 @@ function drawChart(box,opt){
      Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
      рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
   let yMin=opt.yMin, yMax=opt.yMax;
-  {
+  /* opt.yFix — рамка задана навмисно (наприклад, за шириною щілини), і
+     підганяти її під криву не можна: крива тут із асимптотою, вона мусить
+     іти за кадр, а не тягти кадр за собою. */
+  if(!opt.yFix){
     const ckey=(box.el&&box.el.id)||opt.yLab||'';
     const want=yMax-yMin, f=CHFIT[ckey];
     if(ckey&&want>0){
-      if(f&&want<=f.span*4&&want*4>=f.span){
+      /* Замовлену рамку звіряємо із ЗАМОВЛЕНОЮ, а не з уже розтягнутою.
+         Інакше власний розтяг вибиває цю ж перевірку: кадр розширився під
+         криву більш ніж учетверо → наступного кадру «замовлення не збігається»
+         → рамку беруть заново → і так щокадру, туди-сюди. Саме це блимання
+         видно у фільтрі Віна, щойно довжина переростає ~7 мм і Δy біля краю
+         пучка йде на сотні міліметрів. */
+      const req=f&&f.req>0?f.req:want;
+      if(f&&want<=req*4&&want*4>=req){
         yMin=f.lo; yMax=f.hi;
         let lo=Infinity,hi=-Infinity;
         for(const s of (opt.series||[])) if(s&&s.ys)
@@ -470,10 +638,14 @@ function drawChart(box,opt){
         if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
         if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
       }
-      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin};
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin,req:want};
     }
   }
-  const X=t=>L+t/opt.tMax*pw;
+  /* Вікно по осі x може починатися не з нуля: є графіки, де вся суть в'яжеться
+     у вузькій смузі аргументу, і показувати її від початку координат означає
+     стиснути криву в вертикальну риску. Без tMin усе як було. */
+  const t0=opt.tMin||0, tSpan=Math.max(1e-12,opt.tMax-t0);
+  const X=t=>L+(t-t0)/tSpan*pw;
   const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
   g.clearRect(0,0,w,h);
   g.lineWidth=1;
@@ -481,29 +653,44 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6,Y(y)+3,{color:CLR.mut,size:10,align:'right'});
+    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
   }
-  const xs=opt.xStep||niceStep(opt.tMax/5);
-  for(let t=0;t<=opt.tMax+1e-9;t+=xs){
-    g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
+  const xs=opt.xStep||niceStep(tSpan/5);
+  for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
+  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
+    /* Криву ріжемо рамкою осей. Ряд, що йде далеко за межі кадру (Δy на краю
+       пучка — десятки міліметрів там, де кадр міряється одиницями), інакше
+       малюється поверх підписів осей і поза полем графіка. */
+    g.save();
+    g.beginPath(); g.rect(L,T,pw,ph); g.clip();
     g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
     g.beginPath();
     for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
     g.stroke(); g.setLineDash([]);
-    const lx=X(s.ts[s.ts.length-1]),ly=Y(s.ys[s.ys.length-1]);
+    g.restore();
+    /* Якір прямого підпису — остання точка, що ЩЕ в кадрі, а не остання
+       взагалі. Крива, яка пішла за нижню межу, тягла підпис у правий нижній
+       кут, і той сідав просто на вісь, читаючись як її назва. Якщо в кадрі
+       немає жодної точки ряду, немає й підпису — підписувати нічого. */
+    const inFrame=i=>s.ts[i]>=t0-1e-9&&s.ts[i]<=opt.tMax+1e-9&&
+      s.ys[i]>=yMin&&s.ys[i]<=yMax;
+    let k=s.ts.length-1;
+    while(k>0&&!inFrame(k)) k--;
+    if(!inFrame(k)) continue;
+    const lx=X(s.ts[k]),ly=Y(s.ys[k]);
     dot(g,lx,ly,3,s.color);
     ends.push({x:lx,y:ly,label:s.label});
   }
@@ -511,10 +698,21 @@ function drawChart(box,opt){
      значеннях вони лягають один на одного і жоден не читається */
   ends.sort((a,b)=>a.y-b.y);
   for(let i=1;i<ends.length;i++)
-    if(ends[i].y-ends[i-1].y<13) ends[i].y=ends[i-1].y+13;
-  for(const e of ends) txt(g,e.label,e.x+7,Math.min(h-4,e.y+4),{color:CLR.ink,size:11,bold:true});
+    if(ends[i].y-ends[i-1].y<13*TK) ends[i].y=ends[i-1].y+13*TK;
+  /* Підпис серії стає праворуч від кінця кривої, а коли там уже немає місця —
+     перекидається ліворуч від неї: інакше на вузькому графіку він виїжджає
+     за праву межу полотна й обрізається. */
+  for(const e of ends){
+    /* Крива може вийти за праву межу осей (ряд довший за tMax) — тоді якорем
+       підпису стає сама межа, а не кінець кривої десь за кадром. */
+    const ex=Math.min(e.x,L+pw);
+    const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room});
+    else txt(g,e.label,ex-7*TK,ly,
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3)});
+  }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
-    const t=(opt.hover-L)/pw*opt.tMax;
+    const t=t0+(opt.hover-L)/pw*tSpan;
     const s0=opt.series[0];
     const tc=Math.min(t,s0.ts[s0.ts.length-1]);
     const hx=X(tc);
@@ -581,7 +779,14 @@ function frozen(st,b,calc){
    (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
 function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
   const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
-  return Math.min((w-padW)/Math.max(1e-6,X),(h-padH)/Math.max(1e-6,Y));
+  /* Поля лишають місце під підписи, а підписи тепер стискаються разом із
+     полотном — отже, стискаються й поля. Без цього на вузькому екрані поле
+     з'їдало всю ширину, різниця йшла в мінус і сцена виверталась навиворіт. */
+  const pw=Math.min(padW*TK,w*0.62), ph=Math.min(padH*TK,h*0.62);
+  /* Нижньої межі в самого масштабу немає: у сценах, де вісь міряється
+     метрами тисячами (радіус петлі), sc законно менший за одиницю. Від
+     від'ємного значення рятує вже той факт, що поле не більше за 0,62 кадру. */
+  return Math.min((w-pw)/Math.max(1e-6,X),(h-ph)/Math.max(1e-6,Y));
 }
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
@@ -686,6 +891,29 @@ function gpos(C,i){
    попередні положення. Тепер сцена малює вище gtop, смуга — нижче, і кожна
    чистить рівно свою частину. На вузькому екрані дві колонки не влазять —
    смуга стає одноколонковою. */
+/* Полотно лише для вимірювання тексту: gaugeGrips() малює не сам, а мусить
+   знати ширину підпису так само, як gaugeCol(), інакше доріжка й ручка
+   роз'їдуться. Один контекст на сторінку, нічого не малює. */
+const MEAS=document.createElement('canvas').getContext('2d');
+function labWidth(s,size,bold){
+  MEAS.font=(bold?'600 ':'')+size+'px system-ui,sans-serif';
+  return MEAS.measureText(s).width;
+}
+/* Ліва поличка під підписи повзунків. Була стала — 110 px, — і довгий підпис
+   («поверхневий натяг σ, мН/м», «маса пластиліну, кг») просто звисав за лівий
+   край кадру. Тепер доріжка з'їжджає праворуч рівно на стільки, скільки
+   бракує, і рівно на стільки ж коротшає: її правий кінець і підпис значення
+   лишаються на місці. */
+function gfit(C,list){
+  let need=0;
+  for(const m of list) need=Math.max(need,labWidth(m[1],11*TK,true));
+  /* Зсовуємось не більше, ніж дозволяє сама доріжка: її правий кінець і
+     підпис значення мусять лишитися на місці, інакше замість підпису за
+     лівий край поїде число за правий. Далі підпис стискається кеглем. */
+  const d=Math.min(Math.ceil(need)+22-C.x[0],Math.max(0,C.W-60));
+  if(d<=0) return C;
+  return {...C, x:C.x.map(v=>v+d), W:Math.max(60,C.W-d)};
+}
 function gcolOf(b,n){
   const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
   const gtop=b.h-(n?rows*38+22:0);
@@ -698,34 +926,39 @@ function gcolOf(b,n){
    із великим повзунком, підписаними межами й значенням поруч; уся доріжка —
    зона захоплення, тож повзунок стрибає під палець. */
 function slideTrack(g,x,y,W,f,col,vertical){
+  /* Жолоб міряється тим самим TK, що й підписи: інакше на телефоні
+     дванадцятипіксельна смуга лишається завширшки з половину сцени. */
   const F=Math.max(0,Math.min(1,f));
+  const TH=12*TK, hT=TH/2, R=10*TK, mn=Math.min(TH,W);
   g.fillStyle='#eceae3';
   g.beginPath();
-  if(vertical) g.roundRect(x-6,y-W,12,W,6); else g.roundRect(x,y-6,W,12,6);
+  if(vertical) g.roundRect(x-hT,y-W,TH,W,hT); else g.roundRect(x,y-hT,W,TH,hT);
   g.fill();
   g.strokeStyle=CLR.axis; g.lineWidth=1;
   g.beginPath();
-  if(vertical) g.roundRect(x-5.5,y-W+.5,11,W-1,5.5); else g.roundRect(x+.5,y-5.5,W-1,11,5.5);
+  if(vertical) g.roundRect(x-hT+.5,y-W+.5,TH-1,W-1,hT-.5);
+  else g.roundRect(x+.5,y-hT+.5,W-1,TH-1,hT-.5);
   g.stroke();
   g.fillStyle=col; g.globalAlpha=0.34;
   g.beginPath();
-  if(vertical) g.roundRect(x-6,y-Math.max(12,F*W),12,Math.max(12,F*W),6);
-  else g.roundRect(x,y-6,Math.max(12,F*W),12,6);
+  if(vertical) g.roundRect(x-hT,y-Math.max(mn,F*W),TH,Math.max(mn,F*W),hT);
+  else g.roundRect(x,y-hT,Math.max(mn,F*W),TH,hT);
   g.fill(); g.globalAlpha=1;
   for(let q=0;q<=4;q++){
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.beginPath();
-    if(vertical){const ty=y-q*W/4; g.moveTo(x+9,ty+.5); g.lineTo(x+12,ty+.5);}
-    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+9); g.lineTo(tx+.5,y+12);}
+    if(vertical){const ty=y-q*W/4; g.moveTo(x+hT+3*TK,ty+.5); g.lineTo(x+hT+6*TK,ty+.5);}
+    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+hT+3*TK); g.lineTo(tx+.5,y+hT+6*TK);}
     g.stroke();
   }
   const hx=vertical?x:x+F*W, hy=vertical?y-F*W:y;
   g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=3;
-  g.beginPath(); g.arc(hx,hy,10,0,7); g.fill(); g.stroke();
+  g.beginPath(); g.arc(hx,hy,R,0,7); g.fill(); g.stroke();
   g.fillStyle=col;
-  g.beginPath(); g.arc(hx,hy,3.5,0,7); g.fill();
+  g.beginPath(); g.arc(hx,hy,R*0.35,0,7); g.fill();
   return {hx,hy};
 }
-function gaugeGrips(C,list,st){
+function gaugeGrips(C0,list,st){
+  const C=gfit(C0,list);
   return list.map((m,i)=>{
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
@@ -736,16 +969,17 @@ function gaugeGrips(C,list,st){
       }};
   });
 }
-function gaugeCol(g,C,list,st){
-  g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+function gaugeCol(g,C0,list,st){
+  g.clearRect(0,C0.gtop,C0.w,C0.h-C0.gtop);
   if(!list.length) return;
+  const C=gfit(C0,list);
   g.strokeStyle=CLR.grid; g.lineWidth=1;
   g.beginPath(); g.moveTo(8,C.gtop+8.5);
   g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.gtop+8.5); g.stroke();
   list.forEach((m,i)=>{
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
-    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right'});
+    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
     txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
     txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
     txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
@@ -1521,8 +1755,315 @@ const M3={
   }
 };
 
+
+/* ===================== МОДУЛЬ 4 · драбина в сараї =====================
+   Парадокс живе рівно доти, доки «одночасно» вважають властивістю світу.
+   Тому обидві панелі показують ОДНЕ І ТЕ САМЕ, але кожна за своїм годинником,
+   і під кожною лежить її власна часова стрічка з вікнами «браму зачинено».
+   У СВ сарая вікна збігаються, у СВ драбини вони рознесені — це та сама
+   пара подій, просто спроєктована на два різні часи. */
+const M4={
+  mode:'free', be:0.80, L0:8, D0:6, showAns:true,
+  t:0, playing:true, SPD:0.3, FRAMES:64,
+  BMIN:0.30, BMAX:0.95, LMIN:5, LMAX:14, DMIN:3, DMAX:10,
+  C:0.299792458,                       /* м/нс — щоб числа були людські */
+  hl:{x:null}, ht:{x:null}, tipl:null, tipt:null,
+  GG:[['be','швидкість β',0.30,0.95,0.01,CLR.k2,null,'m4vb',2,'c']],
+  gam(){return gamOf(this.be);},
+  v(){return this.be*this.C;},
+  Lc(){return this.L0/this.gam();},    /* драбина очима сарая */
+  Dc(){return this.D0/this.gam();},    /* сарай очима драбини */
+  fits(){return this.Lc()<=this.D0;},
+  /* скільки драбина цілком усередині — за годинником сарая */
+  Tin(){return (this.D0-this.Lc())/this.v();},
+  /* розрив одночасності: та сама пара подій у СВ драбини рознесена на це */
+  dtp(){return this.gam()*this.be*this.D0/this.C;},
+  beMin(){return this.L0>this.D0?Math.sqrt(1-Math.pow(this.D0/this.L0,2)):0;},
+  /* вікна «зачинено». У СВ сарая — спільне; у СВ драбини кожна брама своє,
+     зсунуте на Δt′ і розтягнуте в γ разів. */
+  winBarn(){const T=Math.max(0,this.Tin()); return [0,T];},
+  winFront(){const T=Math.max(0,this.Tin())*this.gam(); return [0,T];},
+  winBack(){const T=Math.max(0,this.Tin())*this.gam(), d=this.dtp(); return [-d,T-d];},
+  gapNs(){return this.dtp()-Math.max(0,this.Tin())*this.gam();},
+  /* Проміжок часу сценарію береться так, щоб у КОЖНІЙ панелі були видні всі
+     чотири події: обидва зачинення і сам проліт. Інакше подія, заради якої
+     все й будується, лежала б за краєм стрічки. */
+  tMin(){const g=this.gam();
+    return Math.min(-(this.Lc()+2)/this.v(), g*(this.winBack()[0]-3));},
+  tMax(){const g=this.gam();
+    return Math.max((this.D0+2)/this.v(), g*(this.winFront()[1]+3));},
+  tp(){return this.t/this.gam();},     /* годинник драбини */
+  setTask(){this.be=0.80; this.L0=8; this.D0=6; this.reset();},
+  reset(){this.t=this.tMin(); this.playing=this.SPD>0; this.updBtn();},
+  updBtn(){$('m4pp').textContent=this.playing?'⏸':'▶';},
+  step(k){const a=this.tMin(), b=this.tMax();
+    this.playing=false; this.t=clamp(this.t+k*(b-a)/this.FRAMES,a,b); this.updBtn();},
+  setMode(m){this.mode=m; if(m==='task') this.setTask();
+    this.showAns=m!=='task'; this.syncAns();},
+  syncAns(){},
+  init(){
+    grip('m4scene',this,()=>this.grips());
+    $('m4pp').onclick=()=>{
+      if(!this.playing&&this.t>=this.tMax()) this.reset();
+      else {this.playing=!this.playing; this.updBtn();}};
+    $('m4prev').onclick=()=>this.step(-1);
+    $('m4next').onclick=()=>this.step(1);
+    $('m4re').onclick=()=>this.reset();
+    seg('m4spd',v=>{this.SPD=+v;
+      if(this.SPD===0) this.playing=false; else if(this.t>=this.tMax()) this.reset();
+      this.updBtn();});
+    this.tipl=makeTip('m4clw'); this.tipt=makeTip('m4ctw');
+    hover('m4cl',this.hl); hover('m4ct',this.ht);
+    this.hl.xlab='β'; this.hl.xunit='c'; this.hl.xdec=2;
+    this.ht.xlab='β'; this.ht.xunit='c'; this.ht.xdec=2;
+    this.setTask();
+  },
+  gcol(b){return gcolOf(b,this.GG.length);},
+  /* Спільний масштаб на обидві панелі — інакше «драбина довша за сарай»
+     перестає читатися з картинки, а це тут єдине, що треба бачити. */
+  geo(b){return frozen(this,b,bb=>{
+    const C=this.gcol(bb), H=C.gtop-46, half=bb.w/2;
+    const g=this.gam(), v=this.v(), t0=this.tMin(), t1=this.tMax();
+    const aLo=Math.min(0,v*t0)-1, aHi=Math.max(this.D0,v*t1+this.Lc())+1;
+    const bLo=Math.min(0,-v*t1/g)-1, bHi=Math.max(this.L0,-v*t0/g+this.Dc())+1;
+    const span=Math.max(aHi-aLo,bHi-bLo,4);
+    const sc=Math.max(2,(half-56)/span);
+    return {C,H,half,sc,span,aLo,bLo,
+      yb:46+H*0.56,             /* підлога */
+      ts:46+H-64,               /* верх часової стрічки */
+      SXA:x=>28+(x-aLo)*sc, SXB:x=>half+28+(x-bLo)*sc};
+  });},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m4scene'); if(!b) return [];
+    const Q=this.geo(b), out=gaugeGrips(this.gcol(b),this.GG,this);
+    const t=this.t, tp=this.tp(), v=this.v();
+    /* задню браму сарая тягнуть у СВ сарая — там сарай нерухомий */
+    out.push({id:'D', x:Q.SXA(this.D0), y:Q.yb-46, r:11, bare:true, color:CLR.k1,
+      hint:'довжина сарая D₀',
+      hit:(px,py)=>Math.abs(px-Q.SXA(this.D0))<=15&&py>=Q.yb-96&&py<=Q.yb+8,
+      move:px=>{this.D0=clamp(snap((px-28)/Q.sc+Q.aLo,0.5),this.DMIN,this.DMAX);
+        this.t=clamp(this.t,this.tMin(),this.tMax());}});
+    /* кінець драбини тягнуть у СВ драбини — там нерухома вона */
+    out.push({id:'L', x:Q.SXB(this.L0), y:Q.yb-16, r:11, bare:true, color:CLR.k2,
+      hint:'довжина драбини L₀',
+      hit:(px,py)=>Math.abs(px-Q.SXB(this.L0))<=15&&py>=Q.yb-34&&py<=Q.yb+8,
+      move:px=>{this.L0=clamp(snap((px-Q.half-28)/Q.sc+Q.bLo,0.5),this.LMIN,this.LMAX);
+        this.t=clamp(this.t,this.tMin(),this.tMax());}});
+    return out;
+  },
+  tick(dt){
+    if(this._grab==null&&this.playing&&this.SPD>0){
+      const a=this.tMin(), b=this.tMax();
+      this.t+=dt*this.SPD*(b-a)/6;
+      if(this.t>=b){this.t=b; this.playing=false; this.updBtn();}
+    }
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
+  gdraw(){
+    const b=cvx('m4scene'); if(!b) return;
+    const C=this.gcol(b);
+    gaugeCol(b.g,C,this.GG,this);
+    for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
+    $('m4vb').textContent=fmt(this.be,2)+' c';
+  },
+  /* Брама: зачинена — суцільна стулка на весь проріз, відчинена — тонка
+     рама. Стан читається з вікна, а не з окремого прапорця, тож картинка
+     й стрічка часу не можуть розійтися. */
+  door(g,x,yb,h,shut,col){
+    if(shut){
+      g.fillStyle='rgba(235,104,52,.22)'; g.strokeStyle=col; g.lineWidth=3;
+      g.beginPath(); g.roundRect(x-4,yb-h,8,h,2); g.fill(); g.stroke();
+    } else {
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(x,yb); g.lineTo(x,yb-h); g.stroke(); g.setLineDash([]);
+      g.strokeStyle=col; g.lineWidth=3;
+      g.beginPath(); g.moveTo(x,yb-h); g.lineTo(x+12,yb-h-9); g.stroke();
+    }
+  },
+  barn(g,SX,x0,x1,yb,shutF,shutB){
+    const h=54, xa=SX(x0), xb=SX(x1);
+    g.fillStyle='rgba(42,120,214,.05)';
+    g.fillRect(xa,yb-h,xb-xa,h);
+    g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(xa,yb-h); g.lineTo((xa+xb)/2,yb-h-16); g.lineTo(xb,yb-h);
+    g.stroke();
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(xa,yb+.5); g.lineTo(xb,yb+.5); g.stroke();
+    this.door(g,xa,yb,h,shutF,CLR.k2);
+    this.door(g,xb,yb,h,shutB,CLR.k2);
+    return {xa,xb,h};
+  },
+  /* Часова стрічка панелі: власний годинник, вікна «зачинено» для кожної
+     брами й курсор. Уся суть парадокса вміщується в те, збігаються смуги
+     чи ні, — тому вони й малюються однаково в обох панелях. */
+  strip(g,x0,W,y,t0,t1,cur,wins,lab){
+    const X=tt=>x0+14+(tt-t0)/(t1-t0)*(W-28);
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(x0+14,y+.5); g.lineTo(x0+W-14,y+.5); g.stroke();
+    const st=niceStep((t1-t0)/5);
+    for(let tt=Math.ceil(t0/st)*st;tt<=t1;tt+=st){
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(X(tt),y-3); g.lineTo(X(tt),y+4); g.stroke();
+      txt(g,fmt(tt,0),X(tt),y+15,{color:CLR.mut,size:9,align:'center'});
+    }
+    wins.forEach((wq,i)=>{
+      const yy=y-9-i*11, hasWin=wq.w[1]>wq.w[0];
+      const xs=X(wq.w[0]), xe=Math.max(xs+2,X(wq.w[1]));
+      if(hasWin){
+        g.strokeStyle=wq.col; g.lineWidth=7; g.lineCap='butt';
+        g.beginPath(); g.moveTo(xs,yy); g.lineTo(xe,yy); g.stroke();
+      }
+      /* Підпис смуги ставимо ліворуч від неї, а коли там уже край панелі —
+         праворуч. Ліворуч від самої стрічки місця немає: панель починається
+         одразу за нею, і підпис ішов би за кадр. */
+      const roomL=xs-(x0+16), roomR=x0+W-14-xe-5;
+      if(!hasWin)
+        txt(g,wq.lab+' — ніколи',x0+16,yy+3.5,{color:wq.col,size:9.5,bold:true,max:W-34});
+      else if(roomL>=32)
+        txt(g,wq.lab,xs-5,yy+3.5,{color:wq.col,size:9.5,bold:true,align:'right',max:roomL});
+      else
+        txt(g,wq.lab,xe+5,yy+3.5,{color:wq.col,size:9.5,bold:true,max:Math.max(18,roomR)});
+    });
+    g.strokeStyle=CLR.ink; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(X(cur),y-9-wins.length*11); g.lineTo(X(cur),y+5); g.stroke();
+    dot(g,X(cur),y-9-wins.length*11,3.5,CLR.ink);
+    txt(g,lab,x0+14,y+29,{color:CLR.sec,size:10.5,bold:true,max:W-28});
+  },
+  scene(){
+    const b=cvx('m4scene'); if(!b) return;
+    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
+    const ga=this.gam(), v=this.v(), t=this.t, tp=this.tp(), yb=Q.yb;
+    g.clearRect(0,0,w,H);
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Q.half+.5,26); g.lineTo(Q.half+.5,H-6); g.stroke();
+
+    const wB=this.winBarn(), wF=this.winFront(), wK=this.winBack();
+    const inB=t>=wB[0]&&t<=wB[1]&&this.fits();
+    const inF=tp>=wF[0]&&tp<=wF[1]&&this.fits();
+    const inK=tp>=wK[0]&&tp<=wK[1]&&this.fits();
+
+    /* ---------- панель 1: СВ сарая ---------- */
+    txt(g,'СВ сарая',14,22,{color:CLR.k1,size:12.5,bold:true});
+    txt(g,'сарай нерухомий, драбина летить і вкорочена в γ разів',
+      14,38,{color:CLR.sec,size:10.5,max:Q.half-28});
+    txt(g,'драбина '+fmt(this.Lc(),2)+' м у сараї '+fmt(this.D0,2)+' м — '+
+      (this.fits()?'уміщується':'не вміщується'),
+      14,54,{color:this.fits()?CLR.k1:CLR.k2,size:11.5,bold:true,max:Q.half-28});
+    this.barn(g,Q.SXA,0,this.D0,yb,inB,inB);
+    M1.ladder(g,Q.SXA(v*t),yb-16,this.Lc()*Q.sc,0,CLR.k2,20);
+    txt(g,'L₀/γ = '+fmt(this.Lc(),2)+' м',Q.SXA(v*t+this.Lc()/2),yb-42,
+      {color:'#b8431a',size:10.5,bold:true,align:'center'});
+    txt(g,'D₀ = '+fmt(this.D0,2)+' м',Q.SXA(this.D0/2),yb-78,
+      {color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    this.strip(g,0,Q.half,Q.ts,this.tMin(),this.tMax(),t,
+      [{w:wB,col:CLR.k1,lab:'передня'},{w:wB,col:CLR.k2,lab:'задня'}],
+      'годинник сарая  t = '+fmt(t,1)+' нс  ·  обидві смуги збігаються: зачинено одночасно');
+
+    /* ---------- панель 2: СВ драбини ---------- */
+    const x0=Q.half;
+    txt(g,'СВ драбини',x0+14,22,{color:CLR.k2,size:12.5,bold:true});
+    txt(g,'драбина нерухома, сарай летить назустріч і вкорочений',
+      x0+14,38,{color:CLR.sec,size:10.5,max:Q.half-28});
+    txt(g,'сарай '+fmt(this.Dc(),2)+' м проти драбини '+fmt(this.L0,2)+
+      ' м — не вміщується ніколи',
+      x0+14,54,{color:CLR.k2,size:11.5,bold:true,max:Q.half-28});
+    const bx=-v*tp;
+    this.barn(g,Q.SXB,bx,bx+this.Dc(),yb,inF,inK);
+    M1.ladder(g,Q.SXB(0),yb-16,this.L0*Q.sc,0,CLR.ink,20);
+    txt(g,'L₀ = '+fmt(this.L0,2)+' м',Q.SXB(this.L0/2),yb-42,
+      {color:CLR.ink,size:10.5,bold:true,align:'center'});
+    txt(g,'D₀/γ = '+fmt(this.Dc(),2)+' м',Q.SXB(bx+this.Dc()/2),yb-78,
+      {color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    this.strip(g,x0,Q.half,Q.ts,this.tMin()/ga,this.tMax()/ga,tp,
+      [{w:wF,col:CLR.k1,lab:'передня'},{w:wK,col:CLR.k2,lab:'задня'}],
+      'годинник драбини  t′ = '+fmt(tp,1)+' нс  ·  смуги рознесені на '+
+      fmt(this.dtp(),1)+' нс: разом не бували');
+    for(const hh of this.grips()) if(hh.id==='D'||hh.id==='L') drawGrip(g,hh,this);
+  },
+  table(){
+    const ga=this.gam(), Tin=Math.max(0,this.Tin()), gap=this.gapNs();
+    $('m4t').textContent='β = '+fmt(this.be,2)+' c · γ = '+fmt(ga,3)+
+      ' · t = '+fmt(this.t,1)+' нс'+(this.SPD?'':
+      '  ·  кадр '+Math.round((this.t-this.tMin())/(this.tMax()-this.tMin())*this.FRAMES)+
+      ' з '+this.FRAMES);
+    $('m4vL').textContent=fmt(this.L0,2)+' м';
+    $('m4vD').textContent=fmt(this.D0,2)+' м';
+    $('m4kg').textContent=fmt(ga,4);
+    $('m4kLc').textContent=fmt(this.Lc(),3)+' м';
+    $('m4kDc').textContent=fmt(this.Dc(),3)+' м';
+    $('m4kFit').textContent=this.fits()?'так':'ні';
+    $('m4bfit').hidden=!this.fits();
+    $('m4kBmin').textContent=this.L0>this.D0?fmt(this.beMin(),3)+' c':'вміщується завжди';
+    $('m4kTin').textContent=this.fits()?fmt(Tin,2)+' нс':'ніколи';
+    $('m4kDt').textContent=fmt(this.dtp(),2)+' нс';
+    $('m4kWin').textContent=fmt(Tin*ga,2)+' нс';
+    $('m4kGap').textContent=fmt(gap,2)+' нс';
+    $('m4kBoth').textContent=gap>0?'ні — і не можуть':'—';
+    $('m4fx').innerHTML=
+      'подія «зачинено» біля дальньої брами має в СВ драбини час<br>'+
+      '<i>t</i>′ = γ(<i>t</i> − β<i>D</i><sub>0</sub>/<i>c</i>) — звідси розрив '+
+      'Δ<i>t</i>′ = γβ<i>D</i><sub>0</sub>/<i>c</i> = <b>'+fmt(this.dtp(),2)+' нс</b>, '+
+      'а вікно «зачинено» триває лише γ<i>T</i> = <b>'+fmt(Tin*ga,2)+' нс</b>';
+    $('m4why1').innerHTML='<b>Що бачить сарай.</b> Драбина вкорочена до <i>L</i>₀/γ = '+
+      fmt(this.Lc(),2)+' м і справді вміщується в '+fmt(this.D0,2)+
+      ' м. Обидві брами зачиняються одночасно й тримаються зачиненими '+
+      fmt(Tin,2)+' нс — увесь цей час драбина всередині.';
+    $('m4why2').innerHTML='<b>Що бачить драбина.</b> Тепер вкорочений сарай: '+
+      fmt(this.Dc(),2)+' м проти '+fmt(this.L0,2)+
+      ' м. Дальня брама зачиняється й відчиняється <b>раніше</b> за ближню на '+
+      fmt(this.dtp(),2)+' нс — задовго до того, як ніс драбини до неї долетить. '+
+      'Потім драбина проходить наскрізь, і аж тоді за її хвостом зачиняється ближня.';
+    $('m4why3').innerHTML='<b>Де зникає суперечність.</b> Обидві розповіді описують '+
+      'ту саму пару подій. Розходяться не факти, а слово «одночасно»: воно '+
+      'належить системі відліку, а не світу. Перевірка проста — жодна СВ не '+
+      'містить події «драбина вдарилася об зачинену браму», а саме такі, '+
+      'локальні збіги, і мусять збігатися в усіх СВ. Вікно «зачинено» триває '+
+      'γ<i>T</i> = '+fmt(Tin*ga,2)+' нс, а рознесені вони на '+fmt(this.dtp(),2)+
+      ' нс — доки драбина довша за сарай, друге більше за перше завжди, '+
+      'тож у СВ драбини брами разом зачиненими не бувають.';
+  },
+  charts(){
+    const bl=cvx('m4cl');
+    if(bl){
+      const ts=[],y0=[],y1=[];
+      for(let i=0;i<=120;i++){
+        const be=this.BMIN+(this.BMAX-this.BMIN)*i/120;
+        ts.push(be); y0.push(this.L0/gamOf(be)); y1.push(this.D0);
+      }
+      const r=drawChart(bl,{tMin:this.BMIN,tMax:this.BMAX,yMin:0,yMax:this.LMAX*1.1,
+        yLab:'м',xLab:'β = v/c',yDec:1,xDec:2,hover:this.hl.x,
+        series:[{ts,ys:y0,color:CLR.k2,label:'L₀/γ'},
+                {ts,ys:y1,color:CLR.k1,label:'D₀'},
+                {ts:[this.be,this.be],ys:[0,this.LMAX*1.1],color:CLR.ink,
+                 label:'зараз',dash:[4,3]}]});
+      showTip(this.tipl,r,' м',this.hl,[['драбина в СВ сарая',CLR.k2],
+        ['сарай',CLR.k1],['зараз',CLR.ink]],2);
+    }
+    const bt=cvx('m4ct');
+    if(bt){
+      const ts=[],y0=[],y1=[]; let top=1;
+      for(let i=0;i<=120;i++){
+        const be=this.BMIN+(this.BMAX-this.BMIN)*i/120, g2=gamOf(be);
+        const Lc=this.L0/g2, Tin=Math.max(0,(this.D0-Lc)/(be*this.C));
+        ts.push(be); y0.push(g2*be*this.D0/this.C); y1.push(g2*Tin);
+        top=Math.max(top,g2*be*this.D0/this.C);
+      }
+      const r=drawChart(bt,{tMin:this.BMIN,tMax:this.BMAX,yMin:0,yMax:top*1.12,
+        yLab:'нс',xLab:'β = v/c',yDec:0,xDec:2,hover:this.ht.x,
+        series:[{ts,ys:y0,color:CLR.k2,label:'Δt′'},
+                {ts,ys:y1,color:CLR.k3,label:'γT'},
+                {ts:[this.be,this.be],ys:[0,top*1.12],color:CLR.ink,
+                 label:'зараз',dash:[4,3]}]});
+      showTip(this.tipt,r,' нс',this.ht,[['розрив Δt′',CLR.k2],
+        ['як довго зачинено',CLR.k3],['зараз',CLR.ink]],2);
+    }
+  }
+};
+
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2,m3:M3};
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;
