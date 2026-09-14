@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -88,7 +101,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -106,11 +119,11 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 /*gauged*/
-#m1scene{width:100%; height:490px}
-#m2scene{width:100%; height:460px}
-#m3scene{width:100%; height:450px}
-#m4scene{width:100%; height:430px}
-#m5scene{width:100%; height:500px}
+#m1scene{width:100%; height:620px}
+#m2scene{width:100%; height:580px}
+#m3scene{width:100%; height:570px}
+#m4scene{width:100%; height:540px}
+#m5scene{width:100%; height:630px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -504,8 +517,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -942,7 +1019,16 @@ const M1={
     $('m1rowSt').hidden=true;
   },
   /* два періоди показуємо за 4 с екранного часу — незалежно від справжнього T */
-  tick(dt){if(this.playing) this.ph=(this.ph+dt/4)%1; this.render();},
+  tick(dt){
+    /* ---- пуск по команді ------------------------------------------------
+       Пружину спершу стискають або розтягують рукою й лише тоді відпускають.
+       Поки тіло тримають — рух не йде; відпустили — коливання починаються з
+       того самого зміщення, на яке його відвели. */
+    if(this._grab==='body'){this._held=true; this.armed=false; this.ph=0;}
+    else if(this._held){this._held=false; this.armed=true; this.ph=0;}
+    if(this.playing&&this.armed!==false) this.ph=(this.ph+dt/4)%1;
+    this.render();
+  },
   /* Величини без власного розміру в кресленні дістають шкали просто в кадрі:
      їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
   GG:[
@@ -953,7 +1039,20 @@ const M1={
   gcol(b){return gcolOf(b,this.GG.length);},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const out=gaugeGrips(this.gcol(b),this.GG,this);
+    if(this.mode!=='hor') return out;
+    /* саме тіло: тягнеш його — стискаєш чи розтягуєш пружину, відпускаєш — пускаєш */
+    /* ті самі числа, що й у scene(): одна геометрія і для малювання, і для влучання */
+    const H=this.gcol(b).gtop, AMAX=0.15;
+    const sc=Math.min(b.w*0.30,(H-140)/2)/AMAX;
+    const cy=H*0.80, cx0=b.w*0.38;
+    const x=this.armed===false?this.Am():this.X(this.now());
+    return [{id:'body', x:cx0+x*sc, y:cy, r:20, bare:true, color:CLR.k1,
+      hint:'стисніть або розтягніть пружину й відпустіть',
+      move:px=>{
+        this.A=clamp(snap(Math.abs(px-cx0)/sc*100,0.5),1,15);
+        this.armed=false;
+      }}].concat(out);
   },
   gdraw(){
     const b=cvx('m1scene'); if(!b) return;
@@ -979,22 +1078,38 @@ const M1={
     txt(g,'обертова точка на колі дає ту саму проєкцію — тому рух і зветься гармонічним; '+
       'два періоди показано за 4 с',12,36,{color:CLR.mut,size:10.5});
     if(this.mode==='hor'){
-      const cy=h*0.50, cx0=w*0.38, wx=cx0-AMAX*sc-64;
+      /* Лінію коливань опущено вниз: над нею має вміститися коло відліку
+         цілком — два радіуси плюс проміжок. */
+      const cy=h*0.80, cx0=w*0.38, wx=cx0-AMAX*sc-64;
       hatch(g,wx,cy-34,68,false,CLR.sec);
       g.strokeStyle=CLR.axis; g.lineWidth=1;
       g.beginPath(); g.moveTo(wx,cy+34); g.lineTo(cx0+AMAX*sc+30,cy+34); g.stroke();
-      /* коло відліку */
+      /* ---- коло відліку — НАД тілом, а не навколо нього --------------------
+         Раніше коло було центроване на самій рівновазі, тож тіло їздило його
+         діаметром, а пунктир проєкції впирався всередину тіла: аналогія
+         читалася як випадковий збіг. Тепер коло має власний центр вище, і
+         вертикальний пунктир прямо показує: x тіла — це проєкція точки, що
+         рівномірно біжить по колу. */
+      const ccy=cy-Am*sc-46;
       g.strokeStyle=CLR.grid; g.lineWidth=1.4;
-      g.beginPath(); g.arc(cx0,cy,Am*sc,0,7); g.stroke();
+      g.beginPath(); g.arc(cx0,ccy,Am*sc,0,7); g.stroke();
       const phi=this.w0()*t;
-      const px=cx0+Am*sc*Math.cos(phi), py=cy-Am*sc*Math.sin(phi);
-      arrow(g,cx0,cy,px,py,CLR.sec,1.6);
+      const px=cx0+Am*sc*Math.cos(phi), py=ccy-Am*sc*Math.sin(phi);
+      /* кут повороту φ = ω₀t — той самий, що й фаза коливання */
+      arc(g,cx0,ccy,22,0,-((phi%(2*Math.PI))+2*Math.PI)%(2*Math.PI),CLR.k2,2);
+      txt(g,'φ = ω₀t',cx0+28,ccy-6,{color:'#b8431a',size:10.5,bold:true});
+      arrow(g,cx0,ccy,px,py,CLR.sec,1.6);
       dot(g,px,py,4.5,CLR.sec);
       g.strokeStyle=CLR.axis; g.setLineDash([3,3]); g.lineWidth=1;
       g.beginPath(); g.moveTo(px,py); g.lineTo(cx0+x*sc,cy); g.stroke(); g.setLineDash([]);
-      txt(g,'рівномірний рух по колу',cx0,cy-Am*sc-12,{color:CLR.mut,size:10.5,align:'center'});
+      txt(g,'рівномірний рух по колу',cx0,ccy-Am*sc-12,{color:CLR.mut,size:10.5,align:'center'});
+      txt(g,'x = A·cos φ — проєкція цієї точки на горизонталь',14,ccy+Am*sc+18,
+        {color:CLR.sec,size:10.5,bold:true});
       /* пружина й тіло */
       const bx=cx0+x*sc, bw=28;
+      if(this.armed===false)
+        pill(g,'пружину тримають — відпустіть, щоб почалися коливання',cx0,cy+70,
+          {color:CLR.sec,size:11,bold:true});
       spring(g,wx,cy,bx-bw/2,cy,10,10,CLR.k1,2.2);
       g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.k1; g.lineWidth=2.2;
       g.beginPath(); g.roundRect(bx-bw/2,cy-17,bw,34,4); g.fill(); g.stroke();
@@ -1099,7 +1214,7 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · математичний маятник ===================== */
 const M2={
-  l:100, a0:15, g:9.8,          /* l у см, a0 у градусах */
+  l:100, a0:15, g:9.8, armed:true,   /* l у см, a0 у градусах */
   th:0, om:0, t:0, playing:true,
   hth:{x:null}, hp:{x:null}, tipth:null, tipp:null,
   sl:null, sa:null, sg:null,
@@ -1115,11 +1230,23 @@ const M2={
     const a4=F(th+hh*v3),     v4=om+hh*a3;
     return [th+hh/6*(v1+2*v2+2*v3+v4), om+hh/6*(a1+2*a2+2*a3+a4)];
   },
-  reset(){this.th=this.a0*DEG; this.om=0; this.t=0;},
+  reset(){this.th=this.a0*DEG; this.om=0; this.t=0; this.armed=true;},
+  /* Кут, за яким коливання вже не гармонічні: точний період відходить від
+     T₀ більш ніж на 1 %. Далі за нього — рух періодичний, але не синусоїдний. */
+  aLim(){
+    let lo=2,hi=150;
+    for(let k=0;k<28;k++){
+      const m=(lo+hi)/2;
+      const T=4*Math.sqrt(this.lm()/this.g)*ellipK(Math.sin(m*DEG/2));
+      if(T/this.T0()-1>0.01) hi=m; else lo=m;
+    }
+    return (lo+hi)/2;
+  },
   init(){
     grip('m2scene',this,()=>this.grips());
     seg('m2pl',v=>{this.g=PLANETS[v][1]; this.reset();});
     $('m2play').onclick=()=>{this.playing=!this.playing; $('m2play').textContent=this.playing?'⏸':'▶';};
+    /* ↺ ставить маятник назад у відведене положення — і знову тримає його */
     $('m2re').onclick=()=>{this.reset();};
     this.tipth=makeTip('m2ctw'); this.tipp=makeTip('m2cpw');
     hover('m2ct',this.hth); hover('m2cp',this.hp);
@@ -1128,7 +1255,13 @@ const M2={
     this.reset();
   },
   tick(dt){
-    if(this.playing){
+    /* ---- пуск по команді ------------------------------------------------
+       Маятник не рушає сам: його спершу відводять рукою й відпускають.
+       Поки тягарець тримають — він стоїть; щойно відпустили — починається
+       коливання від того самого кута, на який його відвели. */
+    if(this._grab!=null){this._held=true; this.armed=false;}
+    else if(this._held){this._held=false; this.armed=true; this.t=0;}
+    if(this.playing&&this.armed){
       const n=20, hh=dt/n;
       for(let i=0;i<n;i++){const r=this.rk4(this.th,this.om,hh); this.th=r[0]; this.om=r[1];}
       this.t+=dt;
@@ -1139,7 +1272,7 @@ const M2={
      їх тягнуть пальцем і перебирають з клавіатури, як і решту ручок. */
   GG:[
     ['l','l',10,200,1,CLR.k1,function(){this.reset();},'m2vl',0,'см'],
-    ['a0','a',2,150,1,CLR.k2,function(){this.reset();},'m2va',0,'°']
+    ['a0','a',2,150,1,CLR.k2,function(){this.reset(); this.armed=true;},'m2va',0,'°']
   ],
   /* g задають кнопки планет, і шкали для нього нема: два керування на одну
      величину суперечили одне одному — можна було лишити активною «Землю»
@@ -1155,7 +1288,16 @@ const M2={
   });},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
+    const Q=this.geo(b), L=this.lm()*Q.sc;
+    const bx=Q.cx+L*Math.sin(this.th), by=Q.cy+L*Math.cos(this.th);
+    /* сам тягарець і є ручка: відводиш його — задаєш θ₀, відпускаєш — пускаєш */
+    return [{id:'bob', x:bx, y:by, r:13, bare:true, color:CLR.k1,
+      hint:'відведіть тягарець і відпустіть',
+      move:(px,py)=>{
+        const a=Math.atan2(px-Q.cx,py-Q.cy)/DEG;
+        this.a0=clamp(snap(Math.abs(a),1),2,150);
+        this.th=a*DEG; this.om=0; this.armed=false;
+      }}].concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
   gdraw(){
     const b=cvx('m2scene'); if(!b) return;
@@ -1180,8 +1322,25 @@ const M2={
     const cx=Q.cx, cy=Q.cy, sc=Q.sc;
     const L=this.lm()*sc;
     hatch(g,cx-38,cy,76,true,CLR.sec);
+    /* ---- смуга, у якій коливання ще гармонічні --------------------------
+       Маятник гармонічний лише поки sin θ ≈ θ. Межу рахуємо як кут, за яким
+       точний період відходить від T₀ на 1 %, і малюємо її прямо на дузі: за
+       нею розмах ще можливий, але синусоїдою рух уже не описується. */
+    const aL=this.aLim();
+    g.strokeStyle=CLR.k3; g.lineWidth=7; g.globalAlpha=0.18;
+    g.beginPath(); g.arc(cx,cy,L,Math.PI/2-aL*DEG,Math.PI/2+aL*DEG); g.stroke();
+    g.globalAlpha=1;
+    for(const s2 of [1,-1]){
+      const a=Math.PI/2-s2*aL*DEG;
+      g.strokeStyle=CLR.k3; g.lineWidth=1.4;
+      g.beginPath();
+      g.moveTo(cx+Math.cos(a)*(L-9),cy+Math.sin(a)*(L-9));
+      g.lineTo(cx+Math.cos(a)*(L+9),cy+Math.sin(a)*(L+9)); g.stroke();
+    }
+    txt(g,'±'+fmt(aL,0)+'° — межа гармонічності',cx+Math.cos(Math.PI/2-aL*DEG)*(L+14),
+      cy+Math.sin(Math.PI/2-aL*DEG)*(L+14),{color:'#0d7a55',size:10.5,bold:true});
     /* дуга розмаху */
-    g.strokeStyle=CLR.grid; g.lineWidth=1.4;
+    g.strokeStyle=this.a0>aL?CLR.k2:CLR.grid; g.lineWidth=1.4;
     g.beginPath(); g.arc(cx,cy,L,Math.PI/2-this.a0*DEG,Math.PI/2+this.a0*DEG); g.stroke();
     /* вертикаль */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
@@ -1196,6 +1355,9 @@ const M2={
         {color:CLR.sec,size:11,bold:true,align:this.th>0?'left':'right'});
     }
     dot(g,bx,by,11,'rgba(42,120,214,.20)',CLR.k1);
+    if(!this.armed)
+      pill(g,'тягарець утримують — відпустіть, щоб почалися коливання',cx,cy+L+52,
+        {color:CLR.sec,size:11,bold:true});
     /* сили: mg вниз, дотична складова */
     const fs=Math.min(58,10+this.g*2.2);
     arrow(g,bx,by,bx,by+fs,CLR.k3,2.4);
@@ -1633,6 +1795,13 @@ const M5={
   sf0:null, sf:null, sb:null, sF:null,
   ha:{x:null}, hp:{x:null}, tipa:null, tipp:null,
   w0(){return 2*Math.PI*this.f0;},
+  /* Контур приймача задають не «жорсткістю пружини», а котушкою й змінним
+     конденсатором. Індуктивність беремо сталою (типова для середніх хвиль),
+     а ємність — ту, що дає власну частоту f₀: C = 1/(4π²f₀²L). Множник 1e6
+     переводить наш «умовний герц» у справжні кілогерци шкали приймача. */
+  LH:2.4e-4,                       /* індуктивність котушки, Гн */
+  fkHz(x){return x*600;},          /* умовна одиниця шкали → кГц */
+  Cf(){const w=2*Math.PI*this.fkHz(this.f0)*1e3; return 1/(w*w*this.LH);},
   W(){return 2*Math.PI*this.f;},
   beta(){return this.b/(2*MASS5);},
   kSpring(){return MASS5*this.w0()*this.w0();},
@@ -1716,7 +1885,13 @@ const M5={
     /* антена: сигнал з ефіру — це і є змушувальна сила */
     g.strokeStyle=CLR.sec; g.lineWidth=2;
     g.beginPath(); g.moveTo(wx,BY+14); g.lineTo(wx,TY-34); g.stroke();
-    hatch(g,wx-16,BY+14,32,true,CLR.sec);
+    /* заземлення: без нього антена ні до чого не під'єднана, і коло не замкнене */
+    g.strokeStyle=CLR.sec; g.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const ww=16-i*5;
+      g.beginPath(); g.moveTo(wx-ww,BY+16+i*5); g.lineTo(wx+ww,BY+16+i*5); g.stroke();
+    }
+    txt(g,'земля',wx,BY+44,{color:CLR.mut,size:9.5,align:'center'});
     for(let i=1;i<=3;i++){
       g.strokeStyle=CLR.k3; g.lineWidth=1.4;
       g.globalAlpha=0.14+0.5*Math.abs(Math.cos(u))*(1-0.22*i);
@@ -1734,7 +1909,8 @@ const M5={
     g.lineWidth=2.4; g.lineCap='round'; g.beginPath();
     for(let i=0;i<n;i++){const c=LX+24+r*(2*i+1); g.moveTo(c-r,TY); g.arc(c,TY,r,Math.PI,0,false);}
     g.stroke();
-    txt(g,'L',mid,TY-r-9,{color:CLR.k1,size:11.5,bold:true,align:'center'});
+    txt(g,'L',mid,TY-r-22,{color:CLR.k1,size:11.5,bold:true,align:'center'});
+    txt(g,sci(this.LH,2)+' Гн',mid,TY-r-9,{color:CLR.mut,size:9.5,align:'center'});
     /* конденсатор: пластини й заряд на них */
     const q=xc*sc, qn=Math.min(1,Math.abs(A?xc/A:0));
     for(const s of [-1,1]){
@@ -1743,7 +1919,12 @@ const M5={
       txt(g,(q*s>0)?'+':'−',mid+s*22,BY+5,
         {color:(q*s>0)?CLR.k2:CLR.k1,size:13,bold:true,align:'center'});
     }
-    txt(g,'C',mid,BY+34,{color:CLR.k1,size:11.5,bold:true,align:'center'});
+    /* стрілка впоперек пластин — умовне позначення ЗМІННОГО конденсатора:
+       саме ним приймач і налаштовують на станцію */
+    g.strokeStyle=CLR.ink; g.lineWidth=1.6;
+    arrow(g,mid-22,BY+20,mid+22,BY-20,CLR.ink,1.6);
+    txt(g,'C — змінний',mid,BY+36,{color:CLR.k1,size:11,bold:true,align:'center'});
+    txt(g,sci(this.Cf(),2)+' Ф',mid,BY+48,{color:CLR.mut,size:9.5,align:'center'});
     /* стовпчик заряду: вправо — плюс на правій пластині, вліво — на лівій */
     g.fillStyle=q>0?'rgba(235,104,52,.55)':'rgba(42,120,214,.55)';
     g.fillRect(mid,cy-9,q,18);
@@ -1759,7 +1940,70 @@ const M5={
       const px=LX+24+s*((RX-24)-(LX+24));
       dot(g,px,TY-r*0.1,2.4+2*Math.abs(iF)*qn,'rgba(42,120,214,.65)');
     }
-    txt(g,'сигнал з ефіру '+fmt(F,2)+' Н',LX,BY+34,{color:'#0d7a55',size:10.5,bold:true});
+    /* ---- детектор і навушники -------------------------------------------
+       Сам контур лише відбирає потрібну частоту. Щоб її почути, високочастотні
+       коливання випрямляє діод-детектор, а вже звукову складову відтворюють
+       навушники. Без цих двох вузлів «приймач» не приймає нічого. */
+    const dx=RX+40, dy=cy;
+    g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(RX,TY); g.lineTo(dx,TY); g.lineTo(dx,dy-16); g.stroke();
+    /* діод: трикутник із рискою */
+    g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.moveTo(dx-8,dy-16); g.lineTo(dx+8,dy-16); g.lineTo(dx,dy-2);
+    g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(dx-9,dy-1); g.lineTo(dx+9,dy-1); g.stroke();
+    txt(g,'детектор',dx+13,dy-8,{color:CLR.sec,size:10,bold:true});
+    /* навушники */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(dx,dy+1); g.lineTo(dx,dy+22); g.stroke();
+    g.beginPath(); g.arc(dx,dy+34,11,-Math.PI,0); g.stroke();
+    for(const s2 of [-1,1]){
+      g.fillStyle='rgba(11,11,11,.10)';
+      g.beginPath(); g.roundRect(dx+s2*14-5,dy+32,10,16,3); g.fill(); g.stroke();
+    }
+    txt(g,'навушники',dx+22,dy+44,{color:CLR.sec,size:10,bold:true});
+    /* ---- фільтрувальний конденсатор паралельно навушникам ----------------
+       Детектор зрізає одну півхвилю, але лишає високу частоту. Cф замикає її
+       на землю, а звукову складову лишає навушникам — без нього в детекторному
+       приймачі не чути нічого, крім тріску. */
+    const fx=dx-46;
+    g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(dx,dy+1); g.lineTo(fx,dy+1); g.lineTo(fx,dy+14); g.stroke();
+    for(const s3 of [0,1]){
+      g.strokeStyle=CLR.k1; g.lineWidth=2.4;
+      g.beginPath(); g.moveTo(fx-10,dy+14+s3*7); g.lineTo(fx+10,dy+14+s3*7); g.stroke();
+    }
+    g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(fx,dy+21); g.lineTo(fx,dy+46); g.lineTo(dx,dy+46); g.stroke();
+    txt(g,'Cф',fx-14,dy+22,{color:CLR.k1,size:10.5,bold:true,align:'right'});
+    /* вузлові точки схеми */
+    dot(g,dx,dy+1,3,CLR.sec); dot(g,dx,dy+46,3,CLR.sec);
+    dot(g,RX,TY,3,CLR.sec); dot(g,LX,cy,3,CLR.sec);
+    /* гучність звуку — це амплітуда коливань у контурі */
+    const lv=Math.min(1,A/Math.max(1e-9,this.amp(this.w0())));
+    for(let i=0;i<3;i++){
+      g.strokeStyle=CLR.k2; g.lineWidth=1.4;
+      g.globalAlpha=lv>i*0.33?0.8:0.12;
+      g.beginPath(); g.arc(dx+22,dy+40,10+i*8,-Math.PI*0.4,Math.PI*0.4); g.stroke();
+    }
+    g.globalAlpha=1;
+    /* ---- станції в ефірі ------------------------------------------------
+       Дві станції на різних частотах. Контур відгукується на ту, у яку
+       налаштований, а сусідню майже не чує — у цьому й уся суть налаштування. */
+    const ST=[[0.7,'станція A'],[1.35,'станція B']];
+    ST.forEach((st,k)=>{
+      const resp=this.amp(2*Math.PI*st[0])/Math.max(1e-9,this.amp(this.wr()));
+      const sx=w*0.28, sy=58+k*18;
+      g.fillStyle=k?CLR.k2:CLR.k1; g.globalAlpha=0.25+0.75*Math.min(1,resp);
+      g.fillRect(sx,sy-6,10+60*Math.min(1,resp),10); g.globalAlpha=1;
+      txt(g,st[1]+' · '+fmt(this.fkHz(st[0]),0)+' кГц',sx+78,sy+3,
+        {color:k?'#b8431a':'#1c5cab',size:10,bold:true});
+    });
+    txt(g,'приймач налаштовано на '+fmt(this.fkHz(this.f0),0)+' кГц · L = '+
+      sci(this.LH,2)+' Гн · C = '+sci(this.Cf(),2)+' Ф',LX,BY+76,
+      {color:'#0d7a55',size:10.5,bold:true});
+    txt(g,'змінний конденсатор і є ручка налаштування: міняючи C, міняємо f₀',
+      LX,BY+92,{color:CLR.mut,size:10});
   },
   /* 2 · міст: прогін провисає під кроком натовпу */
   drawBridge(g,w,h,S){

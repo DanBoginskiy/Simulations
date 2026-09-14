@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,16 +115,20 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:330px}
-#m1hist{width:100%; height:186px}
-#m2scene{width:100%; height:300px}
-#m3scene{width:100%; height:290px}
-#m4scene{width:100%; height:330px}
-#m5scene{width:100%; height:400px}
+#m1scene{width:100%; height:420px}
+#m1hist{width:100%; height:230px}
+#m2scene{width:100%; height:380px}
+/* сцена й три діаграми стоять поруч, а не одна під одною */
+.m2grid{display:grid; grid-template-columns:1.05fr 1fr; gap:14px; align-items:start}
+.m2grid .chartbox canvas{height:150px}
+.m2col{display:grid; gap:10px}
+#m3scene{width:100%; height:370px}
+#m4scene{width:100%; height:420px}
+#m5scene{width:100%; height:500px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
-  .chartrow,.chartrow3,.pgrid,.duo,.m1grid,.sgrid{grid-template-columns:1fr}
+  .chartrow,.chartrow3,.pgrid,.duo,.m1grid,.sgrid,.m2grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -121,18 +138,19 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <h1>Молекулярно-кінетична теорія<small>рівняння стану ідеального газу · газові закони · атмосфера</small></h1>
 </header>
 <nav class="tabs" id="tabs">
-  <button data-m="m1" class="active">1 · Молекули і тиск</button>
+  <button data-m="m1" class="active">1 · Молекули й теплопровідність</button>
   <button data-m="m2">2 · Ізопроцеси</button>
   <button data-m="m3">3 · Рівняння стану</button>
-  <button data-m="m4">4 · Балон і повітряна куля</button>
-  <button data-m="m5">5 · Атмосфера</button>
+  <button data-m="m4">4 · Теплова аеростатична куля</button>
+  <button data-m="m5">5 · Стовп газу в полі тяжіння</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
   <p class="caption">Газ — це рій молекул, які безладно рухаються й б’ються об стінки.
-  Тиск — це усереднена сила цих ударів, а температура — міра середньої кінетичної енергії молекул:
-  <var>Ē</var><sub>к</sub> = 3<var>kT</var>/2. Жодна окрема молекула «температури» не має.</p>
+  Ліва стінка холодна, права гаряча. Молекула, що вдарилась об гарячу стінку, відлітає швидшою
+  («нагрівається»), далі в зіткненнях віддає надлишок сусідам і знову холоне.
+  Так, без жодного перенесення речовини, тепло йде справа наліво — це і є теплопровідність.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -141,31 +159,34 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="перемішати заново">↺</button>
           <span class="lbl" id="m1t"></span>
-          <span class="lbl">удари об праву стінку підсвічуються</span>
+          <span class="lbl">удари об гарячу стінку підсвічуються</span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
       <div class="panel">
-        <h3>Розподіл молекул за швидкостями</h3>
-        <div class="legend sm"><span><span class="chip cB"></span>скільки молекул мають таку швидкість</span><span><span class="chip cA"></span>розподіл Максвелла для цієї температури</span><span><span class="chip cI"></span>середня швидкість</span></div>
+        <h3>Температура вздовж коробки</h3>
+        <div class="legend sm"><span><span class="chip cC"></span>виміряна в моделі T(x)</span><span><span class="chip cI"></span>лінійний профіль між стінками</span></div>
         <canvas id="m1hist"></canvas>
-        <div class="formulas">що вища температура, то ширший розподіл і то далі праворуч його максимум</div>
+        <div class="formulas">температуру кожного шару рахуємо з середнього квадрата швидкості молекул саме в ньому: <var>T</var> = <var>M</var>⟨<var>v</var>²⟩/2<var>R</var></div>
       </div>
     </div>
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="kv"><span><var>T</var> — температура газу<span class="badge">термометр</span></span><b id="m1vT"></b></div>
+        <div class="kv"><span><var>T</var><sub>х</sub> — температура холодної (лівої) стінки<span class="badge">мітка на лівій стінці</span></span><b id="m1vTc"></b></div>
+        <div class="kv"><span><var>T</var><sub>г</sub> — температура гарячої (правої) стінки<span class="badge">мітка на правій стінці</span></span><b id="m1vTh"></b></div>
         <div class="kv"><span><var>N</var> — скільки молекул показано в коробці<span class="badge">лічильник</span></span><b id="m1vN"></b></div>
         <div class="kv"><span><var>M</var> — молярна маса газу<span class="badge">полиця газів</span></span><b id="m1vM"></b></div>
       </div>
       <div class="panel">
-        <h3>Що каже МКТ</h3>
-        <div class="kv"><span>середня квадратична швидкість √(3<var>RT</var>/<var>M</var>)</span><b id="m1kVq"></b></div>
-        <div class="kv"><span>середня арифметична √(8<var>RT</var>/π<var>M</var>)</span><b id="m1kVa"></b></div>
-        <div class="kv"><span>найімовірніша √(2<var>RT</var>/<var>M</var>)</span><b id="m1kVp"></b></div>
-        <div class="kv"><span>середня кінетична енергія 3<var>kT</var>/2<span class="badge">залежить лише від T</span></span><b id="m1kEk"></b></div>
+        <h3>Перенесення тепла</h3>
+        <div class="kv"><span>середня температура газу в коробці</span><b id="m1kTm"></b></div>
+        <div class="kv"><span>перепад <var>T</var><sub>г</sub> − <var>T</var><sub>х</sub><span class="badge">рушій потоку тепла</span></span><b id="m1kDT"></b></div>
+        <div class="kv"><span>середня квадратична швидкість при <var>T</var><sub>г</sub></span><b id="m1kVq"></b></div>
+        <div class="kv"><span>те саме при <var>T</var><sub>х</sub></span><b id="m1kVa"></b></div>
+        <div class="kv"><span>середня кінетична енергія 3<var>kT</var>/2 при <var>T</var><sub>г</sub></span><b id="m1kEk"></b></div>
         <div class="kv"><span>маса однієї молекули</span><b id="m1kM1"></b></div>
+        <div class="formulas">речовина нікуди не тече — коробка закрита. Переноситься лише енергія, від молекули до молекули</div>
       </div>
       <div class="panel">
         <h3>Звідки береться тиск</h3>
@@ -187,13 +208,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
   <div class="pgrid">
     <div class="scene">
+     <div class="m2grid">
       <div class="panel">
         <div class="toolbar">
           <span class="lbl">Процес:</span>
           <div class="seg" id="m2proc">
-            <button data-v="iso_t" class="active" style="--c:var(--k2)">ізотермічний T = const</button>
-            <button data-v="iso_p" style="--c:var(--k1)">ізобарний p = const</button>
-            <button data-v="iso_v" style="--c:var(--k3)">ізохорний V = const</button>
+            <button data-v="iso_t" class="active" style="--c:var(--k2)">ізотермічний</button>
+            <button data-v="iso_p" style="--c:var(--k1)">ізобарний</button>
+            <button data-v="iso_v" style="--c:var(--k3)">ізохорний</button>
           </div>
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="скинути">↺</button>
@@ -202,7 +224,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       </div>
       <div class="panel">
         <h3>Той самий процес на трьох діаграмах</h3>
-        <div class="chartrow3">
+        <div class="m2col">
           <div class="chartbox" id="m2c1w"><h4>p–V</h4>
             <div class="legend sm"><span><span class="chip cB"></span>процес</span><span><span class="chip cI"></span>стан зараз</span></div>
             <canvas id="m2c1"></canvas></div>
@@ -214,6 +236,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <canvas id="m2c3"></canvas></div>
         </div>
       </div>
+     </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -252,6 +275,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
+          <span class="lbl">Зафіксовано:</span>
+          <div class="seg" id="m3path">
+            <button data-v="line" class="active" style="--c:var(--ink)">нічого</button>
+            <button data-v="iso_p" style="--c:var(--k1)">p</button>
+            <button data-v="iso_v" style="--c:var(--k3)">V</button>
+            <button data-v="iso_t" style="--c:var(--k2)">T</button>
+            <button data-v="adiab" style="--c:var(--sec)">Q = 0</button>
+          </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="скинути">↺</button>
           <span class="lbl" id="m3t"></span>
@@ -262,7 +293,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Шлях від стану 1 до стану 2</h3>
         <div class="chartrow">
-          <div class="chartbox" id="m3c1w"><h4>p–V: пряма лінія процесу</h4>
+          <div class="chartbox" id="m3c1w"><h4 id="m3ch1">p–V: пряма лінія процесу</h4>
             <div class="legend sm"><span><span class="chip cB"></span>шлях</span><span><span class="chip cC"></span>ізотерми T₁ і T₂</span><span><span class="chip cI"></span>стан зараз</span></div>
             <canvas id="m3c1"></canvas></div>
           <div class="chartbox" id="m3c2w"><h4>температура вздовж шляху, K</h4>
@@ -299,18 +330,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 4 ================= -->
 <section class="module" id="m4">
-  <p class="caption">Дві побутові задачі на те саме рівняння. У балоні обʼєм сталий:
-  нагрівання піднімає тиск. У теплій кулі сталий тиск: нагрівання зменшує густину газу —
-  і зʼявляється підйомна сила.</p>
+  <p class="caption">Пальник гріє повітря в оболонці. Тиск усередині лишається атмосферним,
+  тож нагрівання зменшує густину газу: <var>ρ</var> = <var>pM</var>/<var>RT</var>.
+  Куля витісняє більше повітря, ніж важить сама, — і піднімається.
+  Що більший надлишок підйомної сили над вагою, то швидше вона набирає висоту.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m4mode">
-            <button data-v="tank" class="active" style="--c:var(--k3)">балон на сонці</button>
-            <button data-v="balloon" style="--c:var(--k2)">теплова аеростатична куля</button>
-          </div>
+          <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m4re" title="на землю">↺</button>
           <span class="lbl" id="m4state" style="font-weight:600"></span>
         </div>
         <canvas id="m4scene"></canvas>
@@ -328,13 +358,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="grp" id="m4gT">
-          <div class="kv"><span><var>p</var><sub>0</sub> — тиск у балоні при 20 °C<span class="badge">сірий покажчик</span></span><b id="m4vp0"></b></div>
-          <div class="kv"><span><var>t</var> — температура балона<span class="badge">термометр</span></span><b id="m4vtC"></b></div>
-          <div class="kv"><span><var>V</var> — обʼєм балона<span class="badge">стінка балона</span></span><b id="m4vVt"></b></div>
-          <div class="kv"><span>тиск, на який розрахований балон<span class="badge">червона мітка</span></span><b id="m4vplim"></b></div>
-        </div>
-        <div class="grp" id="m4gB" hidden>
+        <div class="grp" id="m4gB">
           <div class="kv"><span><var>V</var> — обʼєм оболонки кулі<span class="badge">край оболонки</span></span><b id="m4vVb"></b></div>
           <div class="kv"><span><var>t</var><sub>усер</sub> — температура повітря всередині<span class="badge">термометр усередині</span></span><b id="m4vtin"></b></div>
           <div class="kv"><span><var>t</var><sub>зовн</sub> — температура зовнішнього повітря<span class="badge">термометр зовні</span></span><b id="m4vtout"></b></div>
@@ -342,23 +366,18 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
       </div>
       <div class="panel">
-        <h3 id="m4kvh">Величини</h3>
-        <div id="m4kvT">
-          <div class="kv"><span>температура в кельвінах</span><b id="m4kTk"></b></div>
-          <div class="kv"><span>тиск за законом Шарля <var>p</var> = <var>p</var><sub>0</sub><var>T</var>/<var>T</var><sub>0</sub></span><b id="m4kp"></b></div>
-          <div class="kv"><span>приріст тиску відносно 20 °C</span><b id="m4kdp"></b></div>
-          <div class="kv"><span>кількість речовини в балоні</span><b id="m4knu"></b></div>
-          <div class="kv"><span>маса газу, якщо це кисень</span><b id="m4kmg"></b></div>
-          <div class="kv"><span>запас до робочої межі</span><b id="m4kres"></b></div>
-          <div class="kv"><span>стан</span><b id="m4kverd"></b></div>
-        </div>
-        <div id="m4kvB" hidden>
+        <h3>Теплова куля</h3>
+        <div id="m4kvB">
           <div class="kv"><span>густина зовнішнього повітря</span><b id="m4krout"></b></div>
           <div class="kv"><span>густина повітря всередині</span><b id="m4krin"></b></div>
           <div class="kv"><span>маса витісненого повітря</span><b id="m4kmout"></b></div>
           <div class="kv"><span>маса гарячого повітря в кулі</span><b id="m4kmin"></b></div>
           <div class="kv"><span>підйомна сила <span class="badge">різниця густин × <var>gV</var></span></span><b id="m4kF"></b></div>
           <div class="kv"><span>корисне навантаження понад оболонку</span><b id="m4kpay"></b></div>
+          <div class="kv"><span>надлишок підйомної сили над вагою</span><b id="m4kdF"></b></div>
+          <div class="kv"><span>прискорення на старті <var>a</var> = (<var>F</var> − <var>W</var>)/<var>m</var></span><b id="m4ka"></b></div>
+          <div class="kv"><span>висота зараз</span><b id="m4ky"></b></div>
+          <div class="kv"><span>швидкість підйому</span><b id="m4kvy"></b></div>
           <div class="kv"><span>стан</span><b id="m4kverdb"></b></div>
         </div>
       </div>
@@ -368,9 +387,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
-  <p class="caption">Атмосфера тримається на балансі: тяжіння тягне молекули вниз, тепловий рух розкидає їх угору.
-  Тому тиск спадає з висотою експоненційно. А якщо теплова швидкість молекул стає порівнянною
-  з другою космічною — планета втрачає атмосферу назавжди.</p>
+  <p class="caption">Розглядаємо <b>стовп ідеального газу</b> у високій посудині, поставленій на поверхню тіла.
+  Тяжіння тягне молекули вниз, тепловий рух розкидає їх угору — і тиск спадає з висотою
+  експоненційно: <var>p</var> = <var>p</var><sub>0</sub>e<sup>−h/H</sup>.
+  Це не справжня атмосфера, а її найпростіша модель: усі спрощення виписано праворуч.
+  А якщо теплова швидкість молекул стає порівнянною з другою космічною — тіло газ не втримає.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -402,8 +423,18 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Що задано на сцені</h3>
         <div class="kv"><span><var>h</var> — висота над поверхнею<span class="badge">лінія висоти</span></span><b id="m5vh"></b></div>
-        <div class="kv"><span><var>T</var> — температура атмосфери<span class="badge">термометр</span></span><b id="m5vT"></b></div>
-        <div class="kv"><span><var>M</var> — молярна маса газу атмосфери<span class="badge">полиця газів</span></span><b id="m5vM"></b></div>
+        <div class="kv"><span><var>T</var> — температура стовпа газу<span class="badge">термометр</span></span><b id="m5vT"></b></div>
+        <div class="kv"><span><var>M</var> — молярна маса газу<span class="badge">полиця газів</span></span><b id="m5vM"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Ідеалізація моделі</h3>
+        <div class="kv"><span>газ вважаємо ідеальним<span class="badge">pV = νRT</span></span><b>так</b></div>
+        <div class="kv"><span>температура однакова на всіх висотах<span class="badge">ізотермічний стовп</span></span><b>так</b></div>
+        <div class="kv"><span>прискорення вільного падіння стале<span class="badge">g ≠ g(h)</span></span><b>так</b></div>
+        <div class="kv"><span>склад газу з висотою не змінюється</span><b>так</b></div>
+        <div class="kv"><span>вітру, перемішування й обертання немає</span><b>так</b></div>
+        <div class="formulas">у справжній атмосфері не виконується жодне з цих припущень — тому барометрична
+          формула й описує її лише приблизно, на кілька кілометрів угору</div>
       </div>
       <div class="panel">
         <h3>Небесне тіло</h3>
@@ -485,8 +516,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -836,54 +931,75 @@ const KB=1.380649e-23;            /* стала Больцмана, Дж/К */
 const NA=6.02214076e23;           /* стала Авогадро, 1/моль */
 const PATM_STD=101325;            /* нормальний атмосферний тиск, Па */
 
-/* ===================== МОДУЛЬ 1 · молекули і тиск ===================== */
+/* ===================== МОДУЛЬ 1 · молекули й теплопровідність ===================== */
 const M1={
-  T:300, N:120, M:28, parts:null, hits:0, hitRate:0, acc:0,
+  Tc:250, Th:700, N:120, M:28, parts:null, hits:0, hitRate:0, acc:0,
+  NB:9, prof:null,                 /* профіль T(x): NB шарів зі згладжуванням у часі */
   /* Екранних одиниць на метр за секунду. Навмисне вшестеро повільніше за колишні
      400: при ⟨v⟩ близько 500 м/с молекули перетинали коробку кілька разів на
      секунду й зливалися в мерехтіння, з якого не читався ні рух, ні удари. */
   VSC:2400,
   BOX:{w:10,h:7},                                   /* умовна коробка, нм */
   hh:{x:null}, tiph:null,
-  vq(){return Math.sqrt(3*RGAS*this.T/(this.M/1000));},
-  vAvg(){return Math.sqrt(8*RGAS*this.T/(Math.PI*this.M/1000));},
-  vProb(){return Math.sqrt(2*RGAS*this.T/(this.M/1000));},
+  Tm(){return (this.Tc+this.Th)/2;},
+  vq(T){return Math.sqrt(3*RGAS*T/(this.M/1000));},
   m1(){return this.M/1000/NA;},
-  /* швидкості розподіляємо за Максвеллом: беремо три гаусові компоненти */
+  /* σ однієї компоненти швидкості в екранних одиницях */
+  sigOf(T){return Math.sqrt(RGAS*T/(this.M/1000))/this.VSC;},
+  /* температура шару з середнього квадрата швидкості: дві компоненти → 2RT/M */
+  Tof(v2){return (this.M/1000)*v2*this.VSC*this.VSC/(2*RGAS);},
+  /* швидкості розподіляємо за Максвеллом: беремо суму рівномірних (теорема Ляпунова) */
   gauss(){
     let s=0; for(let i=0;i<6;i++) s+=Math.random();
     return (s-3)/Math.sqrt(0.5);
   },
+  /* Стінка не просто відбиває молекулу, а обмінюється з нею енергією: молекула
+     відлітає зі швидкістю з максвеллівського розподілу для температури стінки.
+     Нормальна складова розподілена за потоком (розподіл Релея) — саме так
+     і виглядає повна акомодація. */
+  emit(p,dir,T){
+    const sg=this.sigOf(T);
+    p.vx=dir*sg*Math.sqrt(-2*Math.log(1-Math.random()));
+    p.vy=this.gauss()*sg;
+  },
   build(){
-    const sig=Math.sqrt(RGAS*this.T/(this.M/1000));   /* σ однієї компоненти */
-    const sc=1/this.VSC;                               /* нм за одиницю швидкості на екрані */
     this.parts=[];
     for(let i=0;i<this.N;i++){
-      this.parts.push({
-        x:Math.random()*this.BOX.w, y:Math.random()*this.BOX.h,
-        vx:this.gauss()*sig*sc, vy:this.gauss()*sig*sc, hit:0
-      });
+      const x=Math.random()*this.BOX.w;
+      /* стартуємо вже з лінійним профілем — так усталений стан настає одразу */
+      const sg=this.sigOf(this.Tc+(this.Th-this.Tc)*x/this.BOX.w);
+      this.parts.push({x, y:Math.random()*this.BOX.h,
+        vx:this.gauss()*sg, vy:this.gauss()*sg, hit:0});
     }
+    this.prof=new Array(this.NB).fill(this.Tm());
     this.hits=0; this.hitRate=0; this.acc=0;
   },
   GAS:[['водень',2],['гелій',4],['азот',28],['вуглекислий',44]],
   geo(b){return frozen(this,b,bb=>{
-    const sc=Math.min((bb.w-330)/this.BOX.w,(bb.h-100)/this.BOX.h);
-    const ox=40, oy=(bb.h-this.BOX.h*sc)/2+4;
-    return {sc,ox,oy,bw:this.BOX.w*sc,bh:this.BOX.h*sc,
-      tx:bb.w-250, nx:bb.w-176, yb:oy+this.BOX.h*sc-18, H:this.BOX.h*sc-36,
+    /* під коробкою лишаємо смугу: стрілка потоку тепла, її підпис і повзунок N */
+    const sc=Math.min((bb.w-150)/this.BOX.w,(bb.h-160)/this.BOX.h);
+    const ox=64, oy=58;
+    const bh=this.BOX.h*sc;
+    return {sc,ox,oy,bw:this.BOX.w*sc,bh,
+      yb:oy+bh-14, H:bh-28, nby:oy+bh+62, nbw:170,
       gas:{y:bb.h-18,x0:bb.w-4*74-8,dx:74}};
   });},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.geo(b);
     return [
-      {id:'T', x:Q.tx, y:Q.yb-(this.T-50)/1150*Q.H, r:8, color:CLR.k2,
-       hint:'температура газу',
-       move:(px,py)=>{this.T=clamp(snap((Q.yb-py)/Q.H*1150+50,10),50,1200); this.build();}},
-      {id:'N', x:Q.nx, y:Q.yb-(this.N-20)/220*Q.H, r:8, color:CLR.k1,
+      /* мітки просто на стінках: температура стінки і є те, що задають */
+      {id:'Tc', x:Q.ox-16, y:Q.yb-(this.Tc-50)/1150*Q.H, r:8, color:CLR.k1,
+       hint:'температура холодної стінки',
+       move:(px,py)=>{this.Tc=Math.min(this.Th-50,
+         clamp(snap((Q.yb-py)/Q.H*1150+50,10),50,1200)); this.build();}},
+      {id:'Th', x:Q.ox+Q.bw+16, y:Q.yb-(this.Th-50)/1150*Q.H, r:8, color:CLR.k2,
+       hint:'температура гарячої стінки',
+       move:(px,py)=>{this.Th=Math.max(this.Tc+50,
+         clamp(snap((Q.yb-py)/Q.H*1150+50,10),50,1200)); this.build();}},
+      {id:'N', x:Q.ox+(this.N-20)/220*Q.nbw, y:Q.nby, r:8, color:CLR.k3,
        hint:'скільки молекул показано',
-       move:(px,py)=>{this.N=clamp(snap((Q.yb-py)/Q.H*220+20,10),20,240); this.build();}}
+       move:px=>{this.N=clamp(snap((px-Q.ox)/Q.nbw*220+20,10),20,240); this.build();}}
     ].concat(shelfGrips(Q.gas,this.GAS,v=>{this.M=v; this.build();},'gs'));
   },
   init(){
@@ -894,6 +1010,7 @@ const M1={
     };
     $('m1re').onclick=()=>this.build();
     this.tiph=makeTip('m1hist'); hover('m1hist',this.hh);
+    this.hh.xlab='x'; this.hh.xunit='нм'; this.hh.xdec=1;
     this.playing=true;
     this.build();
   },
@@ -902,126 +1019,162 @@ const M1={
       const d=Math.min(0.05,dt);
       for(const p of this.parts){
         p.x+=p.vx*d*60; p.y+=p.vy*d*60;
-        if(p.x<0){p.x=-p.x; p.vx=-p.vx;}
-        if(p.x>this.BOX.w){p.x=2*this.BOX.w-p.x; p.vx=-p.vx; p.hit=1; this.hits++;}
+        /* бічні стінки обмінюються енергією, верхня й нижня — дзеркальні */
+        if(p.x<0){p.x=-p.x; this.emit(p,1,this.Tc); p.hit=0;}
+        if(p.x>this.BOX.w){p.x=2*this.BOX.w-p.x; this.emit(p,-1,this.Th);
+          p.hit=1; this.hits++;}
         if(p.y<0){p.y=-p.y; p.vy=-p.vy;}
         if(p.y>this.BOX.h){p.y=2*this.BOX.h-p.y; p.vy=-p.vy;}
         if(p.hit>0) p.hit=Math.max(0,p.hit-d*4);
       }
+      /* зіткнення молекул між собою: без них енергія від гарячої стінки не
+         передавалася б сусідам і градієнта не було б зовсім */
+      this.collide(d);
+      this.measure(d);
       this.acc+=d;
       if(this.acc>=1){this.hitRate=this.hits/this.acc; this.hits=0; this.acc=0;}
     }
     this.render();
   },
+  /* Пружні зіткнення пар, що опинилися поруч. Повний перебір пар для 240
+     молекул — 28 тисяч перевірок за кадр, тож беремо сітку за x: сусідами
+     можуть бути лише молекули з одного або суміжного стовпця. */
+  collide(){
+    const R=0.34, R2=R*R, ps=this.parts, nb=this.NB;
+    const cell=[]; for(let i=0;i<nb;i++) cell.push([]);
+    for(const p of ps){
+      const i=Math.min(nb-1,Math.max(0,Math.floor(p.x/this.BOX.w*nb)));
+      cell[i].push(p);
+    }
+    for(let i=0;i<nb;i++){
+      const a=cell[i], bnd=i+1<nb?cell[i+1]:[];
+      const list=a.concat(bnd);
+      for(let j=0;j<a.length;j++) for(let k=j+1;k<list.length;k++){
+        const p=a[j], q=list[k];
+        const dx=q.x-p.x, dy=q.y-p.y, d2=dx*dx+dy*dy;
+        if(d2>R2||d2<1e-9) continue;
+        const dist=Math.sqrt(d2), nx=dx/dist, ny=dy/dist;
+        const dvx=q.vx-p.vx, dvy=q.vy-p.vy, vn=dvx*nx+dvy*ny;
+        if(vn>0) continue;                       /* уже розлітаються */
+        /* рівні маси: нормальні складові просто обмінюються */
+        p.vx+=vn*nx; p.vy+=vn*ny;
+        q.vx-=vn*nx; q.vy-=vn*ny;
+      }
+    }
+  },
+  /* профіль температури по шарах, згладжений у часі — інакше при 120 молекулах
+     на 9 шарів крива щокадру стрибала б на сотні кельвінів */
+  measure(d){
+    const nb=this.NB, sum=new Array(nb).fill(0), cnt=new Array(nb).fill(0);
+    for(const p of this.parts){
+      const i=Math.min(nb-1,Math.max(0,Math.floor(p.x/this.BOX.w*nb)));
+      sum[i]+=p.vx*p.vx+p.vy*p.vy; cnt[i]++;
+    }
+    const k=Math.min(1,d*1.6);
+    for(let i=0;i<nb;i++) if(cnt[i]>0)
+      this.prof[i]=this.prof[i]*(1-k)+this.Tof(sum[i]/cnt[i])*k;
+  },
   render(){this.scene(); this.table(); this.hist();},
+  /* колір молекули — за її власною кінетичною енергією: холодна синя, гаряча
+     помаранчева. Саме так видно, як молекула нагрівається об гарячу стінку
+     й холоне в наступних зіткненнях. */
+  colOf(v2){
+    const T=this.Tof(v2);
+    const f=Math.max(0,Math.min(1,(T-this.Tc)/Math.max(1,this.Th-this.Tc)));
+    const r=Math.round(42+(235-42)*f), gg=Math.round(120+(104-120)*f),
+          bl=Math.round(214+(52-214)*f);
+    return 'rgb('+r+','+gg+','+bl+')';
+  },
   scene(){
     const b=cvx('m1scene'); if(!b||!this.parts) return;
     const {g,w,h}=b,Q=this.geo(b);
-    const sc=Q.sc, ox=Q.ox, oy=Q.oy;
+    const sc=Q.sc, ox=Q.ox, oy=Q.oy, bw=Q.bw, bh=Q.bh;
     g.clearRect(0,0,w,h);
-    g.fillStyle='#fbfbf9'; g.fillRect(ox,oy,this.BOX.w*sc,this.BOX.h*sc);
-    g.strokeStyle=CLR.axis; g.lineWidth=2;
-    g.strokeRect(ox,oy,this.BOX.w*sc,this.BOX.h*sc);
-    /* права стінка — на ній рахуємо удари */
-    g.strokeStyle=CLR.k1; g.lineWidth=4;
-    g.beginPath(); g.moveTo(ox+this.BOX.w*sc,oy); g.lineTo(ox+this.BOX.w*sc,oy+this.BOX.h*sc); g.stroke();
-    const vq=this.vq();
+    g.fillStyle='#fbfbf9'; g.fillRect(ox,oy,bw,bh);
+    g.strokeStyle=CLR.axis; g.lineWidth=2; g.strokeRect(ox,oy,bw,bh);
+    /* дві стінки: ліва холодна, права гаряча */
+    g.strokeStyle=CLR.k1; g.lineWidth=6;
+    g.beginPath(); g.moveTo(ox,oy); g.lineTo(ox,oy+bh); g.stroke();
+    g.strokeStyle=CLR.k2;
+    g.beginPath(); g.moveTo(ox+bw,oy); g.lineTo(ox+bw,oy+bh); g.stroke();
+    txt(g,'холодна стінка '+fmt(this.Tc,0)+' K',ox+6,oy-9,{color:'#1c5cab',size:11,bold:true});
+    txt(g,'гаряча стінка '+fmt(this.Th,0)+' K',ox+bw-6,oy-9,
+      {color:'#b8431a',size:11,bold:true,align:'right'});
+    /* молекули: розмір однаковий у всіх, колір — за швидкістю */
     for(const p of this.parts){
       const px=ox+p.x*sc, py=oy+(this.BOX.h-p.y)*sc;
-      const sp=Math.hypot(p.vx,p.vy);
-      dot(g,px,py,p.hit>0?4.5:3,p.hit>0?CLR.k1:CLR.k2);
-      if(sp>1e-9&&this.N<=60){
-        g.strokeStyle='rgba(235,104,52,.35)'; g.lineWidth=1;
-        g.beginPath(); g.moveTo(px,py); g.lineTo(px-p.vx*60*0.06*sc,py+p.vy*60*0.06*sc); g.stroke();
+      const v2=p.vx*p.vx+p.vy*p.vy;
+      if(p.hit>0){
+        g.strokeStyle='rgba(235,104,52,'+(0.5*p.hit)+')'; g.lineWidth=2;
+        g.beginPath(); g.arc(px,py,3.4+5*p.hit,0,7); g.stroke();
       }
+      dot(g,px,py,3.4,this.colOf(v2));
     }
-    txt(g,'T = '+fmt(this.T,0)+' K · '+this.N+' молекул',12,20,{color:CLR.k3,size:12.5,bold:true});
-    txt(g,'кожен удар об праву стінку передає їй імпульс — сума ударів і є тиском',
+    /* потік тепла — від гарячої стінки до холодної */
+    arrow(g,ox+bw-24,oy+bh+22,ox+24,oy+bh+22,CLR.k3,2.5);
+    txt(g,'потік тепла',ox+bw/2,oy+bh+40,{color:'#0d7a55',size:11,bold:true,align:'center'});
+    /* смуга кількості молекул */
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(ox,Q.nby+.5); g.lineTo(ox+Q.nbw,Q.nby+.5); g.stroke();
+    g.strokeStyle=CLR.k3; g.lineWidth=3;
+    g.beginPath(); g.moveTo(ox,Q.nby); g.lineTo(ox+(this.N-20)/220*Q.nbw,Q.nby); g.stroke();
+    txt(g,'N = '+this.N+' молекул',ox,Q.nby-10,{color:'#0d7a55',size:10.5,bold:true});
+    txt(g,'перепад між стінками '+fmt(this.Th-this.Tc,0)+' K',
+      12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'колір молекули — її власна швидкість: біля гарячої стінки синіх майже немає',
       12,36,{color:CLR.mut,size:10.5});
-    txt(g,'⟨v²⟩ ½ = '+fmt(vq,0)+' м/с',ox,oy-8,{color:CLR.mut,size:10.5});
-    /* Що означає колір кружка. Без цього підпису синій кружок читається як «інший
-       газ», хоча молекули тут усі однакові — різний лише момент їхнього життя. */
-    /* у два рядки: одним він налазив на полицю газів праворуч */
-    const ly=oy+this.BOX.h*sc+16;
-    dot(g,ox+6,ly-4,3,CLR.k2);
-    txt(g,'помаранчева — летить вільно',ox+16,ly,{color:CLR.mut,size:10.5});
-    dot(g,ox+6,ly+13,4.5,CLR.k1);
-    txt(g,'синя — щойно вдарилася об праву стінку: ці удари й створюють тиск',
-      ox+16,ly+17,{color:CLR.mut,size:10.5});
-    /* прилади: термометр і лічильник молекул */
-    therm(g,Q.tx,Q.yb,Q.H,(this.T-50)/1150,CLR.k2,'T');
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.roundRect(Q.nx-8,Q.yb-Q.H-6,16,Q.H+6,4); g.stroke();
-    const nf=(this.N-20)/220*Q.H;
-    g.fillStyle='rgba(42,120,214,.35)'; g.fillRect(Q.nx-5,Q.yb-nf,10,nf);
-    txt(g,'N',Q.nx,Q.yb+30,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     shelf(g,Q.gas,this.GAS,this.M,'газ');
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
-    $('m1t').textContent='ударів за секунду: '+fmt(this.hitRate,0);
-    $('m1vT').textContent=fmt(this.T,0)+' K';
+    $('m1t').textContent='ударів об гарячу стінку за секунду: '+fmt(this.hitRate,0);
+    $('m1vTc').textContent=fmt(this.Tc,0)+' K';
+    $('m1vTh').textContent=fmt(this.Th,0)+' K';
     $('m1vN').textContent=fmt(this.N,0);
     $('m1vM').textContent=fmt(this.M,0)+' г/моль';
-    $('m1kVq').textContent=fmt(this.vq(),0)+' м/с';
-    $('m1kVa').textContent=fmt(this.vAvg(),0)+' м/с';
-    $('m1kVp').textContent=fmt(this.vProb(),0)+' м/с';
-    $('m1kEk').textContent=sci(1.5*KB*this.T,3)+' Дж';
+    const tm=this.prof.reduce((a,c)=>a+c,0)/this.NB;
+    $('m1kTm').textContent=fmt(tm,0)+' K';
+    $('m1kDT').textContent=fmt(this.Th-this.Tc,0)+' K';
+    $('m1kVq').textContent=fmt(this.vq(this.Th),0)+' м/с';
+    $('m1kVa').textContent=fmt(this.vq(this.Tc),0)+' м/с';
+    $('m1kEk').textContent=sci(1.5*KB*this.Th,3)+' Дж';
     $('m1kM1').textContent=sci(this.m1(),3)+' кг';
     $('m1kHits').textContent=fmt(this.hitRate,0);
     /* модельна концентрація: N молекул у коробці 10×7×7 нм */
     const Vbox=this.BOX.w*this.BOX.h*this.BOX.h*1e-27;
     const n=this.N/Vbox;
-    const pMKT=n*this.m1()*this.vq()*this.vq()/3;
+    const pMKT=n*this.m1()*this.vq(tm)*this.vq(tm)/3;
     $('m1kP').textContent=sci(pMKT,3)+' Па';
-    $('m1kP2').textContent=sci(n*KB*this.T,3)+' Па';
+    $('m1kP2').textContent=sci(n*KB*tm,3)+' Па';
     $('m1kn').textContent=sci(n,3)+' 1/м³';
   },
   hist(){
-    const b=cvx('m1hist'); if(!b||!this.parts) return;
-    /* Вісь швидкостей стала для обраного газу (§10): межу рахуємо з T = 1200 K — верхньої
-       межі clamp() у grips(). Раніше vMax брався з поточної ⟨v²⟩, тож нагрівання розсувало
-       шкалу рівно настільки ж, наскільки розсувало розподіл, і ширшання розподілу —
-       головне, що показує модуль, — було непомітне. Газ обирають полицею, це режим, а не
-       ручка, тож межа має право залежати від молярної маси. */
-    const vMax=Math.sqrt(3*RGAS*1200/(this.M/1000))*2.2;
-    const NB=22, bins=new Array(NB).fill(0);
-    const sc=this.VSC;                               /* назад із екранних одиниць у м/с */
-    for(const p of this.parts){
-      const v=Math.hypot(p.vx,p.vy)*sc;
-      const i=Math.min(NB-1,Math.floor(v/vMax*NB));
-      bins[i]++;
+    const b=cvx('m1hist'); if(!b||!this.prof) return;
+    const W=this.BOX.w, nb=this.NB;
+    const xs=[],ys=[],xl=[],yl=[];
+    for(let i=0;i<nb;i++){
+      xs.push(W*(i+0.5)/nb); ys.push(this.prof[i]);
     }
-    /* теоретичний розподіл Максвелла у двох вимірах (модель пласка) */
-    const m=this.m1(), th=[];
-    for(let i=0;i<NB;i++){
-      const v=vMax*(i+0.5)/NB;
-      th.push(v*Math.exp(-m*v*v/(2*KB*this.T)));
+    for(let i=0;i<=20;i++){
+      const x=W*i/20; xl.push(x); yl.push(this.Tc+(this.Th-this.Tc)*x/W);
     }
-    const thSum=th.reduce((a,x)=>a+x,0)||1;
-    const ts=[],ys=[],yt=[];
-    for(let i=0;i<NB;i++){
-      ts.push(vMax*(i+0.5)/NB);
-      ys.push(bins[i]/Math.max(1,this.N)*100);
-      yt.push(th[i]/thSum*100);
-    }
-    /* Висоту беремо з теоретичної кривої, а не з вибірки: інакше діаграма тремтить
-       від випадковості кидків. Частка в стовпчику — наслідок нормування на 100 %,
-       не фізична величина, тож їй дозволено підлаштовуватися під ширину розподілу. */
-    const hi=Math.max(6,...yt)*1.15;
-    const r=drawChart(b,{tMax:vMax,yMin:-0.05*hi,yMax:1.15*hi,yLab:'%',xLab:'v, м/с',
-      xStep:niceStep(vMax/5),hover:this.hh.x,
-      series:[{ts,ys,color:CLR.k2,label:'модель'},{ts,ys:yt,color:CLR.k1,label:'Максвелл',dash:[4,3]},
-              {ts:[this.vAvg(),this.vAvg()],ys:[-0.05*hi,hi],color:CLR.ink,label:'⟨v⟩',dash:[5,4]}]});
-    this.hh.xlab='v'; this.hh.xunit='м/с'; this.hh.xdec=0;
-    showTip(this.tiph,r,'%',this.hh,[['модель',CLR.k2],['Максвелл',CLR.k1],['⟨v⟩',CLR.ink]],1);
+    const lo=Math.min(this.Tc,this.Th)*0.8, hi=Math.max(this.Tc,this.Th)*1.12;
+    const r=drawChart(b,{tMax:W,yMin:lo,yMax:hi,yLab:'K',xLab:'x, нм',xStep:2,
+      hover:this.hh.x,
+      series:[{ts:xl,ys:yl,color:CLR.ink,label:'лінійний',dash:[5,4]},
+              {ts:xs,ys,color:CLR.k3,label:'у моделі'}]});
+    showTip(this.tiph,r,'K',this.hh,[['лінійний',CLR.ink],['у моделі',CLR.k3]],0);
   }
 };
 
 /* ===================== МОДУЛЬ 2 · ізопроцеси ===================== */
 const M2={
   proc:'iso_t', nu:0.5, c:60, span:2.5,
-  TSHOW:9, t:0, playing:true,
+  /* Ізотермічний процес показуємо помітно повільніше за інші: газ у ньому
+     встигає обмінятися теплотою з термостатом, і саме ця «неспішність» —
+     умова сталої температури. */
+  TSHOW:9, TSLOW:16,
+  tShow(){return this.proc==='iso_t'?this.TSLOW:this.TSHOW;}, t:0, playing:true,
   h1:{x:null}, h2:{x:null}, h3:{x:null}, tip1:null, tip2:null, tip3:null,
   /* стан газу як функція параметра u ∈ [0,1] уздовж процесу */
   st(u){
@@ -1040,7 +1193,7 @@ const M2={
     const T=150*k;
     return {V,T,p:this.nu*RGAS*T/(V/1000)/1000};
   },
-  u(){return this.t/this.TSHOW;},
+  u(){return this.t/this.tShow();},
   reset(){this.t=0; this.playing=true; $('m2play').textContent='⏸';},
   cw(){return 80+this.nu*90;},        /* ширина циліндра ∝ кількості речовини */
   /* Верхні межі стовпчиків сталі й залежать лише від процесу (§10). Раніше вони бралися
@@ -1052,15 +1205,17 @@ const M2={
   BMAX:{iso_t:{p:500,V:40,T:500}, iso_p:{p:200,V:40,T:600}, iso_v:{p:300,V:50,T:600}},
   geo(b){return frozen(this,b,bb=>{
     const ch=bb.h-90, cy=bb.h*0.5+10, M=this.BMAX[this.proc];
-    return {ch,cy,cx:bb.w*0.32,bx:bb.w*0.66,Vmax:M.V,pmax:M.p,Tmax:M.T};
+    /* три стовпчики мусять уміститися у вужчу колонку — крок рахуємо з ширини */
+    const dx=Math.min(72,(bb.w*0.44)/3);
+    return {ch,cy,cx:bb.w*0.30,bx:bb.w*0.52,dx,Vmax:M.V,pmax:M.p,Tmax:M.T};
   });},
   /* висота стовпчика величини у стовпчиковій діаграмі та зворотне до неї */
   barH(Q,val,vmax){return (Q.ch-10)*Math.min(1,val/vmax)*0.9;},
   barV(Q,py,vmax){return (Q.cy+Q.ch/2-py)/((Q.ch-10)*0.9)*vmax;},
   /* яка величина стала, а яка найдужче змінюється — те й тягнуть */
   bars(Q){
-    return {p:{x:Q.bx,max:Q.pmax},V:{x:Q.bx+72,max:Q.Vmax},
-      T:{x:Q.bx+144,max:Q.Tmax}};
+    return {p:{x:Q.bx,max:Q.pmax},V:{x:Q.bx+Q.dx,max:Q.Vmax},
+      T:{x:Q.bx+2*Q.dx,max:Q.Tmax}};
   },
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
@@ -1101,12 +1256,12 @@ const M2={
   tick(dt){
     if(this.playing){
       this.t+=dt;
-      if(this.t>this.TSHOW*2) this.t=0;
+      if(this.t>this.tShow()*2) this.t=0;
     }
     this.render();
   },
   /* туди-назад, щоб процес було видно в обидва боки */
-  uu(){const x=(this.t%(this.TSHOW*2))/this.TSHOW; return x<=1?x:2-x;},
+  uu(){const T=this.tShow(); const x=(this.t%(T*2))/T; return x<=1?x:2-x;},
   render(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
@@ -1155,8 +1310,8 @@ const M2={
     };
     const bx=Q.bx;
     bar(bx,s.p,pmax,CLR.k1,'p','кПа',0);
-    bar(bx+72,s.V,Vmax,CLR.k2,'V','л',1);
-    bar(bx+144,s.T,Tmax,CLR.k3,'T','K',0);
+    bar(bx+Q.dx,s.V,Vmax,CLR.k2,'V','л',1);
+    bar(bx+2*Q.dx,s.T,Tmax,CLR.k3,'T','K',0);
     /* рівень, до якого дійде процес — його і тягнуть */
     const B=this.bars(Q);
     const spk=this.proc==='iso_t'?['V',s1.V]:['T',s1.T];
@@ -1221,13 +1376,38 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · рівняння стану ===================== */
 const M3={
+  path:'line',
   p1:100, V1:20, p2:250, V2:45, nu:1,
+  GAM:1.4,                       /* двоатомний газ — для адіабати */
   TSHOW:8, t:0, playing:true,
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
-  /* прямий перехід у координатах p–V */
+  /* Зафіксована величина сама визначає стан 2: не можна одночасно тримати
+     p сталим і довільно рухати p₂. Тому кінцевий стан беремо з обмеження,
+     а ручка рухається лише вздовж дозволеного напряму. */
+  end(){
+    const P=this.path;
+    if(P==='iso_p') return {p:this.p1, V:this.V2};
+    if(P==='iso_v') return {p:this.p2, V:this.V1};
+    if(P==='iso_t') return {p:this.p1*this.V1/this.V2, V:this.V2};
+    if(P==='adiab') return {p:this.p1*Math.pow(this.V1/this.V2,this.GAM), V:this.V2};
+    return {p:this.p2, V:this.V2};
+  },
   st(u){
-    const p=this.p1+(this.p2-this.p1)*u, V=this.V1+(this.V2-this.V1)*u;
+    const P=this.path, e=this.end();
+    let p,V;
+    if(P==='iso_t'){V=this.V1+(e.V-this.V1)*u; p=this.p1*this.V1/V;}
+    else if(P==='adiab'){V=this.V1+(e.V-this.V1)*u; p=this.p1*Math.pow(this.V1/V,this.GAM);}
+    else {p=this.p1+(e.p-this.p1)*u; V=this.V1+(e.V-this.V1)*u;}
     return {p,V,T:p*1000*V/1000/(this.nu*RGAS)};
+  },
+  FIX:{line:['нічого не зафіксовано','пряма в p–V: змінюються всі три величини',CLR.ink],
+       iso_p:['p = const — ізобара','V/T = const: обʼєм росте разом із температурою',CLR.k1],
+       iso_v:['V = const — ізохора','p/T = const: тиск росте разом із температурою',CLR.k3],
+       iso_t:['T = const — ізотерма','pV = const: у скільки разів більший обʼєм, у стільки менший тиск',CLR.k2],
+       adiab:['Q = 0 — адіабата','pV^γ = const: теплообміну немає, газ холоне, розширюючись',CLR.sec]},
+  showPath(){
+    const f=this.FIX[this.path];
+    $('m3ch1').textContent='p–V: '+f[0];
   },
   u(){const x=(this.t%(this.TSHOW*2))/this.TSHOW; return x<=1?x:2-x;},
   reset(){this.t=0; this.playing=true; $('m3play').textContent='⏸';},
@@ -1254,20 +1434,25 @@ const M3={
       {id:'s1', x:Q.DX(this.V1), y:Q.DY(this.p1), r:9, color:CLR.k1, hint:'стан 1',
        move:(px,py)=>{this.V1=clamp(snap(Q.iV(px),1),5,60);
          this.p1=clamp(snap(Q.iP(py),10),50,400); this.reset();}},
-      {id:'s2', x:Q.DX(this.V2), y:Q.DY(this.p2), r:9, color:CLR.k2, hint:'стан 2',
-       move:(px,py)=>{this.V2=clamp(snap(Q.iV(px),1),5,60);
-         this.p2=clamp(snap(Q.iP(py),10),50,400); this.reset();}},
+      {id:'s2', x:Q.DX(this.end().V), y:Q.DY(this.end().p), r:9, color:CLR.k2,
+       hint:this.path==='iso_v'?'стан 2: тільки тиск':'стан 2',
+       move:(px,py)=>{
+         if(this.path!=='iso_v') this.V2=clamp(snap(Q.iV(px),1),5,60);
+         if(this.path==='line'||this.path==='iso_v') this.p2=clamp(snap(Q.iP(py),10),50,400);
+         this.reset();}},
       {id:'nu', x:Q.cx+this.cw()/2, y:Q.cy, r:8, color:CLR.k2, hint:'кількість речовини',
        move:px=>{this.nu=clamp(snap((2*(px-Q.cx)-60)/50,0.05),0.1,3); this.reset();}}
     ];
   },
   init(){
+    seg('m3path',v=>{this.path=v; this.showPath(); this.reset();});
     grip('m3scene',this,()=>this.grips());
     $('m3play').onclick=()=>{
       this.playing=!this.playing;
       $('m3play').textContent=this.playing?'⏸':'▶';
     };
     $('m3re').onclick=()=>this.reset();
+    this.showPath();
     this.tip1=makeTip('m3c1w'); this.tip2=makeTip('m3c2w');
     hover('m3c1',this.h1); hover('m3c2',this.h2);
     this.h1.xlab='V'; this.h1.xunit='л'; this.h1.xdec=0;
@@ -1325,14 +1510,21 @@ const M3={
     }
     txt(g,'p, кПа',Q.dl-4,Q.dt-6,{color:CLR.mut,size:10,align:'right'});
     txt(g,'V, л',Q.dr,Q.db+16,{color:CLR.mut,size:10,align:'right'});
-    g.strokeStyle=CLR.k3; g.lineWidth=2;
-    g.beginPath(); g.moveTo(Q.DX(this.V1),Q.DY(this.p1));
-    g.lineTo(Q.DX(this.V2),Q.DY(this.p2)); g.stroke();
+    /* шлях процесу: пряма лише тоді, коли нічого не зафіксовано */
+    const F=this.FIX[this.path], e=this.end();
+    g.strokeStyle=F[2]; g.lineWidth=2.5; g.beginPath();
+    for(let i=0;i<=60;i++){
+      const q=this.st(i/60);
+      i?g.lineTo(Q.DX(q.V),Q.DY(q.p)):g.moveTo(Q.DX(q.V),Q.DY(q.p));
+    }
+    g.stroke();
     dot(g,Q.DX(s.V),Q.DY(s.p),5,CLR.ink,'#fff');
     txt(g,'1',Q.DX(this.V1)+11,Q.DY(this.p1)-8,{color:'#1c5cab',size:11,bold:true});
-    txt(g,'2',Q.DX(this.V2)+11,Q.DY(this.p2)-8,{color:'#b8431a',size:11,bold:true});
-    txt(g,'жодна з трьох величин не стала',12,20,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'але добуток pV, поділений на T, лишається тим самим числом νR',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'2',Q.DX(e.V)+11,Q.DY(e.p)-8,{color:'#b8431a',size:11,bold:true});
+    txt(g,F[0],12,20,{color:F[2],size:12.5,bold:true});
+    txt(g,F[1],12,36,{color:CLR.mut,size:10.5});
+    txt(g,'добуток pV, поділений на T, лишається тим самим числом νR за будь-якого шляху',
+      12,52,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
@@ -1341,15 +1533,15 @@ const M3={
     $('m3state').textContent='';
     $('m3vp1').textContent=fmt(this.p1,0)+' кПа';
     $('m3vV1').textContent=fmt(this.V1,0)+' л';
-    $('m3vp2').textContent=fmt(this.p2,0)+' кПа';
-    $('m3vV2').textContent=fmt(this.V2,0)+' л';
+    $('m3vp2').textContent=fmt(this.end().p,0)+' кПа';
+    $('m3vV2').textContent=fmt(this.end().V,0)+' л';
     $('m3vnu').textContent=fmt(this.nu,2)+' моль';
     $('m3kT1').textContent=fmt(s0.T,1)+' K';
     $('m3kT2').textContent=fmt(s1.T,1)+' K';
     $('m3kNow').textContent=fmt(s.p,0)+' кПа · '+fmt(s.V,1)+' л · '+fmt(s.T,0)+' K';
     $('m3km').textContent=fmt(this.nu*28,1)+' г';
     $('m3kU1').textContent=fmt(this.p1*1000*this.V1/1000/s0.T,3)+' Дж/К';
-    $('m3kU2').textContent=fmt(this.p2*1000*this.V2/1000/s1.T,3)+' Дж/К';
+    $('m3kU2').textContent=fmt(this.end().p*1000*this.end().V/1000/s1.T,3)+' Дж/К';
     $('m3fx').innerHTML='<i>T</i><sub>1</sub> = '+fmt(this.p1,0)+'·10³·'+fmt(this.V1/1000,3)+
       ' / ('+fmt(this.nu,2)+'·8,314) = <b>'+fmt(s0.T,1)+' K</b>';
   },
@@ -1392,46 +1584,43 @@ const M3={
   }
 };
 
-/* ===================== МОДУЛЬ 4 · балон і повітряна куля ===================== */
+/* ===================== МОДУЛЬ 4 · теплова аеростатична куля ===================== */
 const M4={
-  mode:'tank', p0:100, tC:20, Vt:40, plim:200,
   Vb:2200, tin:100, tout:15, mk:250,
+  y:0, vy:0, playing:true,       /* висота, швидкість підйому */
+  HWIN:300,                      /* висота видимого вікна, м — камера їде за кулею */
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
-  pAt(tc){return this.p0*(tc+273.15)/293.15;},
   rhoAir(tc){return PATM_STD*0.0289647/(RGAS*(tc+273.15));},
   lift(){
     const rout=this.rhoAir(this.tout), rin=this.rhoAir(this.tin);
     return {rout,rin,mout:rout*this.Vb,min:rin*this.Vb,F:(rout-rin)*this.Vb*G};
   },
   showMode(){
-    const t=this.mode==='tank';
-    $('m4gT').hidden=!t; $('m4gB').hidden=t;
-    $('m4kvT').hidden=!t; $('m4kvB').hidden=t;
-    $('m4kvh').textContent=t?'Газ у балоні':'Теплова куля';
-    $('m4c1h').textContent=t?'тиск залежно від температури, кПа':'підйомна сила від температури всередині, Н';
-    $('m4c2h').textContent=t?'той самий закон у кельвінах: пряма через нуль':'густина повітря від температури, кг/м³';
-    $('m4c1l').innerHTML=t?'<span><span class="chip cA"></span>p(t)</span><span><span class="chip cC"></span>межа балона</span><span><span class="chip cI"></span>поточна t</span>'
-      :'<span><span class="chip cB"></span>F(t_усер)</span><span><span class="chip cC"></span>вага оболонки</span><span><span class="chip cI"></span>поточна t</span>';
-    $('m4c2l').innerHTML=t?'<span><span class="chip cA"></span>p(T) — пропорційність</span><span><span class="chip cI"></span>поточна T</span>'
-      :'<span><span class="chip cC"></span>ρ(t) = pM/RT</span><span><span class="chip cI"></span>усередині</span>';
+    $('m4c1h').textContent='підйомна сила від температури всередині, Н';
+    $('m4c2h').textContent='густина повітря від температури, кг/м³';
+    $('m4c1l').innerHTML='<span><span class="chip cB"></span>F(t_усер)</span><span><span class="chip cC"></span>вага оболонки</span><span><span class="chip cI"></span>поточна t</span>';
+    $('m4c2l').innerHTML='<span><span class="chip cC"></span>ρ(t) = pM/RT</span><span><span class="chip cI"></span>усередині</span>';
     this.h1.xlab='t'; this.h1.xunit='°C'; this.h1.xdec=0;
-    this.h2.xlab=t?'T':'t'; this.h2.xunit=t?'K':'°C'; this.h2.xdec=0;
+    this.h2.xlab='t'; this.h2.xunit='°C'; this.h2.xdec=0;
   },
-  PMAX:440,                                  /* повна шкала манометра, кПа */
-  ang(p){return Math.PI*0.75+Math.PI*1.5*Math.min(1.02,p/this.PMAX);},
-  bwT(){return 40+this.Vt*1.2;},              /* ширина балона ∝ його обʼєму */
+  /* повна маса, яку розганяє надлишок підйомної сили */
+  mTot(){return this.lift().min+this.mk;},
+  /* F = (ρ_зовн − ρ_усер)·gV — це вже різниця ваг витісненого й внутрішнього
+     повітря. Залишається відняти саме спорядження, а розганяється вся маса
+     «гаряче повітря + оболонка». */
+  acc(){return (this.lift().F-this.mk*G)/this.mTot();},
   Rb(){return 20+Math.cbrt(this.Vb)*3.6;},    /* радіус кулі ∝ ∛обʼєму */
   bskw(){return 20+this.mk*0.09;},            /* кошик ∝ масі спорядження */
   geo(b){return frozen(this,b,bb=>{
-    if(this.mode==='tank'){
-      const cy=bb.h*0.52, bh=bb.h*0.50;
-      return {cx:bb.w*0.30,cy,bh,mx:bb.w*0.72,my:cy-10,R:Math.min(64,bb.h*0.2),
-        tx:bb.w*0.50,yb:cy+bh/2-6,H:bh-24};
-    }
     const R=this.Rb();
-    const payload=this.lift().F/G-this.mk;
-    const cy=bb.h*0.42+(payload>0?-6:8);
-    return {cx:bb.w*0.42,cy,R,
+    /* Масштаб висоти сталий: вікно завжди HWIN метрів. Камера їде за кулею,
+       щойно та підіймається вище 45 % вікна — тож швидкість підйому видно
+       з того, як біжить шкала висоти. */
+    const ysc=(bb.h-150)/this.HWIN;
+    const yCam=Math.max(0,this.y-this.HWIN*0.45);
+    const gy=bb.h-30+yCam*ysc;
+    const cy=gy-R*1.25-52-this.y*ysc;
+    return {cx:bb.w*0.42,cy,R,ysc,yCam,gy,SY:q=>bb.h-30-(q-yCam)*ysc,
       /* yb вище на 20 px: підпис значення стоїть на yb + 46, і з bb.h − 40
          він опинявся нижче краю полотна — тобто зникав зовсім */
       inx:bb.w*0.14,outx:bb.w-52,yb:bb.h-62,H:bb.h*0.46};
@@ -1439,27 +1628,6 @@ const M4={
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
     const Q=this.geo(b);
-    if(this.mode==='tank'){
-      const a0=this.ang(this.p0), al=this.ang(this.plim);
-      return [
-        {id:'Vt', x:Q.cx+this.bwT()/2, y:Q.cy, r:8, color:CLR.k1, hint:'обʼєм балона',
-         move:px=>{this.Vt=clamp(snap((2*(px-Q.cx)-40)/1.2,1),1,80);}},
-        {id:'tC', x:Q.tx, y:Q.yb-(this.tC+40)/190*Q.H, r:8, color:CLR.k2,
-         hint:'температура балона',
-         move:(px,py)=>{this.tC=clamp(snap((Q.yb-py)/Q.H*190-40,1),-40,150);}},
-        /* сірий покажчик на шкалі — тиск при 20 °C, червоний — робоча межа */
-        {id:'p0', x:Q.mx+Math.cos(a0)*(Q.R-14), y:Q.my+Math.sin(a0)*(Q.R-14), r:7,
-         color:CLR.sec, hint:'тиск при 20 °C',
-         move:(px,py)=>{const a=Math.atan2(py-Q.my,px-Q.mx);
-           const u=((a-Math.PI*0.75)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)/(Math.PI*1.5);
-           this.p0=clamp(snap(u*this.PMAX,5),20,200);}},
-        {id:'plim', x:Q.mx+Math.cos(al)*(Q.R+9), y:Q.my+Math.sin(al)*(Q.R+9), r:7,
-         color:CLR.k2, hint:'робоча межа балона',
-         move:(px,py)=>{const a=Math.atan2(py-Q.my,px-Q.mx);
-           const u=((a-Math.PI*0.75)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)/(Math.PI*1.5);
-           this.plim=clamp(snap(u*this.PMAX,10),50,400);}}
-      ];
-    }
     return [
       {id:'Vb', x:Q.cx+Q.R*1.1, y:Q.cy, r:8, color:CLR.k2, hint:'обʼєм оболонки',
        move:px=>{const R=Math.max(20.1,(px-Q.cx)/1.1);
@@ -1476,80 +1644,31 @@ const M4={
     ];
   },
   init(){
-    seg('m4mode',v=>{this.mode=v; this.showMode();});
     grip('m4scene',this,()=>this.grips());
+    $('m4play').onclick=()=>{
+      this.playing=!this.playing;
+      $('m4play').textContent=this.playing?'⏸':'▶';
+    };
+    $('m4re').onclick=()=>{this.y=0; this.vy=0;};
     this.tip1=makeTip('m4c1w'); this.tip2=makeTip('m4c2w');
     hover('m4c1',this.h1); hover('m4c2',this.h2);
     this.showMode();
   },
-  tick(){this.render();},
-  render(){
-    if(this.mode==='tank'){this.sceneTank(); this.tableTank();}
-    else {this.sceneBalloon(); this.tableBalloon();}
-    this.charts();
-  },
-  sceneTank(){
-    const b=cvx('m4scene'); if(!b) return;
-    const {g,w,h}=b,Q=this.geo(b);
-    const p=this.pAt(this.tC), over=p>this.plim;
-    const cx=Q.cx, cy=Q.cy, bw=this.bwT(), bh=Q.bh;
-    g.clearRect(0,0,w,h);
-    /* балон */
-    g.fillStyle=over?'rgba(235,104,52,.10)':'rgba(42,120,214,.07)';
-    g.strokeStyle=over?CLR.k2:CLR.k1; g.lineWidth=2.5;
-    g.beginPath(); g.roundRect(cx-bw/2,cy-bh/2,bw,bh,14); g.fill(); g.stroke();
-    g.beginPath(); g.roundRect(cx-14,cy-bh/2-20,28,22,4); g.stroke();
-    /* Молекул стільки, скільки в балоні газу: обʼєм не міняє тиску (закон Шарля
-       залишає його залежним лише від температури), зате міняє кількість речовини —
-       і саме це тепер видно в кадрі, а не лише в таблиці. */
-    const n=Math.max(8,Math.round(6+this.Vt*0.6));
-    for(let i=0;i<n;i++){
-      const a=(i*79)%1000/1000, q=(i*137)%1000/1000;
-      const amp=2+8*(this.tC+273)/423;
-      dot(g,cx-bw/2+12+a*(bw-24)+Math.sin(i*3+this.tC*0.05)*amp*0.4,
-            cy-bh/2+14+q*(bh-28)+Math.cos(i*2+this.tC*0.05)*amp*0.4,2.6,CLR.k3);
+  /* Куля справді летить: надлишок підйомної сили над вагою розганяє її,
+     опір повітря обмежує швидкість. Поки ручку тримають, політ не йде —
+     інакше кадр тікав би з-під пальця. */
+  tick(dt){
+    if(this._grab==null&&this.playing){
+      const d=Math.min(0.05,dt);
+      const a=this.acc()-0.35*this.vy*Math.abs(this.vy)/Math.max(1,Math.abs(this.vy));
+      this.vy+=(this.acc()-0.22*this.vy)*d;
+      this.y=Math.max(0,this.y+this.vy*d);
+      if(this.y<=0&&this.vy<0) this.vy=0;
+      if(this.y>this.HWIN*3){this.y=0; this.vy=0;}
     }
-    /* манометр зі сталою шкалою: сірий покажчик — тиск при 20 °C,
-       червоний — робоча межа; обидва беруть пальцем */
-    const mx=Q.mx, my=Q.my, R=Q.R;
-    dot(g,mx,my,R,'#fff'); g.strokeStyle=CLR.axis; g.lineWidth=2;
-    g.beginPath(); g.arc(mx,my,R,0,7); g.stroke();
-    for(let i=0;i<=10;i++){
-      const a=Math.PI*0.75+Math.PI*1.5*i/10;
-      g.strokeStyle=i*this.PMAX/10>this.plim?CLR.k2:CLR.grid; g.lineWidth=i%5===0?2:1;
-      g.beginPath();
-      g.moveTo(mx+Math.cos(a)*(R-8),my+Math.sin(a)*(R-8));
-      g.lineTo(mx+Math.cos(a)*R,my+Math.sin(a)*R); g.stroke();
-    }
-    const al=this.ang(this.plim);
-    g.strokeStyle=CLR.k2; g.lineWidth=3;
-    g.beginPath();
-    g.moveTo(mx+Math.cos(al)*(R-6),my+Math.sin(al)*(R-6));
-    g.lineTo(mx+Math.cos(al)*(R+9),my+Math.sin(al)*(R+9)); g.stroke();
-    const a0=this.ang(this.p0);
-    g.strokeStyle=CLR.sec; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(mx,my);
-    g.lineTo(mx+Math.cos(a0)*(R-14),my+Math.sin(a0)*(R-14)); g.stroke();
-    const ang=this.ang(p);
-    arrow(g,mx,my,mx+Math.cos(ang)*(R-14),my+Math.sin(ang)*(R-14),over?CLR.k2:CLR.k1,2.5);
-    dot(g,mx,my,4,CLR.sec);
-    txt(g,fmt(p,0)+' кПа',mx,my+R+22,{color:over?'#b8431a':'#1c5cab',size:12.5,bold:true,align:'center'});
-    txt(g,'межа '+fmt(this.plim,0)+' кПа · при 20 °C '+fmt(this.p0,0),mx,my+R+38,
-      {color:CLR.mut,size:10.5,align:'center'});
-    /* термометр */
-    therm(g,Q.tx,Q.yb,Q.H,(this.tC+40)/190,CLR.k3,'t');
-    txt(g,fmt(this.tC,0)+' °C = '+fmt(this.tC+273.15,0)+' K',Q.tx,Q.yb+46,
-      {color:'#0d7a55',size:11,bold:true,align:'center'});
-    txt(g,fmt(this.Vt,0)+' л',cx,cy+bh/2+22,{color:'#1c5cab',size:11,bold:true,align:'center'});
-    txt(g,over?'тиск перевищив робочу межу':'обʼєм сталий — працює закон Шарля',12,20,
-      {color:over?CLR.k2:CLR.k3,size:12.5,bold:true});
-    txt(g,'нагрівання на 100 K піднімає тиск приблизно на третину — тому балони не лишають на сонці',
-      12,36,{color:CLR.mut,size:10.5});
-    /* найчастіше запитання до цієї сцени: чому ширший балон нічого не міняє */
-    txt(g,'ширший балон вміщає більше газу, але тиску не міняє: за сталого обʼєму він залежить лише від T',
-      12,h-10,{color:CLR.mut,size:10.5});
-    for(const hh of this.grips()) drawGrip(g,hh,this);
+    this.render();
   },
+  render(){this.sceneBalloon(); this.tableBalloon(); this.charts();},
   sceneBalloon(){
     const b=cvx('m4scene'); if(!b) return;
     const {g,w,h}=b, L=this.lift(), Q=this.geo(b);
@@ -1557,9 +1676,21 @@ const M4={
     const fly=payload>0;
     const cx=Q.cx, R=Q.R, cy=Q.cy;
     g.clearRect(0,0,w,h);
-    g.fillStyle=CLR.ground; g.fillRect(0,h-24,w,24);
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(0,h-24+.5); g.lineTo(w,h-24+.5); g.stroke();
+    /* земля відʼїжджає вниз разом із підйомом — саме тому й видно рух */
+    const gy=Q.SY(0);
+    if(gy<h+30){
+      g.fillStyle=CLR.ground; g.fillRect(0,gy,w,h-gy);
+      g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(0,gy+.5); g.lineTo(w,gy+.5); g.stroke();
+    }
+    /* шкала висоти */
+    const stp=50;
+    for(let yy=Math.floor(Q.yCam/stp)*stp;yy<=Q.yCam+this.HWIN;yy+=stp){
+      const py=Q.SY(yy); if(py<14||py>h-6) continue;
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(cx+R*1.45,py+.5); g.lineTo(w-142,py+.5); g.stroke();
+      txt(g,fmt(yy,0)+' м',w-136,py+4,{color:CLR.mut,size:9.5});
+    }
     /* оболонка */
     g.fillStyle='rgba(235,104,52,.10)'; g.strokeStyle=CLR.k2; g.lineWidth=2.5;
     g.beginPath();
@@ -1589,37 +1720,35 @@ const M4={
        нормувалася на саму силу, тож стрілка F не змінювалася зовсім, хай як тягни
        температуру чи обʼєм, а вага виглядала сумірною з підйомною силою. */
     const k=110/53200;
-    arrow(g,cx-R-24,cy,cx-R-24,cy-L.F*k,CLR.k1,3);
-    txt(g,'F = '+fmt(L.F,0)+' Н',cx-R-30,cy-L.F*k-6,{color:'#1c5cab',size:11.5,bold:true,align:'right'});
-    const W=(L.min+this.mk)*G;
-    arrow(g,cx+R+24,cy,cx+R+24,cy+W*k,CLR.k3,3);
-    txt(g,'вага '+fmt(W,0)+' Н',cx+R+30,cy+W*k+4,{color:'#0d7a55',size:11.5,bold:true});
+    /* Показуємо повний баланс: угору — архімедова сила на весь витіснений
+       обʼєм, униз — вага гарячого повітря разом зі спорядженням. Їхня різниця
+       і є той надлишок, що піднімає кулю. */
+    const FA=L.mout*G, W=(L.min+this.mk)*G;
+    arrow(g,cx-R-26,cy,cx-R-26,cy-FA*k,CLR.k1,3);
+    txt(g,'F_A = '+fmt(FA/1000,1)+' кН',cx-R-32,cy-FA*k-6,
+      {color:'#1c5cab',size:11.5,bold:true,align:'right'});
+    arrow(g,cx+R+26,cy,cx+R+26,cy+W*k,CLR.k3,3);
+    txt(g,'вага '+fmt(W/1000,1)+' кН',cx+R+32,cy+W*k+4,{color:'#0d7a55',size:11.5,bold:true});
+    pill(g,'різниця '+fmt(FA-W,0)+' Н',cx,cy-R*1.35,
+      {color:FA>W?'#1c5cab':'#b8431a',size:11,bold:true});
     txt(g,fmt(this.tin,0)+' °C усередині',cx,cy+4,{color:'#b8431a',size:12,bold:true,align:'center'});
     /* два термометри: усередині оболонки й у зовнішньому повітрі */
     therm(g,Q.inx,Q.yb,Q.H,(this.tin-20)/120,CLR.k2,'усер.');
     therm(g,Q.outx,Q.yb,Q.H,(this.tout+20)/60,CLR.k1,'зовні');
     txt(g,fmt(this.tin,0)+' °C',Q.inx,Q.yb+46,{color:'#b8431a',size:10.5,bold:true,align:'center'});
     txt(g,fmt(this.tout,0)+' °C',Q.outx,Q.yb+46,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
-    txt(g,fly?'куля злітає':'куля не злітає',12,20,{color:fly?CLR.k1:CLR.k3,size:12.5,bold:true});
+    /* швидкість підйому — окремою стрілкою біля кошика */
+    if(Math.abs(this.vy)>0.05){
+      const vl=Math.max(-70,Math.min(70,this.vy*14));
+      arrow(g,cx+R*0.75,cy,cx+R*0.75,cy-vl,CLR.k2,2.2);
+      txt(g,fmt(this.vy,1)+' м/с',cx+R*0.75+8,cy-vl-4,{color:'#b8431a',size:10.5,bold:true});
+    }
+    txt(g,fly?(this.y>0.5?'куля піднімається':'куля відривається від землі'):'куля не злітає',
+      12,20,{color:fly?CLR.k1:CLR.k3,size:12.5,bold:true});
     txt(g,'гаряче повітря рідше за холодне — куля витісняє більше повітря, ніж важить сама',
       12,36,{color:CLR.mut,size:10.5});
+    txt(g,'висота '+fmt(this.y,0)+' м',12,52,{color:CLR.sec,size:11,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
-  },
-  tableTank(){
-    $('m4vp0').textContent=fmt(this.p0,0)+' кПа';
-    $('m4vtC').textContent=fmt(this.tC,0)+' °C';
-    $('m4vVt').textContent=fmt(this.Vt,0)+' л';
-    $('m4vplim').textContent=fmt(this.plim,0)+' кПа';
-    const T=this.tC+273.15, p=this.pAt(this.tC);
-    const nu=p*1000*this.Vt/1000/(RGAS*T);
-    $('m4state').textContent='';
-    $('m4kTk').textContent=fmt(T,1)+' K';
-    $('m4kp').textContent=fmt(p,1)+' кПа';
-    $('m4kdp').textContent=(p>=this.p0?'+':'−')+fmt(Math.abs(p-this.p0),1)+' кПа';
-    $('m4knu').textContent=fmt(nu,3)+' моль';
-    $('m4kmg').textContent=fmt(nu*32,1)+' г';
-    $('m4kres').textContent=fmt(this.plim-p,1)+' кПа';
-    $('m4kverd').textContent=p>this.plim?'перевищення робочого тиску':'у межах норми';
   },
   tableBalloon(){
     $('m4vVb').textContent=fmt(this.Vb,0)+' м³';
@@ -1635,47 +1764,40 @@ const M4={
     $('m4kF').textContent=fmt(L.F,0)+' Н  ('+fmt(L.F/G,0)+' кг)';
     $('m4kpay').textContent=fmt(payload,0)+' кг';
     $('m4kverdb').textContent=payload>0?'злітає, може взяти вантаж':'підйомної сили не вистачає';
+    $('m4kdF').textContent=fmt(L.F-this.mk*G,0)+' Н';
+    $('m4ka').textContent=fmt(this.acc(),2)+' м/с²';
+    $('m4ky').textContent=fmt(this.y,0)+' м';
+    $('m4kvy').textContent=fmt(this.vy,2)+' м/с';
+    $('m4state').textContent=payload>0?'':'на землі';
   },
   charts(){
-    const t=this.mode==='tank';
     const b1=cvx('m4c1');
     if(b1){
       const ts=[],ys=[],lim=[];
-      if(t){
-        for(let i=0;i<=60;i++){const c=-40+190*i/60; ts.push(c); ys.push(this.pAt(c)); lim.push(this.plim);}
-      } else {
-        for(let i=0;i<=60;i++){
-          const c=20+120*i/60; ts.push(c);
-          ys.push((this.rhoAir(this.tout)-this.rhoAir(c))*this.Vb*G); lim.push(this.mk*G);
-        }
+      for(let i=0;i<=60;i++){
+        const c=20+120*i/60; ts.push(c);
+        ys.push((this.rhoAir(this.tout)-this.rhoAir(c))*this.Vb*G); lim.push(this.mk*G);
       }
       const hi=Math.max(...ys,...lim)*1.12, lo=Math.min(0,...ys);
-      const cur=t?this.pAt(this.tC):(this.rhoAir(this.tout)-this.rhoAir(this.tin))*this.Vb*G;
-      const xNow=t?this.tC:this.tin;
-      const r=drawChart(b1,{tMax:t?150:140,yMin:lo,yMax:hi,yLab:t?'кПа':'Н',xLab:'t, °C',
-        xStep:t?25:20,hover:this.h1.x,
-        series:[{ts,ys,color:t?CLR.k1:CLR.k2,label:t?'p':'F'},
-                {ts,ys:lim,color:CLR.k3,label:t?'межа':'вага',dash:[5,4]},
-                {ts:[xNow,xNow],ys:[lo,cur],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip1,r,t?'кПа':'Н',this.h1,
-        [[t?'p':'F',t?CLR.k1:CLR.k2],[t?'межа':'вага',CLR.k3],['зараз',CLR.ink]],0);
+      const cur=this.lift().F;
+      const r=drawChart(b1,{tMax:140,yMin:lo,yMax:hi,yLab:'Н',xLab:'t, °C',
+        xStep:20,hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k2,label:'F'},
+                {ts,ys:lim,color:CLR.k3,label:'вага',dash:[5,4]},
+                {ts:[this.tin,this.tin],ys:[lo,cur],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+      showTip(this.tip1,r,'Н',this.h1,[['F',CLR.k2],['вага',CLR.k3],['зараз',CLR.ink]],0);
     }
     const b2=cvx('m4c2');
     if(b2){
       const ts=[],ys=[];
-      if(t){
-        for(let i=0;i<=60;i++){const T=233+190*i/60; ts.push(T); ys.push(this.p0*T/293.15);}
-      } else {
-        for(let i=0;i<=60;i++){const c=-20+160*i/60; ts.push(c); ys.push(this.rhoAir(c));}
-      }
+      for(let i=0;i<=60;i++){const c=-20+160*i/60; ts.push(c); ys.push(this.rhoAir(c));}
       const hi=Math.max(...ys)*1.12;
-      const cur=t?this.pAt(this.tC):this.rhoAir(this.tin);
-      const xNow=t?this.tC+273.15:this.tin;
-      const r=drawChart(b2,{tMax:t?430:140,yMin:0,yMax:hi,yLab:t?'кПа':'кг/м³',
-        xLab:t?'T, K':'t, °C',xStep:t?100:20,yDec:t?0:2,hover:this.h2.x,
-        series:[{ts,ys,color:t?CLR.k1:CLR.k3,label:t?'p':'ρ'},
-                {ts:[xNow,xNow],ys:[0,cur],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tip2,r,t?'кПа':'кг/м³',this.h2,[[t?'p':'ρ',t?CLR.k1:CLR.k3],['зараз',CLR.ink]],t?0:3);
+      const r=drawChart(b2,{tMax:140,yMin:0,yMax:hi,yLab:'кг/м³',xLab:'t, °C',
+        xStep:20,yDec:2,hover:this.h2.x,
+        series:[{ts,ys,color:CLR.k3,label:'ρ'},
+                {ts:[this.tin,this.tin],ys:[0,this.rhoAir(this.tin)],color:CLR.ink,
+                 label:'зараз',dash:[4,3]}]});
+      showTip(this.tip2,r,'кг/м³',this.h2,[['ρ',CLR.k3],['зараз',CLR.ink]],3);
     }
   }
 };
@@ -1734,42 +1856,54 @@ const M5={
     const {g,w,h}=b, B=this.B(), col=CLR[B.col], Q=this.geo(b);
     const HMAX=Q.HMAX, sc=Q.sc, gy=Q.gy, SY=Q.SY;
     g.clearRect(0,0,w,h);
-    /* стовп атмосфери: густина крапок падає експоненційно */
+    /* Посудина: саме вона й робить це «стовпом газу», а не відкритим небом.
+       Стінки тримають газ із боків, угорі — кришка, знизу — поверхня тіла. */
+    const x0=56, x1=w-112;
+    g.fillStyle='rgba(42,120,214,.04)'; g.fillRect(x0,SY(HMAX),x1-x0,gy-SY(HMAX));
+    /* стовп газу: густина крапок падає експоненційно */
     const HS=this.H();
     for(let i=0;i<520;i++){
       const u=i/520, hh=-HS*Math.log(1-u*(1-Math.exp(-HMAX/HS)));
       if(!isFinite(hh)||hh>HMAX) continue;
-      const px=60+((i*173)%1000)/1000*(w-160);
+      const px=x0+8+((i*173)%1000)/1000*(x1-x0-16);
       dot(g,px,SY(hh),1.7,'rgba(42,120,214,.42)');
     }
+    g.strokeStyle=CLR.axis; g.lineWidth=2.5;
+    g.beginPath();
+    g.moveTo(x0,gy); g.lineTo(x0,SY(HMAX)); g.lineTo(x1,SY(HMAX)); g.lineTo(x1,gy);
+    g.stroke();
+    txt(g,'закрита посудина заввишки '+fmt(HMAX,0)+' км',x0+10,SY(HMAX)+16,
+      {color:CLR.mut,size:10});
     g.fillStyle=CLR.ground; g.fillRect(0,gy,w,h-gy);
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
     g.beginPath(); g.moveTo(0,gy+.5); g.lineTo(w,gy+.5); g.stroke();
     /* шкала висот */
     for(let y=0;y<=HMAX;y+=5){
       g.strokeStyle=CLR.grid; g.lineWidth=1;
-      g.beginPath(); g.moveTo(46,SY(y)+.5); g.lineTo(w-16,SY(y)+.5); g.stroke();
-      txt(g,fmt(y,0),42,SY(y)+4,{color:CLR.mut,size:9.5,align:'right'});
+      g.beginPath(); g.moveTo(x0,SY(y)+.5); g.lineTo(x1,SY(y)+.5); g.stroke();
+      txt(g,fmt(y,0),x0-6,SY(y)+4,{color:CLR.mut,size:9.5,align:'right'});
     }
-    txt(g,'h, км',42,SY(HMAX)-10,{color:CLR.mut,size:10,align:'right'});
+    txt(g,'h, км',x0-6,SY(HMAX)-10,{color:CLR.mut,size:10,align:'right'});
     /* рівень шкали висот H */
     g.strokeStyle=CLR.k3; g.lineWidth=2; g.setLineDash([5,4]);
-    g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,HS))); g.lineTo(w-16,SY(Math.min(HMAX,HS))); g.stroke();
+    g.beginPath(); g.moveTo(x0,SY(Math.min(HMAX,HS))); g.lineTo(x1,SY(Math.min(HMAX,HS))); g.stroke();
     g.setLineDash([]);
     /* Два підписи розведено і по висоті, і по горизонталі: рівень H і обрана висота
        часто збігаються, а раніше обидва стояли над своїми лініями й налазили один на
        одного — та ще й на термометр край кадру. */
-    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',w-76,SY(Math.min(HMAX,HS))+15,
+    txt(g,'H = '+fmt(HS,1)+' км — тут тиск менший у e разів',x1-10,SY(Math.min(HMAX,HS))+15,
       {color:'#0d7a55',size:11,bold:true,align:'right'});
     /* обрана висота */
     g.strokeStyle=CLR.k2; g.lineWidth=2.5;
-    g.beginPath(); g.moveTo(46,SY(Math.min(HMAX,this.h))); g.lineTo(w-16,SY(Math.min(HMAX,this.h))); g.stroke();
-    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),150,SY(Math.min(HMAX,this.h))-9,
+    g.beginPath(); g.moveTo(x0,SY(Math.min(HMAX,this.h))); g.lineTo(x1,SY(Math.min(HMAX,this.h))); g.stroke();
+    pill(g,'p/p₀ = '+fmt(this.pRel(this.h),3),x0+90,SY(Math.min(HMAX,this.h))-9,
       {color:'#b8431a',size:11.5,bold:true});
     txt(g,B.n+': g = '+fmt(B.g,2)+' м/с², друга космічна '+fmt(B.v2,2)+' км/с',
       12,20,{color:col,size:12.5,bold:true});
-    txt(g,'що менше g і що легші молекули, то «пухкіша» атмосфера — шкала висот більша',
+    txt(g,'що менше g і що легші молекули, то «пухкіший» стовп — шкала висот більша',
       12,36,{color:CLR.mut,size:10.5});
+    txt(g,'ідеалізація: газ ідеальний, T однакова по всій висоті, g стале',
+      12,52,{color:CLR.sec,size:10.5,bold:true});
     therm(g,Q.tx,Q.yb,Q.H,(this.T-60)/340,CLR.k3,'T');
     txt(g,fmt(this.T,0)+' K',Q.tx,Q.yb+46,{color:'#0d7a55',size:10.5,bold:true,align:'center'});
     shelf(g,Q.gas,this.GAS,this.M,'газ');

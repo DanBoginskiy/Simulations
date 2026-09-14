@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,11 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:280px}
-#m2scene{width:100%; height:340px}
-#m3scene{width:100%; height:420px}
-#m4scene{width:100%; height:300px}
-#m5scene{width:100%; height:380px}
+#m1scene{width:100%; height:350px}
+#m2scene{width:100%; height:430px}
+#m3scene{width:100%; height:530px}
+#m4scene{width:100%; height:380px}
+#m5scene{width:100%; height:480px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -506,8 +519,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -874,8 +951,8 @@ const M1={
     const sc=(b.w-90)/(this.L+0.6);
     return {sc,ox:45,by:b.h*0.56,SX:x=>45+x*sc};
   },
-  hL(m){return 10+m*0.7;},        /* висота ящика ∝ масі вантажу */
-  th(){return 4+this.mb*0.6;},    /* півтовщина балки ∝ її масі */
+  hL(m){return 14+m*1.15;},       /* висота ящика ∝ масі вантажу */
+  th(){return 6+this.mb*0.95;},   /* півтовщина балки ∝ її масі */
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.lay(b), by=Q.by;
@@ -886,15 +963,15 @@ const M1={
        move:px=>{this.xb=clamp(snap((px-Q.ox)/Q.sc,0.05),2.5,4);}},
       {id:'mb', x:Q.SX(this.L/2), y:by-this.th(), r:7, color:CLR.sec,
        hint:'маса самої балки',
-       move:(px,py)=>{this.mb=clamp(snap((by-py-4)/0.6,0.5),0,20);}}
+       move:(px,py)=>{this.mb=clamp(snap((by-py-6)/0.95,0.5),0,20);}}
     ];
     [['1',this.x1,this.m1],['2',this.x2,this.m2]].forEach(([n,x,m])=>{
       const px=Q.SX(x), hl=this.hL(m);
-      out.push({id:'x'+n, x:px, y:by-8-hl/2, r:13, bare:true, color:CLR.k3,
+      out.push({id:'x'+n, x:px, y:by-8-hl/2, r:17, bare:true, color:CLR.k3,
         hint:'положення вантажу '+n,
         move:mx=>{this['x'+n]=clamp(snap((mx-Q.ox)/Q.sc,0.05),0,4);}});
       out.push({id:'m'+n, x:px+15, y:by-8-hl, r:7, color:CLR.k3, hint:'маса вантажу '+n,
-        move:(mx,my)=>{this['m'+n]=clamp(snap((by-8-my-10)/0.7,1),0,40);}});
+        move:(mx,my)=>{this['m'+n]=clamp(snap((by-8-my-14)/1.15,1),0,40);}});
     });
     return out;
   },
@@ -930,7 +1007,7 @@ const M1={
       g.moveTo(px,by+8); g.lineTo(px-11,by+30); g.lineTo(px+11,by+30); g.closePath();
       g.globalAlpha=0.16; g.fill(); g.globalAlpha=1;
       g.strokeStyle=col; g.lineWidth=2; g.stroke();
-      const k=Math.min(70,Math.abs(Nv)/Math.max(1,N.P)*100);
+      const k=Math.min(106,Math.abs(Nv)/Math.max(1,N.P)*150);
       if(Nv>0.5){
         arrow(g,px,by+6,px,by+6-k,col,2.5);
         txt(g,lab+' = '+fmt(Nv,0)+' Н',px,by-k-10,
@@ -943,9 +1020,9 @@ const M1={
     /* вантажі й вага балки */
     /* висота ящика — маса вантажу; за неї і за сам ящик його й тягнуть */
     const load=(x,m,lab)=>{
-      const px=SX(x), hl=this.hL(m), L=Math.min(64,m/40*64+8);
+      const px=SX(x), hl=this.hL(m), L=Math.min(82,m/40*82+10);
       g.fillStyle='rgba(27,175,122,.10)'; g.strokeStyle=CLR.k3; g.lineWidth=2;
-      g.beginPath(); g.roundRect(px-15,by-8-hl,30,hl,3); g.fill(); g.stroke();
+      g.beginPath(); g.roundRect(px-21,by-8-hl,42,hl,3); g.fill(); g.stroke();
       txt(g,fmt(m,0),px,by-8-hl/2+4,{color:CLR.sec,size:10.5,bold:true,align:'center'});
       if(m<0.05) return;
       arrow(g,px,by-8-hl,px,by-8-hl-L,CLR.k3,2.2);
@@ -1043,8 +1120,13 @@ const M2={
     /* висота кадру — під найвище тіло діапазону (h ≤ 2 м), а не під поточне:
        інакше низький брусок і високий займали однакову частку полотна, і сенс
        відношення висоти до ширини основи зникав саме там, де він головний */
-    const W=2.6, HMAX=2;
-    const sc=fitScale(bb.w,bb.h,60,80,W,W*Math.sin(60*DEG)+HMAX+0.6,0,0);
+    /* Вертикальний бюджет: підйом уздовж площини до тіла (u = 0,45·W за
+       найкрутішого нахилу) плюс саме тіло (h ≤ 2 м) і підпис над ним. Уся
+       площина в кадр не мусить уміщатися — це площина, вона й має виходити
+       за краї; горизонталь кадру тоді заповнює саме вона. */
+    const W=2.6, HMAX=2, ALMAX=60;
+    const sc=fitScale(bb.w,bb.h,60,56,W+1.8,
+      W*0.45*Math.sin(ALMAX*DEG)+HMAX+1.15,0,0);
     let tilt=0;
     if(st==='перекидається') tilt=Math.min(0.6,(this.al-this.aTip())*DEG*2.2);
     const slide=st==='ковзає'?Math.min(0.9,(this.al-this.aSlip())*0.03):0;
@@ -1053,7 +1135,7 @@ const M2={
   });},
   frame(b){
     const Q=this.geo(b), al=this.al*DEG;
-    const ox=Q.cw*0.5-Q.W/2*Math.cos(al)*Q.sc, oy=Q.ch*0.72;
+    const ox=Q.cw*0.44-Q.W/2*Math.cos(al)*Q.sc, oy=Q.ch*0.74;
     return {...Q,al,ox,oy,
       SX:(u,n)=>ox+u*Math.cos(al)*Q.sc-n*Math.sin(al)*Q.sc,
       SY:(u,n)=>oy-u*Math.sin(al)*Q.sc-n*Math.cos(al)*Q.sc};
@@ -1105,9 +1187,9 @@ const M2={
     g.clearRect(0,0,w,h);
     /* платформа */
     g.strokeStyle=CLR.axis; g.lineWidth=3;
-    g.beginPath(); g.moveTo(SX(0,0),SY(0,0)); g.lineTo(SX(W,0),SY(W,0)); g.stroke();
+    g.beginPath(); g.moveTo(SX(-0.9,0),SY(-0.9,0)); g.lineTo(SX(W+0.9,0),SY(W+0.9,0)); g.stroke();
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(SX(0,0),SY(0,0)); g.lineTo(SX(0,0)+W*sc,SY(0,0)); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.moveTo(SX(0,0),SY(0,0)); g.lineTo(SX(0,0)+(W+0.9)*sc,SY(0,0)); g.stroke(); g.setLineDash([]);
     arc(g,SX(0,0),SY(0,0),46,0,-al,CLR.k1,1.8);
     txt(g,'α = '+fmt(this.al,0)+'°',SX(0,0)+56,SY(0,0)-16,{color:'#1c5cab',size:11.5,bold:true});
     /* тіло: у стані «перекидається» повертаємо його навколо нижнього ребра */
@@ -1309,7 +1391,11 @@ const M3={
     /* тіло: сторона куба з обʼєму */
     const side=Math.cbrt(this.Vl());
     const fr=this.frac(), sink=this.rb>=this.rl;
-    const bw=side*sc, bh=side*sc;
+    /* Брусок лежить на боку — саме так він і плаває стійко: широка ватерлінія
+       піднімає метацентр, і найменший нахил повертає тіло назад. Обʼєм той
+       самий: ширина ×1,8, висота ÷1,8, товщина стала. */
+    const FLAT=1.5;
+    const bw=side*FLAT*sc, bh=side/FLAT*sc;
     let by;                                    /* верх тіла в екранних координатах */
     if(sink) by=bot-bh;
     else by=top-bh*(1-fr);
@@ -1319,7 +1405,7 @@ const M3={
       g.strokeStyle='#86b6ef'; g.lineWidth=1; g.setLineDash([3,3]);
       g.beginPath(); g.moveTo(cx-bw/2,top+.5); g.lineTo(cx+bw/2,top+.5); g.stroke(); g.setLineDash([]);
     }
-    txt(g,fmt(this.rb,0)+' кг/м³',cx,by+bh/2+4,{color:CLR.sec,size:11,bold:true,align:'center'});
+    txt(g,fmt(this.rb,0)+' кг/м³',cx,by-8,{color:CLR.sec,size:11,bold:true,align:'center'});
     /* сили */
     const P=this.rb*this.Vl()*G;
     const Vsub=sink?this.Vl():this.Vl()*fr;
@@ -1329,15 +1415,43 @@ const M3={
        тіло, яке ще плаває (8 л гліцеринової густини), дає 54 px — рівно той запас,
        який кадр лишає над поверхнею. */
     const k=0.55;
-    arrow(g,cx+bw/2+16,by+bh/2,cx+bw/2+16,by+bh/2+P*k,CLR.k3,2.5);
-    txt(g,'P = '+fmt(P,1)+' Н',cx+bw/2+22,by+bh/2+P*k,{color:'#0d7a55',size:11,bold:true});
-    arrow(g,cx-bw/2-16,by+bh/2,cx-bw/2-16,by+bh/2-Fa*k,CLR.k1,2.5);
-    txt(g,'F_A = '+fmt(Fa,1)+' Н',cx-bw/2-22,by+bh/2-Fa*k,
+    /* Точки прикладання різні, і це видно: вага — у центрі мас бруска,
+       архімедова сила — у центрі витиснення, тобто в центрі саме зануреної
+       частини. Коли тіло тоне повністю, обидві точки збігаються. */
+    const yC=by+bh/2;
+    const subTop=sink?by:top;
+    const yD=(subTop+(by+bh))/2;
+    arrow(g,cx+bw/2+16,yC,cx+bw/2+16,yC+P*k,CLR.k3,2.5);
+    txt(g,'P = '+fmt(P,1)+' Н',cx+bw/2+22,yC+P*k,{color:'#0d7a55',size:11,bold:true});
+    arrow(g,cx-bw/2-16,yD,cx-bw/2-16,yD-Fa*k,CLR.k1,2.5);
+    txt(g,'F_A = '+fmt(Fa,1)+' Н',cx-bw/2-22,yD-Fa*k,
       {color:'#1c5cab',size:11,bold:true,align:'right'});
+    /* самі точки */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(cx-bw/2-16,yD); g.lineTo(cx+bw/2+16,yD);
+    g.moveTo(cx-bw/2-16,yC); g.lineTo(cx+bw/2+16,yC); g.stroke(); g.setLineDash([]);
+    /* Обидві точки — на осі тіла, одна під одною: так видно саме зсув між ними.
+       Коли тіло занурене повністю, вони збігаються — тоді малюємо одну. */
+    const px0=cx-bw*0.18;
+    if(Math.abs(yC-yD)<4){
+      dot(g,px0,yC,4,CLR.ink,'#fff');
+      txt(g,'C = D',px0-9,yC+4,{color:CLR.ink,size:11,bold:true,align:'right'});
+    } else {
+      /* підписи по різні боки від точок: при малому зсуві вони інакше злиплися б */
+      dot(g,px0,yD,3.5,CLR.k1,'#fff');
+      txt(g,'D',px0+9,yD+4,{color:'#1c5cab',size:11.5,bold:true});
+      dot(g,px0,yC,3.5,CLR.k3,'#fff');
+      txt(g,'C',px0-9,yC+4,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
+    }
     txt(g,sink?'тіло тоне':'тіло плаває',12,20,{color:sink?CLR.k3:CLR.k1,size:12.5,bold:true});
     txt(g,sink?'густина тіла більша за густину рідини: виштовхувальної сили не вистачає'
       :'занурюється рівно настільки, щоб витіснити рідину, яка важить стільки ж, як тіло',
       12,36,{color:CLR.mut,size:10.5});
+    txt(g,'C — центр мас (тут прикладено вагу P) · D — центр витиснення (тут прикладено F_A)',
+      12,52,{color:CLR.sec,size:10.5});
+    if(!sink)
+      txt(g,'брусок лежить на боку: широка ватерлінія робить таке положення стійким',
+        12,68,{color:CLR.mut,size:10.5});
     shelf(g,Q.rb,this.RB,this.rb,'тіло');
     shelf(g,Q.rl,this.RL,this.rl,'рідина');
     for(const hh of this.grips()) drawGrip(g,hh,this);
@@ -1350,21 +1464,31 @@ const M3={
     const sc=Q.sc, cy=Q.cy;
     const x1=Q.x1, x2=Q.x2;
     g.clearRect(0,0,w,h);
-    /* рідина */
+    /* Рідина стоїть рівно під поршнями, а не в наперед узятій коробці: інакше
+       піднятий великий поршень висів би над порожнечею. Верх кожного стовпа —
+       це низ відповідного поршня. */
+    const s2f=this.s1*S1/S2;
+    const topL=cy+2+this.s1*0.9, topR=cy+2-s2f*0.9;
     g.fillStyle='#e2edfa';
     g.beginPath();
-    g.roundRect(x1-this.d1*sc/2,cy,this.d1*sc,54,2);
-    g.roundRect(x2-this.d2*sc/2,cy,this.d2*sc,54,2);
+    g.rect(x1-this.d1*sc/2,topL,this.d1*sc,cy+54-topL);
+    g.rect(x2-this.d2*sc/2,topR,this.d2*sc,cy+54-topR);
     g.rect(x1,cy+40,x2-x1,14); g.fill();
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.beginPath();
+    /* Обвід посудини — два ламані: зовнішній (ліва стінка малого циліндра,
+       СУЦІЛЬНЕ дно під обома циліндрами, права стінка великого) і внутрішній
+       (права стінка малого, стеля з'єднувального каналу, ліва стінка великого).
+       Раніше ці дві ламані було переплутано кінцями: дно обривалося там, де
+       починався великий циліндр, а стеля каналу натомість перекреслювала його
+       наскрізь — виходив контур поперек циліндра й циліндр без дна. */
     g.moveTo(x1-this.d1*sc/2,cy-26); g.lineTo(x1-this.d1*sc/2,cy+54);
-    g.lineTo(x2-this.d2*sc/2,cy+54); g.lineTo(x2-this.d2*sc/2,cy-26);
+    g.lineTo(x2+this.d2*sc/2,cy+54); g.lineTo(x2+this.d2*sc/2,cy-26);
     g.moveTo(x1+this.d1*sc/2,cy-26); g.lineTo(x1+this.d1*sc/2,cy+40);
-    g.lineTo(x2+this.d2*sc/2,cy+40); g.lineTo(x2+this.d2*sc/2,cy-26);
+    g.lineTo(x2-this.d2*sc/2,cy+40); g.lineTo(x2-this.d2*sc/2,cy-26);
     g.stroke();
     /* поршні: малий опустився на s1, великий піднявся на s2 */
-    const s2=this.s1*S1/S2;
+    const s2=s2f;
     const pist=(x,d,dy,col,lab,side)=>{
       g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=col; g.lineWidth=2;
       g.beginPath(); g.roundRect(x-d*sc/2,cy-10+dy,d*sc,12,2); g.fill(); g.stroke();
@@ -1469,6 +1593,7 @@ const M3={
 /* ===================== МОДУЛЬ 4 · гідродинаміка ===================== */
 const M4={
   mode:'venturi', Q:10, d1:12, d2:5, rho:1000, H:1.2, y:0.3,
+  hint:false, _ipt:null,
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   S(d){return Math.PI*d*d/4/1e4;},            /* см → м² */
   Qm(){return this.Q/1000;},                  /* л/с → м³/с */
@@ -1492,7 +1617,8 @@ const M4={
   RHO:[['бензин',700],['вода',1000],['морська',1030],['гліцерин',1260]],
   geo(b){return frozen(this,b,bb=>{
     if(this.mode==='venturi')
-      return {L:bb.w-90,ox:45,cy:bb.h*0.66,psc:Math.min(6,(bb.h*0.34)/20),
+      return {L:bb.w-90,ox:45,cy:bb.h*0.62,psc:Math.min(6,(bb.h*0.34)/20),
+        qy:bb.h-30,
         rho:{y:bb.h-18,x0:bb.w-4*70-6,dx:70}};
     const v=this.vOut(), Lj=v*this.tFall();
     const wWorld=Math.max(1.4,Lj*1.25+0.9);
@@ -1513,7 +1639,7 @@ const M4={
          move:(px,py)=>{this.d2=clamp(snap(2*(Q.cy-py)/Q.psc,0.5),2,12);}},
         /* витрата не має власного розміру в кресленні труби — їй дано
            окрему стрілку вгорі кадру, і тягнуть саме її вістря */
-        {id:'Q', x:45+this.Q*2.2, y:Q.cy+58, r:8, color:CLR.k3, hint:'обʼємна витрата',
+        {id:'Q', x:45+this.Q*2.2, y:Q.qy, r:8, color:CLR.k3, hint:'обʼємна витрата',
          move:px=>{this.Q=clamp(snap((px-45)/2.2,0.5),1,30);}}
       ].concat(shelfGrips(Q.rho,this.RHO,v=>{this.rho=v;},'ro'));
     }
@@ -1529,6 +1655,14 @@ const M4={
     grip('m4scene',this,()=>this.grips());
     this.tip1=makeTip('m4c1w'); this.tip2=makeTip('m4c2w');
     hover('m4c1',this.h1); hover('m4c2',this.h2);
+    /* наведення на точку-довідку: перевіряємо відстань до неї в пікселях сцени */
+    const cv=$('m4scene');
+    cv.addEventListener('pointermove',e=>{
+      const bb=cvx('m4scene'); if(!bb||!this._ipt) return;
+      const r=cv.getBoundingClientRect();
+      this.hint=Math.hypot(e.clientX-r.left-this._ipt.x,e.clientY-r.top-this._ipt.y)<15;
+    });
+    cv.addEventListener('pointerleave',()=>{this.hint=false;});
     this.showMode();
   },
   tick(){this.render();},
@@ -1570,26 +1704,104 @@ const M4={
     for(const u of [0.12,0.5,0.88]){
       const vv=this.v(this.dAt(u)), px=ox+u*L;
       arrow(g,px-vv/vMax*22,cy,px+vv/vMax*22,cy,CLR.k2,2.5);
-      pill(g,fmt(vv,2)+' м/с',px,cy+this.dAt(u)*psc/2+22,{color:'#b8431a',size:11,bold:true});
+      /* за найбільшого діаметра труба сягає низу кадру — підпис швидкості
+         тоді тримаємо над смугою витрати, а не під самою трубою */
+      pill(g,fmt(vv,2)+' м/с',px,Math.min(cy+this.dAt(u)*psc/2+20,Q.qy-26),
+        {color:'#b8431a',size:11,bold:true});
     }
-    /* манометричні трубки */
-    const hRef=Math.max(...[0.12,0.5,0.88].map(u=>pAt(u)))/(this.rho*G);
+    /* ---- п'єзометри й трубки Піто ---------------------------------------
+       П'єзометр відкритий убік потоку й міряє лише статичний тиск p.
+       Трубка Піто загнута назустріч потоку: рідина в ній гальмується до нуля,
+       тож вона міряє повний напір p + ρv²/2. Різниця рівнів у парі й дорівнює
+       швидкісному напору v²/2g — саме з неї Піто й визначають швидкість.
+       Шкала висот збільшена, а нуль відліку зсунуто: сам напір p/ρg сягає
+       двадцяти метрів, і на спільній шкалі різниця в кілька сантиметрів
+       була б тоншою за лінію. */
+    const hv1=v1*v1/(2*G), hv2Max=v2*v2/(2*G);
+    const HTOT=p0/(this.rho*G)+hv1;
+    const span=Math.max(hv2Max*1.3,0.01);
+    const yBase=cy-this.d1*psc/2-26;
+    const HPX=Math.max(40,Math.min(h*0.34,yBase-62));
+    const yOf=hh=>yBase-(hh-(HTOT-span))/span*HPX;
+    const yTot=yOf(HTOT);
+    /* лінія повного напору — горизонтальна, і це і є рівняння Бернуллі */
+    g.strokeStyle=CLR.k3; g.lineWidth=1.5; g.setLineDash([6,4]);
+    g.beginPath(); g.moveTo(ox-8,yTot+.5); g.lineTo(ox+L+8,yTot+.5); g.stroke();
+    g.setLineDash([]);
+    txt(g,'повний напір p/ρg + v²/2g — однаковий скрізь',ox+L*0.30,yTot-7,
+      {color:'#0d7a55',size:10.5,bold:true});
     for(const u of [0.12,0.5,0.88]){
-      const px=ox+u*L, pp=pAt(u);
+      const px=ox+u*L, pp=pAt(u), vv=this.v(this.dAt(u));
       const top=this.dAt(u)*psc/2;
-      const hh=Math.min(h*0.42,(pp/(this.rho*G))/hRef*h*0.4);
+      const yS=yOf(pp/(this.rho*G)), yP=yTot;
+      /* Рідина в трубці стоїть суцільним стовпом від свого рівня ДО САМОГО
+         входу в трубу. Раніше заливка обривалася на yBase — умовній основі
+         шкали висот, — і при тонкій трубі між стовпом і потоком зяяв розрив:
+         трубки виглядали зламаними. Вусик Піто теж не може бути товщий за
+         сам потік, тож його піввисоту обмежуємо радіусом труби. */
+      const mh=Math.max(1.5,Math.min(4,top-2));
       g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-      g.beginPath(); g.moveTo(px-6,cy-top); g.lineTo(px-6,cy-top-hh-8);
-      g.moveTo(px+6,cy-top); g.lineTo(px+6,cy-top-hh-8); g.stroke();
-      g.fillStyle='#86b6ef'; g.fillRect(px-5,cy-top-hh,10,hh);
-      pill(g,fmt(pp/1000,0)+' кПа',px,cy-top-hh-14,{color:'#1c5cab',size:11,bold:true});
+      g.beginPath();
+      g.moveTo(px-20,cy-top); g.lineTo(px-20,yS-10);
+      g.moveTo(px-10,cy-top); g.lineTo(px-10,yS-10); g.stroke();
+      g.fillStyle='#86b6ef'; g.fillRect(px-19,yS,8,Math.max(0,(cy-top)-yS));
+      /* трубка Піто: заходить у потік і загинається назустріч йому */
+      g.strokeStyle=CLR.sec; g.lineWidth=1.5;
+      g.beginPath();
+      g.moveTo(px+10,yP-10); g.lineTo(px+10,cy-mh);
+      g.lineTo(px-2,cy-mh);
+      g.moveTo(px+20,yP-10); g.lineTo(px+20,cy+mh);
+      g.lineTo(px-2,cy+mh); g.stroke();
+      g.fillStyle='#86b6ef'; g.fillRect(px+11,yP,8,Math.max(0,cy-yP));
+      /* різниця рівнів у парі — швидкісний напір */
+      if(yS-yP>7){
+        g.strokeStyle=CLR.k2; g.lineWidth=1;
+        g.beginPath(); g.moveTo(px-6,yP+.5); g.lineTo(px+8,yP+.5);
+        g.moveTo(px-6,yS+.5); g.lineTo(px+8,yS+.5); g.stroke();
+        arrow(g,px+1,yS,px+1,yP,CLR.k2,1.4);
+        pill(g,'v²/2g = '+fmt(vv*vv/(2*G)*100,1)+' см',px,(yS+yP)/2,
+          {color:'#b8431a',size:10,bold:true});
+      }
+      /* тиск підписуємо збоку від п'єзометра: над ним проходить лінія напору */
+      txt(g,fmt(pp/1000,1)+' кПа',px-26,yS+4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    }
+    /* ---- точка-довідка про трубки Піто -----------------------------------
+       Замість рядка під кресленням — кружок «i» біля самої пари трубок:
+       наведення показує пояснення там, де на нього дивляться, а не внизу. */
+    const ipx=Math.min(ox+L*0.30+272,ox+L-14), ipy=yTot-11;
+    this._ipt={x:ipx,y:ipy};
+    g.fillStyle=this.hint?CLR.sec:'#fff'; g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+    g.beginPath(); g.arc(ipx,ipy,8,0,7); g.fill(); g.stroke();
+    txt(g,'i',ipx,ipy+4,{color:this.hint?'#fff':CLR.sec,size:11,bold:true,align:'center'});
+    if(this.hint){
+      const lines=['Ліва трубка — п’єзометр: відкрита вбік потоку,',
+        'тому міряє лише статичний тиск p.',
+        'Права — трубка Піто: загнута назустріч потоку,',
+        'рідина в ній гальмується до нуля, тож вона міряє',
+        'повний напір p + ρv²/2.',
+        'Різниця рівнів у парі і є швидкісний напір v²/2g —',
+        'звідси Піто й визначають швидкість.'];
+      g.font='11px system-ui,-apple-system,sans-serif';
+      let wm=0; for(const s2 of lines) wm=Math.max(wm,g.measureText(s2).width);
+      const bw=wm+22, bh=lines.length*15+16;
+      const bx=Math.min(Math.max(8,ipx-bw/2),w-bw-8);
+      /* коли над точкою немає місця (широка труба піднімає напірну лінію),
+         пояснення відкривається під нею, а не наїжджає на заголовок */
+      const by=ipy-bh-14>46?ipy-bh-14:Math.min(h-bh-8,ipy+16);
+      g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(bx,by,bw,bh,8); g.fill(); g.stroke();
+      lines.forEach((s2,i2)=>txt(g,s2,bx+11,by+19+i2*15,
+        {color:i2<2?'#1c5cab':(i2<5?CLR.sec:CLR.ink),size:11,bold:i2>=5}));
     }
     txt(g,'де вужче — там швидше й тиск менший',12,20,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'сума p + ρv²/2 однакова в усіх перерізах — це і є рівняння Бернуллі',
-      12,36,{color:CLR.mut,size:10.5});
-    /* стрілка витрати */
-    arrow(g,45,cy+58,45+this.Q*2.2,cy+58,CLR.k3,2.5);
-    txt(g,'Q = '+fmt(this.Q,1)+' л/с',45+this.Q*2.2+14,cy+62,
+    txt(g,'p₁ + ρv₁²/2 = p₂ + ρv₂²/2 — перше рівняння Бернуллі: '+
+      fmt(pAt(0.12)/1000,1)+' + '+fmt(this.rho*Math.pow(this.v(this.dAt(0.12)),2)/2000,1)+
+      ' = '+fmt(pAt(0.5)/1000,1)+' + '+fmt(this.rho*Math.pow(this.v(this.dAt(0.5)),2)/2000,1)+
+      ' кПа',12,36,{color:CLR.mut,size:10.5});
+    /* стрілка витрати — на сталій висоті біля низу кадру, щоб найширша
+       труба не наїжджала на неї */
+    arrow(g,45,Q.qy,45+this.Q*2.2,Q.qy,CLR.k3,2.5);
+    txt(g,'Q = '+fmt(this.Q,1)+' л/с',45+this.Q*2.2+14,Q.qy+4,
       {color:'#0d7a55',size:11,bold:true});
     shelf(g,Q.rho,this.RHO,this.rho,'рідина');
     for(const hh of this.grips()) drawGrip(g,hh,this);

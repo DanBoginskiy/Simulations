@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,10 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:300px}
-#m2scene{width:100%; height:270px}
-#m3scene{width:100%; height:330px}
-#m4scene{width:100%; height:330px}
-#m5scene{width:100%; height:360px}
+#m1scene{width:100%; height:380px}
+#m2scene{width:100%; height:340px}
+#m3scene{width:100%; height:420px}
+#m5scene{width:100%; height:450px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -121,10 +133,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Перший закон</button>
-  <button data-m="m2">2 · Тепловий баланс</button>
+  <button data-m="m2">2 · Фазові переходи</button>
   <button data-m="m3">3 · Цикл Карно</button>
-  <button data-m="m4">4 · Двигун: цикл Отто</button>
-  <button data-m="m5">5 · Холодильник і тепловий насос</button>
+  <button data-m="m5">4 · Холодильник</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -167,9 +178,15 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Що задано на сцені</h3>
         <div class="kv"><span><var>ν</var> — кількість речовини<span class="badge">смужка ν</span></span><b id="m1vnu"></b></div>
-        <div class="kv"><span><var>T</var><sub>1</sub> — початкова температура<span class="badge">точка 1 по вертикалі</span></span><b id="m1vT1"></b></div>
-        <div class="kv"><span><var>V</var><sub>1</sub> — початковий обʼєм<span class="badge">точка 1 по горизонталі</span></span><b id="m1vV1"></b></div>
+        <div class="kv"><span><var>T</var><sub>1</sub> — початкова температура<span class="badge" id="m1bsT1">смужка T₁</span><span class="badge" id="m1bT1" hidden>стала в цьому процесі</span></span><b id="m1vT1"></b></div>
+        <div class="kv"><span><var>p</var><sub>1</sub> — початковий тиск<span class="badge" id="m1bsp1">смужка p₁</span><span class="badge" id="m1bp1" hidden>стала в цьому процесі</span></span><b id="m1vp1"></b></div>
+        <div class="kv"><span><var>V</var><sub>1</sub> — початковий обʼєм<span class="badge" id="m1bsV1">точка 1 по горизонталі</span><span class="badge" id="m1bV1" hidden>стала в цьому процесі</span></span><b id="m1vV1"></b></div>
         <div class="kv"><span><var>V</var><sub>2</sub>/<var>V</var><sub>1</sub> — у скільки разів змінюється обʼєм (для ізохори — тиск)<span class="badge">точка 2</span></span><b id="m1vkk"></b></div>
+        <div class="grp" id="m1gConst">
+          <label class="sl"><span id="m1sconstL"></span>
+            <input type="range" id="m1sconst" min="0" max="1" step="1" value="0"><output id="m1sconsto"></output></label>
+        </div>
+        <div class="formulas" id="m1constNote"></div>
       </div>
       <div class="panel">
         <h3>Стан газу</h3>
@@ -191,18 +208,15 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 2 ================= -->
 <section class="module" id="m2">
-  <p class="caption">Рівняння теплового балансу: скільки теплоти віддали одні тіла,
-  стільки одержали інші. У калориметрі це видно як графік <var>T</var>(<var>t</var>) з площадками —
-  під час плавлення й кипіння температура стоїть, хоча нагрівник працює далі.</p>
+  <p class="caption">Поки тіло тільки нагрівається, температура росте рівномірно.
+  На плавленні й на кипінні вона <b>стоїть</b>, хоча нагрівник працює далі: уся теплота
+  йде на перебудову речовини, а не на рух молекул. Саме тому на графіку <var>T</var>(<var>t</var>)
+  дві горизонтальні площадки.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m2mode">
-            <button data-v="heat" class="active" style="--c:var(--k3)">нагрівання льоду до пари</button>
-            <button data-v="mix" style="--c:var(--k1)">змішування двох рідин</button>
-          </div>
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="скинути">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -210,50 +224,33 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <canvas id="m2scene"></canvas>
       </div>
       <div class="panel">
-        <h3 id="m2ch"></h3>
+        <h3>Нагрівання від льоду до пари</h3>
         <div class="chartrow">
-          <div class="chartbox" id="m2c1w"><h4 id="m2c1h"></h4>
-            <div class="legend sm" id="m2c1l"></div><canvas id="m2c1"></canvas></div>
-          <div class="chartbox" id="m2c2w"><h4 id="m2c2h"></h4>
-            <div class="legend sm" id="m2c2l"></div><canvas id="m2c2"></canvas></div>
+          <div class="chartbox" id="m2c1w"><h4>температура від часу нагрівання, °C</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>T(t) — площадки на плавленні й кипінні</span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m2c1"></canvas></div>
+          <div class="chartbox" id="m2c2w"><h4>скільки теплоти потрібно на кожну стадію, кДж</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>нагрів</span><span><span class="chip cC"></span>фазові переходи</span></div>
+            <canvas id="m2c2"></canvas></div>
         </div>
       </div>
     </div>
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="grp" id="m2gH">
-          <div class="kv"><span><var>m</var> — маса льоду<span class="badge">рівень у посудині</span></span><b id="m2vm"></b></div>
-          <div class="kv"><span><var>t</var><sub>0</sub> — початкова температура льоду<span class="badge">мітка на термометрі</span></span><b id="m2vt0"></b></div>
-          <div class="kv"><span><var>P</var> — потужність нагрівника<span class="badge">стрілка нагрівника</span></span><b id="m2vP"></b></div>
-        </div>
-        <div class="grp" id="m2gM" hidden>
-          <div class="kv"><span><var>m</var><sub>1</sub> — маса гарячої води<span class="badge">ширина посудини</span></span><b id="m2vm1"></b></div>
-          <div class="kv"><span><var>t</var><sub>1</sub> — її температура<span class="badge">термометр</span></span><b id="m2vtt1"></b></div>
-          <div class="kv"><span><var>m</var><sub>2</sub> — маса холодної води<span class="badge">ширина посудини</span></span><b id="m2vm2"></b></div>
-          <div class="kv"><span><var>t</var><sub>2</sub> — її температура<span class="badge">термометр</span></span><b id="m2vtt2"></b></div>
-        </div>
+        <div class="kv"><span><var>m</var> — маса льоду<span class="badge">рівень у посудині</span></span><b id="m2vm"></b></div>
+        <div class="kv"><span><var>t</var><sub>0</sub> — початкова температура льоду<span class="badge">мітка на термометрі</span></span><b id="m2vt0"></b></div>
+        <div class="kv"><span><var>P</var> — потужність нагрівника<span class="badge">стрілка нагрівника</span></span><b id="m2vP"></b></div>
       </div>
       <div class="panel">
-        <h3 id="m2kvh">Теплота</h3>
-        <div id="m2kvH">
-          <div class="kv"><span>нагріти лід до 0 °C: <var>c</var><sub>л</sub><var>m</var>Δ<var>t</var></span><b id="m2kQ1"></b></div>
-          <div class="kv"><span>розплавити лід: <var>λm</var></span><b id="m2kQ2"></b></div>
-          <div class="kv"><span>нагріти воду до 100 °C</span><b id="m2kQ3"></b></div>
-          <div class="kv"><span>випарувати воду: <var>rm</var></span><b id="m2kQ4"></b></div>
-          <div class="kv"><span>усього теплоти</span><b id="m2kQt"></b></div>
-          <div class="kv"><span>увесь дослід триватиме</span><b id="m2kTt"></b></div>
-          <div class="kv"><span>найдовша стадія<span class="badge">пароутворення</span></span><b id="m2kMax"></b></div>
-        </div>
-        <div id="m2kvM" hidden>
-          <div class="kv"><span>температура суміші <var>θ</var></span><b id="m2kTh"></b></div>
-          <div class="kv"><span>гаряча вода віддала</span><b id="m2kQh"></b></div>
-          <div class="kv"><span>холодна вода одержала</span><b id="m2kQc"></b></div>
-          <div class="kv"><span>баланс<span class="badge">віддане = одержане</span></span><b id="m2kBal"></b></div>
-          <div class="kv"><span>наскільки охолола гаряча</span><b id="m2kDh"></b></div>
-          <div class="kv"><span>наскільки нагрілася холодна</span><b id="m2kDc"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
+        <h3>Теплота по стадіях</h3>
+        <div class="kv"><span>нагріти лід до 0 °C: <var>c</var><sub>л</sub><var>m</var>Δ<var>t</var></span><b id="m2kQ1"></b></div>
+        <div class="kv"><span>розплавити лід: <var>λm</var></span><b id="m2kQ2"></b></div>
+        <div class="kv"><span>нагріти воду до 100 °C</span><b id="m2kQ3"></b></div>
+        <div class="kv"><span>випарувати воду: <var>rm</var></span><b id="m2kQ4"></b></div>
+        <div class="kv"><span>усього теплоти</span><b id="m2kQt"></b></div>
+        <div class="kv"><span>увесь дослід триватиме</span><b id="m2kTt"></b></div>
+        <div class="kv"><span>найдовша стадія<span class="badge">пароутворення</span></span><b id="m2kMax"></b></div>
       </div>
     </div>
   </div>
@@ -281,7 +278,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Цикл на двох діаграмах</h3>
         <div class="chartrow">
           <div class="chartbox" id="m3cpw"><h4>p–V: робота за цикл — це площа всередині</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>ізотерми</span><span><span class="chip cB"></span>адіабати</span><span><span class="chip cI"></span>стан зараз</span></div>
+            <div class="legend sm"><span><span class="chip cB"></span>1→2 ізотерма <var>T</var><sub>н</sub></span><span><span class="chip cC"></span>2→3 адіабата</span><span><span class="chip cA"></span>3→4 ізотерма <var>T</var><sub>х</sub></span><span><span class="chip cI"></span>4→1 адіабата</span></div>
             <canvas id="m3cp"></canvas></div>
           <div class="chartbox" id="m3cew"><h4>ККД залежно від температури холодильника</h4>
             <div class="legend sm"><span><span class="chip cA"></span>η = 1 − Tх/Tн</span><span><span class="chip cI"></span>поточна Tх</span></div>
@@ -317,78 +314,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   </div>
 </section>
 
-<!-- ================= МОДУЛЬ 4 ================= -->
-<section class="module" id="m4">
-  <p class="caption">Бензиновий двигун працює за циклом Отто: два адіабатні такти
-  й два ізохорні. Його ККД визначає лише ступінь стиснення:
-  <var>η</var> = 1 − <var>ε</var><sup>1−<var>γ</var></sup>. Тому дизель із більшим стисненням економніший за бензиновий.</p>
-
-  <div class="pgrid">
-    <div class="scene">
-      <div class="panel">
-        <div class="toolbar">
-          <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
-          <button class="ibtn" id="m4re" title="скинути">↺</button>
-          <span class="lbl" id="m4t"></span>
-          <span class="lbl" id="m4state" style="font-weight:600"></span>
-        </div>
-        <canvas id="m4scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Цикл Отто</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4cpw"><h4>p–V: чотири такти</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>адіабати стиснення й розширення</span><span><span class="chip cC"></span>ізохори згоряння й випуску</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m4cp"></canvas></div>
-          <div class="chartbox" id="m4cew"><h4>ККД залежно від ступеня стиснення</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>η(ε)</span><span><span class="chip cC"></span>межа Карно для цих температур</span><span><span class="chip cI"></span>поточне ε</span></div>
-            <canvas id="m4ce"></canvas></div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Що задано на сцені</h3>
-        <div class="kv"><span><var>ε</var> — ступінь стиснення <var>V</var><sub>max</sub>/<var>V</var><sub>min</sub><span class="badge">верхня мертва точка</span></span><b id="m4veps"></b></div>
-        <div class="kv"><span><var>γ</var> — показник адіабати робочої суміші<span class="badge">полиця сумішей</span></span><b id="m4vgam"></b></div>
-        <div class="kv"><span><var>T</var><sub>1</sub> — температура суміші на впуску<span class="badge">термометр</span></span><b id="m4vT1"></b></div>
-        <div class="kv"><span><var>Q</var> — теплота згоряння порції палива<span class="badge">запас палива</span></span><b id="m4vQ"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Температури циклу</h3>
-        <div class="kv"><span>1 — кінець впуску</span><b id="m4kT1"></b></div>
-        <div class="kv"><span>2 — кінець стиснення</span><b id="m4kT2"></b></div>
-        <div class="kv"><span>3 — кінець згоряння</span><b id="m4kT3"></b></div>
-        <div class="kv"><span>4 — кінець розширення</span><b id="m4kT4"></b></div>
-        <div class="kv"><span>стиснення нагріває газ у</span><b id="m4kRat"></b></div>
-      </div>
-      <div class="panel">
-        <h3>ККД</h3>
-        <div class="kv"><span>ККД циклу Отто 1 − <var>ε</var><sup>1−<var>γ</var></sup></span><b id="m4kEta"></b></div>
-        <div class="kv"><span>корисна робота за цикл</span><b id="m4kA"></b></div>
-        <div class="kv"><span>теплота, що йде у вихлоп</span><b id="m4kQout"></b></div>
-        <div class="kv"><span>межа Карно між <var>T</var><sub>3</sub> і <var>T</var><sub>1</sub></span><b id="m4kCar"></b></div>
-        <div class="kv"><span>відношення до межі Карно<span class="badge">завжди менше за 1</span></span><b id="m4kRel"></b></div>
-        <div class="formulas">підняти ε не можна безмежно: суміш детонує, тому бензинові двигуни спиняються на ε ≈ 10–12</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ================= МОДУЛЬ 5 ================= -->
 <section class="module" id="m5">
   <p class="caption">Якщо цикл пустити у зворотний бік, машина перекачуватиме теплоту від холодного до гарячого —
-  але лише за рахунок роботи ззовні. Це холодильник і тепловий насос.
-  Вони «виробляють» більше теплоти, ніж споживають енергії, і жодного закону не порушують.</p>
+  але лише за рахунок роботи ззовні. Це холодильник. Він «виробляє» більше теплоти,
+  ніж споживає енергії, і жодного закону не порушує.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
-          <div class="seg" id="m5mode">
-            <button data-v="fridge" class="active" style="--c:var(--k1)">холодильник</button>
-            <button data-v="pump" style="--c:var(--k2)">тепловий насос</button>
-          </div>
           <span class="lbl" id="m5state" style="font-weight:600"></span>
         </div>
         <canvas id="m5scene"></canvas>
@@ -421,7 +356,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Скільки дає машина</h3>
         <div class="kv"><span>ідеальний холодильний коефіцієнт <var>T</var><sub>х</sub>/Δ<var>T</var></span><b id="m5kCc"></b></div>
-        <div class="kv"><span>ідеальний коефіцієнт насоса <var>T</var><sub>г</sub>/Δ<var>T</var></span><b id="m5kCh"></b></div>
         <div class="kv"><span>реальний коефіцієнт цієї машини</span><b id="m5kCr"></b></div>
         <div class="kv"><span>теплота, забрана з холодного боку</span><b id="m5kQc"></b></div>
         <div class="kv"><span>теплота, віддана гарячому боку<span class="badge">більша за спожиту потужність</span></span><b id="m5kQh"></b></div>
@@ -491,8 +425,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -885,7 +883,9 @@ const M1={
     const E=this.E(), s2=E.s2;
     /* T = 64, а не 48: кадр сталий, тож верхня поділка тепер завжди стоїть рівно вгорі —
        підпису осі треба власний рядок над нею, і він не має налізти на текст сцени */
-    const L=44,R=44,T=64,B=52, pw=bb.w-L-R, ph=bb.h-T-B;
+    /* B=84: смуги керування дістають власну смугу внизу кадру й не налазять
+       на підписи поділок осі V (брендбук §19) */
+    const L=44,R=44,T=64,B=84, pw=bb.w-L-R, ph=bb.h-T-B;
     /* Осі діаграми сталі (§10). Раніше вони підганялися під самі стани, тож процес
        завжди займав ту саму площу екрана: тягнеш стан 2 — а картинка не змінюється.
        Обʼєм: V₁ ∈ [5;40] л, k ∈ [0,4;3] дають щонайбільше 120 л, але проєктною межею
@@ -906,7 +906,9 @@ const M1={
     return {L,R,T,B,Vlo,Vhi,pHi,p1,p2,s2,
       SX:V=>L+(V-Vlo)/(Vhi-Vlo)*pw, SY:p=>T+(1-p/pHi)*ph,
       iV:px=>(px-L)/pw*(Vhi-Vlo)+Vlo, iP:py=>(1-(py-T)/ph)*pHi,
-      nx:bb.w*0.54, ny:bb.h-14};
+      /* три смуги керування під діаграмою: кількість речовини, температура й тиск
+         стану 1. Тиск не є незалежним (p = νRT/V), тож його смуга змінює обʼєм. */
+      BW:110, by:bb.h-14, nx:bb.w*0.26, tx:bb.w*0.50, px:bb.w*0.74};
   });},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
@@ -914,10 +916,15 @@ const M1={
     /* стан, що вийшов за сталий кадр, лишається взятним: ручку притискаємо до краю */
     const gx=V=>clamp(Q.SX(V),Q.L,b.w-Q.R), gy=p=>clamp(Q.SY(p),Q.T,b.h-Q.B);
     return [
+      /* Величину, яку процес тримає сталою, задає рівно один орган керування —
+         повзунок «стала величина процесу» в бічній колонці. Тому в ізохорному
+         процесі точка 1 ходить лише вертикально (обʼєм задає посудина, а не
+         жест), а смуги T₁ і p₁ зникають там, де сталими є саме вони. */
       {id:'s1', x:gx(this.V1), y:gy(Q.p1), r:9, color:CLR.k1,
-       hint:'стан 1: обʼєм і температура',
+       hint:this.proc==='iso_v'?'стан 1: температура (обʼєм сталий)'
+                               :'стан 1: обʼєм і температура',
        move:(px,py)=>{
-         this.V1=clamp(snap(Q.iV(px),1),5,40);
+         if(this.proc!=='iso_v') this.V1=clamp(snap(Q.iV(px),1),5,40);
          const p=Math.max(1,Q.iP(py));
          this.T1=clamp(snap(p*this.V1/(this.nu*RGAS),10),200,600);}},
       {id:'s2', x:gx(s2.V), y:gy(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
@@ -928,17 +935,70 @@ const M1={
            this.kk=clamp(snap(Q.iV(px)/this.V1,0.05),0.4,3);}},
       /* кількість речовини з діаграми не читається — ν і T входять у тиск
          тільки добутком, тож їй дано власну смужку в кадрі */
-      {id:'nu', x:Q.nx+this.nu*70, y:Q.ny, r:8, color:CLR.k3, hint:'кількість речовини',
-       move:px=>{this.nu=clamp(snap((px-Q.nx)/70,0.05),0.1,2);}}
+      {id:'nu', x:Q.nx+(this.nu-0.1)/1.9*Q.BW, y:Q.by, r:8, color:CLR.k3,
+       hint:'кількість речовини',
+       move:px=>{this.nu=clamp(snap((px-Q.nx)/Q.BW*1.9+0.1,0.05),0.1,2);}},
+      ...(this.proc==='iso_t'?[]:[{id:'T1', x:Q.tx+(this.T1-200)/400*Q.BW, y:Q.by,
+       r:8, color:CLR.k1, hint:'температура стану 1',
+       move:px=>{this.T1=clamp(snap((px-Q.tx)/Q.BW*400+200,10),200,600);}}]),
+      /* тиск незалежним параметром бути не може: p = νRT/V. Тягнучи p при сталій
+         температурі, змінюємо обʼєм — саме так тиск і задають у досліді. */
+      ...(this.proc==='iso_p'?[]:[{id:'p1', x:Q.px+clamp((Q.p1-20)/480,0,1)*Q.BW,
+       y:Q.by, r:8, color:CLR.k1, hint:'тиск стану 1 (міняє обʼєм)',
+       move:px=>{const pp=clamp(snap((px-Q.px)/Q.BW*480+20,5),20,500);
+         this.V1=clamp(snap(this.nu*RGAS*this.T1/pp,1),5,40);}}])
     ];
   },
+  /* Кожен ізопроцес тримає сталою свою величину. Тягнути її на діаграмі
+     незручно — стала величина не має на ній власної точки, — тож їй дано
+     окремий повзунок, який міняє підпис і межі разом із вибраним процесом.
+     Адіабата сталої величини не має взагалі: у ній нуль — це Q. */
+  CONST:{
+    iso_p:{lab:'p — сталий тиск процесу',unit:'кПа',dec:0,min:20,max:500,step:5,
+      get:function(M){return M.p(M.V1,M.T1);},
+      set:function(M,v){M.V1=clamp(snap(M.nu*RGAS*M.T1/v,1),5,40);}},
+    iso_v:{lab:'V — сталий обʼєм процесу',unit:'л',dec:0,min:5,max:40,step:1,
+      get:function(M){return M.V1;},
+      set:function(M,v){M.V1=v;}},
+    iso_t:{lab:'T — стала температура процесу',unit:'K',dec:0,min:200,max:600,step:10,
+      get:function(M){return M.T1;},
+      set:function(M,v){M.T1=v;}}
+  },
+  BADGE:{iso_p:'m1bp1',iso_v:'m1bV1',iso_t:'m1bT1'},
+  /* позначка «де шукати орган керування» — у сталої величини він один */
+  BADGE0:{iso_p:'m1bsp1',iso_v:'m1bsV1',iso_t:'m1bsT1'},
+  syncConst(){
+    const c=this.CONST[this.proc];
+    /* у рядку відповідної величини вмикаємо позначку «стала в цьому процесі»
+       і прибираємо застарілу вказівку на смужку в кадрі: смужки там уже немає */
+    for(const k in this.BADGE){
+      $(this.BADGE[k]).hidden=k!==this.proc;
+      $(this.BADGE0[k]).hidden=k===this.proc;
+    }
+    $('m1gConst').hidden=!c;
+    $('m1constNote').textContent=c?''
+      :'адіабатний процес: сталої величини немає — нулем тут є теплота, Q = 0';
+    if(!c) return;
+    const i=$('m1sconst');
+    $('m1sconstL').textContent=c.lab;
+    i.min=c.min; i.max=c.max; i.step=c.step;
+    if(document.activeElement!==i)
+      i.value=clamp(Math.round(c.get(this)/c.step)*c.step,c.min,c.max);
+    $('m1sconsto').textContent=fmt(+i.value,c.dec)+' '+c.unit;
+  },
   init(){
-    seg('m1proc',v=>{this.proc=v;});
+    seg('m1proc',v=>{this.proc=v; this.syncConst();});
     seg('m1gas',v=>{this.gas=v;});
     grip('m1scene',this,()=>this.grips());
+    $('m1sconst').addEventListener('input',e=>{
+      const c=this.CONST[this.proc]; if(!c) return;
+      c.set(this,+e.target.value);
+      $('m1sconsto').textContent=fmt(+e.target.value,c.dec)+' '+c.unit;
+    });
+    this.syncConst();
   },
   tick(){this.render();},
-  render(){this.scene(); this.table();},
+  render(){this.scene(); this.table(); this.syncConst();},
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w,h}=b, E=this.E(), s2=E.s2, Q=this.geo(b);
@@ -998,18 +1058,26 @@ const M1={
       adiab:['адіабатний: Q = 0',CLR.ink,'теплообміну немає: газ виконує роботу лише за рахунок власної внутрішньої енергії']}[this.proc];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
-    /* смужка кількості речовини */
-    g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.moveTo(Q.nx,Q.ny+.5); g.lineTo(Q.nx+140,Q.ny+.5); g.stroke();
-    g.strokeStyle=CLR.k3; g.lineWidth=3;
-    g.beginPath(); g.moveTo(Q.nx,Q.ny); g.lineTo(Q.nx+this.nu*70,Q.ny); g.stroke();
-    txt(g,'ν = '+fmt(this.nu,2)+' моль',Q.nx,Q.ny-10,{color:'#0d7a55',size:10.5,bold:true});
+    /* смуги керування: ν, T₁, p₁ */
+    const bar=(x,frac,col,lab,txc)=>{
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x,Q.by+.5); g.lineTo(x+Q.BW,Q.by+.5); g.stroke();
+      g.strokeStyle=col; g.lineWidth=3;
+      g.beginPath(); g.moveTo(x,Q.by); g.lineTo(x+clamp(frac,0,1)*Q.BW,Q.by); g.stroke();
+      txt(g,lab,x,Q.by-10,{color:txc,size:10.5,bold:true});
+    };
+    bar(Q.nx,(this.nu-0.1)/1.9,CLR.k3,'ν = '+fmt(this.nu,2)+' моль','#0d7a55');
+    if(this.proc!=='iso_t')
+      bar(Q.tx,(this.T1-200)/400,CLR.k1,'T₁ = '+fmt(this.T1,0)+' K','#1c5cab');
+    if(this.proc!=='iso_p')
+      bar(Q.px,(p1-20)/480,CLR.k1,'p₁ = '+fmt(p1,0)+' кПа','#1c5cab');
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
     $('m1vnu').textContent=fmt(this.nu,2)+' моль';
     $('m1vT1').textContent=fmt(this.T1,0)+' K';
     $('m1vV1').textContent=fmt(this.V1,0)+' л';
+    $('m1vp1').textContent=fmt(this.p(this.V1,this.T1),0)+' кПа';
     $('m1vkk').textContent='×'+fmt(this.kk,2);
     const E=this.E(), s2=E.s2, i=this.i();
     const p1=this.p(this.V1,this.T1), p2=this.p(s2.V,s2.T);
@@ -1045,10 +1113,9 @@ const M1={
   }
 };
 
-/* ===================== МОДУЛЬ 2 · тепловий баланс ===================== */
+/* ===================== МОДУЛЬ 2 · фазові переходи ===================== */
 const M2={
-  mode:'heat', m:0.2, t0:-20, P:800,
-  m1:0.5, tt1:80, m2:1, tt2:10,
+  m:0.2, t0:-20, P:800,
   TSHOW:10, t:0, playing:true,
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   /* чотири стадії нагрівання: лід → плавлення → вода → пароутворення */
@@ -1064,75 +1131,35 @@ const M2={
     if(Q<=s.Q1) return this.t0+Q/(C_ICE*this.m);
     if(Q<=s.Q1+s.Q2) return 0;
     if(Q<=s.Q1+s.Q2+s.Q3) return (Q-s.Q1-s.Q2)/(C_WAT*this.m);
-    if(Q<=s.tot) return 100;
     return 100;
   },
-  theta(){
-    const {m1,tt1,m2,tt2}=this;
-    return (m1*tt1+m2*tt2)/(m1+m2);
-  },
-  showMode(){
-    const h=this.mode==='heat';
-    $('m2gH').hidden=!h; $('m2gM').hidden=h;
-    $('m2kvH').hidden=!h; $('m2kvM').hidden=h;
-    $('m2kvh').textContent=h?'Теплота по стадіях':'Баланс при змішуванні';
-    $('m2ch').textContent=h?'Нагрівання від льоду до пари':'Вирівнювання температур';
-    $('m2c1h').textContent=h?'температура від часу нагрівання, °C':'температури обох порцій, °C';
-    $('m2c2h').textContent=h?'скільки теплоти потрібно на кожну стадію, кДж':'температура суміші від маси холодної води, °C';
-    $('m2c1l').innerHTML=h?'<span><span class="chip cC"></span>T(t) — площадки на плавленні й кипінні</span><span><span class="chip cI"></span>зараз</span>'
-      :'<span><span class="chip cB"></span>гаряча</span><span><span class="chip cA"></span>холодна</span><span><span class="chip cI"></span>суміш</span>';
-    $('m2c2l').innerHTML=h?'<span><span class="chip cA"></span>нагрів</span><span><span class="chip cC"></span>фазові переходи</span>'
-      :'<span><span class="chip cC"></span>θ(m₂)</span><span><span class="chip cI"></span>поточна m₂</span>';
-    this.h1.xlab=h?'t':'t'; this.h1.xunit=h?'хв':'с'; this.h1.xdec=1;
-    this.h2.xlab=h?'стадія':'m₂'; this.h2.xunit=h?'':'кг'; this.h2.xdec=h?0:2;
-  },
   geo(b){return frozen(this,b,bb=>{
-    if(this.mode==='heat'){
-      const s=this.stages(), Q=s.tot*this.u();
-      const phase=Q<=s.Q1?0:Q<=s.Q1+s.Q2?1:Q<=s.Q1+s.Q2+s.Q3?2:3;
-      const frac=phase<3?1:Math.max(0.15,1-(Q-s.Q1-s.Q2-s.Q3)/Math.max(1,s.Q4));
-      const cy=bb.h*0.52, bh=bb.h*0.5;
-      return {cx:bb.w*0.28,cy,bh,bw:140,frac,phase,
-        tx:bb.w*0.52,tb:cy+bh/2,th:bh, px:bb.w*0.28+82};
-    }
-    const cy=bb.h*0.55, bh=bb.h*0.5;
-    return {cy,bh,x1:bb.w*0.26,x2:bb.w*0.56,tb:cy+bh/2,th:bh*0.8};
+    const s=this.stages(), Q=s.tot*this.u();
+    const phase=Q<=s.Q1?0:Q<=s.Q1+s.Q2?1:Q<=s.Q1+s.Q2+s.Q3?2:3;
+    /* на пароутворенні вміст справді убуває — рівень падає разом із масою рідини */
+    const frac=phase<3?1:Math.max(0.15,1-(Q-s.Q1-s.Q2-s.Q3)/Math.max(1,s.Q4));
+    const cy=bb.h*0.53, bh=bb.h*0.66;
+    return {cx:bb.w*0.20,cy,bh,bw:212,frac,phase,
+      tx:bb.w*0.45,tb:cy+bh/2,th:bh, px:bb.w*0.20+124};
   });},
   fill(Q){return Q.bh*(0.15+0.65*this.m)*Q.frac;},
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
-    const Q=this.geo(b);
-    if(this.mode==='heat'){
-      const fh=this.fill(Q);
-      return [
-        {id:'m', x:Q.cx-Q.bw/2+18, y:Q.cy+Q.bh/2-fh, r:8, color:CLR.k1, hint:'маса льоду',
-         move:(px,py)=>{const f=(Q.cy+Q.bh/2-py)/Math.max(1,Q.bh*Q.frac);
-           this.m=clamp(snap((f-0.15)/0.65,0.05),0.05,1); this.reset();}},
-        /* позначка початкової температури на шкалі термометра */
-        {id:'t0', x:Q.tx+14, y:Q.tb-Q.th*(this.t0+40)/140, r:7, color:CLR.k1,
-         hint:'початкова температура льоду',
-         move:(px,py)=>{this.t0=clamp(snap((Q.tb-py)/Q.th*140-40,1),-40,0); this.reset();}},
-        {id:'P', x:Q.px, y:Q.cy+Q.bh/2+14-this.P*0.05, r:8, color:CLR.k3,
-         hint:'потужність нагрівника',
-         move:(px,py)=>{this.P=clamp(snap((Q.cy+Q.bh/2+14-py)/0.05,50),100,2000); this.reset();}}
-      ];
-    }
-    const bw1=40+this.m1*46, bw2=40+this.m2*46;
+    const Q=this.geo(b), fh=this.fill(Q);
     return [
-      {id:'m1', x:Q.x1+bw1/2, y:Q.cy, r:8, color:CLR.k2, hint:'маса гарячої води',
-       move:px=>{this.m1=clamp(snap((2*(px-Q.x1)-40)/46,0.05),0.05,2); this.reset();}},
-      {id:'m2', x:Q.x2+bw2/2, y:Q.cy, r:8, color:CLR.k1, hint:'маса холодної води',
-       move:px=>{this.m2=clamp(snap((2*(px-Q.x2)-40)/46,0.05),0.05,2); this.reset();}},
-      {id:'t1', x:Q.x1-bw1/2-24, y:Q.tb-Q.th*(this.tt1-20)/75, r:8, color:CLR.k2,
-       hint:'температура гарячої води',
-       move:(px,py)=>{this.tt1=clamp(snap((Q.tb-py)/Q.th*75+20,1),20,95); this.reset();}},
-      {id:'t2', x:Q.x2-bw2/2-24, y:Q.tb-Q.th*this.tt2/40, r:8, color:CLR.k1,
-       hint:'температура холодної води',
-       move:(px,py)=>{this.tt2=clamp(snap((Q.tb-py)/Q.th*40,1),0,40); this.reset();}}
+      {id:'m', x:Q.cx-Q.bw/2+18, y:Q.cy+Q.bh/2-fh, r:8, color:CLR.k1, hint:'маса льоду',
+       move:(px,py)=>{const f=(Q.cy+Q.bh/2-py)/Math.max(1,Q.bh*Q.frac);
+         this.m=clamp(snap((f-0.15)/0.65,0.05),0.05,1); this.reset();}},
+      /* позначка початкової температури на шкалі термометра */
+      {id:'t0', x:Q.tx+14, y:Q.tb-Q.th*(this.t0+40)/140, r:7, color:CLR.k1,
+       hint:'початкова температура льоду',
+       move:(px,py)=>{this.t0=clamp(snap((Q.tb-py)/Q.th*140-40,1),-40,0); this.reset();}},
+      {id:'P', x:Q.px, y:Q.cy+Q.bh/2+14-this.P*0.05, r:8, color:CLR.k3,
+       hint:'потужність нагрівника',
+       move:(px,py)=>{this.P=clamp(snap((Q.cy+Q.bh/2+14-py)/0.05,50),100,2000); this.reset();}}
     ];
   },
   init(){
-    seg('m2mode',v=>{this.mode=v; this.showMode(); this.reset();});
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       this.playing=!this.playing;
@@ -1141,7 +1168,8 @@ const M2={
     $('m2re').onclick=()=>this.reset();
     this.tip1=makeTip('m2c1w'); this.tip2=makeTip('m2c2w');
     hover('m2c1',this.h1); hover('m2c2',this.h2);
-    this.showMode();
+    this.h1.xlab='t'; this.h1.xunit='хв'; this.h1.xdec=1;
+    this.h2.xlab='стадія'; this.h2.xunit=''; this.h2.xdec=0;
   },
   reset(){this.t=0; this.playing=true; $('m2play').textContent='⏸';},
   tick(dt){
@@ -1149,12 +1177,8 @@ const M2={
     this.render();
   },
   u(){return Math.min(1,this.t/this.TSHOW);},
-  render(){
-    if(this.mode==='heat'){this.sceneHeat(); this.tableHeat();}
-    else {this.sceneMix(); this.tableMix();}
-    this.charts();
-  },
-  sceneHeat(){
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w,h}=b, s=this.stages(), Q=s.tot*this.u(), T=this.Tof(Q), F=this.geo(b);
     const phase=F.phase;
@@ -1218,15 +1242,15 @@ const M2={
     /* стадії */
     const names=['нагрівання льоду','плавлення','нагрівання води','пароутворення'];
     const Qs=[s.Q1,s.Q2,s.Q3,s.Q4];
-    const bx=w*0.68, byy=cy-bh/2+6;
+    const bx=w*0.58, byy=cy-bh/2+6;
     for(let i=0;i<4;i++){
-      const y=byy+i*30;
+      const y=byy+i*44;
       const wq=Math.min(w-bx-26,Qs[i]/Math.max(1,s.tot)*(w-bx-26)*2.4);
       g.fillStyle=i===phase?'rgba(235,104,52,.24)':'rgba(11,11,11,.05)';
-      g.fillRect(bx,y,Math.max(3,wq),18);
+      g.fillRect(bx,y,Math.max(3,wq),26);
       g.strokeStyle=i===phase?CLR.k2:CLR.grid; g.lineWidth=i===phase?2:1;
-      g.strokeRect(bx,y,Math.max(3,wq),18);
-      txt(g,names[i]+' · '+fmt(Qs[i]/1000,1)+' кДж',bx+4,y+13,
+      g.strokeRect(bx,y,Math.max(3,wq),26);
+      txt(g,names[i]+' · '+fmt(Qs[i]/1000,1)+' кДж',bx+6,y+17,
         {color:i===phase?CLR.ink:CLR.sec,size:10.5,bold:i===phase});
     }
     txt(g,'зараз: '+names[phase],12,20,{color:CLR.k3,size:12.5,bold:true});
@@ -1235,42 +1259,7 @@ const M2={
       12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
-  sceneMix(){
-    const b=cvx('m2scene'); if(!b) return;
-    const {g,w,h}=b, th=this.theta(), u=this.u(), F=this.geo(b);
-    const T1=this.tt1+(th-this.tt1)*u, T2=this.tt2+(th-this.tt2)*u;
-    const cy=F.cy, bh=F.bh;
-    const vessel=(cx,m,T,col,lab)=>{
-      const bw=40+m*46;
-      g.strokeStyle=CLR.axis; g.lineWidth=2;
-      g.beginPath(); g.moveTo(cx-bw/2,cy-bh/2); g.lineTo(cx-bw/2,cy+bh/2);
-      g.lineTo(cx+bw/2,cy+bh/2); g.lineTo(cx+bw/2,cy-bh/2); g.stroke();
-      const fh=bh*0.82;
-      const mix=Math.max(0,Math.min(1,(T-0)/95));
-      g.fillStyle='rgba('+Math.round(90+165*mix)+','+Math.round(150-40*mix)+','+Math.round(230-150*mix)+',.35)';
-      g.fillRect(cx-bw/2+2,cy+bh/2-fh,bw-4,fh);
-      txt(g,fmt(T,1)+' °C',cx,cy+bh/2-fh/2,{color:CLR.ink,size:12.5,bold:true,align:'center'});
-      txt(g,lab+' · '+fmt(m,2)+' кг',cx,cy+bh/2+20,{color:col,size:11,bold:true,align:'center'});
-    };
-    g.clearRect(0,0,w,h);
-    vessel(F.x1,this.m1,T1,'#b8431a','гаряча');
-    vessel(F.x2,this.m2,T2,'#1c5cab','холодна');
-    /* два термометри: за їхні стовпчики й задають початкові температури */
-    therm(g,F.x1-(40+this.m1*46)/2-24,F.tb,F.th,(this.tt1-20)/75,CLR.k2,'t₁');
-    therm(g,F.x2-(40+this.m2*46)/2-24,F.tb,F.th,this.tt2/40,CLR.k1,'t₂');
-    /* потік теплоти */
-    const Q=C_WAT*this.m1*(this.tt1-th);
-    arrow(g,F.x1+50,cy-bh/2-14,F.x2-50,cy-bh/2-14,CLR.k3,2.5);
-    pill(g,'Q = '+fmt(Q/1000,2)+' кДж',(F.x1+F.x2)/2,cy-bh/2-22,{color:'#0d7a55',size:11.5,bold:true});
-    /* підсумкова температура */
-    txt(g,'θ = '+fmt(th,2)+' °C',w*0.8,cy,{color:CLR.ink,size:16,bold:true,align:'center'});
-    txt(g,'температура суміші',w*0.8,cy+20,{color:CLR.mut,size:10.5,align:'center'});
-    txt(g,'тепло тече від гарячого до холодного',12,20,{color:CLR.k3,size:12.5,bold:true});
-    txt(g,'скільки віддала гаряча вода, стільки одержала холодна — це і є рівняння теплового балансу',
-      12,36,{color:CLR.mut,size:10.5});
-    for(const hh of this.grips()) drawGrip(g,hh,this);
-  },
-  tableHeat(){
+  table(){
     $('m2vm').textContent=fmt(this.m,2)+' кг';
     $('m2vt0').textContent=fmt(this.t0,0)+' °C';
     $('m2vP').textContent=fmt(this.P,0)+' Вт';
@@ -1285,81 +1274,30 @@ const M2={
     const mx=Math.max(s.Q1,s.Q2,s.Q3,s.Q4);
     $('m2kMax').textContent=fmt(100*mx/s.tot,0)+' % усієї теплоти';
   },
-  tableMix(){
-    $('m2vm1').textContent=fmt(this.m1,2)+' кг';
-    $('m2vtt1').textContent=fmt(this.tt1,0)+' °C';
-    $('m2vm2').textContent=fmt(this.m2,2)+' кг';
-    $('m2vtt2').textContent=fmt(this.tt2,0)+' °C';
-    const th=this.theta();
-    const Qh=C_WAT*this.m1*(this.tt1-th), Qc=C_WAT*this.m2*(th-this.tt2);
-    $('m2t').textContent='';
-    $('m2kTh').textContent=fmt(th,2)+' °C';
-    $('m2kQh').textContent=fmt(Qh/1000,2)+' кДж';
-    $('m2kQc').textContent=fmt(Qc/1000,2)+' кДж';
-    $('m2kBal').textContent=fmt(Math.abs(Qh-Qc)<1e-9?0:Qh-Qc,3)+' Дж';
-    $('m2kDh').textContent=fmt(this.tt1-th,2)+' K';
-    $('m2kDc').textContent=fmt(th-this.tt2,2)+' K';
-    $('m2fx').innerHTML='<i>θ</i> = ('+fmt(this.m1,2)+'·'+fmt(this.tt1,0)+' + '+fmt(this.m2,2)+'·'+
-      fmt(this.tt2,0)+') / '+fmt(this.m1+this.m2,2)+' = <b>'+fmt(th,2)+' °C</b>';
-  },
   charts(){
-    const heat=this.mode==='heat';
+    const s=this.stages();
     const b1=cvx('m2c1');
     if(b1){
-      const s=this.stages();
-      let opt;
-      if(heat){
-        const ts=[],ys=[];
-        const tm=s.time/60;
-        for(let i=0;i<=140;i++){
-          const tt=tm*i/140; ts.push(tt); ys.push(this.Tof(tt*60*this.P));
-        }
-        const now=this.u()*tm;
-        opt={tMax:tm,yMin:Math.min(-45,this.t0-8),yMax:118,yLab:'°C',xLab:'t, хв',
-          xStep:niceStep(tm/5),xDec:1,hover:this.h1.x,
-          series:[{ts,ys,color:CLR.k3,label:'T'},
-                  {ts:[now,now],ys:[Math.min(-45,this.t0-8),this.Tof(now*60*this.P)],
-                   color:CLR.ink,label:'зараз',dash:[4,3]}]};
-      } else {
-        const th=this.theta(), TT=6;
-        const ts=[],y1=[],y2=[],y3=[];
-        for(let i=0;i<=60;i++){
-          const u=i/60; ts.push(u*TT);
-          y1.push(this.tt1+(th-this.tt1)*u); y2.push(this.tt2+(th-this.tt2)*u); y3.push(th);
-        }
-        opt={tMax:TT,yMin:Math.min(0,this.tt2)-6,yMax:Math.max(100,this.tt1)+6,yLab:'°C',
-          xLab:'t, с',xStep:1,hover:this.h1.x,
-          series:[{ts,ys:y1,color:CLR.k2,label:'гаряча'},{ts,ys:y2,color:CLR.k1,label:'холодна'},
-                  {ts,ys:y3,color:CLR.ink,label:'θ',dash:[5,4]}]};
+      const ts=[],ys=[];
+      const tm=s.time/60;
+      for(let i=0;i<=140;i++){
+        const tt=tm*i/140; ts.push(tt); ys.push(this.Tof(tt*60*this.P));
       }
-      const r=drawChart(b1,opt);
-      showTip(this.tip1,r,'°C',this.h1,
-        heat?[['T',CLR.k3],['зараз',CLR.ink]]:[['гаряча',CLR.k2],['холодна',CLR.k1],['θ',CLR.ink]],1);
+      const now=this.u()*tm;
+      const r=drawChart(b1,{tMax:tm,yMin:Math.min(-45,this.t0-8),yMax:118,yLab:'°C',xLab:'t, хв',
+        xStep:niceStep(tm/5),xDec:1,hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k3,label:'T'},
+                {ts:[now,now],ys:[Math.min(-45,this.t0-8),this.Tof(now*60*this.P)],
+                 color:CLR.ink,label:'зараз',dash:[4,3]}]});
+      showTip(this.tip1,r,'°C',this.h1,[['T',CLR.k3],['зараз',CLR.ink]],1);
     }
     const b2=cvx('m2c2');
     if(b2){
-      let opt;
-      if(heat){
-        const s=this.stages();
-        const ts=[1,2,3,4], ys=[s.Q1/1000,s.Q2/1000,s.Q3/1000,s.Q4/1000];
-        const hi=Math.max(...ys)*1.15;
-        opt={tMax:5,yMin:0,yMax:hi,yLab:'кДж',xLab:'номер стадії',xStep:1,hover:this.h2.x,
-          series:[{ts,ys,color:CLR.k3,label:'Q'}]};
-      } else {
-        const ts=[],ys=[];
-        for(let i=0;i<=60;i++){
-          const mm=0.05+1.95*i/60; ts.push(mm);
-          ys.push((this.m1*this.tt1+mm*this.tt2)/(this.m1+mm));
-        }
-        opt={tMax:2,yMin:Math.min(0,this.tt2)-4,yMax:Math.max(100,this.tt1)+4,yLab:'°C',
-          xLab:'m₂, кг',xStep:0.5,xDec:1,hover:this.h2.x,
-          series:[{ts,ys,color:CLR.k3,label:'θ'},
-                  {ts:[this.m2,this.m2],ys:[Math.min(0,this.tt2)-4,this.theta()],
-                   color:CLR.ink,label:'m₂',dash:[4,3]}]};
-      }
-      const r=drawChart(b2,opt);
-      showTip(this.tip2,r,heat?'кДж':'°C',this.h2,
-        heat?[['Q',CLR.k3]]:[['θ',CLR.k3],['поточна m₂',CLR.ink]],1);
+      const ts=[1,2,3,4], ys=[s.Q1/1000,s.Q2/1000,s.Q3/1000,s.Q4/1000];
+      const hi=Math.max(...ys)*1.15;
+      const r=drawChart(b2,{tMax:5,yMin:0,yMax:hi,yLab:'кДж',xLab:'номер стадії',xStep:1,
+        hover:this.h2.x, series:[{ts,ys,color:CLR.k3,label:'Q'}]});
+      showTip(this.tip2,r,'кДж',this.h2,[['Q',CLR.k3]],1);
     }
   }
 };
@@ -1392,10 +1330,20 @@ const M3={
     return {V,T:this.Tc*Math.pow(n.V4/V,this.GAM-1),leg:3};
   },
   p(V,T){return this.nu*RGAS*T/(V/1000)/1000;},
+  /* Кожна з чотирьох гілок циклу має власний колір — і на стрічці внизу сцени,
+     і на діаграмі p–V. Дві адіабати різні за кольором навмисне: вони однакові
+     за рівнянням, але протилежні за напрямом, і плутати їх не варто. */
+  LEGCOL:[CLR.k2,CLR.k3,CLR.k1,CLR.ink],
+  LEGNAME:['1→2 ізотерма Tн','2→3 адіабата','3→4 ізотерма Tх','4→1 адіабата'],
   geo(b){return frozen(this,b,bb=>{
     const bw=Math.min(150,bb.w*0.22);
-    return {bw,cx:bb.w*0.5,hy:52,my:bb.h*0.5,cy:bb.h-72,
-      tx:bb.w*0.5+bw+36, th:bb.h*0.14};
+    /* радіатор піднято на 110 px від низу: під ним лежить стрічка циклу,
+       на якій видно самі моменти зміни ізопроцесу */
+    return {bw,cx:bb.w*0.5,hy:52,my:bb.h*0.5,cy:bb.h-110,
+      tx:bb.w*0.5+bw+36, th:bb.h*0.14,
+      /* стрічка обривається перед колонкою термометрів (tx), інакше вузол 4
+         ховається за колбою холодильника */
+      sx0:bb.w*0.08, sx1:bb.w*0.5+bw+6, sy:bb.h-44};
   });},
   mbw(Q){return Q.bw*(0.5+this.nu*0.5);},   /* машина ширша, коли газу більше */
   grips(){
@@ -1515,9 +1463,41 @@ const M3={
     /* поточна гілка */
     const legs=['ізотермічне розширення при Tн','адіабатне розширення: газ холоне',
                 'ізотермічне стиснення при Tх','адіабатне стиснення: газ нагрівається'];
-    txt(g,'зараз: '+legs[s.leg],12,20,{color:CLR.k2,size:12.5,bold:true});
+    /* що саме стале на кожній гілці — це і є відповідь на питання «який зараз ізопроцес» */
+    const legFix=['T = Tн = '+fmt(this.Th,0)+' K','Q = 0 · теплообміну немає',
+                  'T = Tх = '+fmt(this.Tc,0)+' K','Q = 0 · теплообміну немає'];
+    const legCol=this.LEGCOL;
+    txt(g,'зараз: '+legs[s.leg],12,20,{color:legCol[s.leg],size:12.5,bold:true});
+    txt(g,'стале на цій гілці: '+legFix[s.leg],12,36,{color:CLR.sec,size:11,bold:true});
     txt(g,'V = '+fmt(s.V,2)+' л · T = '+fmt(s.T,0)+' K · p = '+fmt(this.p(s.V,s.T),1)+' кПа',
-      12,36,{color:CLR.mut,size:10.5});
+      12,52,{color:CLR.mut,size:10.5});
+    /* ---- стрічка циклу: чотири гілки й межі між ними ----------------------
+       Гілки за побудовою at(u) рівні за параметром u, тож і на стрічці вони
+       однакові: стрічка показує не час, а порядок ізопроцесів і вузли 1–2–3–4. */
+    const S0=F.sx0, S1=F.sx1, sy=F.sy, sw=(S1-S0)/4, u=this.t/this.TSHOW;
+    for(let i=0;i<4;i++){
+      const x0=S0+i*sw, on=i===s.leg;
+      g.fillStyle=on?legCol[i]:CLR.grid; g.globalAlpha=on?0.22:0.5;
+      g.fillRect(x0,sy-11,sw-2,22); g.globalAlpha=1;
+      g.strokeStyle=on?legCol[i]:CLR.axis; g.lineWidth=on?2:1;
+      g.strokeRect(x0+.5,sy-10.5,sw-3,21);
+      /* назви на стрічці — рівно ті самі, що в легенді діаграми p–V */
+      txt(g,this.LEGNAME[i],x0+sw/2-1,sy+4,
+        {color:on?legCol[i]:CLR.mut,size:10.5,bold:on,align:'center'});
+    }
+    /* вузли: саме тут один ізопроцес змінюється на інший */
+    for(let i=0;i<=4;i++){
+      const x=S0+i*sw;
+      g.strokeStyle=CLR.sec; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x,sy-16); g.lineTo(x,sy+16); g.stroke();
+      txt(g,String(i===4?1:i+1),x,sy+29,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    }
+    txt(g,'зміна ізопроцесу',S0,sy-22,{color:CLR.mut,size:10});
+    /* поточне положення на стрічці */
+    const mx=S0+u*(S1-S0);
+    g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.moveTo(mx,sy-13); g.lineTo(mx,sy+13); g.stroke();
+    dot(g,mx,sy-13,3.5,CLR.ink);
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
@@ -1541,8 +1521,25 @@ const M3={
   charts(){
     const bp=cvx('m3cp');
     if(bp){
-      const N=120, Vs=[],ps=[];
-      for(let i=0;i<=N;i++){const q=this.at(i/N); Vs.push(q.V); ps.push(this.p(q.V,q.T));}
+      /* цикл розкладаємо на чотири серії — по одній на гілку, кожна своїм
+         кольором; сусідні гілки склеюємо спільним вузлом, щоб контур не рвався */
+      const N=40, segs=[];
+      for(let L=0;L<4;L++){
+        const Vs=[],ps=[];
+        for(let i=0;i<=N;i++){
+          const q=this.at((L+i/N)/4*0.999999);
+          Vs.push(q.V); ps.push(this.p(q.V,q.T));
+        }
+        const q2=this.at(((L+1)%4)/4);
+        Vs.push(q2.V); ps.push(this.p(q2.V,q2.T));
+        /* Підпис серії drawChart ставить у ЇЇ КІНЦІ — тобто у вузлі, з якого
+           починається вже наступна гілка. Через це назва гілки на діаграмі
+           стояла біля чужої кривої й сперечалася зі стрічкою під сценою.
+           Тому на кривій підписуємо не назву, а номер вузла: він однозначний
+           і збігається з нумерацією на стрічці, а назви гілок дає легенда. */
+        segs.push({ts:Vs,ys:ps,color:this.LEGCOL[L],label:String(((L+1)%4)+1)});
+      }
+      const ps=segs.reduce((a,s2)=>a.concat(s2.ys),[]);
       const n=this.nodes();
       const cur=this.at(this.t/this.TSHOW);
       const iso=(T,col,lab)=>{
@@ -1555,10 +1552,12 @@ const M3={
       const hi=Math.max(...ps)*1.2;
       const r=drawChart(bp,{tMax:n.V3*1.15,yMin:0,yMax:hi,yLab:'кПа',xLab:'V, л',
         xStep:niceStep(n.V3/5),hover:this.hp.x,
-        series:[iso(this.Th,CLR.k3,'Tн'),iso(this.Tc,CLR.k3,'Tх'),
-                {ts:Vs,ys:ps,color:CLR.k2,label:'цикл'},
+        series:[iso(this.Th,CLR.grid,'Tн'),iso(this.Tc,CLR.grid,'Tх'),
+                ...segs,
                 {ts:[cur.V,cur.V],ys:[0,this.p(cur.V,cur.T)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipp,r,'кПа',this.hp,[['Tн',CLR.k3],['Tх',CLR.k3],['цикл',CLR.k2],['зараз',CLR.ink]],1);
+      showTip(this.tipp,r,'кПа',this.hp,
+        [['ізотерма Tн',CLR.grid],['ізотерма Tх',CLR.grid],
+         ...this.LEGNAME.map((nm,i2)=>[nm,this.LEGCOL[i2]]),['зараз',CLR.ink]],1);
     }
     const be=cvx('m3ce');
     if(be){
@@ -1572,216 +1571,40 @@ const M3={
   }
 };
 
-/* ===================== МОДУЛЬ 4 · цикл Отто ===================== */
-const M4={
-  eps:10, gam:1.4, T1:320, Q:1200, nu:0.02,
-  TSHOW:8, t:0, playing:true,
-  hp:{x:null}, he:{x:null}, tipp:null, tipe:null,
-  cv(){return RGAS/(this.gam-1);},
-  temps(){
-    const T1=this.T1, T2=T1*Math.pow(this.eps,this.gam-1);
-    const T3=T2+this.Q/(this.nu*this.cv());
-    const T4=T3*Math.pow(1/this.eps,this.gam-1);
-    return {T1,T2,T3,T4};
-  },
-  eta(){return 1-Math.pow(this.eps,1-this.gam);},
-  V1(){return 0.5;},                             /* обʼєм камери згоряння, л */
-  Vmax(){return this.V1()*this.eps;},
-  p(V,T){return this.nu*RGAS*T/(V/1000)/1000;},
-  at(u){
-    const T=this.temps(), s=u*4, Vm=this.Vmax(), Vc=this.V1();
-    if(s<1){const V=Vm+(Vc-Vm)*s; return {V,T:T.T1*Math.pow(Vm/V,this.gam-1),leg:0};}
-    if(s<2){return {V:Vc,T:T.T2+(T.T3-T.T2)*(s-1),leg:1};}
-    if(s<3){const V=Vc+(Vm-Vc)*(s-2); return {V,T:T.T3*Math.pow(Vc/V,this.gam-1),leg:2};}
-    return {V:Vm,T:T.T4+(T.T1-T.T4)*(s-3),leg:3};
-  },
-  GAM:[['одноатомний',1.67],['повітря',1.4],['вуглекислий',1.3],['важка суміш',1.25]],
-  geo(b){return frozen(this,b,bb=>{
-    const top=40, cyl=bb.h-70, bw=Math.min(140,bb.w*0.2);
-    return {top,cyl,bw,cx:bb.w*0.3,Hf:cyl-top,
-      tx:bb.w*0.46, tb:cyl, th:bb.h*0.42,
-      qx:bb.w*0.3-Math.min(140,bb.w*0.2)/2-34, qb:cyl,
-      gam:{y:bb.h-18,x0:bb.w-4*76-8,dx:76}};
-  });},
-  grips(){
-    const b=cvx('m4scene'); if(!b) return [];
-    const Q=this.geo(b);
-    const tdc=Q.top+Q.Hf/this.eps;
-    return [
-      /* верхня мертва точка: відношення повного ходу до камери і є ε */
-      {id:'eps', x:Q.cx+Q.bw/2+14, y:tdc, r:8, color:CLR.k1, hint:'ступінь стиснення',
-       move:(px,py)=>{const hc=Math.max(Q.Hf/22,py-Q.top);
-         this.eps=clamp(snap(Q.Hf/hc,0.5),4,22);}},
-      {id:'T1', x:Q.tx, y:Q.tb-(this.T1-280)/120*Q.th, r:8, color:CLR.k3,
-       hint:'температура на впуску',
-       move:(px,py)=>{this.T1=clamp(snap((Q.tb-py)/Q.th*120+280,5),280,400);}},
-      {id:'Q', x:Q.qx, y:Q.qb-this.Q*0.06, r:8, color:CLR.k2, hint:'теплота порції палива',
-       move:(px,py)=>{this.Q=clamp(snap((Q.qb-py)/0.06,50),200,3000);}}
-    ].concat(shelfGrips(Q.gam,this.GAM,v=>{this.gam=v;},'gm'));
-  },
-  init(){
-    grip('m4scene',this,()=>this.grips());
-    $('m4play').onclick=()=>{
-      this.playing=!this.playing;
-      $('m4play').textContent=this.playing?'⏸':'▶';
-    };
-    $('m4re').onclick=()=>{this.t=0;};
-    this.tipp=makeTip('m4cpw'); this.tipe=makeTip('m4cew');
-    hover('m4cp',this.hp); hover('m4ce',this.he);
-    this.hp.xlab='V'; this.hp.xunit='л'; this.hp.xdec=2;
-    this.he.xlab='ε'; this.he.xunit=''; this.he.xdec=1;
-  },
-  tick(dt){
-    if(this.playing) this.t=(this.t+dt)%this.TSHOW;
-    this.render();
-  },
-  render(){this.scene(); this.table(); this.charts();},
-  scene(){
-    const b=cvx('m4scene'); if(!b) return;
-    const {g,w,h}=b, s=this.at(this.t/this.TSHOW), T=this.temps(), F=this.geo(b);
-    const cx=F.cx, cyl=F.cyl, top=F.top, bw=F.bw;
-    g.clearRect(0,0,w,h);
-    /* циліндр: висота камери згоряння відносно повного ходу і є ε */
-    const tdc=top+F.Hf/this.eps;
-    const frac=(s.V-this.V1())/(this.Vmax()-this.V1());
-    const py=tdc+(cyl-tdc)*frac;
-    g.fillStyle=s.leg===1?'rgba(235,104,52,.22)':'rgba(42,120,214,.07)';
-    g.fillRect(cx-bw/2,top,bw,py-top);
-    g.strokeStyle=CLR.axis; g.lineWidth=2;
-    g.beginPath(); g.moveTo(cx-bw/2,top); g.lineTo(cx-bw/2,cyl);
-    g.lineTo(cx+bw/2,cyl); g.lineTo(cx+bw/2,top); g.lineTo(cx-bw/2,top); g.stroke();
-    g.strokeStyle=CLR.k1; g.lineWidth=1.5; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(cx-bw/2-10,tdc); g.lineTo(cx+bw/2+10,tdc); g.stroke();
-    g.setLineDash([]);
-    txt(g,'ε = '+fmt(this.eps,1),cx+bw/2+20,tdc+4,{color:'#1c5cab',size:11,bold:true});
-    g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.k2; g.lineWidth=2.5;
-    g.beginPath(); g.roundRect(cx-bw/2+3,py,bw-6,16,2); g.fill(); g.stroke();
-    g.strokeStyle=CLR.k2; g.lineWidth=4;
-    g.beginPath(); g.moveTo(cx,py+16); g.lineTo(cx,cyl+18); g.stroke();
-    /* колінвал */
-    const ang=this.t/this.TSHOW*4*Math.PI;
-    const kx=cx, ky=cyl+42;
-    g.strokeStyle=CLR.sec; g.lineWidth=2;
-    g.beginPath(); g.arc(kx,ky,22,0,7); g.stroke();
-    dot(g,kx+Math.cos(ang)*22,ky+Math.sin(ang)*22,4,CLR.k2);
-    if(s.leg===1){
-      dot(g,cx,top+10,7,'rgba(235,104,52,.6)');
-      txt(g,'спалах',cx+14,top+14,{color:'#b8431a',size:11,bold:true});
-    }
-    /* термометр впуску й запас палива */
-    therm(g,F.tx,F.tb,F.th,(this.T1-280)/120,CLR.k3,'T₁');
-    g.strokeStyle=CLR.k2; g.lineWidth=1.5;
-    g.beginPath(); g.roundRect(F.qx-9,F.qb-3000*0.06,18,3000*0.06,4); g.stroke();
-    g.fillStyle='rgba(235,104,52,.28)';
-    g.fillRect(F.qx-6,F.qb-this.Q*0.06,12,this.Q*0.06);
-    txt(g,'Q',F.qx,F.qb+16,{color:'#b8431a',size:10.5,bold:true,align:'center'});
-    /* температури */
-    const tx=w*0.60;
-    const rows=[['1 — кінець впуску',T.T1],['2 — кінець стиснення',T.T2],
-                ['3 — кінець згоряння',T.T3],['4 — кінець розширення',T.T4]];
-    rows.forEach((r,i)=>{
-      const y=top+24+i*34;
-      const bwid=Math.min(w-tx-30,(r[1]/Math.max(1,T.T3))*(w-tx-30));
-      g.fillStyle=i===s.leg?'rgba(235,104,52,.22)':'rgba(27,175,122,.12)';
-      g.fillRect(tx,y-14,Math.max(4,bwid),20);
-      g.strokeStyle=i===s.leg?CLR.k2:CLR.k3; g.lineWidth=i===s.leg?2:1;
-      g.strokeRect(tx,y-14,Math.max(4,bwid),20);
-      txt(g,r[0]+' · '+fmt(r[1],0)+' K',tx+5,y+1,{color:CLR.ink,size:10.5,bold:i===s.leg});
-    });
-    const legs=['такт стиснення (адіабата)','згоряння суміші (ізохора)',
-                'робочий хід (адіабата)','випуск (ізохора)'];
-    txt(g,legs[s.leg],12,20,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'ККД = '+fmt(100*this.eta(),1)+' % · ступінь стиснення ε = '+fmt(this.eps,1),
-      12,36,{color:CLR.mut,size:10.5});
-    shelf(g,F.gam,this.GAM,this.gam,'суміш');
-    for(const hh of this.grips()) drawGrip(g,hh,this);
-  },
-  table(){
-    const T=this.temps(), eta=this.eta();
-    const carn=1-T.T1/T.T3;
-    $('m4t').textContent='';
-    $('m4state').textContent='';
-    $('m4veps').textContent='×'+fmt(this.eps,1);
-    $('m4vgam').textContent=fmt(this.gam,2);
-    $('m4vT1').textContent=fmt(this.T1,0)+' K';
-    $('m4vQ').textContent=fmt(this.Q,0)+' Дж';
-    $('m4kT1').textContent=fmt(T.T1,0)+' K';
-    $('m4kT2').textContent=fmt(T.T2,0)+' K';
-    $('m4kT3').textContent=fmt(T.T3,0)+' K';
-    $('m4kT4').textContent=fmt(T.T4,0)+' K';
-    $('m4kRat').textContent='у '+fmt(T.T2/T.T1,2)+' раза';
-    $('m4kEta').textContent=fmt(100*eta,1)+' %';
-    $('m4kA').textContent=fmt(this.Q*eta,0)+' Дж';
-    $('m4kQout').textContent=fmt(this.Q*(1-eta),0)+' Дж';
-    $('m4kCar').textContent=fmt(100*carn,1)+' %';
-    $('m4kRel').textContent=fmt(eta/carn,3);
-  },
-  charts(){
-    const bp=cvx('m4cp');
-    if(bp){
-      const N=120, Vs=[],ps=[];
-      for(let i=0;i<=N;i++){const q=this.at(i/N); Vs.push(q.V); ps.push(this.p(q.V,q.T));}
-      const cur=this.at(this.t/this.TSHOW);
-      const hi=Math.max(...ps)*1.15;
-      const r=drawChart(bp,{tMax:this.Vmax()*1.1,yMin:0,yMax:hi,yLab:'кПа',xLab:'V, л',
-        xStep:niceStep(this.Vmax()/5),xDec:1,hover:this.hp.x,
-        series:[{ts:Vs,ys:ps,color:CLR.k2,label:'цикл'},
-                {ts:[cur.V,cur.V],ys:[0,this.p(cur.V,cur.T)],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipp,r,'кПа',this.hp,[['цикл',CLR.k2],['зараз',CLR.ink]],0);
-    }
-    const be=cvx('m4ce');
-    if(be){
-      const T=this.temps();
-      const ts=[],ys=[],cn=[];
-      for(let i=0;i<=60;i++){
-        const e=4+18*i/60; ts.push(e);
-        ys.push(100*(1-Math.pow(e,1-this.gam)));
-        cn.push(100*(1-T.T1/T.T3));
-      }
-      const r=drawChart(be,{tMax:22,yMin:0,yMax:100,yLab:'%',xLab:'ε',xStep:4,hover:this.he.x,
-        series:[{ts,ys,color:CLR.k1,label:'η Отто'},{ts,ys:cn,color:CLR.k3,label:'Карно',dash:[5,4]},
-                {ts:[this.eps,this.eps],ys:[0,100*this.eta()],color:CLR.ink,label:'ε',dash:[4,3]}]});
-      showTip(this.tipe,r,'%',this.he,[['η Отто',CLR.k1],['межа Карно',CLR.k3],['поточне ε',CLR.ink]],1);
-    }
-  }
-};
-
 /* ===================== МОДУЛЬ 5 · холодильник і тепловий насос ===================== */
 const M5={
-  mode:'fridge', tc:5, th:35, P:400, q:0.5,
+  /* Тепловий насос прибрано: це той самий зворотний цикл, лише з іншим боком
+     у ролі корисного. Модуль лишається про холодильник, і вся сцена — про нього. */
+  tc:5, th:35, P:400, q:0.5, t:0,
   hc:{x:null}, hq:{x:null}, tipc:null, tipq:null,
   Tc(){return this.tc+273.15;},
   Th(){return Math.max(this.Tc()+1,this.th+273.15);},
   copIdeal(){
     const d=this.Th()-this.Tc();
-    return this.mode==='fridge'?this.Tc()/d:this.Th()/d;
+    return this.Tc()/d;
   },
   cop(){return this.q*this.copIdeal();},
   flows(){
-    const c=this.cop();
-    if(this.mode==='fridge'){
-      const Qc=c*this.P;
-      return {Qc,Qh:Qc+this.P,A:this.P};
-    }
-    const Qh=c*this.P;
-    return {Qh,Qc:Math.max(0,Qh-this.P),A:this.P};
+    const Qc=this.cop()*this.P;
+    return {Qc,Qh:Qc+this.P,A:this.P};
   },
   showMode(){
-    const f=this.mode==='fridge';
-    $('m5cch').textContent=f?'холодильний коефіцієнт від температури в камері'
-      :'коефіцієнт насоса від температури на вулиці';
-    $('m5ccl').innerHTML=f?'<span><span class="chip cA"></span>ідеальний Tх/ΔT</span><span><span class="chip cB"></span>реальний</span><span><span class="chip cI"></span>поточна tх</span>'
-      :'<span><span class="chip cA"></span>ідеальний Tг/ΔT</span><span><span class="chip cB"></span>реальний</span><span><span class="chip cI"></span>поточна tх</span>';
+    $('m5cch').textContent='холодильний коефіцієнт від температури в камері';
+    $('m5ccl').innerHTML='<span><span class="chip cA"></span>ідеальний Tх/ΔT</span>'+
+      '<span><span class="chip cB"></span>реальний</span>'+
+      '<span><span class="chip cI"></span>поточна tх</span>';
     this.hc.xlab='tх'; this.hc.xunit='°C'; this.hc.xdec=0;
     this.hq.xlab='tх'; this.hq.xunit='°C'; this.hq.xdec=0;
   },
   QQ:[['проста',0.3],['звичайна',0.5],['добра',0.7],['найкраща',0.9]],
   geo(b){return frozen(this,b,bb=>{
-    const bw=Math.min(150,bb.w*0.2);
+    const bw=Math.min(250,bb.w*0.28);
     /* 76, а не 52: конденсатор — суцільний блок, і на 52 він підлазив під другий
        рядок підпису сцени */
     return {bw,cx:bb.w*0.5,cy:bb.h*0.5,coldY:bb.h-70,hotY:76,
-      tx:bb.w*0.5-bw-40, th:bb.h*0.15,
+      /* термометри відсунуто далі ліворуч: між ними й змійовиками тепер
+         проходить зворотна труба контуру з дроселем */
+      tx:bb.w*0.5-bw-95, th:bb.h*0.15,
       qq:{y:bb.h-18,x0:bb.w-4*72-8,dx:72}};
   });},
   grips(){
@@ -1795,23 +1618,22 @@ const M5={
        hint:'температура холодного боку',
        move:(px,py)=>{this.tc=clamp(snap((Q.coldY+Q.th/2-py)/Q.th*50-30,1),-30,20);}},
       /* довжина стрілки живлення — електрична потужність */
-      {id:'P', x:Q.cx+Q.bw+20+this.P*0.06, y:Q.cy, r:8, color:CLR.k1,
+      {id:'P', x:Q.cx+Q.bw+20+this.P*0.06, y:Q.cy+16, r:8, color:CLR.k1,
        hint:'електрична потужність',
        move:px=>{this.P=clamp(snap((px-Q.cx-Q.bw-20)/0.06,50),50,2000);}}
     ].concat(shelfGrips(Q.qq,this.QQ,v=>{this.q=v;},'qq'));
   },
   init(){
-    seg('m5mode',v=>{this.mode=v; this.showMode();});
     grip('m5scene',this,()=>this.grips());
     this.tipc=makeTip('m5ccw'); this.tipq=makeTip('m5cqw');
     hover('m5cc',this.hc); hover('m5cq',this.hq);
     this.showMode();
   },
-  tick(){this.render();},
+  tick(dt){this.t+=dt; this.render();},
   render(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
-    const {g,w,h}=b, F=this.flows(), f=this.mode==='fridge';
+    const {g,w,h}=b, F=this.flows();
     g.clearRect(0,0,w,h);
     const Y=this.geo(b);
     const cx=Y.cx, bw=Y.bw;
@@ -1820,6 +1642,50 @@ const M5={
        конденсатор із ребрами вгорі, компресор посередині, випарник унизу. Точки,
        за які беруться ручки (вісь термометрів, стрілка потужності), ті самі. */
     const mw=bw*0.62;
+    /* ---- замкнений контур холодоагенту ---------------------------------
+       Це і є «як воно працює»: компресор жене гарячу пару в конденсатор,
+       там вона віддає теплоту й зріджується; дросель різко знижує тиск —
+       рідина холоне й кипить у випарнику, забираючи теплоту зсередини. */
+    const pipeR=cx+bw+14, pipeL=cx-bw-14, sucX=cx-mw-16, thrY=(hotY+coldY)/2;
+    const PATH=[[cx+mw,cy-12],[pipeR,cy-12],[pipeR,hotY],[cx+bw,hotY],
+                [cx-bw,hotY],[pipeL,hotY],[pipeL,coldY],[cx-bw,coldY],
+                [sucX,coldY],[sucX,cy-12],[cx-mw,cy-12]];
+    const seg=[],cum=[0];
+    for(let i=1;i<PATH.length;i++){
+      const L=Math.hypot(PATH[i][0]-PATH[i-1][0],PATH[i][1]-PATH[i-1][1]);
+      seg.push(L); cum.push(cum[i-1]+L);
+    }
+    const TOT=cum[cum.length-1];
+    const ptAt=d=>{
+      d=((d%TOT)+TOT)%TOT;
+      let i=1; while(i<cum.length-1&&cum[i]<d) i++;
+      const t=(d-cum[i-1])/Math.max(1e-6,seg[i-1]);
+      return [PATH[i-1][0]+(PATH[i][0]-PATH[i-1][0])*t,
+              PATH[i-1][1]+(PATH[i][1]-PATH[i-1][1])*t, i];
+    };
+    g.strokeStyle=CLR.axis; g.lineWidth=3.5; g.lineJoin='round'; g.beginPath();
+    PATH.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));
+    g.stroke();
+    /* холодоагент у русі. До дроселя він гарячий і під тиском, після —
+       холодний: колір крапок міняється рівно на дроселі. */
+    const dThr=cum[5]+(thrY-hotY);          /* рівно дросель на лівій вертикалі */
+    const NP=26, spd=this.cop()*26+40;
+    for(let i=0;i<NP;i++){
+      const d=(this.t*spd+i*TOT/NP)%TOT, q=ptAt(d);
+      const hotSide=d<dThr;
+      dot(g,q[0],q[1],3.2,hotSide?CLR.k2:CLR.k1);
+    }
+    /* дросель: різке звуження труби — саме тут падає тиск */
+    g.fillStyle=CLR.paper; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath();
+    g.moveTo(pipeL-9,thrY-10); g.lineTo(pipeL+9,thrY-2);
+    g.lineTo(pipeL+9,thrY+10); g.lineTo(pipeL-9,thrY+2); g.closePath();
+    g.fill(); g.stroke();
+    txt(g,'дросель',pipeL-14,thrY-2,{color:CLR.sec,size:10.5,bold:true,align:'right'});
+    txt(g,'тиск падає',pipeL-14,thrY+12,{color:CLR.mut,size:10,align:'right'});
+    txt(g,'гаряча пара під тиском',pipeR+8,hotY+40,{color:'#b8431a',size:10.5,bold:true});
+    txt(g,'рідина',pipeL-14,hotY+70,{color:'#b8431a',size:10.5,bold:true,align:'right'});
+    txt(g,'холодна пара',sucX+8,(coldY+cy)/2+10,{color:'#1c5cab',size:10.5,bold:true});
     const coil=(y,col,fill,lab,sub)=>{
       g.fillStyle=fill; g.strokeStyle=col; g.lineWidth=2;
       g.beginPath(); g.roundRect(cx-bw,y-22,2*bw,44,5); g.fill(); g.stroke();
@@ -1841,7 +1707,7 @@ const M5={
       txt(g,lab,cx,sub,{color:col===CLR.k2?'#b8431a':'#1c5cab',size:11.5,bold:true,align:'center'});
     };
     coil(hotY,CLR.k2,'rgba(235,104,52,.10)',
-      'конденсатор · '+(f?'кухня':'кімната')+', '+fmt(this.th,0)+' °C',hotY+36);
+      'конденсатор · кухня, '+fmt(this.th,0)+' °C',hotY+36);
     /* компресор: корпус, вал і два патрубки */
     g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
     g.beginPath(); g.roundRect(cx-mw,cy-24,2*mw,48,16); g.fill(); g.stroke();
@@ -1855,23 +1721,26 @@ const M5={
     txt(g,'компресор',cx,cy-32,{color:CLR.ink,size:12,bold:true,align:'center'});
     txt(g,'коефіцієнт '+fmt(this.cop(),2),cx,cy+38,{color:CLR.mut,size:10.5,align:'center'});
     coil(coldY,CLR.k1,'rgba(42,120,214,.10)',
-      'випарник · '+(f?'камера':'вулиця')+', '+fmt(this.tc,0)+' °C',coldY-30);
+      'випарник · камера, '+fmt(this.tc,0)+' °C',coldY-30);
     const mx=Math.max(F.Qh,1);
     const kw=q=>Math.max(2,Math.min(24,q/mx*22));
     /* стрілки теплоти виносимо за підписи вузлів, інакше вістря впирається в текст */
     const xq=Math.max(96,mw+34);
+    /* підписи потоків — на плашках: обидва коридори зайняті трубами контуру,
+       і звичайний текст лягав би просто на трубу */
     arrow(g,cx-xq,coldY-26,cx-xq,cy+28,CLR.k3,kw(F.Qc));
-    txt(g,'Qх = '+fmt(F.Qc,0)+' Вт',cx-xq-12,(coldY+cy)/2,{color:'#0d7a55',size:11.5,bold:true,align:'right'});
+    pill(g,'Qх = '+fmt(F.Qc,0)+' Вт',cx-xq,(coldY+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
     arrow(g,cx+xq,cy-28,cx+xq,hotY+26,CLR.k3,kw(F.Qh));
-    txt(g,'Qг = '+fmt(F.Qh,0)+' Вт',cx+xq+12,(hotY+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
-    arrow(g,cx+bw+20+this.P*0.06,cy,cx+bw,cy,CLR.k1,kw(F.A));
-    txt(g,'P = '+fmt(F.A,0)+' Вт',cx+bw+26+this.P*0.06,cy+4,
+    pill(g,'Qг = '+fmt(F.Qh,0)+' Вт',cx+xq,(hotY+cy)/2,{color:'#0d7a55',size:11.5,bold:true});
+    /* живлення підходить нижче горизонтального відводу контуру (cy−12),
+       інакше електрична стрілка перетинала б трубу з холодоагентом */
+    arrow(g,cx+bw+20+this.P*0.06,cy+16,cx+bw,cy+16,CLR.k1,kw(F.A));
+    txt(g,'P = '+fmt(F.A,0)+' Вт',cx+bw+36+this.P*0.06,cy+20,
       {color:'#1c5cab',size:11.5,bold:true});
     therm(g,Y.tx,Y.hotY+Y.th/2,Y.th,(this.th-20)/50,CLR.k2,'tг');
     therm(g,Y.tx,Y.coldY+Y.th/2,Y.th,(this.tc+30)/50,CLR.k1,'tх');
-    txt(g,f?'тепло переносимо з холодного в тепле — але лише за рахунок роботи'
-      :'з холодної вулиці в теплу кімнату: віддаємо більше, ніж витрачаємо',
-      12,20,{color:f?CLR.k1:CLR.k2,size:12.5,bold:true});
+    txt(g,'тепло переносимо з холодного в тепле — але лише за рахунок роботи',
+      12,20,{color:CLR.k1,size:12.5,bold:true});
     txt(g,'Qг = Qх + P — енергія не зникає й не зʼявляється, лише переноситься',
       12,36,{color:CLR.mut,size:10.5});
     shelf(g,Y.qq,this.QQ,this.q,'машина');
@@ -1888,21 +1757,19 @@ const M5={
     $('m5kTh').textContent=fmt(this.Th(),2)+' K';
     $('m5kdT').textContent=fmt(d,2)+' K';
     $('m5kCc').textContent=fmt(this.Tc()/d,2);
-    $('m5kCh').textContent=fmt(this.Th()/d,2);
     $('m5kCr').textContent=fmt(this.cop(),2);
     $('m5kQc').textContent=fmt(F.Qc,0)+' Вт';
     $('m5kQh').textContent=fmt(F.Qh,0)+' Вт';
     $('m5kBal').textContent=fmt(F.Qh-F.Qc-F.A,3)+' Вт';
   },
   charts(){
-    const f=this.mode==='fridge';
     const bc=cvx('m5cc');
     if(bc){
       const ts=[],id=[],re=[];
       for(let i=0;i<=60;i++){
         const tc=-30+50*i/60, Tc=tc+273.15, Th=Math.max(Tc+1,this.th+273.15);
         ts.push(tc);
-        const c=f?Tc/(Th-Tc):Th/(Th-Tc);
+        const c=Tc/(Th-Tc);
         id.push(Math.min(30,c)); re.push(Math.min(30,this.q*c));
       }
       const hi=Math.min(30,Math.max(...id))*1.12;
@@ -1917,10 +1784,9 @@ const M5={
       const ts=[],qc=[],a=[],qh=[];
       for(let i=0;i<=60;i++){
         const tc=-30+50*i/60, Tc=tc+273.15, Th=Math.max(Tc+1,this.th+273.15);
-        const c=this.q*(f?Tc/(Th-Tc):Th/(Th-Tc));
+        const c=this.q*Tc/(Th-Tc);
         ts.push(tc); a.push(this.P);
-        if(f){qc.push(Math.min(9000,c*this.P)); qh.push(Math.min(9000,c*this.P+this.P));}
-        else {qh.push(Math.min(9000,c*this.P)); qc.push(Math.max(0,Math.min(9000,c*this.P-this.P)));}
+        qc.push(Math.min(9000,c*this.P)); qh.push(Math.min(9000,c*this.P+this.P));
       }
       const hi=Math.max(...qh)*1.12;
       const r=drawChart(bq,{tMax:20,yMin:0,yMax:hi,yLab:'Вт',xLab:'tх, °C',xStep:10,hover:this.hq.x,
@@ -1932,7 +1798,7 @@ const M5={
   }
 };
 
-const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5};
+const MODULES={m1:M1,m2:M2,m3:M3,m5:M5};
 
 /* ===================== завантаження ===================== */
 let ACT='m1';

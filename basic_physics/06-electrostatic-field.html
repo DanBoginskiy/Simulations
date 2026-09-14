@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,11 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:340px}
-#m2scene{width:100%; height:520px; touch-action:none; cursor:grab}
-#m3scene{width:100%; height:340px}
-#m4scene{width:100%; height:340px}
-#m5scene{width:100%; height:360px}
+#m1scene{width:100%; height:430px}
+#m2scene{width:100%; height:660px; touch-action:none; cursor:grab}
+#m3scene{width:100%; height:430px}
+#m4scene{width:100%; height:660px}
+#m5scene{width:100%; height:450px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -289,22 +302,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="seg" id="m4mat">
             <button data-v="cond" class="active" style="--c:var(--k1)">провідник</button>
             <button data-v="diel" style="--c:var(--k3)">діелектрик</button>
-            <button data-v="none" style="--c:var(--k2)">порожнина (без речовини)</button>
           </div>
           <span class="lbl" id="m4state" style="font-weight:600"></span>
         </div>
         <canvas id="m4scene"></canvas>
       </div>
       <div class="panel">
-        <h3>Поле вздовж горизонтального перерізу</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4cew"><h4>напруженість уздовж перерізу, кВ/м</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>E(x)</span><span><span class="chip cC"></span>межі тіла</span></div>
-            <canvas id="m4ce"></canvas></div>
-          <div class="chartbox" id="m4cpw"><h4>потенціал уздовж перерізу, кВ</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>φ(x) — у провіднику горизонтальна ділянка</span></div>
-            <canvas id="m4cp"></canvas></div>
-          </div>
+        <div class="formulas">Обидва графіки лежать просто під кресленням і в тому самому масштабі по <var>x</var>:
+          межі тіла на картинці й злами на кривих стоять точно одна під одною.</div>
       </div>
     </div>
     <div class="side">
@@ -447,8 +452,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -1168,8 +1237,12 @@ const M3={
        виглядала однаково за будь-якого вигину, змінювалися лише підписи осей. */
     const R2MAX=1.4, BOWMAX=1.2;
     const span=Math.max(R2MAX*1.25,BOWMAX*1.6+0.2);
-    const sc=fitScale(bb.w,bb.h,140,70,span+0.25,2*BOWMAX+0.5,0,0);
-    const cx=bb.w*0.16, cy=bb.h*0.62;
+    /* У вертикальний бюджет беремо тільки те, що мусить бути видно цілком:
+       дугу обхідного шляху над віссю (вигин ≤ 1,2) і підпис заряду під нею.
+       Еквіпотенціальні кола — це поле, йому й належить виходити за край кадру,
+       а не тулитися всередині: інакше вся картина стискалася вдвічі. */
+    const sc=fitScale(bb.w,bb.h,140,46,span+0.25,BOWMAX+0.75,0,0);
+    const cx=bb.w*0.50, cy=bb.h*0.74;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc,iX:p=>(p-cx)/sc,iY:p=>(cy-p)/sc};
   });},
   Rq(q){return 16+Math.abs(q)*2.2;},
@@ -1332,8 +1405,14 @@ const M4={
   mat:'cond', E0:15, eps:4, wd:0.5,
   he:{x:null}, hp:{x:null}, tipe:null, tipp:null,
   geo(b){return frozen(this,b,bb=>{
-    const W=1.4, sc=(bb.w-90)/W, cx=bb.w/2, cy=bb.h*0.5;
-    return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc,iX:p=>(p-cx)/sc,iY:p=>(cy-p)/sc};
+    /* Картинка займає верхню частину полотна, під нею — графіки E(x) і φ(x)
+       у ТОМУ САМОМУ масштабі по x. Тому злами кривих стоять точно під межами
+       тіла: спільна функція SX і є тією гарантією збігу. */
+    const W=1.4, sc=(bb.w-140)/W, cx=bb.w/2;
+    const picH=bb.h*0.46, cy=picH*0.52;
+    const gTop=picH+16, gH=(bb.h-gTop-46)/2;
+    return {sc,cx,cy,picH,gTop,gH,
+      SX:x=>cx+x*sc,SY:y=>cy-y*sc,iX:p=>(p-cx)/sc,iY:p=>(cy-p)/sc};
   });},
   grips(){
     const b=cvx('m4scene'); if(!b) return [];
@@ -1351,7 +1430,7 @@ const M4={
   },
   GG:[['E0','E₀, кВ/м',1,40,1,CLR.k1]],
   GGD:[['E0','E₀, кВ/м',1,40,1,CLR.k1],['eps','ε',1,20,0.5,CLR.k2]],
-  gcol(b){return {x:96, W:Math.min(240,b.w*0.30), y0:b.h-40, dy:24};},
+  gcol(b){return {x:96, W:Math.min(240,b.w*0.30), y0:b.h-26, dy:20};},
   /* Смуга лежить горизонтально: поле в цьому модулі напрямлене вздовж осі x,
      і величина, яку задають, зростає в той самий бік, що й стрілки поля. */
   gbar(g,C,list){
@@ -1371,18 +1450,13 @@ const M4={
       color:m[5]||CLR.k1, hint:m[1],
       move:px=>{this[m[0]]=clamp(snap((px-C.x-3)/(C.W-6)*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);}}));
   },
-  Ein(){
-    if(this.mat==='cond') return 0;
-    if(this.mat==='none') return this.E0*1000;
-    return this.E0*1000/this.eps;
-  },
+  Ein(){return this.mat==='cond'?0:this.E0*1000/this.eps;},
+  /* поле індукованих (звʼязаних) зарядів: воно завжди протилежне зовнішньому,
+     і саме його сума із зовнішнім дає те, що лишається всередині */
+  Eind(){return this.E0*1000-this.Ein();},
   init(){
     seg('m4mat',v=>{this.mat=v;});
     grip('m4scene',this,()=>this.grips());
-    this.tipe=makeTip('m4cew'); this.tipp=makeTip('m4cpw');
-    hover('m4ce',this.he); hover('m4cp',this.hp);
-    this.he.xlab='x'; this.he.xunit='м'; this.he.xdec=2;
-    this.hp.xlab='x'; this.hp.xunit='м'; this.hp.xdec=2;
   },
   tick(){this.render();},
   render(){this.scene(); this.table(); this.charts();},
@@ -1390,20 +1464,29 @@ const M4={
     const b=cvx('m4scene'); if(!b) return;
     const {g,w,h}=b, G=this.geo(b);
     const sc=G.sc, cx=G.cx, cy=G.cy;
-    const bw=this.wd*sc, bh=h*0.5;
+    const bw=this.wd*sc, bh=G.picH*0.72;
     const Ein=this.Ein(), inside=Ein>1;
     g.clearRect(0,0,w,h);
-    /* пластини джерела поля */
-    g.fillStyle='rgba(42,120,214,.10)'; g.fillRect(20,cy-bh/2-24,14,bh+48);
-    g.fillStyle='rgba(235,104,52,.10)'; g.fillRect(w-34,cy-bh/2-24,14,bh+48);
-    g.strokeStyle=CLR.k1; g.lineWidth=2; g.strokeRect(20,cy-bh/2-24,14,bh+48);
-    g.strokeStyle=CLR.k2; g.strokeRect(w-34,cy-bh/2-24,14,bh+48);
-    txt(g,'+',27,cy-bh/2-30,{color:'#1c5cab',size:14,bold:true,align:'center'});
-    txt(g,'−',w-27,cy-bh/2-30,{color:'#b8431a',size:14,bold:true,align:'center'});
+    /* Пластини вважаємо нескінченно великими: вони йдуть від краю до краю
+       картинки й розмиваються на її межах, а поле між ними — строго однорідне,
+       без крайових ефектів. Саме за такої ідеалізації E₀ не залежить від y. */
+    const pTop=4, pBot=G.picH-4;
+    const fade=(x,col)=>{
+      const gr=g.createLinearGradient(0,pTop,0,pBot);
+      gr.addColorStop(0,'rgba(255,255,255,0)'); gr.addColorStop(0.12,col);
+      gr.addColorStop(0.88,col); gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr; g.fillRect(x,pTop,14,pBot-pTop);
+    };
+    fade(20,'rgba(42,120,214,.55)');
+    fade(w-34,'rgba(235,104,52,.55)');
+    txt(g,'+',27,pTop+26,{color:'#1c5cab',size:14,bold:true,align:'center'});
+    txt(g,'−',w-27,pTop+26,{color:'#b8431a',size:14,bold:true,align:'center'});
+    txt(g,'пластини вважаємо нескінченними — поле між ними однорідне',
+      44,pBot-4,{color:CLR.mut,size:10});
     /* лінії зовнішнього поля */
-    const NY=7;
+    const NY=9;
     for(let i=0;i<NY;i++){
-      const y=cy-bh/2+bh*(i+0.5)/NY;
+      const y=pTop+14+(pBot-pTop-28)*(i+0.5)/NY;
       g.strokeStyle='rgba(42,120,214,.34)'; g.lineWidth=1.4;
       /* ліворуч від тіла */
       g.beginPath(); g.moveTo(40,y); g.lineTo(cx-bw/2,y); g.stroke();
@@ -1425,6 +1508,23 @@ const M4={
     g.fillStyle={cond:'rgba(42,120,214,.10)',diel:'rgba(27,175,122,.10)',none:'rgba(0,0,0,0)'}[this.mat];
     g.strokeStyle=col; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-bw/2,cy-bh/2,bw,bh,4); g.fill(); g.stroke();
+    /* ---- протилежне поле індукованих зарядів ---------------------------
+       Усередині речовини діють два поля: зовнішнє E₀ (праворуч) і поле
+       зміщених зарядів E′ (ліворуч). У провіднику вони рівні за модулем —
+       тому сума нульова; у діелектрику E′ менше, і лишається E₀/ε. */
+    {
+      const kE=Math.min(bw*0.42,46)/Math.max(1,this.E0*1000);
+      const yA=cy-bh*0.22, yB=cy+bh*0.16;
+      const L0=this.E0*1000*kE, Li=this.Eind()*kE;
+      arrow(g,cx-L0/2,yA,cx+L0/2,yA,CLR.k1,2.6);
+      txt(g,'E₀',cx+L0/2+7,yA+4,{color:'#1c5cab',size:11,bold:true});
+      if(Li*1>2){
+        arrow(g,cx+Li/2,yB,cx-Li/2,yB,CLR.k2,2.6);
+        txt(g,'E′',cx-Li/2-7,yB+4,{color:'#b8431a',size:11,bold:true,align:'right'});
+      }
+      pill(g,this.mat==='cond'?'E₀ + E′ = 0':'E₀ + E′ = E₀/ε',cx,cy+bh*0.40,
+        {color:CLR.ink,size:11,bold:true});
+    }
     /* індуковані заряди на межах */
     if(this.mat!=='none'){
       const n=6;
@@ -1449,14 +1549,67 @@ const M4={
         'вільні електрони зміщуються, доки їхнє поле повністю не зрівноважить зовнішнє'],
       diel:['діелектрик: поле слабшає в ε разів',CLR.k3,
         'заряди не вільні — вони лише зміщуються в межах молекул, тому поле послаблюється, але лишається'],
-      none:['порожнина: поле не змінюється',CLR.k2,
-        'без речовини нічому перерозподілятися — усередині таке саме поле, як і зовні']}[this.mat];
+      }[this.mat];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
-    pill(g,'E = '+fmt(Ein/1000,2)+' кВ/м',cx,cy+bh/2+24,
+    pill(g,'E всередині = '+fmt(Ein/1000,2)+' кВ/м',cx,cy+bh/2+20,
       {color:inside?CLR.ink:CLR.k1,size:12,bold:true});
+    this.plots(g,G,w,h);
     this.gbar(g,this.gcol(b),this.mat==='diel'?this.GGD:this.GG);
     for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  /* ---- E(x) і φ(x) просто на полотні сцени ------------------------------
+     Малюємо їх через ту саму SX, що й картинку, тож межі тіла на кресленні
+     й злами на кривих стоять точно одна під одною. Окремі полотна графіків
+     мали власні поля й масштаб, і збіг там був неможливий у принципі. */
+  plots(g,G,w,h){
+    const SX=G.SX, W=1.4, half=W/2, d=this.wd/2;
+    const E0=this.E0, Ein=this.Ein()/1000;
+    const x0=SX(-half), x1=SX(half);
+    const panel=(top,H,yLab,title)=>{
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x0,top+H+.5); g.lineTo(x1,top+H+.5); g.stroke();
+      g.strokeStyle=CLR.axis;
+      g.beginPath(); g.moveTo(x0+.5,top); g.lineTo(x0+.5,top+H); g.stroke();
+      txt(g,title,x0,top-6,{color:CLR.sec,size:10.5,bold:true});
+      txt(g,yLab,x0-6,top+8,{color:CLR.mut,size:9.5,align:'right'});
+      /* межі тіла — та сама координата, що й на кресленні */
+      g.strokeStyle=CLR.k3; g.lineWidth=1; g.setLineDash([4,3]);
+      g.beginPath();
+      g.moveTo(SX(-d),top); g.lineTo(SX(-d),top+H);
+      g.moveTo(SX(d),top); g.lineTo(SX(d),top+H); g.stroke(); g.setLineDash([]);
+    };
+    /* --- E(x): ступінька рівно на межах тіла --- */
+    const t1=G.gTop, H1=G.gH-18;
+    panel(t1,H1,'кВ/м','напруженість E вздовж перерізу');
+    const eY=v=>t1+H1-v/(E0*1.15)*H1;
+    g.strokeStyle=CLR.k1; g.lineWidth=2.5;
+    g.beginPath();
+    g.moveTo(SX(-half),eY(E0)); g.lineTo(SX(-d),eY(E0));
+    g.lineTo(SX(-d),eY(Ein)); g.lineTo(SX(d),eY(Ein));
+    g.lineTo(SX(d),eY(E0)); g.lineTo(SX(half),eY(E0));
+    g.stroke();
+    txt(g,fmt(E0,0),x0-6,eY(E0)+4,{color:'#1c5cab',size:9.5,align:'right'});
+    txt(g,fmt(Ein,1),x0-6,eY(Ein)+4,{color:'#1c5cab',size:9.5,align:'right'});
+    /* --- φ(x): усередині провідника горизонтальна ділянка --- */
+    const t2=G.gTop+G.gH+14, H2=G.gH-18;
+    panel(t2,H2,'кВ','потенціал φ вздовж перерізу');
+    /* φ спадає зі сталим нахилом E₀ поза тілом і з нахилом E всередині */
+    const dropOut=E0*(half-d), dropIn=Ein*2*d;
+    const total=2*dropOut+dropIn;
+    const pY=v=>t2+ (total>1e-9? (1-v/total)*H2 : H2*0.5);
+    g.strokeStyle=CLR.k2; g.lineWidth=2.5;
+    g.beginPath();
+    g.moveTo(SX(-half),pY(total));
+    g.lineTo(SX(-d),pY(total-dropOut));
+    g.lineTo(SX(d),pY(total-dropOut-dropIn));
+    g.lineTo(SX(half),pY(0));
+    g.stroke();
+    if(this.mat==='cond')
+      pill(g,'усередині φ стала — тіло еквіпотенціальне',(SX(-d)+SX(d))/2,
+        pY(total-dropOut)-14,{color:'#b8431a',size:10.5,bold:true});
+    txt(g,fmt(total,2),x0-6,pY(total)+4,{color:'#b8431a',size:9.5,align:'right'});
+    txt(g,'0',x0-6,pY(0)+4,{color:'#b8431a',size:9.5,align:'right'});
   },
   table(){
     $('m4vE0').textContent=fmt(this.E0,0)+' кВ/м';
@@ -1470,49 +1623,13 @@ const M4={
     $('m4kRat').textContent=Ein<1?'повністю екрановане':'у '+fmt(E0/Ein,2)+' раза';
     $('m4kEi').textContent=fmt((E0-Ein)/1000,2)+' кВ/м';
     $('m4kWhat').textContent={cond:'вільні заряди виходять на поверхню',
-      diel:'молекули поляризуються, заряди зміщуються всередині',
-      none:'нічого — речовини немає'}[this.mat];
+      diel:'молекули поляризуються, заряди зміщуються всередині'}[this.mat];
     $('m4kU').textContent=fmt(Ein*this.wd/1000,3)+' кВ';
-    $('m4kScr').textContent={cond:'так, повністю',diel:'частково',none:'ні'}[this.mat];
+    $('m4kScr').textContent={cond:'так, повністю',diel:'частково'}[this.mat];
     const sig=8.854e-12*(E0-Ein);
     $('m4kSig').textContent=sci(sig,3)+' Кл/м²';
   },
-  charts(){
-    const E0=this.E0, Ein=this.Ein()/1000;
-    const W=1.4, x0=-W/2, x1=W/2;
-    const ts=[],ye=[],yp=[];
-    let phi=0;
-    for(let i=0;i<=140;i++){
-      const x=x0+(x1-x0)*i/140;
-      const inBody=Math.abs(x)<this.wd/2;
-      ts.push(x); ye.push(inBody?Ein:E0);
-    }
-    /* потенціал інтегруємо від лівого краю */
-    for(let i=0;i<ts.length;i++){
-      if(i>0){
-        const dx=ts[i]-ts[i-1];
-        phi-=(ye[i]+ye[i-1])/2*dx;
-      }
-      yp.push(phi);
-    }
-    const be=cvx('m4ce');
-    if(be){
-      const r=drawChart(be,{tMax:x1,yMin:0,yMax:E0*1.2,yLab:'кВ/м',xLab:'x, м',xStep:0.2,xDec:1,
-        hover:this.he.x,
-        series:[{ts,ys:ye,color:CLR.k1,label:'E'},
-                {ts:[-this.wd/2,-this.wd/2],ys:[0,E0*1.2],color:CLR.k3,label:'',dash:[4,3]},
-                {ts:[this.wd/2,this.wd/2],ys:[0,E0*1.2],color:CLR.k3,label:'межі',dash:[4,3]}]});
-      showTip(this.tipe,r,'кВ/м',this.he,[['E',CLR.k1],['',CLR.k3],['межа',CLR.k3]],2);
-    }
-    const bp=cvx('m4cp');
-    if(bp){
-      const lo=Math.min(...yp), hi=Math.max(...yp);
-      const r=drawChart(bp,{tMax:x1,yMin:lo*1.08,yMax:hi+Math.abs(hi-lo)*0.1+0.1,yLab:'кВ',
-        xLab:'x, м',xStep:0.2,xDec:1,yDec:1,hover:this.hp.x,
-        series:[{ts,ys:yp,color:CLR.k2,label:'φ'}]});
-      showTip(this.tipp,r,'кВ',this.hp,[['φ',CLR.k2]],2);
-    }
-  }
+  charts(){}
 };
 
 /* ===================== МОДУЛЬ 5 · блискавка і вістря ===================== */
@@ -1598,14 +1715,10 @@ const M5={
     g.beginPath(); g.moveTo(mx,gy); g.lineTo(mx,SY(this.h)); g.stroke();
     dot(g,mx,SY(this.h),Math.max(2.5,Math.min(10,this.R/3)),CLR.k2);
     txt(g,'h = '+fmt(this.h,0)+' м',mx+10,SY(this.h)-10,{color:'#b8431a',size:11,bold:true});
-    /* згущення ліній біля вістря */
-    for(let i=0;i<9;i++){
-      const a=-Math.PI/2+(i-4)*0.16;
-      g.strokeStyle='rgba(42,120,214,.5)'; g.lineWidth=1.4;
-      g.beginPath();
-      g.moveTo(mx+Math.cos(a)*8,SY(this.h)+Math.sin(a)*8);
-      g.lineTo(mx+Math.cos(a)*70,SY(this.h)+Math.sin(a)*70); g.stroke();
-    }
+    /* Ліній від вістря до хмари тут немає: доки пробою не сталося, між
+       громовідводом і хмарою нічого не проведено — є лише поле, і його
+       показують вертикальні силові лінії вище. Сам розряд малюється окремо
+       й тільки тоді, коли напруженість справді перевищила пробійну. */
     /* зона захисту */
     const zone=1.5*this.h;
     g.strokeStyle=CLR.k3; g.lineWidth=1.5; g.setLineDash([5,4]);

@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,13 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:340px}
-#m2scene{width:100%; height:320px}
-#m3scene{width:100%; height:360px}
-#m4scene{width:100%; height:340px}
-#m5scene{width:100%; height:420px; touch-action:none; cursor:grab}
+#m1scene{width:100%; height:430px}
+#m2scene{width:100%; height:400px}
+#m3scene{width:100%; height:450px}
+#m4scene{width:100%; height:430px}
+#m5scene{width:100%; height:530px; touch-action:none; cursor:grab}
+/* ============ модуль 6 ============ */
+#m6scene{width:100%; height:520px; touch-action:none}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -125,6 +140,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <button data-m="m3">3 · Сила Лоренца</button>
   <button data-m="m4">4 · Мас-спектрометр</button>
   <button data-m="m5">5 · Магнітосфера Землі</button>
+  <button data-m="m6">6 · Векторний добуток</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -378,10 +394,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
+          <div class="seg" id="m5what">
+            <button data-v="sphere" class="active" style="--c:var(--k1)">магнітосфера</button>
+            <button data-v="dyn" style="--c:var(--k2)">звідки береться поле</button>
+          </div>
           <button class="ibtn" id="m5play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m5re" title="заново">↺</button>
           <span class="lbl" id="m5t"></span>
-          <span class="lbl">перетягуйте сферу, щоб змінити точку огляду</span>
+          <span class="lbl" id="m5hint">перетягуйте сферу, щоб змінити точку огляду</span>
         </div>
         <canvas id="m5scene"></canvas>
       </div>
@@ -401,7 +421,21 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>радіус оболонки</span><b id="m5kR"></b></div>
         <div class="kv"><span>широта, де оболонка торкається поверхні</span><b id="m5kLat"></b></div>
       </div>
-      <div class="panel">
+      <div class="panel" id="m5pDyn" hidden>
+        <h3>Геодинамо: звідки поле</h3>
+        <div class="kv"><span>радіус Землі</span><b>6371 км</b></div>
+        <div class="kv"><span>рідке зовнішнє ядро — розплавлене залізо<span class="badge">саме воно провідник</span></span><b>2900…5150 км углиб</b></div>
+        <div class="kv"><span>тверде внутрішнє ядро</span><b>радіус 1220 км</b></div>
+        <div class="kv"><span>температура на межі ядра</span><b>≈ 5000 K</b></div>
+        <div class="kv"><span>період обертання (зоряна доба)</span><b>23 год 56 хв</b></div>
+        <div class="kv"><span>індукція поля на поверхні</span><b>30…60 мкТл</b></div>
+        <div class="formulas">Мантія — це тверда силікатна порода, вона струму майже не проводить.
+        Провідник тут — рідке зовнішнє ядро: розплавлене залізо. Тепло з ядра жене його вгору,
+        обертання Землі закручує ці потоки силою Коріоліса, і рух провідної рідини підтримує
+        кільцеві струми. Струми й створюють магнітне поле — а поле, своєю чергою, діє на рідину,
+        що тече. Ця самопідтримувана петля й зветься <b>геодинамо</b>.</div>
+      </div>
+      <div class="panel" id="m5pWind">
         <h3>Частинка сонячного вітру</h3>
         <div class="kv"><span>швидкість</span><b id="m5kv"></b></div>
         <div class="kv"><span>кінетична енергія протона</span><b id="m5kE"></b></div>
@@ -409,6 +443,69 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>період обертання навколо лінії поля</span><b id="m5kT"></b></div>
         <div class="kv"><span>де висипаються частинки<span class="badge">там і сяйво</span></span><b id="m5kAur"></b></div>
         <div class="formulas">радіус обертання набагато менший за розмір магнітосфери — тому частинка «намотується» на лінію поля й повторює її форму</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= МОДУЛЬ 6 ================= -->
+<section class="module" id="m6">
+  <p class="caption">Векторний добуток <var>c</var> = <var>a</var> × <var>b</var> — це вектор, а не число.
+  Його модуль дорівнює площі паралелограма, побудованого на множниках (<var>ab</var>·sin <var>α</var>),
+  а напрям — перпендикулярний до їхньої площини й визначається правилом правої руки.
+  Саме так знаходять напрям сили Ампера та сили Лоренца.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="seg" id="m6pair">
+            <button data-v="ab" class="active" style="--c:var(--k3)">a × b</button>
+            <button data-v="lor" style="--c:var(--k2)">v × B → сила Лоренца</button>
+            <button data-v="amp" style="--c:var(--k1)">I l × B → сила Ампера</button>
+          </div>
+          <div class="seg" id="m6q" hidden>
+            <button data-v="pos" class="active" style="--c:var(--k2)">заряд +</button>
+            <button data-v="neg" style="--c:var(--k1)">заряд −</button>
+          </div>
+          <button class="ibtn" id="m6play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m6re" title="почати спочатку">↺</button>
+          <span class="lbl" id="m6t"></span>
+        </div>
+        <canvas id="m6scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Як знаходять напрям</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m6c1w"><h4>модуль добутку від кута між множниками</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>|a × b| = ab·sin α</span><span><span class="chip cI"></span>поточний α</span></div>
+            <canvas id="m6c1"></canvas></div>
+          <div class="chartbox" id="m6c2w"><h4>проєкції множників одна на одну</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>поперечна складова (·sin <var>α</var>) — вона й «працює»</span><span><span class="chip cB"></span>поздовжня (·cos <var>α</var>) — внеску не дає</span></div>
+            <canvas id="m6c2"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Що задано на сцені</h3>
+        <div class="kv"><span id="m6la">|<var>a</var>| — перший множник</span><b id="m6va"></b></div>
+        <div class="kv"><span id="m6lb">|<var>b</var>| — другий множник</span><b id="m6vb"></b></div>
+        <div class="kv"><span><var>α</var> — кут між множниками<span class="badge">вістря другого вектора</span></span><b id="m6val"></b></div>
+        <div class="formulas">тягніть вістря другого вектора — воно ходить по площині множників і задає кут</div>
+      </div>
+      <div class="panel">
+        <h3>Результат</h3>
+        <div class="kv"><span>sin <var>α</var></span><b id="m6ksin"></b></div>
+        <div class="kv"><span id="m6lc">|<var>c</var>| = |<var>a</var>||<var>b</var>|·sin <var>α</var></span><b id="m6kc"></b></div>
+        <div class="kv"><span>площа паралелограма на <var>a</var> і <var>b</var><span class="badge">це те саме число</span></span><b id="m6karea"></b></div>
+        <div class="kv"><span>напрям <var>c</var></span><b id="m6kdir"></b></div>
+        <div class="kv"><span>перевірка <var>c</var> ⟂ <var>a</var> і <var>c</var> ⟂ <var>b</var></span><b id="m6kperp"></b></div>
+        <div class="formulas" id="m6fx"></div>
+      </div>
+      <div class="panel">
+        <h3>Правило правої руки</h3>
+        <div class="formulas" id="m6rule"></div>
       </div>
     </div>
   </div>
@@ -473,8 +570,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -896,6 +1057,14 @@ const AMU=1.66053906660e-27;      /* атомна одиниця маси, кг 
 const B_EARTH=3.0e-5;             /* екваторіальне поле Землі на поверхні, Тл */
 const R_EARTH=6.371e6;
 
+/* ---- віджет векторного добутку -----------------------------------------
+   Сила Ампера й сила Лоренца — векторні добутки: F = I·l×B та F = q·v×B.
+   На плоскому кресленні їхня «перпендикулярність до обох» не видно зовсім,
+   тому поруч зі сценою малюємо маленьку тривісну побудову: два множники й
+   результат, що стоїть перпендикулярно до площини, у якій вони лежать.
+   Проєкція коса й повільно обертається — саме обертання й робить із трьох
+   відрізків об'ємну картинку. */
+
 /* ===================== МОДУЛЬ 1 · поле струмів ===================== */
 const M1={
   kind:'wire', I:10, r:5, R:6, n:1000,       /* r і R у см */
@@ -913,7 +1082,7 @@ const M1={
          розмір при будь-якому R, і залежність B від R була б невидима. */
       scW:Math.min(bb.w*0.36,bb.h*0.42)/20,
       scL:Math.min(bb.w*0.3,bb.h*0.34)/20,
-      scS:Math.min(bb.w*0.34,bb.h*0.2)/20,
+      scS:Math.min(bb.w*0.34,bb.h*0.34)/20,
       ix:bb.w*0.07, iy:bb.h-42,
       nx:bb.w*0.30, ny:bb.h-24};
   });},
@@ -994,6 +1163,21 @@ const M1={
         g.stroke();
         arrow(g,cx+off*this.R*sc,cy+10,cx+off*this.R*sc,cy-10,CLR.k3,1.6);
       }
+      /* ---- площина, у якій лежить виток ---------------------------------
+         Потік і напрям поля визначає саме вона: нормаль до площини витка й
+         показує, куди дивиться B у центрі. Без площини еліпс читався просто
+         як плаский овал, і нахил був невидимий. */
+      {
+        const rx=this.R*sc, ry=this.R*sc*0.32, pd=rx*1.32, pe=ry*1.32;
+        g.fillStyle='rgba(42,120,214,.07)';
+        g.beginPath(); g.ellipse(cx,cy,pd,pe,0,0,7); g.fill();
+        g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+        g.beginPath(); g.ellipse(cx,cy,pd,pe,0,0,7); g.stroke(); g.setLineDash([]);
+        txt(g,'площина витка',cx+pd+6,cy+4,{color:CLR.mut,size:10});
+        /* нормаль n до площини — по ній і напрямлене B у центрі */
+        arrow(g,cx,cy,cx,cy-rx*0.85,CLR.ink,2.2);
+        txt(g,'n',cx+7,cy-rx*0.85+4,{color:CLR.ink,size:11.5,bold:true});
+      }
       dot(g,cx,cy,5,CLR.ink,'#fff');
       txt(g,'центр витка',cx,cy+this.R*sc*0.32+22,{color:CLR.sec,size:11,bold:true,align:'center'});
     } else {
@@ -1002,10 +1186,36 @@ const M1={
       /* витків малюємо стільки, скільки їх задано на метр — за їхнім
          правим краєм і тягнуть густину намотки */
       const N=Math.max(4,Math.round(this.n/160));
-      for(let i=0;i<N;i++){
-        const x=cx-L/2+L*i/(N-1);
-        g.strokeStyle=CLR.k1; g.lineWidth=2.4;
-        g.beginPath(); g.ellipse(x,cy,rr*0.28,rr,0,0,7); g.stroke();
+      /* Витки — це одна суцільна спіраль, а не стос окремих кілець: саме тому
+         струм і обходить усі витки в один бік. Малюємо неперервну лінію, у
+         якої видима лише передня половина кожного оберту, і додаємо кінці,
+         якими соленоїд і вмикають у коло. */
+      /* Гвинтова лінія одним розчерком: x іде рівномірно вздовж осі, а точка
+         водночас обходить коло радіуса rr. Саме так намотано справжній
+         соленоїд — це один дріт, а не стос окремих кілець. */
+      const TT=N*2*Math.PI, KK=Math.max(240,N*36);
+      /* Розмах по x має бути сумірним із кроком намотки, інакше гвинтова лінія
+         вироджується у хвилю замість котушки. */
+      const xm=Math.min(rr*0.5,L/N*0.6);
+      g.strokeStyle=CLR.k1; g.lineWidth=2.2; g.lineJoin='round';
+      g.beginPath();
+      for(let k=0;k<=KK;k++){
+        const t=TT*k/KK;
+        const x=cx-L/2+L*t/TT+xm*Math.sin(t);
+        const y=cy+rr*Math.cos(t);
+        k?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.stroke();
+      /* підвідні кінці — ними соленоїд і вмикають у коло */
+      g.beginPath();
+      g.moveTo(cx-L/2,cy+rr); g.lineTo(cx-L/2-26,cy+rr+18);
+      g.moveTo(cx+L/2+xm*Math.sin(TT),cy+rr*Math.cos(TT));
+      g.lineTo(cx+L/2+26,cy-rr-18);
+      g.stroke();
+      /* напрям струму у витках */
+      for(const f of [0.2,0.5,0.8]){
+        const x=cx-L/2+L*f;
+        arrow(g,x-7,cy+rr,x+7,cy+rr,CLR.k1,1.6);
       }
       /* однорідне поле всередині */
       for(const off of [-0.6,-0.2,0.2,0.6]){
@@ -1120,7 +1330,7 @@ const M2={
     const b=cvx('m2scene'); if(!b) return [];
     const Q=this.geo(b);
     if(this.mode==='one'){
-      const A=this.a*DEG, L=this.l*4;
+      const A=this.a*DEG, L=this.l*7;
       const dx=Math.cos(A-Math.PI/2)*L/2, dy=Math.sin(A-Math.PI/2)*L/2;
       return [
         /* кінець провідника задає одразу і довжину, і кут до поля */
@@ -1128,7 +1338,7 @@ const M2={
          hint:'довжина провідника й кут до поля',
          move:(px,py)=>{
            const ex=px-Q.cx, ey=py-Q.cy, d=Math.hypot(ex,ey);
-           this.l=clamp(snap(d*2/4,1),2,40);
+           this.l=clamp(snap(d*2/7,1),2,40);
            this.a=clamp(snap((Math.atan2(ey,ex)/DEG+90+360)%360,5),0,180);}},
         {id:'I', x:Q.ix, y:Q.by-this.I/20*Q.Bh, r:8, color:CLR.k1, hint:'сила струму',
          move:(px,py)=>{this.I=clamp(snap((Q.by-py)/Q.Bh*20,0.5),0.5,20);}},
@@ -1154,7 +1364,8 @@ const M2={
     hover('m2ca',this.ha); hover('m2ci',this.hi);
     this.showMode();
   },
-  tick(){this.render();},
+  t:0,
+  tick(dt){this.t+=dt; this.render();},
   render(){
     if(this.mode==='one'){this.sceneOne(); this.tableOne();}
     else {this.sceneTwo(); this.tableTwo();}
@@ -1166,26 +1377,30 @@ const M2={
     const cx=Q.cx, cy=Q.cy;
     g.clearRect(0,0,w,h);
     /* однорідне поле — хрестики (від нас) */
-    for(let i=0;i<7;i++){
+    for(let i=0;i<8;i++){
       for(let j=0;j<5;j++){
-        const x=w*0.16+i*w*0.1, y=h*0.2+j*h*0.16;
+        const x=w*0.05+i*w*0.115, y=h*0.16+j*h*0.165;
         g.strokeStyle='rgba(27,175,122,.55)'; g.lineWidth=1.4;
         g.beginPath(); g.moveTo(x-4,y-4); g.lineTo(x+4,y+4);
         g.moveTo(x+4,y-4); g.lineTo(x-4,y+4); g.stroke();
       }
     }
-    txt(g,'B = '+fmt(this.B,2)+' Тл, від нас',w-12,h-10,{color:'#0d7a55',size:11,bold:true,align:'right'});
+    txt(g,'B = '+fmt(this.B,2)+' Тл, від нас',12,h-10,{color:'#0d7a55',size:11,bold:true});
     /* провідник під кутом α до поля — у площині малюнка */
-    const A=this.a*DEG, L=this.l*4;
+    const A=this.a*DEG, L=this.l*7;
     const dx=Math.cos(A-Math.PI/2)*L/2, dy=Math.sin(A-Math.PI/2)*L/2;
     g.strokeStyle=CLR.k1; g.lineWidth=5;
     g.beginPath(); g.moveTo(cx-dx,cy-dy); g.lineTo(cx+dx,cy+dy); g.stroke();
     arrow(g,cx,cy,cx+dx*0.7,cy+dy*0.7,CLR.k1,2.5);
     txt(g,'I = '+fmt(this.I,1)+' А',cx+dx*0.8+8,cy+dy*0.8,{color:'#1c5cab',size:11.5,bold:true});
     /* сила Ампера — перпендикулярно до провідника й до B, тобто в площині */
-    const Fmax=2*20*0.4;
-    const fl=Math.min(90,Math.abs(F)/Fmax*90);
-    if(fl>4){
+    /* Проєктна межа для стрілки: 4 Н. Повний розмах діапазону (до 16 Н) робив
+       стрілку за типових значень коротшою за вістря, і сцена помилково писала
+       «сили немає» там, де сила була. Те, чи є сила, тепер вирішує кут, а не
+       довжина в пікселях. */
+    const Fmax=4;
+    const fl=Math.min(96,Math.abs(F)/Fmax*96);
+    if(Math.abs(Math.sin(A))>0.02){
       const fx=Math.cos(A)*fl, fy=Math.sin(A)*fl;
       arrow(g,cx,cy,cx+fx,cy+fy,CLR.k3,3);
       txt(g,'F = '+fmt(F,3)+' Н',cx+fx+(fx<0?-8:8),cy+fy+(fy<0?-6:16),
@@ -1208,6 +1423,11 @@ const M2={
     gauge(g,Q.bx,Q.by,Q.Bh,this.B/2,CLR.k3,'B');
     txt(g,fmt(this.I,1)+' А',Q.ix,Q.by+30,{color:'#1c5cab',size:10,bold:true,align:'center'});
     txt(g,fmt(this.B,2)+' Тл',Q.bx,Q.by+30,{color:'#0d7a55',size:10,bold:true,align:'center'});
+    /* векторний добуток I·l×B — окремою тривісною побудовою */
+    txt(g,'напрям F — за правилом правої руки для I l × B;',w*0.66,h*0.64,
+      {color:CLR.mut,size:10.5,align:'center'});
+    txt(g,'уся побудова — на вкладці «6 · Векторний добуток»',w*0.66,h*0.64+15,
+      {color:CLR.mut,size:10.5,align:'center'});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   sceneTwo(){
@@ -1228,13 +1448,49 @@ const M2={
       txt(g,lab+' = '+fmt(I,0)+' А',x0-8,y+4,
         {color:col===CLR.k1?'#1c5cab':'#b8431a',size:11.5,bold:true,align:'right'});
     };
-    wire(cy-sep/2,this.I1,CLR.k1,'I₁');
-    wire(cy+sep/2,this.I2,CLR.k2,'I₂');
-    /* поле першого провідника в місці другого */
-    g.strokeStyle=CLR.k3; g.lineWidth=1.4;
-    for(const rr of [sep/2,sep,sep*1.5]){
-      g.beginPath(); g.arc(w*0.32,cy-sep/2,rr,0,7); g.stroke();
+    /* ---- поле першого провідника ------------------------------------------
+       Обидва провідники лежать у площині креслення, тож поле першого в місці
+       другого напрямлене ПОПЕРЕК цієї площини: під провідником — від нас,
+       над ним — на нас. Раніше тут малювали три однакові суцільні кола
+       навколо точки на першому провіднику — так поле виглядає лише в
+       поперечному перерізі, а в цьому, бічному, вигляді кола не означали
+       нічого, та ще й були того самого зеленого кольору, що й стрілки сили.
+       Тепер це позначки ⊗ і ⊙ кольору свого провідника, і вони бліднуть із
+       відстанню так само, як спадає саме поле, — за законом 1/r. */
+    const y1=cy-sep/2, y2=cy+sep/2, right=this.I1>=0;
+    const mark=(x,y,r,into,col)=>{
+      g.strokeStyle=col; g.lineWidth=1.4;
+      g.beginPath(); g.arc(x,y,r,0,7); g.stroke();
+      if(into){
+        g.beginPath();
+        g.moveTo(x-r*0.66,y-r*0.66); g.lineTo(x+r*0.66,y+r*0.66);
+        g.moveTo(x+r*0.66,y-r*0.66); g.lineTo(x-r*0.66,y+r*0.66); g.stroke();
+      } else dot(g,x,y,Math.max(1.4,r*0.34),col);
+    };
+    for(const k of [0.5,1,1.5,2.2]){
+      for(const sgn of [1,-1]){
+        const yy=y1+sgn*k*sep;
+        if(yy<58||yy>h-80) continue;
+        if(Math.abs(yy-y2)<11) continue;          /* тут проходить сам провідник */
+        const al=Math.min(0.8,0.34/k);
+        const into=(sgn>0)===right;               /* під провідником — від нас */
+        for(let i=0;i<7;i++){
+          const xx=x0+26+(x1-x0-52)*i/6;
+          mark(xx,yy,5.2,into,'rgba(42,120,214,'+al.toFixed(2)+')');
+        }
+      }
     }
+    wire(y1,this.I1,CLR.k1,'I₁');
+    wire(y2,this.I2,CLR.k2,'I₂');
+    /* саме поле першого провідника в місці другого — те, що входить у F = I₂lB₁ */
+    const bx2=w*0.30;
+    mark(bx2,y2,8.5,right,'rgba(42,120,214,.95)');
+    /* пігулка, а не голий підпис: під ним проходить ряд позначок поля */
+    pill(g,'B₁ = '+sci(this.B1(),2)+' Тл',bx2+62,y2-13,
+      {color:'#1c5cab',size:11,bold:true});
+    txt(g,right?'⊗ поле I₁ під провідником — від нас, ⊙ над ним — на нас'
+               :'⊙ поле I₁ під провідником — на нас, ⊗ над ним — від нас',
+      12,h-10,{color:CLR.mut,size:10.5});
     /* сили */
     const fl=Math.min(56,Math.max(10,F*4e5));
     const dir=same?1:-1;
@@ -1489,6 +1745,11 @@ const M3={
       12,20,{color:col,size:12.5,bold:true});
     txt(g,'сила Лоренца весь час перпендикулярна до швидкості, тому змінює лише напрям руху',
       12,36,{color:CLR.mut,size:10.5});
+    /* векторний добуток q·v×B — окремою тривісною побудовою */
+    txt(g,'напрям F — за правилом правої руки для v × B;',w*0.78,h*0.56,
+      {color:CLR.mut,size:10.5,align:'center'});
+    txt(g,'уся побудова — на вкладці «6 · Векторний добуток»',w*0.78,h*0.56+15,
+      {color:CLR.mut,size:10.5,align:'center'});
   },
   table(){
     $('m3vp').textContent=this.P().n;
@@ -1558,7 +1819,10 @@ const M4={
   RREF:20*AMU*(150e3/0.05)/(QE*0.3),
   geo(b){return frozen(this,b,bb=>{
     const r1=this.rad(this.A1), r2=this.rad(this.A2);
-    const sc=Math.min(bb.w*0.3,bb.h*0.36)/this.RREF;
+    /* Півколо опорного іона має вміститися по висоті ЦІЛКОМ: від щілини вниз
+       іде 2r, а не r. Раніше масштаб брався з r, і точки виходу — те, заради
+       чого прилад і будують, — опинялися за краєм кадру. */
+    const sc=Math.min(bb.w*0.30,(bb.h*0.60)/2)/this.RREF;
     return {sc,selX0:bb.w*0.08,selX1:bb.w*0.4,cy:bb.h*0.32,r1,r2,
       /* Шкали зсунуто праворуч: дуги іонів виходять із щілини на 0,4·w і сягають
          щонайменше 0,59·w, тож шкала поля селектора на 0,56·w опинялася просто
@@ -1641,6 +1905,26 @@ const M4={
     };
     arcOf(r1,CLR.k1,this.A1);
     arcOf(r2,CLR.k2,this.A2);
+    /* ---- точка входу й точка виходу -------------------------------------
+       Прилад міряє саме відстань між ними: іон входить у камеру крізь щілину,
+       описує півколо й виходить на детектор на відстані 2r від входу. Звідси
+       й рахують масу. */
+    dot(g,cxc,cyc,5.5,CLR.ink,'#fff');
+    txt(g,'точка входу',cxc+12,cyc-6,{color:CLR.ink,size:10.5,bold:true});
+    txt(g,'щілина селектора',cxc+12,cyc+8,{color:CLR.mut,size:10});
+    txt(g,'точки виходу на детекторі',cxc+12,cyc+2*rMax*sc+22,
+      {color:CLR.sec,size:10.5,bold:true});
+    /* розмір 2r для важчого іона — те, що справді міряють */
+    {
+      const rBig=Math.max(r1,r2), xm=cxc-26;
+      g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(cxc,cyc); g.lineTo(xm-6,cyc);
+      g.moveTo(cxc,cyc+2*rBig*sc); g.lineTo(xm-6,cyc+2*rBig*sc); g.stroke();
+      g.setLineDash([]);
+      arrow(g,xm,cyc,xm,cyc+2*rBig*sc,CLR.sec,1.6);
+      pill(g,'2r = '+fmt(2*rBig*100,1)+' см',xm-2,cyc+rBig*sc,
+        {color:CLR.sec,size:10.5,bold:true});
+    }
     /* детектор */
     const det=Math.min(cyc+2*rMax*sc+30,h-16);
     g.strokeStyle=CLR.sec; g.lineWidth=3;
@@ -1665,6 +1949,12 @@ const M4={
     txt(g,'однакова швидкість — різні радіуси',12,20,{color:CLR.k2,size:12.5,bold:true});
     txt(g,'селектор вирівнює швидкості, тому далі радіус залежить лише від відношення m/q',
       12,36,{color:CLR.mut,size:10.5});
+    /* весь ланцюжок обчислення маси — з підставленими числами (брендбук §1) */
+    txt(g,'v = E/B₁ = '+fmt(this.E,0)+'·10³/'+fmt(this.B1,3)+' = '+fmt(this.vSel(),0)+' м/с',
+      12,54,{color:'#0d7a55',size:10.5,bold:true});
+    txt(g,'r = mv/(qB₂)  ⟹  m = qB₂r/v = '+sci(QE,2)+'·'+fmt(this.B2,2)+'·'+
+      fmt(r1,4)+'/'+fmt(this.vSel(),0)+' = '+sci(QE*this.B2*r1/this.vSel(),3)+' кг',
+      12,70,{color:'#0d7a55',size:10.5,bold:true});
     /* три шкали полів */
     const gauge=(x,frac,col,lab)=>{
       g.strokeStyle=CLR.axis; g.lineWidth=1;
@@ -1743,30 +2033,42 @@ const M5={
   /* Сфера сама перетягується (dragSphere), тож ручки живуть окремою колонкою
      ліворуч: потік вітру має власну стрілку, оболонка — мітку на шкалі L. */
   geo(b){return frozen(this,b,bb=>{
-    return {vx:bb.w*0.10, vy:bb.h-40, nx:bb.w*0.20, ny:bb.h-40, gh:bb.h*0.40,
-      lx:bb.w*0.30, ly:bb.h-40, lh:bb.h*0.40};
+    /* Шкали лежать горизонтальною смугою внизу кадру: вертикальною колонкою
+       ліворуч вони стояли просто на магнітопаузі. */
+    const bw=Math.min(180,bb.w*0.20), y=bb.h-26;
+    return {bw, vx:bb.w*0.05, vy:y, nx:bb.w*0.31, ny:y, lx:bb.w*0.57, ly:y, lw:bw};
   });},
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
     const Q=this.geo(b);
     return [
-      {id:'v', x:Q.vx, y:Q.vy-(this.v-200)/700*Q.gh, r:8, color:CLR.k2,
+      {id:'v', x:Q.vx+(this.v-200)/700*Q.bw, y:Q.vy, r:8, color:CLR.k2,
        hint:'швидкість сонячного вітру',
-       move:(px,py)=>{this.v=clamp(snap((Q.vy-py)/Q.gh*700+200,10),200,900);}},
-      {id:'n', x:Q.nx, y:Q.ny-(this.n-1)/59*Q.gh, r:8, color:CLR.k2,
+       /* шкала горизонтальна, і рахувати її треба по x: раніше тут стояло
+          Q.gh, якого в geo() немає, — і швидкість ставала NaN */
+       move:px=>{this.v=clamp(snap((px-Q.vx)/Q.bw*700+200,10),200,900);}},
+      {id:'n', x:Q.nx+(this.n-1)/59*Q.bw, y:Q.ny, r:8, color:CLR.k2,
        hint:'щільність потоку',
-       move:(px,py)=>{this.n=clamp(snap((Q.ny-py)/Q.gh*59+1,1),1,60);}},
+       move:px=>{this.n=clamp(snap((px-Q.nx)/Q.bw*59+1,1),1,60);}},
       /* оболонка захоплення — величина дискретна: ручка сідає на намальовану
          оболонку й проміжних положень не має */
-      {id:'L', x:Q.lx, y:Q.ly-this.Li()/(this.LS.length-1)*Q.lh, r:8, color:CLR.k3,
+      {id:'L', x:Q.lx+this.Li()/(this.LS.length-1)*Q.bw, y:Q.ly, r:8, color:CLR.k3,
        hint:'оболонка захоплення',
-       move:(px,py)=>{
-         const k=Math.round((Q.ly-py)/Q.lh*(this.LS.length-1));
+       move:px=>{
+         const k=Math.round((px-Q.lx)/Q.bw*(this.LS.length-1));
          this.L=this.LS[clamp(k,0,this.LS.length-1)];
        }}
     ];
   },
+  what:'sphere',
+  showWhat(){
+    const d=this.what==='dyn';
+    $('m5pDyn').hidden=!d; $('m5pWind').hidden=d;
+    $('m5hint').textContent=d?'розріз планети: видно, що саме створює поле'
+      :'перетягуйте сферу, щоб змінити точку огляду';
+  },
   init(){
+    seg('m5what',v=>{this.what=v; this.showWhat();});
     $('m5play').onclick=()=>{
       this.playing=!this.playing;
       $('m5play').textContent=this.playing?'⏸':'▶';
@@ -1774,16 +2076,135 @@ const M5={
     $('m5re').onclick=()=>{this.t=0;};
     dragSphere('m5scene',this);
     grip('m5scene',this,()=>this.grips());
+    this.showWhat();
   },
   tick(dt){
     if(this.playing) this.t+=dt;
     this.render();
   },
-  render(){this.scene(); this.table();},
+  render(){
+    if(this.what==='dyn') this.sceneDyn(); else this.scene();
+    this.table();
+  },
+  /* ---- звідки береться поле Землі: розріз планети й геодинамо -------------
+     Поле створює не «металева мантія» — мантія тверда й струму майже не
+     проводить. Провідник тут рідке зовнішнє ядро: розплавлене залізо.
+     Тепло з надр жене його вгору, обертання планети закручує потоки, і рух
+     провідної рідини підтримує кільцеві струми, а ті — магнітне поле. */
+  sceneDyn(){
+    const b=cvx('m5scene'); if(!b) return;
+    const {g,w,h}=b, t=this.t;
+    const cx=w*0.40, cy=h*0.50, R=Math.min(w*0.21,(h-140)*0.44);
+    const rOut=R*0.546, rIn=R*0.191, rCr=R*0.985;
+    const tl=this.tilt*DEG;                    /* нахил осі обертання */
+    g.clearRect(0,0,w,h);
+    /* силові лінії диполя назовні — те, що врешті виходить із геодинамо */
+    g.save(); g.translate(cx,cy); g.rotate(tl);
+    for(const Lsh of [1.45,2.1,3.0]){
+      g.strokeStyle='rgba(42,120,214,.40)'; g.lineWidth=1.4;
+      for(const sgn of [1,-1]){
+        g.beginPath();
+        for(let i=0;i<=70;i++){
+          const la=(-80+160*i/70)*DEG, rr=Lsh*Math.pow(Math.cos(la),2);
+          if(rr<1) continue;
+          const x=sgn*rr*Math.cos(la)*R, y=-rr*Math.sin(la)*R;
+          i?g.lineTo(x,y):g.moveTo(x,y);
+        }
+        g.stroke();
+      }
+    }
+    /* вісь обертання */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.6; g.setLineDash([6,4]);
+    g.beginPath(); g.moveTo(0,-R*1.42); g.lineTo(0,R*1.42); g.stroke(); g.setLineDash([]);
+    /* оболонки в розрізі */
+    /* кільце: між двома колами. moveTo перед внутрішнім колом обов'язковий —
+       без нього контур замикається хордою й у заливці лишається світлий клин */
+    const ring=(r1,r2,fill)=>{
+      g.fillStyle=fill; g.beginPath();
+      g.arc(0,0,r1,0,Math.PI*2);
+      g.moveTo(r2,0); g.arc(0,0,r2,0,Math.PI*2,true);
+      g.fill();
+    };
+    ring(rCr,rOut,'rgba(11,11,11,.07)');              /* мантія */
+    ring(R,rCr,'rgba(11,11,11,.18)');                 /* кора */
+    ring(rOut,rIn,'rgba(235,104,52,.22)');            /* рідке зовнішнє ядро */
+    g.fillStyle='rgba(235,104,52,.55)';
+    g.beginPath(); g.arc(0,0,rIn,0,7); g.fill();      /* тверде внутрішнє ядро */
+    g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+    for(const r of [R,rCr,rOut,rIn]){g.beginPath(); g.arc(0,0,r,0,7); g.stroke();}
+    /* конвекція в рідкому ядрі: комірки, закручені обертанням */
+    const NC=8;
+    for(let i=0;i<NC;i++){
+      const a0=i/NC*2*Math.PI+t*0.25;
+      const rm=(rOut+rIn)/2, cxx=Math.cos(a0)*rm, cyy=Math.sin(a0)*rm;
+      const rr=(rOut-rIn)*0.34;
+      g.strokeStyle='rgba(235,104,52,.75)'; g.lineWidth=1.6;
+      const dir=i%2?1:-1;
+      g.beginPath(); g.arc(cxx,cyy,rr,0,5.2,dir<0); g.stroke();
+      const ae=dir<0?-0.9:5.2, ap=ae-dir*0.25;
+      arrow(g,cxx+Math.cos(ap)*rr,cyy+Math.sin(ap)*rr,
+              cxx+Math.cos(ae)*rr,cyy+Math.sin(ae)*rr,CLR.k2,1.6);
+    }
+    /* кільцевий струм у ядрі — те, що безпосередньо створює поле */
+    g.strokeStyle=CLR.k1; g.lineWidth=3;
+    g.beginPath(); g.ellipse(0,0,rOut*0.82,rOut*0.30,0,0,7); g.stroke();
+    for(const sg of [1,-1]){
+      const x=sg*rOut*0.82, y=0;
+      arrow(g,x,y-sg*10,x,y+sg*10,CLR.k1,2.6);
+    }
+    g.restore();
+    /* дуга обертання навколо осі */
+    const pax=cx+Math.sin(tl)*R*1.42, pay=cy-Math.cos(tl)*R*1.42;
+    arc(g,pax,pay,26,-2.6,-0.5,CLR.k3,2.4);
+    arrow(g,pax+Math.cos(-0.66)*26,pay+Math.sin(-0.66)*26,
+            pax+Math.cos(-0.5)*26,pay+Math.sin(-0.5)*26,CLR.k3,2.2);
+    txt(g,'обертання Землі',pax+34,pay-4,{color:'#0d7a55',size:11,bold:true});
+    txt(g,'доба 23 год 56 хв',pax+34,pay+11,{color:CLR.mut,size:10});
+    /* виноски до оболонок */
+    /* виноски ставимо стовпчиком ліворуч: праворуч від кулі стоїть ланцюжок
+       причин, і туди підписи оболонок не помістилися б */
+    const lead=(r,ang,lx,ly,lab,sub,col)=>{
+      const a2=ang*DEG+tl;
+      const x1=cx+Math.cos(a2)*r, y1=cy+Math.sin(a2)*r;
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x1,y1); g.lineTo(lx+4,ly-4); g.stroke();
+      dot(g,x1,y1,2.6,col);
+      txt(g,lab,lx,ly,{color:col,size:11,bold:true});
+      if(sub) txt(g,sub,lx,ly+14,{color:CLR.mut,size:9.5});
+    };
+    lead(rIn*0.55,214,14,h*0.30,'тверде внутрішнє ядро','залізо, радіус 1220 км','#b8431a');
+    lead((rOut+rIn)/2,188,14,h*0.44,'рідке зовнішнє ядро','розплавлене залізо — провідник','#b8431a');
+    lead((R+rOut)/2,160,14,h*0.58,'мантія','тверда порода, струму не проводить',CLR.sec);
+    lead(R*0.99,136,14,h*0.72,'кора','',CLR.sec);
+    /* ланцюжок причин — головне, заради чого сцена */
+    const bx=w*0.68, by=h*0.26, bw=Math.min(280,w*0.29);
+    const steps=[['обертання планети',CLR.k3],
+                 ['конвекція розплавленого заліза',CLR.k2],
+                 ['кільцеві електричні струми',CLR.k1],
+                 ['магнітне поле Землі',CLR.k1]];
+    steps.forEach((st,i)=>{
+      const y=by+i*56;
+      g.fillStyle='#fff'; g.strokeStyle=st[1]; g.lineWidth=1.8;
+      g.beginPath(); g.roundRect(bx,y,bw,34,8); g.fill(); g.stroke();
+      txt(g,st[0],bx+bw/2,y+21,{color:st[1]===CLR.k3?'#0d7a55':(st[1]===CLR.k2?'#b8431a':'#1c5cab'),
+        size:11.5,bold:true,align:'center'});
+      if(i<3) arrow(g,bx+bw/2,y+34,bx+bw/2,y+54,CLR.sec,2);
+    });
+    txt(g,'петля підтримує сама себе',bx+bw/2,by+4*56+6,
+      {color:CLR.mut,size:10,align:'center'});
+    txt(g,'геодинамо: поле створює рух провідної рідини в ядрі',12,20,
+      {color:CLR.k2,size:12.5,bold:true});
+    txt(g,'мантія тут ні до чого — вона тверда; провідник у надрах один: рідке зовнішнє ядро',
+      12,36,{color:CLR.mut,size:10.5});
+    txt(g,'розріз планети · оболонки в масштабі',12,h-10,{color:CLR.mut,size:10.5});
+  },
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w,h}=b;
-    const V={rot:this.view,tilt:this.tilt,R:Math.min(w,h)*0.17,cx:w*0.62,cy:h*0.5};
+    /* Земля навмисно мала: модуль про магнітосферу, а вона сягає семи земних
+       радіусів із денного боку. З великим глобусом магнітопауза просто не
+       вміщалася в кадр. */
+    const V={rot:this.view,tilt:this.tilt,R:Math.min(w,h)*0.10,cx:w*0.54,cy:h*0.5};
     const Q=this.geo(b);
     g.clearRect(0,0,w,h);
     /* сонячний вітер зліва */
@@ -1795,21 +2216,21 @@ const M5={
     }
     const gauge=(x,frac,col,lab)=>{
       g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.roundRect(x-8,Q.vy-Q.gh,16,Q.gh,4); g.stroke();
+      g.beginPath(); g.roundRect(x,Q.vy-8,Q.bw,16,4); g.stroke();
       g.fillStyle=col; g.globalAlpha=0.32;
-      g.fillRect(x-5,Q.vy-frac*Q.gh,10,frac*Q.gh); g.globalAlpha=1;
-      txt(g,lab,x,Q.vy+16,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+      g.fillRect(x+3,Q.vy-5,Math.max(0,Math.min(1,frac))*(Q.bw-6),10); g.globalAlpha=1;
+      txt(g,lab,x,Q.vy-14,{color:CLR.sec,size:10.5,bold:true});
     };
-    gauge(Q.vx,(this.v-200)/700,CLR.k2,'v');
-    gauge(Q.nx,(this.n-1)/59,CLR.k2,'n');
-    gauge(Q.lx,this.Li()/(this.LS.length-1),CLR.k3,'L');
+    gauge(Q.vx,(this.v-200)/700,CLR.k2,'v = '+fmt(this.v,0)+' км/с');
+    gauge(Q.nx,(this.n-1)/59,CLR.k2,'n = '+fmt(this.n,0)+' част/см³');
+    gauge(Q.lx,this.Li()/(this.LS.length-1),CLR.k3,'L = '+fmt(this.L,1)+' R⊕');
     /* поділки шкали L — по одній на кожну намальовану оболонку, з підписом:
        видно, що вибір дискретний і що вибрати можна лише те, що є в кадрі */
     this.LS.forEach((Lv,i)=>{
-      const y=Q.ly-i/(this.LS.length-1)*Q.lh, on=i===this.Li();
+      const x=Q.lx+i/(this.LS.length-1)*Q.bw, on=i===this.Li();
       g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
-      g.beginPath(); g.moveTo(Q.lx-8,y); g.lineTo(Q.lx+8,y); g.stroke();
-      txt(g,fmt(Lv,1),Q.lx+13,y+4,{color:on?CLR.k3:CLR.mut,size:9.5,bold:on});
+      g.beginPath(); g.moveTo(x,Q.ly-8); g.lineTo(x,Q.ly+8); g.stroke();
+      txt(g,fmt(Lv,1),x,Q.ly+20,{color:on?CLR.k3:CLR.mut,size:9.5,bold:on,align:'center'});
     });
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,'сонячний вітер',14,h*0.17,{color:'#b8431a',size:11.5,bold:true});
@@ -1843,9 +2264,55 @@ const M5={
       }
     }
     /* Земля */
+    /* ---- звідки береться форма магнітосфери ------------------------------
+       Саме по собі поле Землі — симетричний диполь. Форму йому надає сонячний
+       вітер: із денного боку він підтискає поле до кількох радіусів Землі
+       (магнітопауза), а з нічного витягує у довгий хвіст. Межа стоїть там, де
+       тиск вітру ρv²/2 зрівнюється з тиском магнітного поля B²/2μ₀. */
+    {
+      /* положення підсонячної точки: що сильніший вітер, то ближче межа */
+      const p0=1.6726e-27*this.n*1e6*Math.pow(this.v*1e3,2);
+      const rmp=Math.max(5,Math.min(12,Math.pow(B_EARTH*B_EARTH/(2*MU0*p0),1/6)));
+      const Rm=rmp*V.R;
+      g.strokeStyle=CLR.k2; g.lineWidth=1.8; g.globalAlpha=0.75;
+      g.beginPath();
+      for(let i=0;i<=120;i++){
+        const th=-Math.PI*0.82+Math.PI*1.64*i/120;
+        /* класична параболоїдна форма: r = 2r₀/(1+cos θ) */
+        const rr=Math.min(5*Rm,2*Rm/(1+Math.cos(th)));   /* хвіст обриваємо в кадрі */
+        const x=V.cx-rr*Math.cos(th), y=V.cy+rr*Math.sin(th);
+        if(Math.abs(x)>4*w||Math.abs(y)>4*h) continue;
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.stroke(); g.globalAlpha=1;
+      /* підписи ставимо праворуч від межі: ліворуч від підсонячної точки
+         місця в кадрі вже немає */
+      txt(g,'магнітопауза · '+fmt(rmp,1)+' R⊕',V.cx-Rm+14,V.cy-V.R*2.4,
+        {color:'#b8431a',size:10.5,bold:true});
+      txt(g,'магнітний хвіст',V.cx+V.R*3.2,V.cy+V.R*2.4,{color:CLR.mut,size:10.5});
+      arrow(g,V.cx-Rm-36,V.cy,V.cx-Rm-8,V.cy,CLR.k2,2);
+      txt(g,'тиск вітру ρv²/2 стискає поле',V.cx-Rm+14,V.cy+16,
+        {color:'#b8431a',size:10,bold:true});
+    }
     sphBase(g,V,CLR.globe);
     sphCurve(g,V,u=>[0,u*360],120,CLR.k1,2);
-    sphAxis(g,V,CLR.sec,'Пн','Пд');
+    /* ---- дві осі: магнітна й географічна ---------------------------------
+       Магнітна вісь нахилена до осі обертання приблизно на 11°, тому магнітний
+       полюс не збігається з географічним — саме тому компас і показує не точно
+       на північ. Лінії поля будуються навколо магнітної осі, а доба — навколо
+       географічної. */
+    {
+      const DECL=11;
+      const Vg={...V,tilt:this.tilt-DECL};
+      sphAxis(g,Vg,CLR.mut,'',' ');
+      const N=sphPt(90,0,Vg);
+      txt(g,'вісь обертання',N.x+8,N.y-10,{color:CLR.mut,size:10});
+      sphAxis(g,V,CLR.sec,'Пн м','Пд м');
+      const M=sphPt(90,0,V);
+      txt(g,'магнітна вісь · нахил '+DECL+'°',M.x+8,M.y+6,
+        {color:CLR.sec,size:10,bold:true});
+      dot(g,M.x,M.y,4.5,CLR.k2,'#fff');
+    }
     /* зони сяйва — кільця на широті lat */
     const la=this.lat();
     for(const s of [1,-1]){
@@ -1864,8 +2331,8 @@ const M5={
       {color:CLR.k3,size:12.5,bold:true});
     txt(g,'рухаючись уздовж лінії, частинка доходить до полюса й висипається в атмосферу — це полярне сяйво',
       12,36,{color:CLR.mut,size:10.5});
-    txt(g,'помаранчеві кільця — зони полярних сяйв',w-12,h-10,
-      {color:'#b8431a',size:10.5,align:'right'});
+    txt(g,'помаранчеві кільця — зони полярних сяйв; магнітний полюс не збігається з географічним',
+      w-12,h-52,{color:'#b8431a',size:10.5,align:'right'});
   },
   table(){
     const B=this.BL();
@@ -1884,7 +2351,258 @@ const M5={
   }
 };
 
-const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5};
+/* ===================== МОДУЛЬ 6 · векторний добуток ===================== */
+/* Раніше цю побудову малювали віньєткою в кутку сцен «Сила Ампера» та «Сила
+   Лоренца»: там на неї не лишалося ні місця, ні часу, і вона зображувала радше
+   саму себе. Тут вона дістає власну вкладку — з розкладеною по кроках анімацією
+   того, ЯК саме знаходять напрям, і з числами під нею. */
+const M6={
+  pair:'ab', qneg:false, al:55, t:0, playing:true,
+  h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
+  CYC:9,                                   /* тривалість повного показу, с */
+  /* Величини кожної пари сталі: змінюють тут лише кут, бо саме від нього
+     залежить і модуль добутку, і вся суть sin α. */
+  vals(){
+    if(this.pair==='lor') return {
+      A:2.0, B:0.50, ua:'·10⁶ м/с', ub:'Тл',
+      na:'v', nb:'B', nc:this.qneg?'F = qv × B':'F = qv × B',
+      la:'<var>v</var> — швидкість частинки', lb:'<var>B</var> — індукція поля',
+      lc:'|<var>F</var>| = |<var>q</var>||<var>v</var>||<var>B</var>|·sin <var>α</var>',
+      C:s=>QE*2.0e6*0.50*s, uc:'Н', sci:true};
+    if(this.pair==='amp') return {
+      A:4.0, B:0.50, ua:'А·м (I·l)', ub:'Тл',
+      na:'I l', nb:'B', nc:'F = I l × B',
+      la:'<var>I</var>·<var>l</var> — струм на довжину', lb:'<var>B</var> — індукція поля',
+      lc:'|<var>F</var>| = <var>BIl</var>·sin <var>α</var>',
+      C:s=>4.0*0.50*s, uc:'Н', sci:false};
+    return {A:3, B:2, ua:'од.', ub:'од.',
+      na:'a', nb:'b', nc:'c = a × b',
+      la:'|<var>a</var>| — перший множник', lb:'|<var>b</var>| — другий множник',
+      lc:'|<var>c</var>| = |<var>a</var>||<var>b</var>|·sin <var>α</var>',
+      C:s=>3*2*s, uc:'од.', sci:false};
+  },
+  /* знак результату: у від'ємного заряду сила протилежна до v × B */
+  sgn(){return this.pair==='lor'&&this.qneg?-1:1;},
+  u(){return (this.t%this.CYC)/this.CYC;},
+  seg(a0,a1){return clamp((this.u()-a0)/(a1-a0),0,1);},
+  /* межі кроків збігаються з початком відповідної анімації — інакше смуга
+     встигала перемкнутися на «результат» ще до того, як вектор з'являвся */
+  phase(){
+    const u=this.u();
+    if(u<0.20) return 0;
+    if(u<0.36) return 1;
+    if(u<0.52) return 2;
+    if(u<0.70) return 3;
+    return 4;
+  },
+  PH:['перший множник','другий множник під кутом α','площина, у якій лежать обидва',
+      'повертаємо перший до другого — правило правої руки','результат: перпендикуляр до площини'],
+  /* короткі підписи для смуги кроків: повні речення в неї не влазять */
+  PHS:['множник a','множник b','їхня площина','поворот','результат'],
+  /* Кадр: коса проєкція. Поворот камери йде разом із часом, але frozen()
+     спиняє його на час жесту — інакше вістря тікало б з-під пальця. */
+  geo(b){return frozen(this,b,bb=>{
+    const R=Math.min(bb.w*0.27,(bb.h-150)*0.62);
+    const cx=bb.w*0.45, cy=bb.h*0.50, rot=this.t*0.32, tilt=0.42;
+    const ca=Math.cos(rot), sa=Math.sin(rot);
+    const P=(x,y,z)=>{
+      const X=x*ca-y*sa, Y=x*sa+y*ca;
+      return [cx+X*R, cy-z*R*0.92+Y*R*tilt];
+    };
+    /* зворотне перетворення для точок площини z = 0 — ним ручка й читає кут */
+    const iP=(px,py)=>{
+      const X=(px-cx)/R, Y=(py-cy)/(R*tilt);
+      return [X*ca+Y*sa, -X*sa+Y*ca];
+    };
+    return {cx,cy,R,rot,tilt,P,iP};
+  });},
+  LA:0.92, LB:0.72,
+  grips(){
+    const b=cvx('m6scene'); if(!b) return [];
+    const Q=this.geo(b), a=this.al*DEG;
+    const p=Q.P(this.LB*Math.cos(a),this.LB*Math.sin(a),0);
+    return [
+      {id:'al', x:p[0], y:p[1], r:9, color:CLR.k2, hint:'кут між множниками',
+       move:(px,py)=>{
+         const q=Q.iP(px,py);
+         this.al=clamp(snap(Math.atan2(q[1],q[0])/DEG,1),5,175);
+       }}
+    ];
+  },
+  init(){
+    seg('m6pair',v=>{this.pair=v; $('m6q').hidden=v!=='lor';});
+    seg('m6q',v=>{this.qneg=v==='neg';});
+    grip('m6scene',this,()=>this.grips());
+    $('m6play').onclick=()=>{
+      this.playing=!this.playing;
+      $('m6play').textContent=this.playing?'⏸':'▶';
+    };
+    $('m6re').onclick=()=>{this.t=0;};
+    this.tip1=makeTip('m6c1w'); this.tip2=makeTip('m6c2w');
+    hover('m6c1',this.h1); hover('m6c2',this.h2);
+    this.h1.xlab='α'; this.h1.xunit='°'; this.h1.xdec=0;
+    this.h2.xlab='α'; this.h2.xunit='°'; this.h2.xdec=0;
+  },
+  tick(dt){if(this.playing&&this._grab==null) this.t+=dt; this.render();},
+  render(){this.scene(); this.table(); this.charts();},
+  scene(){
+    const b=cvx('m6scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b), V=this.vals();
+    const P=Q.P, R=Q.R, a=this.al*DEG, sn=Math.sin(a), sg=this.sgn();
+    const pa=this.seg(0.02,0.18), pb=this.seg(0.20,0.34), pp=this.seg(0.36,0.50);
+    const pr=this.seg(0.52,0.68), pc=this.seg(0.70,0.88);
+    const O=P(0,0,0);
+    g.clearRect(0,0,w,h);
+    /* площина множників — сітка в косій проєкції */
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    for(let i=-4;i<=4;i++){
+      const u=i/4*1.15;
+      const p1=P(u,-1.15,0), p2=P(u,1.15,0), p3=P(-1.15,u,0), p4=P(1.15,u,0);
+      g.beginPath(); g.moveTo(p1[0],p1[1]); g.lineTo(p2[0],p2[1]);
+      g.moveTo(p3[0],p3[1]); g.lineTo(p4[0],p4[1]); g.stroke();
+    }
+    /* паралелограм на множниках: його площа і є модуль добутку */
+    if(pp>0){
+      const A=[this.LA,0], B=[this.LB*Math.cos(a),this.LB*Math.sin(a)];
+      const q=[P(0,0,0),P(A[0],A[1],0),P(A[0]+B[0]*pp,A[1]+B[1]*pp,0),P(B[0]*pp,B[1]*pp,0)];
+      g.fillStyle='rgba(27,175,122,.16)'; g.beginPath();
+      q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));
+      g.closePath(); g.fill();
+      g.strokeStyle='rgba(27,175,122,.55)'; g.lineWidth=1.4; g.stroke();
+      if(pp>0.9){
+        const cm=P((A[0]+B[0])/2,(A[1]+B[1])/2,0);
+        pill(g,'площа = '+fmt(V.A,1)+'·'+fmt(V.B,2)+'·sin α',cm[0],cm[1]+4,
+          {color:'#0d7a55',size:10.5,bold:true});
+      }
+    }
+    /* дуга кута між множниками */
+    if(pb>0.2){
+      const rr=0.34;
+      g.strokeStyle=CLR.sec; g.lineWidth=1.6; g.beginPath();
+      for(let i=0;i<=24;i++){
+        const th=a*i/24, p=P(rr*Math.cos(th),rr*Math.sin(th),0);
+        i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);
+      }
+      g.stroke();
+      const pm=P(0.46*Math.cos(a/2),0.46*Math.sin(a/2),0);
+      txt(g,'α = '+fmt(this.al,0)+'°',pm[0],pm[1]+4,{color:CLR.sec,size:11.5,bold:true,align:'center'});
+    }
+    const vec=(p,col,txc,lab,wd)=>{
+      arrow(g,O[0],O[1],p[0],p[1],col,wd||2.6);
+      txt(g,lab,p[0]+(p[0]>O[0]?7:-7),p[1]+(p[1]<O[1]?-5:14),
+        {color:txc,size:12,bold:true,align:p[0]>O[0]?'left':'right'});
+    };
+    /* множники */
+    if(pa>0) vec(P(this.LA*pa,0,0),CLR.k1,'#1c5cab',V.na);
+    if(pb>0) vec(P(this.LB*pb*Math.cos(a),this.LB*pb*Math.sin(a),0),CLR.k2,'#b8431a',V.nb);
+    /* поворот від першого множника до другого: саме його «повторює» права рука */
+    if(pr>0){
+      const rr=0.58, th1=a*pr;
+      g.strokeStyle=CLR.k3; g.lineWidth=2.4; g.beginPath();
+      for(let i=0;i<=30;i++){
+        const th=th1*i/30, p=P(rr*Math.cos(th),rr*Math.sin(th),0);
+        i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);
+      }
+      g.stroke();
+      const e1=P(rr*Math.cos(th1),rr*Math.sin(th1),0);
+      const e0=P(rr*Math.cos(th1*0.93),rr*Math.sin(th1*0.93),0);
+      arrow(g,e0[0],e0[1],e1[0],e1[1],CLR.k3,2.4);
+      /* підпис показуємо лише на своєму кроці: далі він лягав би на вектори */
+      if(pr>0.85&&this.phase()===3){
+        const pm=P(rr*Math.cos(a*0.55),rr*Math.sin(a*0.55),0);
+        pill(g,'пальці повторюють цей поворот',pm[0],pm[1]-18,
+          {color:'#0d7a55',size:10.5,bold:true});
+      }
+    }
+    /* результат: перпендикуляр до площини, довжина ∝ sin α */
+    if(pc>0){
+      const Lc=0.88*sn*pc*sg;
+      const p=P(0,0,Lc);
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(O[0],O[1]); g.lineTo(P(0,0,sg*0.98)[0],P(0,0,sg*0.98)[1]);
+      g.stroke(); g.setLineDash([]);
+      vec(p,CLR.k3,'#0d7a55',V.nc,3.2);
+      /* прямий кут між результатом і площиною */
+      const k=0.13, c1=P(k,0,0), c2=P(k,0,sg*k), c3=P(0,0,sg*k);
+      g.strokeStyle=CLR.axis; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(c1[0],c1[1]); g.lineTo(c2[0],c2[1]); g.lineTo(c3[0],c3[1]); g.stroke();
+      if(sg<0&&pc>0.6)
+        pill(g,'заряд від’ємний: сила проти v × B',p[0],p[1]+26,
+          {color:'#1c5cab',size:10.5,bold:true});
+    }
+    dot(g,O[0],O[1],3.5,CLR.sec);
+    /* ---- смуга кроків: видно, який саме крок показують зараз -------------- */
+    const S0=w*0.03, S1=w*0.97, sw=(S1-S0)/5, sy=h-30, ph=this.phase();
+    for(let i=0;i<5;i++){
+      const x0=S0+i*sw, on=i===ph;
+      g.fillStyle=on?'rgba(27,175,122,.20)':'rgba(11,11,11,.04)';
+      g.fillRect(x0,sy-12,sw-3,24);
+      g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+      g.strokeRect(x0+.5,sy-11.5,sw-4,23);
+      txt(g,String(i+1),x0+11,sy+4,{color:on?CLR.ink:CLR.mut,size:11,bold:on});
+      txt(g,this.PHS[i],x0+24,sy+4,{color:on?CLR.ink:CLR.mut,size:10.5,bold:on});
+    }
+    txt(g,'крок '+(ph+1)+': '+this.PH[ph],12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'модуль добутку — площа паралелограма на множниках; напрям — перпендикуляр до нього',
+      12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+    txt(g,'тягніть вістря другого вектора — воно ходить по площині множників',
+      12,h-8,{color:CLR.mut,size:10.5});
+  },
+  table(){
+    const V=this.vals(), sn=Math.sin(this.al*DEG), C=V.C(sn);
+    $('m6t').textContent='';
+    $('m6la').innerHTML=V.la;
+    $('m6lb').innerHTML=V.lb;
+    $('m6lc').innerHTML=V.lc;
+    $('m6va').textContent=fmt(V.A,V.A<1?2:1)+' '+V.ua;
+    $('m6vb').textContent=fmt(V.B,2)+' '+V.ub;
+    $('m6val').textContent=fmt(this.al,0)+'°';
+    $('m6ksin').textContent=fmt(sn,3);
+    $('m6kc').textContent=(V.sci?sci(C,3):fmt(C,2))+' '+V.uc;
+    $('m6karea').textContent=fmt(V.A*V.B*sn,2)+' (у тих самих одиницях)';
+    $('m6kdir').textContent=this.sgn()>0?'уздовж перпендикуляра до площини'
+      :'проти перпендикуляра — бо заряд від’ємний';
+    $('m6kperp').textContent='так, за побудовою';
+    $('m6fx').innerHTML='|'+V.nc.split('=').pop().trim()+'| = '+fmt(V.A,2)+'·'+fmt(V.B,2)+
+      '·sin '+fmt(this.al,0)+'° = <b>'+(V.sci?sci(C,3):fmt(C,2))+' '+V.uc+'</b>';
+    $('m6rule').innerHTML='Чотири пальці правої руки ставлять уздовж <b>'+V.na+
+      '</b> і згинають до <b>'+V.nb+'</b> найкоротшим шляхом. Відставлений великий палець '+
+      'показує <b>'+V.nc.split('=')[0].trim()+'</b>. При α = 0 або 180° добуток нульовий: '+
+      'паралельні вектори площини не задають.';
+  },
+  charts(){
+    const V=this.vals();
+    const b1=cvx('m6c1');
+    if(b1){
+      const ts=[],ys=[];
+      for(let i=0;i<=90;i++){const A=180*i/90; ts.push(A); ys.push(V.C(Math.sin(A*DEG)));}
+      const hi=V.C(1)*1.15;
+      const r=drawChart(b1,{tMax:180,yMin:0,yMax:hi,yLab:V.uc,xLab:'α, °',xStep:30,
+        yDec:V.sci?0:2,hover:this.h1.x,
+        series:[{ts,ys,color:CLR.k3,label:'|'+V.nc.split('=').pop().trim()+'|'},
+                {ts:[this.al,this.al],ys:[0,V.C(Math.sin(this.al*DEG))],
+                 color:CLR.ink,label:'α',dash:[4,3]}]});
+      showTip(this.tip1,r,V.uc,this.h1,[['модуль добутку',CLR.k3],['поточний α',CLR.ink]],2);
+    }
+    const b2=cvx('m6c2');
+    if(b2){
+      const ts=[],ps=[],cs=[];
+      for(let i=0;i<=90;i++){
+        const A=180*i/90; ts.push(A);
+        ps.push(V.B*Math.sin(A*DEG)); cs.push(V.B*Math.cos(A*DEG));
+      }
+      const r=drawChart(b2,{tMax:180,yMin:-V.B*1.15,yMax:V.B*1.15,yLab:V.ub,xLab:'α, °',
+        xStep:30,yDec:2,hover:this.h2.x,
+        series:[{ts,ys:ps,color:CLR.k1,label:V.nb+'·sin α'},
+                {ts,ys:cs,color:CLR.k2,label:V.nb+'·cos α'},
+                {ts:[this.al,this.al],ys:[-V.B*1.1,V.B*1.1],color:CLR.ink,label:'',dash:[4,3]}]});
+      showTip(this.tip2,r,V.ub,this.h2,[['поперечна складова',CLR.k1],['поздовжня складова',CLR.k2],['',CLR.ink]],2);
+    }
+  }
+};
+
+const MODULES={m1:M1,m2:M2,m3:M3,m4:M4,m5:M5,m6:M6};
 
 /* ===================== завантаження ===================== */
 let ACT='m1';

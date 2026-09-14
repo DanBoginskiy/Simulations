@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,11 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
-#m1scene{width:100%; height:210px}
-#m2scene{width:100%; height:320px}
-#m3scene{width:100%; height:230px}
-#m4scene{width:100%; height:320px}
-#m5scene{width:100%; height:420px}
+#m1scene{width:100%; height:260px}
+#m2scene{width:100%; height:400px}
+#m3scene{width:100%; height:290px}
+#m4scene{width:100%; height:400px}
+#m5scene{width:100%; height:530px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -129,12 +142,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
-  <p class="caption">Лабораторний дослід: два візки на напрямній без тертя.
+  <p class="caption">Лабораторний дослід: дві шайби на гладкому столі, вигляд згори.
   Хоч би яким був удар, <b>сумарний імпульс не змінюється</b> — це закон збереження імпульсу.
   А от кінетична енергія зберігається лише при абсолютно пружному ударі.</p>
 
   <div class="panel">
     <div class="toolbar">
+      <div class="seg" id="m1geom">
+        <button data-v="head" class="active" style="--c:var(--k1)">лобове</button>
+        <button data-v="obl" style="--c:var(--k3)">не лобове</button>
+      </div>
       <span class="lbl">Характер удару:</span>
       <div class="seg" id="m1kind">
         <button data-v="elastic" class="active" style="--c:var(--k1)">абсолютно пружний</button>
@@ -151,12 +168,18 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <div class="sgrid">
     <div class="panel">
       <h3>Що задано на сцені</h3>
-      <div class="kv"><span><var>m</var><sub>1</sub> — маса лівого візка<span class="badge">висота візка</span></span><b id="m1vm1"></b></div>
-      <div class="kv"><span><var>v</var><sub>1</sub> — початкова швидкість лівого візка<span class="badge">наконечник стрілки</span></span><b id="m1vv1"></b></div>
-      <div class="kv"><span><var>m</var><sub>2</sub> — маса правого візка<span class="badge">висота візка</span></span><b id="m1vm2"></b></div>
-      <div class="kv"><span><var>v</var><sub>2</sub> — початкова швидкість правого візка (уліво — відʼємна)<span class="badge">наконечник стрілки</span></span><b id="m1vv2"></b></div>
+      <div class="kv"><span><var>m</var><sub>1</sub> — маса лівої шайби<span class="badge">радіус шайби</span></span><b id="m1vm1"></b></div>
+      <div class="kv"><span><var>v</var><sub>1</sub> — початкова швидкість лівої шайби<span class="badge">наконечник стрілки</span></span><b id="m1vv1"></b></div>
+      <div class="kv"><span><var>m</var><sub>2</sub> — маса правої шайби<span class="badge">радіус шайби</span></span><b id="m1vm2"></b></div>
+      <div class="kv"><span><var>v</var><sub>2</sub> — початкова швидкість правої шайби (уліво — відʼємна)<span class="badge">наконечник стрілки</span></span><b id="m1vv2"></b></div>
       <div class="grp" id="m1gK">
         <div class="kv"><span><var>k</var> — коефіцієнт відновлення (1 — пружний, 0 — злипання)<span class="badge">полиця матеріалів</span></span><b id="m1vk"></b></div>
+      </div>
+      <div class="grp" id="m1gB" hidden>
+        <div class="kv"><span><var>b</var> — прицільний параметр: на скільки центри розминаються<span class="badge">висота шайби 1</span></span><b id="m1vb"></b></div>
+        <div class="kv"><span>кут розльоту шайби 1<span class="badge">від лінії центрів</span></span><b id="m1vth1"></b></div>
+        <div class="kv"><span>кут розльоту шайби 2</span><b id="m1vth2"></b></div>
+        <div class="kv"><span>сумарний імпульс по <var>y</var><span class="badge">нуль до і після</span></span><b id="m1vpy"></b></div>
       </div>
     </div>
     <div class="panel">
@@ -266,6 +289,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
+          <div class="seg" id="m3mode">
+            <button data-v="parts" class="active" style="--c:var(--k2)">порції в порожнечі</button>
+            <button data-v="launch" style="--c:var(--k1)">старт із Землі</button>
+          </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="скинути">↺</button>
           <span class="lbl" id="m3t"></span>
@@ -277,13 +304,13 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Розгін ракети</h3>
         <div class="chartrow">
           <div class="chartbox" id="m3cvw">
-            <h4>швидкість ракети, м/с</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>сходинки — по одній на порцію</span><span><span class="chip cI"></span>формула Ціолковського</span></div>
+            <h4 id="m3ch1">швидкість ракети, м/с</h4>
+            <div class="legend sm" id="m3cl1"><span><span class="chip cB"></span>сходинки — по одній на порцію</span><span><span class="chip cI"></span>формула Ціолковського</span></div>
             <canvas id="m3cv"></canvas>
           </div>
           <div class="chartbox" id="m3cpw">
-            <h4>імпульси, кг·м/с</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>ракети</span><span><span class="chip cC"></span>викинутого газу</span><span><span class="chip cI"></span>сума</span></div>
+            <h4 id="m3ch2">імпульси, кг·м/с</h4>
+            <div class="legend sm" id="m3cl2"><span><span class="chip cA"></span>ракети</span><span><span class="chip cC"></span>викинутого газу</span><span><span class="chip cI"></span>сума</span></div>
             <canvas id="m3cp"></canvas>
           </div>
         </div>
@@ -295,7 +322,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>M</var><sub>0</sub> — стартова маса ракети з паливом<span class="badge">ніс ракети</span></span><b id="m3vM"></b></div>
         <div class="kv"><span>частка палива в стартовій масі<span class="badge">смуга в баку</span></span><b id="m3vf"></b></div>
         <div class="kv"><span><var>u</var> — швидкість витікання газу відносно ракети<span class="badge">стрілка газу</span></span><b id="m3vu"></b></div>
-        <div class="kv"><span><var>N</var> — на скільки порцій поділено паливо<span class="badge">гребінка порцій</span></span><b id="m3vN"></b></div>
+        <div class="kv" id="m3rN"><span><var>N</var> — на скільки порцій поділено паливо<span class="badge">гребінка порцій</span></span><b id="m3vN"></b></div>
+        <div class="kv" id="m3rQ" hidden><span><var>μ</var> — витрата палива за секунду<span class="badge">товщина струменя</span></span><b id="m3vq"></b></div>
       </div>
       <div class="panel">
         <h3>Величини</h3>
@@ -305,7 +333,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>швидкість зараз</span><b id="m3kV"></b></div>
         <div class="kv"><span>кінцева швидкість за сходинками</span><b id="m3kVend"></b></div>
         <div class="kv"><span>формула Ціолковського <var>u</var>·ln(<var>M</var><sub>0</sub>/<var>M</var><sub>к</sub>)</span><b id="m3kVts"></b></div>
-        <div class="kv"><span>сумарний імпульс системи<span class="badge">завжди нуль</span></span><b id="m3kP"></b></div>
+        <div class="kv" id="m3rP"><span>сумарний імпульс системи<span class="badge">завжди нуль</span></span><b id="m3kP"></b></div>
+        <div id="m3kvL" hidden>
+          <div class="kv"><span>сила тяги <var>F</var> = <var>μu</var><span class="badge">стала</span></span><b id="m3kF"></b></div>
+          <div class="kv"><span>вага ракети зараз <var>mg</var><span class="badge">спадає з паливом</span></span><b id="m3kW"></b></div>
+          <div class="kv"><span>тягоозброєність <var>F</var>/<var>M</var><sub>0</sub><var>g</var><span class="badge">&gt; 1 — злетить</span></span><b id="m3kTW"></b></div>
+          <div class="kv"><span>час роботи двигуна</span><b id="m3kTb"></b></div>
+          <div class="kv"><span>висота зараз</span><b id="m3kY"></b></div>
+          <div class="kv"><span>втрати на тяжіння <var>gt</var></span><b id="m3kLoss"></b></div>
+          <div class="formulas" id="m3fmesh"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -481,8 +518,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -834,7 +935,8 @@ const MU_S=4*Math.PI*Math.PI;     /* GM Сонця в одиницях а.о.³/
 
 /* ===================== МОДУЛЬ 1 · зіткнення тіл ===================== */
 const M1={
-  kind:'elastic', m1:1, v1:4, m2:2, v2:-1, k:0.6,
+  kind:'elastic', geom:'head', m1:1, v1:4, m2:2, v2:-1, k:0.6,
+  bp:0.3, X0:-4,                 /* прицільний параметр і точка старту шайби 1 */
   T:6, t:0, playing:true, waitT:0,
   hp:{x:null}, he:{x:null}, tipp:null, tipe:null,
   kk(){return this.kind==='elastic'?1:this.kind==='plastic'?0:this.k;},
@@ -848,6 +950,35 @@ const M1={
     const d=this.v1-this.v2;
     return d>1e-6?6.4/d:Infinity;      /* стартова відстань 7 м мінус ширини візків */
   },
+  /* --- не лобове зіткнення двох шайб -------------------------------------
+     Шайба 1 летить уздовж осі x із прицільним параметром b і зачіпає нерухому
+     шайбу 2. Удар відбувається вздовж лінії центрів: нормальні складові
+     швидкостей обмінюються за тією самою формулою з коефіцієнтом k, а
+     дотичні не змінюються взагалі (тертя між шайбами не враховуємо).
+     Радіус шайби ∝ √m — так у однакових за товщиною дисків. */
+  R1(){return 0.22+0.16*Math.sqrt(this.m1);},
+  R2(){return 0.22+0.16*Math.sqrt(this.m2);},
+  obl(){
+    const r1=this.R1(), r2=this.R2(), d=r1+r2, k=this.kk(), M=this.m1+this.m2;
+    const b=clamp(this.bp,-0.95*d,0.95*d);
+    const xc=-Math.sqrt(Math.max(1e-4,d*d-b*b));     /* центр шайби 1 у мить дотику */
+    const tc=(xc-this.X0)/Math.max(0.1,this.v1);
+    const nx=-xc/d, ny=-b/d;                          /* орт лінії центрів 1 → 2 */
+    const v1n=this.v1*nx;
+    const u1n=v1n*(this.m1-k*this.m2)/M;
+    const u2n=v1n*this.m1*(1+k)/M;
+    const u1={x:this.v1-v1n*nx+u1n*nx, y:-v1n*ny+u1n*ny};
+    const u2={x:u2n*nx, y:u2n*ny};
+    return {r1,r2,d,b,xc,tc,nx,ny,u1,u2,
+      th1:Math.atan2(u1.y,u1.x)/DEG, th2:Math.atan2(u2.y,u2.x)/DEG};
+  },
+  posOb(t){
+    const q=this.obl();
+    if(t<=q.tc) return {p1:{x:this.X0+this.v1*t,y:q.b}, p2:{x:0,y:0}, hit:false, q};
+    const dt=t-q.tc;
+    return {p1:{x:q.xc+q.u1.x*dt, y:q.b+q.u1.y*dt},
+            p2:{x:q.u2.x*dt, y:q.u2.y*dt}, hit:true, q};
+  },
   pos(t){
     const tc=this.tc(), a=this.after();
     if(t<=tc||!isFinite(tc)) return {x1:-3.5+this.v1*t, x2:3.5+this.v2*t, hit:false};
@@ -859,10 +990,26 @@ const M1={
     return t<=tc||!isFinite(tc)?{v1:this.v1,v2:this.v2}:{v1:a.u1,v2:a.u2};
   },
   /* Кадр сталий, тож заїзд обмежує саме він, а не годинник: дослід триває, доки
-     обидва візки в кадрі, але не довше за T. Інакше сталий кадр довелося б робити
-     під найшвидший розліт (94 м за 6 с), і за типових швидкостей візки збилися б
+     обидві шайби в кадрі, але не довше за T. Інакше сталий кадр довелося б робити
+     під найшвидший розліт (94 м за 6 с), і за типових швидкостей шайби збилися б
      докупи посеред порожнього полотна. */
   HALF:12,
+  /* світовий прямокутник для косого удару — сталий (§10) */
+  WX:[-5,12], WY:3.4,
+  tMaxOb(){
+    for(let i=1;i<=240;i++){
+      const t=this.T*i/240, q=this.posOb(t);
+      for(const p of [q.p1,q.p2])
+        if(p.x<this.WX[0]-0.3||p.x>this.WX[1]-0.3||Math.abs(p.y)>this.WY-0.3) return t;
+    }
+    return this.T;
+  },
+  geoOb(bb){
+    const WW=this.WX[1]-this.WX[0], HH=2*this.WY;
+    const sc=fitScale(bb.w,bb.h,44,44,WW,HH,0,0);
+    const cx=bb.w/2-(this.WX[0]+this.WX[1])/2*sc, cy=bb.h*0.5;
+    return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
+  },
   tMax(){
     const lim=this.HALF-0.5;
     for(let i=1;i<=240;i++){
@@ -874,10 +1021,12 @@ const M1={
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   KK:[['пластилін',0.1],['дерево',0.4],['сталь',0.6],['гума',0.85]],
-  bh(m){return 16+8*Math.min(m,4);},          /* висота візка ∝ масі */
+  /* Шайби в обох геометріях однакові: радіус росте як корінь із маси, тож
+     площа шайби і є її масою. Ніяких візків із колесами — стіл видно згори. */
   /* Кадр залежить від крайніх положень візків, а ті — від мас і швидкостей,
      які тягнуть. Заморожуємо і масштаб, і самі положення. */
   geo(b){return frozen(this,b,bb=>{
+    if(this.geom==='obl') return this.geoOb(bb);
     let lo=-4,hi=4;
     for(let i=0;i<=40;i++){
       const q=this.pos(this.tMax()*i/40);
@@ -885,8 +1034,8 @@ const M1={
     }
     /* Кадр сталий — під найшвидший розліт діапазону (v ≤ 6 м/с у різні боки за
        T = 6 с дає ≈93 м). Раніше масштаб брався з поточного розльоту, тож повільне
-       й швидке зіткнення виглядали однаково: візки завжди розходилися на ту саму
-       ширину полотна. Самі візки малюються сталими пікселями, тож лишаються
+       й швидке зіткнення виглядали однаково: шайби завжди розходилися на ту саму
+       ширину полотна. Самі шайби малюються сталими пікселями, тож лишаються
        читними — стискається тільки відстань між ними, а це й є фізика. */
     const SPAN=2*this.HALF;
     const sc=fitScale(bb.w,bb.h,40,0,SPAN+1.4,0,hi-lo+1.4,0);
@@ -896,21 +1045,43 @@ const M1={
        із візком, за який тягнуть. Нуль напрямної — посередині полотна. */
     const half=(bb.w-40)/2/sc;
     const SX=x=>bb.w/2+x*sc, p=this.pos(this.t);
-    return {lo:-half,hi:half,sc,SX,gy:bb.h-42,x1:SX(p.x1),x2:SX(p.x2),
+    return {lo:-half,hi:half,sc,SX,cy:bb.h*0.50,x1:SX(p.x1),x2:SX(p.x2),
       kk:{y:24,x0:bb.w-4*66-6,dx:66}};
   });},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
-    const Q=this.geo(b), gy=Q.gy;
+    const Q=this.geo(b);
+    if(this.geom==='obl'){
+      const q=this.obl(), sc=Q.sc;
+      const sx=Q.SX(this.X0), sy=Q.SY(q.b);
+      return [
+        /* сама шайба 1 на старті: піднімаєш її — росте прицільний параметр */
+        {id:'bp', x:sx, y:sy, r:q.r1*sc, bare:true, color:CLR.k1,
+         hint:'прицільний параметр b',
+         move:(px,py)=>{this.bp=clamp(snap((Q.cy-py)/sc,0.05),-1,1); this.reset();}},
+        {id:'v1', x:sx+this.v1*sc*0.5, y:sy, r:8, color:CLR.k1, hint:'швидкість шайби 1',
+         move:px=>{this.v1=clamp(snap((px-sx)/sc/0.5,0.1),1,6); this.reset();}},
+        {id:'m1', x:sx, y:sy-q.r1*sc, r:8, color:CLR.k1, hint:'маса шайби 1',
+         move:(px,py)=>{this.m1=clamp(snap(Math.pow(Math.max(0,(sy-py)/sc-0.22)/0.16,2),0.1),0.2,4);
+           this.reset();}},
+        {id:'m2', x:Q.SX(0), y:Q.SY(0)-q.r2*sc, r:8, color:CLR.k2, hint:'маса шайби 2',
+         move:(px,py)=>{this.m2=clamp(snap(Math.pow(Math.max(0,(Q.cy-py)/sc-0.22)/0.16,2),0.1),0.2,4);
+           this.reset();}}
+      ].concat(this.kind==='partial'
+        ? shelfGrips({y:b.h-18,x0:b.w-4*66-6,dx:66},this.KK,v=>{this.k=v; this.reset();},'kk')
+        : []);
+    }
+    const cy=Q.cy, sc=Q.sc;
     const out=[];
-    [['1',Q.x1,this.m1,this.v1,CLR.k1],['2',Q.x2,this.m2,this.v2,CLR.k2]]
-      .forEach(([n,px,m,v,col])=>{
-        const bh=this.bh(m);
-        out.push({id:'m'+n, x:px, y:gy-bh-8, r:8, color:col, hint:'маса візка '+n,
-          move:(mx,my)=>{this['m'+n]=clamp(snap((gy-8-my-16)/8,0.1),0.2,4); this.reset();}});
-        out.push({id:'v'+n, x:px+v*9.5, y:gy-bh-20, r:8, color:col,
-          hint:'початкова швидкість візка '+n,
-          move:mx=>{const q=clamp(snap((mx-px)/9.5,0.1),n==='1'?0:-6,n==='1'?6:0);
+    [['1',Q.x1,this.R1(),this.v1,CLR.k1],['2',Q.x2,this.R2(),this.v2,CLR.k2]]
+      .forEach(([n,px,r,v,col])=>{
+        out.push({id:'m'+n, x:px, y:cy-r*sc, r:8, color:col, hint:'маса шайби '+n,
+          move:(mx,my)=>{this['m'+n]=clamp(snap(Math.pow(Math.max(0,(cy-my)/sc-0.22)/0.16,2),0.1),0.2,4);
+            this.reset();}});
+        out.push({id:'v'+n, x:px+Math.sign(v||1)*r*sc+v*12, y:cy, r:8, color:col,
+          hint:'початкова швидкість шайби '+n,
+          move:mx=>{const q=clamp(snap((mx-px-Math.sign(v||1)*r*sc)/12,0.1),
+              n==='1'?0:-6,n==='1'?6:0);
             this['v'+n]=q; this.reset();}});
       });
     if(this.kind==='partial')
@@ -919,6 +1090,7 @@ const M1={
   },
   init(){
     seg('m1kind',v=>{this.kind=v; $('m1gK').hidden=v!=='partial'; this.reset();});
+    seg('m1geom',v=>{this.geom=v; this.showGeom(); this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.tMax()) this.reset();
@@ -928,57 +1100,189 @@ const M1={
     this.tipp=makeTip('m1cpw'); this.tipe=makeTip('m1cew');
     hover('m1cp',this.hp); hover('m1ce',this.he);
     $('m1gK').hidden=true;
+    this.showGeom();
     this.reset();
   },
+  showGeom(){
+    const ob=this.geom==='obl';
+    $('m1gB').hidden=!ob;
+    /* косий удар — це площина, а не напрямна: їй потрібна висота. Полотно
+       міняє висоту разом із режимом, кеш розмірів скидається. */
+    $('m1scene').style.height=ob?'540px':'';
+    delete CV['m1scene'];
+  },
+  TM(){return this.geom==='obl'?this.tMaxOb():this.tMax();},
   tick(dt){
     if(this._grab==null){
+      const TM=this.TM();
       if(this.playing){
-        this.t=Math.min(this.tMax(),this.t+dt);
-        if(this.t>=this.tMax()){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.tMax()){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+        this.t=Math.min(TM,this.t+dt);
+        if(this.t>=TM){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=TM){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
     }
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts();},
+  render(){
+    if(this.geom==='obl'){this.sceneOb(); this.tableOb();}
+    else {this.scene(); this.table();}
+    this.charts();
+  },
+  sceneOb(){
+    const b=cvx('m1scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b), sc=Q.sc, SX=Q.SX, SY=Q.SY;
+    const st=this.posOb(this.t), q=st.q;
+    g.clearRect(0,0,w,h);
+    /* стіл згори: сітка як орієнтир, без неї рух по площині нічим не міряти */
+    g.strokeStyle=CLR.grid; g.lineWidth=1;
+    for(let x=Math.ceil(this.WX[0]);x<=this.WX[1];x++){
+      g.beginPath(); g.moveTo(SX(x)+.5,SY(this.WY)); g.lineTo(SX(x)+.5,SY(-this.WY)); g.stroke();
+    }
+    for(let y=-Math.floor(this.WY);y<=this.WY;y++){
+      g.beginPath(); g.moveTo(SX(this.WX[0]),SY(y)+.5); g.lineTo(SX(this.WX[1]),SY(y)+.5); g.stroke();
+    }
+    txt(g,'стіл без тертя, згори · клітинка 1 м',SX(this.WX[0])+4,SY(-this.WY)+16,
+      {color:CLR.mut,size:10});
+    /* лінія польоту до удару й лінія центрів у мить дотику */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(SX(this.X0),SY(q.b)); g.lineTo(SX(q.xc),SY(q.b)); g.stroke();
+    g.setLineDash([]);
+    /* прицільний параметр b — відстань між лінією польоту й центром шайби 2 */
+    if(Math.abs(q.b)>0.02){
+      /* мітку ставимо біля старту: у точці удару на цьому ж місці стоїть сама шайба */
+      const bx=this.X0+1.1;
+      g.strokeStyle=CLR.k3; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(SX(bx),SY(0)); g.lineTo(SX(bx),SY(q.b)); g.stroke();
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(SX(this.WX[0]),SY(0)); g.lineTo(SX(q.xc),SY(0)); g.stroke();
+      g.setLineDash([]);
+      pill(g,'b = '+fmt(q.b,2)+' м',SX(bx),SY(q.b/2)-(q.b>0?0:0),{color:'#0d7a55',size:11,bold:true});
+    }
+    /* лінія центрів: саме вздовж неї й відбувається обмін імпульсом */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.5; g.setLineDash([5,4]);
+    g.beginPath();
+    g.moveTo(SX(q.xc-q.nx*1.3),SY(q.b-q.ny*1.3));
+    g.lineTo(SX(q.xc+q.nx*2.2),SY(q.b+q.ny*2.2)); g.stroke(); g.setLineDash([]);
+    if(!st.hit) pill(g,'лінія центрів',SX(q.xc+q.nx*2.4),SY(q.b+q.ny*2.4),
+      {color:CLR.sec,size:10.5,bold:true});
+    /* сліди */
+    const trail=(pick,col)=>{
+      g.strokeStyle=col; g.lineWidth=1.5; g.globalAlpha=0.5; g.setLineDash([2,3]);
+      g.beginPath();
+      for(let i=0;i<=60;i++){
+        const p=pick(this.posOb(this.t*i/60));
+        i?g.lineTo(SX(p.x),SY(p.y)):g.moveTo(SX(p.x),SY(p.y));
+      }
+      g.stroke(); g.setLineDash([]); g.globalAlpha=1;
+    };
+    trail(z=>z.p1,CLR.k1); trail(z=>z.p2,CLR.k2);
+    /* шайби */
+    const puck=(p,r,m,col,fill,name)=>{
+      dot(g,SX(p.x),SY(p.y),r*sc,fill);
+      g.strokeStyle=col; g.lineWidth=2.5;
+      g.beginPath(); g.arc(SX(p.x),SY(p.y),r*sc,0,7); g.stroke();
+      txt(g,fmt(m,1)+' кг',SX(p.x),SY(p.y)+r*sc+15,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+      txt(g,name,SX(p.x),SY(p.y)-r*sc-9,{color:CLR.mut,size:10,align:'center'});
+    };
+    puck(st.p2,q.r2,this.m2,CLR.k2,'rgba(235,104,52,.09)','шайба 2');
+    puck(st.p1,q.r1,this.m1,CLR.k1,'rgba(42,120,214,.09)','шайба 1');
+    /* швидкості. Масштаб — від верхньої межі діапазону v₁ (§10) */
+    const kv=Math.min(sc*0.9,72)/6;
+    const vArr=(p,vx,vy,col,txc,lab,r)=>{
+      const L=Math.hypot(vx,vy); if(L<0.05) return;
+      arrow(g,SX(p.x),SY(p.y),SX(p.x)+vx*kv,SY(p.y)-vy*kv,col,2.5);
+      pill(g,lab+' '+fmt(L,2)+' м/с',
+        SX(p.x)+vx*kv*0.6-(-vy/L)*(r*sc+16),SY(p.y)-vy*kv*0.6-(vx/L)*(r*sc+16),
+        {color:txc,size:11,bold:true});
+    };
+    if(st.hit){
+      vArr(st.p1,q.u1.x,q.u1.y,CLR.k1,'#1c5cab','u₁ =',q.r1);
+      vArr(st.p2,q.u2.x,q.u2.y,CLR.k2,'#b8431a','u₂ =',q.r2);
+    } else {
+      vArr(st.p1,this.v1,0,CLR.k1,'#1c5cab','v₁ =',q.r1);
+    }
+    if(this.kind==='partial')
+      shelf(g,{y:h-18,x0:w-4*66-6,dx:66},this.KK,this.k,'матеріал');
+    txt(g,st.hit?'після удару кожна шайба летить своїм кутом'
+                :'шайба 1 зачепить шайбу 2 збоку — удар буде не лобовим',
+      12,20,{color:st.hit?CLR.k3:CLR.k1,size:12.5,bold:true});
+    txt(g,'обмін відбувається вздовж лінії центрів; уздовж дотичної швидкості не міняються',
+      12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  tableOb(){
+    const q=this.obl(), st=this.posOb(this.t);
+    const p1a={x:this.m1*this.v1,y:0}, p2a={x:0,y:0};
+    const p1b={x:this.m1*q.u1.x,y:this.m1*q.u1.y};
+    const p2b={x:this.m2*q.u2.x,y:this.m2*q.u2.y};
+    const Ea=0.5*this.m1*this.v1*this.v1;
+    const Eb=0.5*this.m1*(q.u1.x*q.u1.x+q.u1.y*q.u1.y)+
+             0.5*this.m2*(q.u2.x*q.u2.x+q.u2.y*q.u2.y);
+    const M=(v)=>fmt(Math.hypot(v.x,v.y),2);
+    $('m1t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.TM(),2)+' с';
+    $('m1vm1').textContent=fmt(this.m1,1)+' кг';
+    $('m1vv1').textContent=fmt(this.v1,1)+' м/с';
+    $('m1vm2').textContent=fmt(this.m2,1)+' кг';
+    $('m1vv2').textContent='0,0 м/с (спочиває)';
+    $('m1vk').textContent=fmt(this.kk(),2);
+    $('m1vb').textContent=fmt(q.b,2)+' м';
+    $('m1vth1').textContent=fmt(q.th1,1)+'°';
+    $('m1vth2').textContent=fmt(q.th2,1)+'°';
+    $('m1vpy').textContent=fmt(p1b.y+p2b.y,3)+' кг·м/с';
+    $('m1p1a').textContent=M(p1a); $('m1p1b').textContent=M(p1b);
+    $('m1p2a').textContent=M(p2a); $('m1p2b').textContent=M(p2b);
+    $('m1psa').textContent=M({x:p1a.x+p2a.x,y:p1a.y+p2a.y});
+    $('m1psb').textContent=M({x:p1b.x+p2b.x,y:p1b.y+p2b.y});
+    $('m1v1a').textContent=fmt(this.v1,2); $('m1v1b').textContent=fmt(Math.hypot(q.u1.x,q.u1.y),2);
+    $('m1v2a').textContent='0,00'; $('m1v2b').textContent=fmt(Math.hypot(q.u2.x,q.u2.y),2);
+    $('m1ea').textContent=fmt(Ea,2); $('m1eb').textContent=fmt(Eb,2);
+    $('m1dp').textContent=fmt(Math.hypot(p1b.x+p2b.x-p1a.x,p1b.y+p2b.y),3)+' кг·м/с';
+    $('m1dE').textContent=fmt(Ea-Eb,2)+' Дж';
+    $('m1fx').innerHTML='вздовж лінії центрів удар звичайний, поперек неї швидкості не змінюються; '+
+      'при рівних масах і пружному ударі шайби розлітаються точно під <b>90°</b>';
+  },
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w,h}=b,p=this.pos(this.t),v=this.vel(this.t),Q=this.geo(b);
     /* кадр вміщує крайні положення обох візків за весь дослід */
-    const lo=Q.lo, hi=Q.hi, sc=Q.sc, SX=Q.SX, gy=Q.gy;
+    const lo=Q.lo, hi=Q.hi, sc=Q.sc, SX=Q.SX, cy=Q.cy;
     g.clearRect(0,0,w,h);
-    g.fillStyle=CLR.ground; g.fillRect(0,gy,w,h-gy);
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(0,gy+.5); g.lineTo(w,gy+.5); g.stroke();
-    const st=niceStep((hi-lo)/9);
+    /* стіл згори: лінія центрів із розміткою — ніякої «землі» тут немає,
+       шайби ковзають по гладкій поверхні, і дивимося ми на неї зверху */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([5,4]);
+    g.beginPath(); g.moveTo(0,cy+.5); g.lineTo(w,cy+.5); g.stroke(); g.setLineDash([]);
+    const st=niceStep((hi-lo)/9), ty=h-26;
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.moveTo(0,ty+.5); g.lineTo(w,ty+.5); g.stroke();
     for(let x=Math.ceil(lo/st)*st;x<=hi;x+=st){
       const px=SX(x); if(px<10||px>w-10) continue;
       g.strokeStyle=CLR.mut; g.lineWidth=1;
-      g.beginPath(); g.moveTo(px+.5,gy); g.lineTo(px+.5,gy+6); g.stroke();
-      txt(g,fmt(x,0),px,gy+18,{color:CLR.mut,size:9.5,align:'center'});
+      g.beginPath(); g.moveTo(px+.5,ty); g.lineTo(px+.5,ty+5); g.stroke();
+      txt(g,fmt(x,0),px,ty+16,{color:CLR.mut,size:9.5,align:'center'});
     }
-    txt(g,'напрямна без тертя, м',w-12,h-6,{color:CLR.mut,size:10,align:'right'});
-    const cart=(px,m,vv,col,name)=>{
-      const bw=0.6*sc, bh=this.bh(m);
-      g.fillStyle=col===CLR.k1?'rgba(42,120,214,.09)':'rgba(235,104,52,.09)';
-      g.strokeStyle=col; g.lineWidth=2;
-      g.beginPath(); g.roundRect(px-bw/2,gy-bh-8,bw,bh,4); g.fill(); g.stroke();
-      dot(g,px-bw/4,gy-5,5,'#fff',col); dot(g,px+bw/4,gy-5,5,'#fff',col);
-      txt(g,fmt(m,1)+' кг',px,gy-bh/2-4,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    txt(g,'гладкий стіл, м',w-12,ty-6,{color:CLR.mut,size:10,align:'right'});
+    const puck=(px,m,r,vv,col,name)=>{
+      const rr=r*sc;
+      dot(g,px,cy,rr,col===CLR.k1?'rgba(42,120,214,.09)':'rgba(235,104,52,.09)');
+      g.strokeStyle=col; g.lineWidth=2.5;
+      g.beginPath(); g.arc(px,cy,rr,0,7); g.stroke();
+      txt(g,fmt(m,1)+' кг',px,cy+rr+15,{color:CLR.sec,size:10.5,bold:true,align:'center'});
       if(Math.abs(vv)>0.03){
-        const L=vv*9.5;
-        arrow(g,px,gy-bh-20,px+L,gy-bh-20,col,2.5);
-        txt(g,fmt(vv,1)+' м/с',px+L+(L<0?-6:6),gy-bh-24,
+        /* стрілку ведемо від краю шайби, а не з центра: усередині кола вона
+           зливається з самою шайбою і з підписом маси */
+        const L=vv*12, s0=px+Math.sign(vv)*rr;
+        arrow(g,s0,cy,s0+L,cy,col,2.5);
+        txt(g,fmt(vv,1)+' м/с',s0+L+(L<0?-6:6),cy-9,
           {color:col===CLR.k1?'#1c5cab':'#b8431a',size:11,bold:true,align:L<0?'right':'left'});
       }
-      txt(g,name,px,gy-bh-36,{color:CLR.mut,size:10,align:'center'});
+      txt(g,name,px,cy-rr-9,{color:CLR.mut,size:10,align:'center'});
     };
-    cart(Q.x1,this.m1,v.v1,CLR.k1,'візок 1');
-    cart(Q.x2,this.m2,v.v2,CLR.k2,'візок 2');
+    puck(Q.x1,this.m1,this.R1(),v.v1,CLR.k1,'шайба 1');
+    puck(Q.x2,this.m2,this.R2(),v.v2,CLR.k2,'шайба 2');
     const nm={elastic:['абсолютно пружний удар',CLR.k1,'імпульс і кінетична енергія зберігаються обидва'],
       partial:['частково пружний удар',CLR.k2,'імпульс зберігається, частина енергії йде в тепло'],
-      plastic:['абсолютно непружний удар',CLR.k3,'візки злипаються: втрата енергії найбільша']}[this.kind];
+      plastic:['абсолютно непружний удар',CLR.k3,'шайби злипаються: втрата енергії найбільша']}[this.kind];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
-    txt(g,p.hit?nm[2]:'до удару: візки зближуються',12,36,{color:CLR.mut,size:10.5});
+    txt(g,p.hit?nm[2]:'до удару: шайби зближуються',12,36,{color:CLR.mut,size:10.5});
     if(this.kind==='partial') shelf(g,Q.kk,this.KK,this.k,'матеріал');
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
@@ -1005,6 +1309,7 @@ const M1={
       fmt(this.m1*this.v1,2)+' + ('+fmt(this.m2*this.v2,2)+') = <b>'+fmt(p0,2)+' кг·м/с</b> — і до, і після удару';
   },
   charts(){
+    if(this.geom==='obl'){this.chartsOb(); return;}
     const n=Math.max(2,Math.round(this.t/this.tMax()*140)+1);
     const ts=[],p1=[],p2=[],ps=[],e1=[],e2=[],es=[];
     for(let i=0;i<n;i++){
@@ -1038,6 +1343,34 @@ const M1={
                 {ts,ys:es,color:CLR.ink,label:'ΣE'}]});
       showTip(this.tipe,r,'Дж',this.he,[['E₁',CLR.k1],['E₂',CLR.k2],['ΣE',CLR.ink]],2);
     }
+  },
+  /* На площині імпульс має дві складові, і саме їх сталість — суть модуля:
+     Σpₓ не змінюється, а Σp_y як був нулем, так і лишається. */
+  chartsOb(){
+    const TM=this.TM(), n=Math.max(2,Math.round(this.t/TM*140)+1);
+    const ts=[],px=[],py=[],es=[];
+    for(let i=0;i<n;i++){
+      const t=this.t*i/(n-1), st=this.posOb(t), q=st.q;
+      const v1=st.hit?q.u1:{x:this.v1,y:0}, v2=st.hit?q.u2:{x:0,y:0};
+      ts.push(t);
+      px.push(this.m1*v1.x+this.m2*v2.x);
+      py.push(this.m1*v1.y+this.m2*v2.y);
+      es.push(0.5*this.m1*(v1.x*v1.x+v1.y*v1.y)+0.5*this.m2*(v2.x*v2.x+v2.y*v2.y));
+    }
+    const pTop=Math.max(1,this.m1*this.v1)*1.25;
+    const bp=cvx('m1cp');
+    if(bp){
+      const r=drawChart(bp,{tMax:TM,yMin:-pTop*0.45,yMax:pTop,yLab:'кг·м/с',yDec:2,hover:this.hp.x,
+        series:[{ts,ys:px,color:CLR.ink,label:'Σpₓ'},{ts,ys:py,color:CLR.k3,label:'Σp_y'}]});
+      showTip(this.tipp,r,'кг·м/с',this.hp,[['Σpₓ',CLR.ink],['Σp_y',CLR.k3]],3);
+    }
+    const be=cvx('m1ce');
+    if(be){
+      const eHi=Math.max(1,0.5*this.m1*this.v1*this.v1)*1.15;
+      const r=drawChart(be,{tMax:TM,yMin:0,yMax:eHi,yLab:'Дж',yDec:2,hover:this.he.x,
+        series:[{ts,ys:es,color:CLR.ink,label:'ΣE'}]});
+      showTip(this.tipe,r,'Дж',this.he,[['ΣE',CLR.ink]],2);
+    }
   }
 };
 
@@ -1047,46 +1380,64 @@ const M2={
   h0:3, R:0.6, mu:0.05, m:0.2,
   TSHOW:9, t:0, playing:true, waitT:0, path:null,
   he:{x:null}, hv:{x:null}, tipe:null, tipv:null,
-  L1(){return this.h0/Math.sin(BETA);},
+  /* Стик похилої з горизонталлю згладжено дугою спряження: без неї траса має
+     злам, швидкість там міняє напрям стрибком, і на графіках v(s) та E(s)
+     з'являється гострий кут, якого у справжньої гірки не буває. Дуга дотична
+     до обох ділянок, тож траса стає гладкою (C¹). */
+  RF(){return Math.min(1.2,this.h0*2);},
+  YJ(){return this.RF()*(1-Math.cos(BETA));},          /* висота верху дуги */
+  L1(){return (this.h0-this.YJ())/Math.sin(BETA);},    /* пряма частина схилу */
+  LA(){return this.RF()*BETA;},                        /* довжина дуги спряження */
+  XT(){return (this.h0-this.YJ())/Math.tan(BETA)+this.RF()*Math.sin(BETA);},
   L2(){return 1.6;},
   Lloop(){return 2*Math.PI*this.R;},
   L3(){return 2.2;},
-  S(){return this.L1()+this.L2()+this.Lloop()+this.L3();},
+  S(){return this.L1()+this.LA()+this.L2()+this.Lloop()+this.L3();},
   /* висота над підлогою як функція пройденого шляху */
   yOf(s){
-    const L1=this.L1(),L2=this.L2(),Ll=this.Lloop();
+    const L1=this.L1(),La=this.LA(),L2=this.L2(),Ll=this.Lloop(),Rf=this.RF();
     if(s<=L1) return this.h0-s*Math.sin(BETA);
-    if(s<=L1+L2) return 0;
-    if(s<=L1+L2+Ll) return this.R*(1-Math.cos((s-L1-L2)/this.R));
+    if(s<=L1+La){const f=BETA-(s-L1)/Rf; return Rf*(1-Math.cos(f));}
+    if(s<=L1+La+L2) return 0;
+    if(s<=L1+La+L2+Ll) return this.R*(1-Math.cos((s-L1-La-L2)/this.R));
     return 0;
   },
-  /* робота тертя на одиницю маси: у петлі тертя не враховуємо */
+  /* робота тертя на одиницю маси: у петлі тертя не враховуємо.
+     На дузі спряження нормальна складова ваги — mg·cos φ, тож інтеграл
+     по дузі дає μgR_f(sin β − sin φ). */
   frOf(s){
-    const L1=this.L1(),L2=this.L2(),Ll=this.Lloop();
+    const L1=this.L1(),La=this.LA(),L2=this.L2(),Ll=this.Lloop(),Rf=this.RF();
     const d1=Math.min(s,L1);
-    const d2=Math.max(0,Math.min(s,L1+L2)-L1);
-    const d3=Math.max(0,s-(L1+L2+Ll));
-    return this.mu*G*(d1*Math.cos(BETA)+d2+d3);
+    const da=Math.max(0,Math.min(s,L1+La)-L1);
+    const fEnd=BETA-da/Rf;
+    const arc=Rf*(Math.sin(BETA)-Math.sin(fEnd));
+    const d2=Math.max(0,Math.min(s,L1+La+L2)-(L1+La));
+    const d3=Math.max(0,s-(L1+La+L2+Ll));
+    return this.mu*G*(d1*Math.cos(BETA)+arc+d2+d3);
   },
   v2Of(s){return 2*(G*(this.h0-this.yOf(s))-this.frOf(s));},
   /* точки шляху в координатах сцени */
   xy(s){
-    const L1=this.L1(),L2=this.L2(),Ll=this.Lloop();
-    const xA=this.h0/Math.tan(BETA);
+    const L1=this.L1(),La=this.LA(),L2=this.L2(),Ll=this.Lloop();
+    const Rf=this.RF(), xT=this.XT();
     if(s<=L1) return {x:s*Math.cos(BETA), y:this.h0-s*Math.sin(BETA)};
-    if(s<=L1+L2) return {x:xA+(s-L1), y:0};
-    if(s<=L1+L2+Ll){
-      const f=(s-L1-L2)/this.R, xB=xA+L2;
+    if(s<=L1+La){
+      const f=BETA-(s-L1)/Rf;
+      return {x:xT-Rf*Math.sin(f), y:Rf*(1-Math.cos(f))};
+    }
+    if(s<=L1+La+L2) return {x:xT+(s-L1-La), y:0};
+    if(s<=L1+La+L2+Ll){
+      const f=(s-L1-La-L2)/this.R, xB=xT+L2;
       return {x:xB+this.R*Math.sin(f), y:this.R*(1-Math.cos(f))};
     }
-    return {x:xA+L2+(s-L1-L2-Ll), y:0};
+    return {x:xT+L2+(s-L1-La-L2-Ll), y:0};
   },
   /* прохід шляху з кроком по s: одразу дає і час, і місце зупинки */
   build(){
     const S=this.S(), N=700, ds=S/N;
     const L1=this.L1(),L2=this.L2(),Ll=this.Lloop();
     const arr={s:[0],t:[0],v:[Math.sqrt(Math.max(0,this.v2Of(0)))],y:[this.yOf(0)]};
-    let t=0, stop='кінець', sTop=L1+L2+Ll/2;
+    let t=0, stop='кінець', sTop=L1+this.LA()+L2+Ll/2;
     for(let i=1;i<=N;i++){
       const s=i*ds, v2=this.v2Of(s);
       if(v2<=0.01){stop='зупинилася: енергії забракло'; break;}
@@ -1124,7 +1475,7 @@ const M2={
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
     const Q=this.geo(b);
-    const xB=this.h0/Math.tan(BETA)+this.L2();     /* центр петлі по горизонталі */
+    const xB=this.XT()+this.L2();                  /* центр петлі по горизонталі */
     return [
       /* сама вершина колії: підняти старт — це і є дослід */
       {id:'h0', x:Q.SX(0), y:Q.SY(this.h0), r:9, color:CLR.k1, hint:'висота старту',
@@ -1208,7 +1559,7 @@ const M2={
     const p=this.path,i=this.idx(),s=p.s[i];
     const y=p.y[i], v=p.v[i];
     const Ek=this.m*v*v/2, Ep=this.m*G*y, Af=this.m*this.frOf(s);
-    const vTop2=this.v2Of(this.L1()+this.L2()+this.Lloop()/2);
+    const vTop2=this.v2Of(this.L1()+this.LA()+this.L2()+this.Lloop()/2);
     $('m2t').textContent='s = '+fmt(s,2)+' м з '+fmt(this.S(),2)+' м';
     $('m2state').textContent='';
     $('m2vh').textContent=fmt(this.h0,1)+' м';
@@ -1260,9 +1611,39 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · реактивний рух ===================== */
 const M3={
+  mode:'parts',
   M0:1000, frac:0.7, u:2500, N:12,
-  TSHOW:10, t:0, playing:true, waitT:0, steps:null,
+  q:40,                          /* витрата палива, кг/с — для старту із Землі */
+  HWIN:400,                      /* висота видимого вікна, м: камера їде за ракетою */
+  TSHOW:10, t:0, playing:true, waitT:0, steps:null, lau:null,
   hv:{x:null}, hp:{x:null}, tipv:null, tipp:null,
+  /* --- старт із Землі: рівняння Мещерського ------------------------------
+     m·dv/dt = u·μ − mg. Перший доданок — реактивна сила (тяга) F = μu, вона
+     стала; другий — вага, вона спадає разом із паливом. Ракета злітає лише
+     тоді, коли тяга більша за стартову вагу. Інтеграл дає формулу Ціолковського
+     з поправкою на тяжіння: v = u·ln(M₀/m) − gt. */
+  tBurn(){return this.M0*this.frac/this.q;},
+  thrust(){return this.q*this.u;},
+  buildLaunch(){
+    const tb=this.tBurn(), N=400, dt=tb/N;
+    const ts=[0],vs=[0],ys=[0],ms=[this.M0],as=[this.thrust()/this.M0-G];
+    let y=0,v=0;
+    for(let i=1;i<=N;i++){
+      const t=i*dt, m=this.M0-this.q*t;
+      /* аналітичний розв'язок Мещерського; висота — чисельно, по трапеціях */
+      const vNew=Math.max(0,this.u*Math.log(this.M0/m)-G*t);
+      y+=(v+vNew)/2*dt; v=vNew;
+      ts.push(t); vs.push(v); ys.push(y); ms.push(m);
+      as.push(this.thrust()/m-G);
+    }
+    this.lau={ts,vs,ys,ms,as,tb,
+      lift:this.thrust()>this.M0*G,
+      vEnd:vs[vs.length-1], yEnd:ys[ys.length-1]};
+  },
+  idxL(){
+    const L=this.lau;
+    return Math.min(L.ts.length-1,Math.max(0,Math.round(this.t/this.TSHOW*(L.ts.length-1))));
+  },
   /* послідовні викиди однакових порцій; закон збереження імпульсу на кожному кроці */
   build(){
     const Mf=this.M0*this.frac, dm=Mf/this.N;
@@ -1276,7 +1657,24 @@ const M3={
     }
     this.steps={v,pg,dm,Mf,Mk:this.M0-Mf};
   },
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.build(); this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=true; this.build(); this.buildLaunch(); this.updBtn();},
+  showMode(){
+    const L=this.mode==='launch';
+    $('m3rN').hidden=L; $('m3rQ').hidden=!L; $('m3rP').hidden=L; $('m3kvL').hidden=!L;
+    $('m3ch1').textContent=L?'швидкість ракети, м/с':'швидкість ракети, м/с';
+    $('m3cl1').innerHTML=L
+      ? '<span><span class="chip cI"></span>без тяжіння: u·ln(M₀/m)</span><span><span class="chip cB"></span>справжня v = u·ln(M₀/m) − gt</span>'
+      : '<span><span class="chip cB"></span>сходинки — по одній на порцію</span><span><span class="chip cI"></span>формула Ціолковського</span>';
+    $('m3ch2').textContent=L?'тяга і вага, кН':'імпульси, кг·м/с';
+    $('m3cl2').innerHTML=L
+      ? '<span><span class="chip cC"></span>тяга F = μu — стала</span><span><span class="chip cB"></span>вага mg — спадає</span>'
+      : '<span><span class="chip cA"></span>ракети</span><span><span class="chip cC"></span>викинутого газу</span><span><span class="chip cI"></span>сума</span>';
+    this.hv.xlab=L?'t':'порція'; this.hv.xunit=L?'с':''; this.hv.xdec=L?1:0;
+    this.hp.xlab=L?'t':'порція'; this.hp.xunit=L?'с':''; this.hp.xdec=L?1:0;
+    /* вертикальний старт вимагає висоти, порції в порожнечі — ширини */
+    $('m3scene').style.height=L?'480px':'';
+    delete CV['m3scene'];
+  },
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
   step(){return Math.min(this.N,Math.floor(this.t/this.TSHOW*this.N));},
   rs(){return 0.8+this.M0/1200;},        /* розмір ракети ∝ стартовій масі */
@@ -1285,7 +1683,17 @@ const M3={
   gxa(px){return Math.max(px-16*this.rs(),120+this.u*0.024);},
   /* бак усередині корпуса — спільна геометрія для малювання й для ручки */
   tank(px){const r=this.rs(); return {x0:px-12*r, L:26*r, h:9*r};},
+  geoL(bb){
+    /* Масштаб сталий: вікно завжди HWIN метрів заввишки, а камера їде за
+       ракетою. Тож швидкість видно з того, як швидко біжить шкала висоти. */
+    const sc=(bb.h-130)/this.HWIN;
+    const L=this.lau, k=this.idxL();
+    const yCam=Math.max(0,L.ys[k]-this.HWIN*0.35);
+    /* земля стоїть на 96 px від низу: під соплом має лишитися місце струменю */
+    return {sc,yCam,cx:bb.w*0.30,SY:q=>bb.h-96-(q-yCam)*sc,by:bb.h-96};
+  },
   geo(b){return frozen(this,b,bb=>{
+    if(this.mode==='launch') return this.geoL(bb);
     const s=this.steps, k=this.step();
     let x=0; for(let i=0;i<k;i++) x+=s.v[i]*this.TSHOW/this.N;
     x+=s.v[k]*(this.t-k*this.TSHOW/this.N);
@@ -1299,7 +1707,24 @@ const M3={
   });},
   grips(){
     const b=cvx('m3scene'); if(!b) return [];
-    const Q=this.geo(b), rs=this.rs(), px=Q.px, cy=Q.cy;
+    const Q=this.geo(b);
+    if(this.mode==='launch'){
+      const L=this.lau, k=this.idxL(), cx=Q.cx, rs=this.rs();
+      const ry=Q.SY(L.ys[k]);
+      return [
+        {id:'M0', x:cx+16*rs, y:ry, r:8, color:CLR.k1, hint:'стартова маса ракети',
+         move:mx=>{this.M0=clamp(snap(((mx-cx)/16-0.8)*1200,50),200,2000); this.reset();}},
+        {id:'u', x:cx, y:ry+34+this.u*0.016, r:8, color:CLR.k3,
+         hint:'швидкість витікання газу',
+         move:(mx,my)=>{this.u=clamp(snap((my-ry-34)/0.016,100),500,4000); this.reset();}},
+        {id:'q', x:cx-34-this.q*0.5, y:ry+44, r:8, color:CLR.k2,
+         hint:'витрата палива за секунду',
+         move:mx=>{this.q=clamp(snap((cx-34-mx)/0.5,1),5,120); this.reset();}},
+        {id:'frac', x:cx-16*rs, y:ry, r:7, color:CLR.k3, hint:'частка палива',
+         move:mx=>{this.frac=clamp(snap((cx-mx)/16/rs,0.05),0.1,0.9); this.reset();}}
+      ];
+    }
+    const rs=this.rs(), px=Q.px, cy=Q.cy;
     const T=this.tank(px), bx0=T.x0, bL=T.L;
     return [
       {id:'M0', x:px+34*rs, y:cy, r:8, color:CLR.k1, hint:'стартова маса ракети',
@@ -1317,6 +1742,7 @@ const M3={
     ];
   },
   init(){
+    seg('m3mode',v=>{this.mode=v; this.showMode(); this.reset();});
     grip('m3scene',this,()=>this.grips());
     $('m3play').onclick=()=>{
       if(!this.playing&&this.t>=this.TSHOW) this.reset();
@@ -1327,6 +1753,7 @@ const M3={
     hover('m3cv',this.hv); hover('m3cp',this.hp);
     this.hv.xlab='порція'; this.hv.xunit=''; this.hv.xdec=0;
     this.hp.xlab='порція'; this.hp.xunit=''; this.hp.xdec=0;
+    this.showMode();
     this.reset();
   },
   tick(dt){
@@ -1338,7 +1765,130 @@ const M3={
     }
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts();},
+  render(){
+    if(this.mode==='launch'){this.sceneL(); this.tableL(); this.chartsL();}
+    else {this.scene(); this.table(); this.charts();}
+  },
+  sceneL(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b), L=this.lau, k=this.idxL();
+    const sc=Q.sc, cx=Q.cx, SY=Q.SY, rs=this.rs();
+    const y=L.ys[k], v=L.vs[k], m=L.ms[k], F=this.thrust(), Wt=m*G;
+    const ry=SY(y), bh=26*rs, bw=16*rs;
+    g.clearRect(0,0,w,h);
+    /* земля й шкала висоти: саме по ній видно, як швидко росте висота */
+    const gy=SY(0);
+    if(gy<h+40){
+      g.fillStyle=CLR.ground; g.fillRect(0,gy,w,h-gy);
+      g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(0,gy+.5); g.lineTo(w,gy+.5); g.stroke();
+    }
+    const st=50;
+    for(let yy=Math.floor(Q.yCam/st)*st;yy<=Q.yCam+this.HWIN;yy+=st){
+      const py=SY(yy); if(py<10||py>h-8) continue;
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      g.beginPath(); g.moveTo(cx+bw*3.2,py+.5); g.lineTo(w-58,py+.5); g.stroke();
+      txt(g,fmt(yy,0)+' м',w-52,py+4,{color:CLR.mut,size:9.5});
+    }
+    /* ракета */
+    g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=CLR.k1; g.lineWidth=2.5;
+    g.beginPath();
+    g.moveTo(cx,ry-bh); g.lineTo(cx+bw,ry-bh*0.2); g.lineTo(cx+bw*0.7,ry+bh*0.5);
+    g.lineTo(cx-bw*0.7,ry+bh*0.5); g.lineTo(cx-bw,ry-bh*0.2); g.closePath();
+    g.fill(); g.stroke();
+    /* смуга палива в баку — видно, як воно вигоряє */
+    const fLeft=Math.max(0,(this.M0*this.frac-this.q*L.ts[k])/(this.M0*this.frac));
+    g.fillStyle='rgba(27,175,122,.35)';
+    g.fillRect(cx-bw*0.55,ry+bh*0.4-bh*0.55*fLeft,bw*1.1,bh*0.55*fLeft);
+    /* струмінь: його товщина — витрата μ, довжина — швидкість витікання u */
+    if(L.ts[k]<L.tb){
+      const jw=4+this.q*0.22;
+      const jl=Math.min(30+this.u*0.016,h-10-(ry+bh*0.5));
+      g.fillStyle='rgba(235,104,52,.28)';
+      g.beginPath();
+      g.moveTo(cx-jw/2,ry+bh*0.5); g.lineTo(cx+jw/2,ry+bh*0.5);
+      g.lineTo(cx+jw*0.22,ry+bh*0.5+jl); g.lineTo(cx-jw*0.22,ry+bh*0.5+jl);
+      g.closePath(); g.fill();
+      arrow(g,cx,ry+bh*0.5+6,cx,ry+bh*0.5+jl,CLR.k2,2);
+      txt(g,'u = '+fmt(this.u,0)+' м/с',cx+jw/2+10,ry+bh*0.5+jl*0.6,
+        {color:'#b8431a',size:10.5,bold:true});
+      txt(g,'μ = '+fmt(this.q,0)+' кг/с',cx-jw/2-10,ry+bh*0.5+jl*0.6,
+        {color:'#b8431a',size:10.5,bold:true,align:'right'});
+    }
+    /* сили: тяга вгору, вага вниз. Масштаб — від проєктної межі тяги (§10) */
+    const kF=110/(120*4000);
+    const fl=Math.min(F*kF,130), wl=Math.min(Wt*kF,130);
+    arrow(g,cx-bw-26,ry,cx-bw-26,ry-fl,CLR.k3,3);
+    pill(g,'F = μu = '+fmt(F/1000,1)+' кН',cx-bw-26,ry-fl-14,{color:'#0d7a55',size:11,bold:true});
+    arrow(g,cx+bw+26,ry,cx+bw+26,ry+wl,CLR.k2,3);
+    pill(g,'mg = '+fmt(Wt/1000,1)+' кН',cx+bw+26,ry+wl+16,{color:'#b8431a',size:11,bold:true});
+    /* швидкість ракети */
+    if(v>1){
+      const kv=Math.min(90,v*0.05);
+      arrow(g,cx,ry-bh-10,cx,ry-bh-10-kv,CLR.ink,2.5);
+      pill(g,'v = '+fmt(v,0)+' м/с',cx,ry-bh-16-kv,{color:CLR.ink,size:11,bold:true});
+    }
+    txt(g,L.lift?'тяга більша за вагу — ракета злітає'
+                :'тяга менша за стартову вагу — ракета не зрушить',
+      12,20,{color:L.lift?CLR.k1:CLR.k2,size:12.5,bold:true});
+    txt(g,'m·dv/dt = μu − mg — рівняння Мещерського: тяга стала, а вага спадає з паливом',
+      12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  tableL(){
+    const L=this.lau, k=this.idxL();
+    const m=L.ms[k], F=this.thrust();
+    $('m3t').textContent='t = '+fmt(L.ts[k],2)+' с з '+fmt(L.tb,2)+' с';
+    $('m3state').textContent=L.lift?'':'не злітає';
+    $('m3vM').textContent=fmt(this.M0,0)+' кг';
+    $('m3vf').textContent=fmt(this.frac,2);
+    $('m3vu').textContent=fmt(this.u,0)+' м/с';
+    $('m3vq').textContent=fmt(this.q,0)+' кг/с';
+    $('m3kMf').textContent=fmt(this.M0*this.frac,0)+' кг';
+    $('m3kMk').textContent=fmt(this.M0*(1-this.frac),0)+' кг';
+    $('m3kZ').textContent=fmt(1/(1-this.frac),2);
+    $('m3kV').textContent=fmt(L.vs[k],0)+' м/с';
+    $('m3kVend').textContent=fmt(L.vEnd,0)+' м/с';
+    $('m3kVts').textContent=fmt(this.u*Math.log(1/(1-this.frac)),0)+' м/с';
+    $('m3kF').textContent=fmt(F/1000,2)+' кН';
+    $('m3kW').textContent=fmt(m*G/1000,2)+' кН';
+    $('m3kTW').textContent=fmt(F/(this.M0*G),2);
+    $('m3kTb').textContent=fmt(L.tb,1)+' с';
+    $('m3kY').textContent=fmt(L.ys[k],0)+' м';
+    $('m3kLoss').textContent=fmt(G*L.ts[k],0)+' м/с';
+    $('m3fmesh').innerHTML='<i>v</i> = <i>u</i>·ln(<i>M</i>₀/<i>m</i>) − <i>gt</i> = '+
+      fmt(this.u,0)+'·ln('+fmt(this.M0,0)+'/'+fmt(m,0)+') − '+fmt(G*L.ts[k],0)+
+      ' = <b>'+fmt(L.vs[k],0)+' м/с</b>';
+  },
+  chartsL(){
+    const L=this.lau;
+    const bv=cvx('m3cv');
+    if(bv){
+      const ts=[],vs=[],vi=[];
+      for(let i=0;i<L.ts.length;i+=4){
+        ts.push(L.ts[i]); vs.push(L.vs[i]);
+        vi.push(this.u*Math.log(this.M0/L.ms[i]));      /* без тяжіння */
+      }
+      const hi=Math.max(1,...vi)*1.12;
+      const r=drawChart(bv,{tMax:L.tb,yMin:0,yMax:hi,yLab:'м/с',xLab:'t, с',
+        xStep:niceStep(L.tb/5),xDec:1,hover:this.hv.x,
+        series:[{ts,ys:vi,color:CLR.ink,label:'без тяжіння',dash:[5,4]},
+                {ts,ys:vs,color:CLR.k2,label:'справжня v'}]});
+      showTip(this.tipv,r,'м/с',this.hv,[['без тяжіння',CLR.ink],['справжня v',CLR.k2]],0);
+    }
+    const bp=cvx('m3cp');
+    if(bp){
+      const ts=[],fs=[],ws=[];
+      for(let i=0;i<L.ts.length;i+=4){
+        ts.push(L.ts[i]); fs.push(this.thrust()/1000); ws.push(L.ms[i]*G/1000);
+      }
+      const hi=Math.max(this.thrust(),this.M0*G)/1000*1.15;
+      const r=drawChart(bp,{tMax:L.tb,yMin:0,yMax:hi,yLab:'кН',xLab:'t, с',
+        xStep:niceStep(L.tb/5),xDec:1,yDec:1,hover:this.hp.x,
+        series:[{ts,ys:fs,color:CLR.k3,label:'тяга F'},{ts,ys:ws,color:CLR.k2,label:'вага mg'}]});
+      showTip(this.tipp,r,'кН',this.hp,[['тяга F',CLR.k3],['вага mg',CLR.k2]],2);
+    }
+  },
   scene(){
     const b=cvx('m3scene'); if(!b) return;
     const {g,w,h}=b,s=this.steps,k=this.step(),Q=this.geo(b);
@@ -1501,8 +2051,8 @@ const M4={
   geo(b){return frozen(this,b,bb=>{
     /* найдовший підвіс діапазону (L ≤ 2 м) — кадр під нього, а не під поточний */
     const LMAX=2;
-    const sc=fitScale(bb.w,bb.h,160,90,2.6*LMAX,1.5*LMAX,0,0);
-    const px=bb.w*0.52, py=34, th=this.th();
+    const sc=fitScale(bb.w,bb.h,150,56,2.6*LMAX,1.25*LMAX,0,0);
+    const px=bb.w*0.52, py=30, th=this.th();
     return {sc,px,py,th, bx:px+this.L*sc*Math.sin(th), by:py+this.L*sc*Math.cos(th),
       gx0:px-this.L*sc*1.05-40, gy0:py+this.L*sc};
   });},
@@ -1701,7 +2251,7 @@ const M5={
     /* Кадр під найбільшу орбіту діапазону (a ≤ 5). Півширина максимальна при a = 5,
        піввисота a√(1−e²) — там само при e = 0, тож обидві межі дає той самий a. */
     const AMAX=5;
-    const sc=fitScale(bb.w,bb.h,70,70,2*AMAX+0.6,2*AMAX+0.6,0,0);
+    const sc=fitScale(bb.w,bb.h,40,44,2*AMAX+0.6,2*AMAX+0.6,0,0);
     const cx=bb.w/2+a*e*sc, cy=bb.h/2+6;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
   });},

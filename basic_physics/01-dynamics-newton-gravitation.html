@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -103,12 +116,11 @@ table.read tr:last-child td{border-bottom:none}
 /* ============ сітки й полотна цієї теми ============ */
 .sgrid{display:grid; grid-template-columns:330px 1fr; gap:14px}
 /* touch-action — бо ручки m1scene тягнуть пальцем, а полотно стоїть поза .pgrid */
-#m1scene{width:100%; height:250px; touch-action:none}
-#m2scene{width:100%; height:330px}
-#m3scene{width:100%; height:560px}
-#m4scene{width:100%; height:340px}
-#m5scene{width:100%; height:600px}
-#m1diag,#m3diag{width:100%; height:170px}
+#m1scene{width:100%; height:320px; touch-action:none}
+#m2scene{width:100%; height:420px}
+#m3scene{width:100%; height:710px}
+#m4scene{width:100%; height:430px}
+#m5scene{width:100%; height:760px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -149,7 +161,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="panel">
       <h3>Що задано на сцені</h3>
       <div class="kv"><span><var>F</var> — сила тяги, прикладена до візка<span class="badge">наконечник стрілки</span></span><b id="m1vF"></b></div>
-      <div class="kv"><span><var>m</var> — маса візка<span class="badge">висота візка</span></span><b id="m1vm"></b></div>
+      <div class="kv"><span><var>m</var> — маса візка<span class="badge">повзунок нижче</span></span><b id="m1vm"></b></div>
+      <label class="sl"><span><var>m</var> — маса візка</span>
+        <input type="range" id="m1sm" min="0.5" max="5" step="0.1" value="2"><output id="m1smo"></output></label>
       <div class="kv"><span><var>μ</var> — коефіцієнт тертя візка об напрямну<span class="badge">полиця поверхонь</span></span><b id="m1vmu"></b></div>
       <div class="formulas">перший закон: доки <b>R = 0</b>, швидкість не змінюється.
       Другий: <b>a = R/m</b>. Тертя ковзання <b>f = μN</b> напрямлене проти руху.</div>
@@ -223,7 +237,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <table class="read" id="m2tab">
           <tr><th>тіло</th><th>момент інерції</th><th><var>I</var>, кг·м²</th><th><var>ε</var> = <var>M</var>/<var>I</var>, рад/с²</th></tr>
         </table>
-        <div class="formulas">що далі від осі розміщена маса, то більший <var>I</var> і то важче розкрутити тіло</div>
+        <div class="formulas" id="m2fst"></div>
       </div>
     </div>
     <div class="side">
@@ -233,11 +247,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>r</var> — плече сили від осі обертання<span class="badge">точка прикладання</span></span><b id="m2vr"></b></div>
         <div class="kv"><span><var>m</var> — маса тіла<span class="badge">брусок унизу</span></span><b id="m2vm"></b></div>
         <div class="kv"><span><var>R</var> — радіус (для стрижня — піврозмір)<span class="badge">обід тіла</span></span><b id="m2vR"></b></div>
+        <div class="kv"><span><var>d</var> — на скільки вісь віднесено від центра мас<span class="badge">центр мас</span></span><b id="m2vd"></b></div>
       </div>
       <div class="panel">
         <h3>Величини обертання</h3>
         <div class="kv"><span>момент сили <var>M</var> = <var>Fr</var></span><b id="m2kM"></b></div>
-        <div class="kv"><span>момент інерції <var>I</var></span><b id="m2kI"></b></div>
+        <div class="kv"><span>власний момент <var>I</var><sub>c</sub> (вісь через центр мас)</span><b id="m2kIc"></b></div>
+        <div class="kv"><span>додаток Штейнера <var>md</var>²</span><b id="m2kSt"></b></div>
+        <div class="kv"><span>момент інерції <var>I</var> = <var>I</var><sub>c</sub> + <var>md</var>²</span><b id="m2kI"></b></div>
         <div class="kv"><span>кутове прискорення <var>ε</var> = <var>M</var>/<var>I</var></span><b id="m2kE"></b></div>
         <div class="kv"><span>кутова швидкість <var>ω</var> = <var>εt</var></span><b id="m2kW"></b></div>
         <div class="kv"><span>кут повороту <var>φ</var> = <var>εt</var>²/2</span><b id="m2kPhi"></b></div>
@@ -277,6 +294,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="seg" id="m3mode">
             <button data-v="pair" class="active" style="--c:var(--k1)">два бруски на нитці</button>
             <button data-v="lift" style="--c:var(--k2)">вага в ліфті</button>
+            <button data-v="rot" style="--c:var(--k3)">обертова платформа</button>
           </div>
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="скинути">↺</button>
@@ -304,6 +322,13 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="kv"><span><var>α</var> — кут нахилу площини до горизонту<span class="badge">точка на дузі</span></span><b id="m3val"></b></div>
           <div class="kv"><span><var>μ</var> — коефіцієнт тертя брусків об площину<span class="badge">полиця поверхонь</span></span><b id="m3vmu"></b></div>
         </div>
+        <div class="grp" id="m3gRot" hidden>
+          <div class="kv"><span><var>ω</var> — кутова швидкість платформи<span class="badge">мітка на ободі</span></span><b id="m3vom"></b></div>
+          <div class="kv"><span><var>v</var><sub>0</sub> — з якою швидкістю шайбу пущено з центра<span class="badge">наконечник стрілки</span></span><b id="m3vv0"></b></div>
+          <div class="kv"><span><var>m</var> — маса шайби<span class="badge">розмір шайби</span></span><b id="m3vrm"></b></div>
+          <div class="formulas">на шайбу не діє жодна горизонтальна сила: у СВ землі вона летить по прямій.
+            Викривлення видно лише в СВ платформи — і пояснюють його силами інерції</div>
+        </div>
         <div class="grp" id="m3gLift" hidden>
           <div class="kv"><span><var>m</var> — маса людини на вагах у кабіні<span class="badge">зріст пасажира</span></span><b id="m3vlm"></b></div>
           <div class="kv"><span><var>a</var> — прискорення кабіни при розгоні (вгору додатне)<span class="badge">шкала біля кабіни</span></span><b id="m3vla"></b></div>
@@ -319,6 +344,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="kv"><span>скочувальна складова ваги</span><b id="m3kg"></b></div>
           <div class="kv"><span>нитка тягне брусок 1 назад</span><b id="m3kT1"></b></div>
           <div class="kv"><span>нитка тягне брусок 2 вперед</span><b id="m3kT2"></b></div>
+        </div>
+        <div id="m3kvRot" hidden>
+          <div class="kv"><span>відстань шайби від осі <var>r</var></span><b id="m3krr"></b></div>
+          <div class="kv"><span>швидкість шайби в СВ платформи <var>v</var>′</span><b id="m3krv"></b></div>
+          <div class="kv"><span>сила Коріоліса <var>F</var> = 2<var>mωv</var>′<span class="badge">⟂ до v′</span></span><b id="m3krc"></b></div>
+          <div class="kv"><span>відцентрова сила <var>mω</var>²<var>r</var><span class="badge">від осі</span></span><b id="m3krf"></b></div>
+          <div class="kv"><span>у СВ землі сил немає<span class="badge">рух прямолінійний рівномірний</span></span><b>0 Н</b></div>
+          <div class="formulas" id="m3rfx"></div>
         </div>
         <div id="m3kvLift" hidden>
           <div class="kv"><span>маса людини<span class="badge">стала завжди</span></span><b id="m3kM"></b></div>
@@ -449,6 +482,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>апогей — найдальша точка</span><b id="m5kApo"></b></div>
         <div class="kv"><span>ексцентриситет <var>e</var></span><b id="m5kE"></b></div>
         <div class="kv"><span>період обертання <var>T</var></span><b id="m5kT"></b></div>
+        <div class="kv"><span>синхронність із добою <var>T</var>/доба<span class="badge">1,00 — геостаціонарна</span></span><b id="m5kSyn"></b></div>
+        <div class="kv"><span>геостаціонарний радіус ∛(<var>μT</var>²/4π²)<span class="badge">35 793 км над Землею</span></span><b id="m5kRg"></b></div>
         <div class="kv"><span>швидкість зараз</span><b id="m5kV"></b></div>
       </div>
       <div class="panel">
@@ -520,8 +555,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -885,6 +984,7 @@ const M1={
   MU:[['лід',0.02],['сталь',0.15],['дерево',0.3],['гума',0.5]],
   SPATH:40,                       /* видима траса, м — стала межа кадру */
   FMAX:20, MMAX:5,                /* верхні межі ручок; звідси й беруться масштаби */
+  AMAX:10,                        /* проєктна межа для стрілки прискорення */
   /* Заїзд обривається на кінці траси, а не через фіксовані T секунд. Інакше
      довелося б розтягувати кадр під пройдений шлях — і сильніша тяга не давала б
      на екрані нічого: візок однаково проходив би ту саму смугу пікселів. */
@@ -897,9 +997,9 @@ const M1={
     const sTot=this.SPATH;
     const sc=fitScale(bb.w,bb.h,150,0,sTot+1.6,0,0,0);
     const k=96/this.FMAX;
-    return {sTot,sc,gy:bb.h-40,k,vk:38/(this.MMAX*G),
+    return {sTot,sc,gy:bb.h-40,k,vk:66/(this.MMAX*G),
       SX:x=>60+x*sc, cx:60+this.vals(this.t).s*sc,
-      bw:40+this.m*6, bh:14+this.m*4,
+      bw:54+this.m*10, bh:22+this.m*8,
       mu:{y:24,x0:bb.w-4*62-6,dx:62}};
   });},
   grips(){
@@ -908,9 +1008,9 @@ const M1={
     return [
       {id:'F', x:Q.cx+Q.bw/2+this.F*Q.k, y:cy-Q.bh/2, r:8, color:CLR.k1, hint:'сила тяги',
        move:px=>{this.F=clamp(snap((px-Q.cx-Q.bw/2)/Q.k,0.5),0,20); this.reset();}},
-      /* дах візка: вище дах — важчий візок; розмір тіла і є його маса */
-      {id:'m', x:Q.cx, y:cy-Q.bh, r:8, color:CLR.k2, hint:'маса візка',
-       move:(px,py)=>{this.m=clamp(snap((cy-py-14)/4,0.1),0.5,5); this.reset();}}
+      /* Маса ручки на кресленні більше не має: висота візка читалася як його
+         розмір, а не як маса, і тягнути дах було неочевидно. Тепер масу задає
+         повзунок у бічній колонці, а візок лише відображає її розміром. */
     ].concat(shelfGrips(Q.mu,this.MU,v=>{this.mu=v; this.reset();}));
   },
   reset(){
@@ -921,6 +1021,7 @@ const M1={
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   init(){
     grip('m1scene',this,()=>this.grips());
+    slider('m1sm','кг',1,v=>{this.m=v; this.reset();});
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.tMax()) this.reset();
       else {this.playing=!this.playing; this.updBtn();}
@@ -994,6 +1095,15 @@ const M1={
       const ry=ay-56;
       arrow(g,cx,ry,cx+q.R*k,ry,CLR.ink,4);
       txt(g,'рівнодійна R = '+fmt(q.R,1)+' Н',cx+q.R*k+8,ry+4,{color:CLR.ink,size:12.5,bold:true});
+      /* Прискорення — окремим вектором під рівнодійною: воно завжди з нею
+         співнапрямлене, а вдвічі коротше за неї означає вдвічі більшу масу.
+         Масштаб — від проєктної межі AMAX, а не від поточного a (§10). */
+      const ry2=ay-86, ka=96/this.AMAX;
+      const al=Math.min(q.a,this.AMAX)*ka;
+      arrow(g,cx,ry2,cx+al,ry2,CLR.k2,4);
+      txt(g,'a = R/m = '+fmt(q.a,2)+' м/с²',cx+al+8,ry2+4,{color:'#b8431a',size:12.5,bold:true});
+      if(q.a>this.AMAX)
+        txt(g,'(вийшло за кадр)',cx+al+8,ry2+18,{color:CLR.mut,size:10});
     }
     if(q.v>0.02){
       arrow(g,cx,ay+18,cx+Math.min(80,q.v*8),ay+18,CLR.k2,3);
@@ -1069,11 +1179,16 @@ const BODIES=[
   {k:'rod', n:'стрижень', f:'m(2R)²/12',c:m=>1/3,   col:'ink'}
 ];
 const M2={
-  body:'hoop', F:1, r:0.4, m:2, R:0.4, T:6, t:0, playing:true, waitT:0,
+  body:'hoop', F:1, r:0.4, m:2, R:0.4, d:0.2, T:6, t:0, playing:true, waitT:0,
   FMAX:2,                 /* верхня межа сили; з неї ж рахується довжина стрілки */
+  DMAX:0.35,              /* найбільше зміщення осі; звідси ж і кадр сцени */
   hist:null, hw:{x:null}, he:{x:null}, tipw:null, tipe:null,
   M(){return this.F*Math.min(this.r,this.R);},
-  I(k){return BODIES.find(b=>b.k===(k||this.body)).c()*this.m*this.R*this.R;},
+  /* момент інерції відносно власної осі, що проходить через центр мас */
+  Ic(k){return BODIES.find(b=>b.k===(k||this.body)).c()*this.m*this.R*this.R;},
+  /* теорема Штейнера: віднести вісь на d від центра мас — додати md².
+     Сама маса не змінилася, змінився лише її розподіл відносно осі. */
+  I(k){const d=this.dNow(); return this.Ic(k)+this.m*d*d;},
   eps(k){return this.M()/this.I(k);},
   reset(){
     this.t=0; this.waitT=0; this.playing=true;
@@ -1088,11 +1203,30 @@ const M2={
   /* Заморожуємо кут повороту: тіло крутиться, і без цього ручка на ободі
      тікала б із-під пальця вже через кадр. Масштаб сцени сталий. */
   geo(b){return frozen(this,b,bb=>{
-    const sc=Math.min(bb.w*0.3,(bb.h-64)*0.42)/0.5;
-    const phi=this.eps()*this.t*this.t/2;
-    return {cx:bb.w/2, cy:bb.h/2+8, sc, phi, ax:-phi,
+    /* Кадр рахуємо з верхньої межі розмаху (§10): найдальша точка тіла
+       віддалена від осі на d + R, тобто щонайбільше на DMAX + R_max. */
+    const sc=Math.min(bb.w*0.30,(bb.h-46)*0.50)/(this.DMAX+0.5);
+    const cx=bb.w/2, cy=bb.h/2+8;
+    /* Заморожуємо тільки масштаб і центр кадру. Кут повороту й положення осі
+       рахуються в мить малювання: інакше, поки тягнеш вісь, тіло стояло б на
+       місці, а зсув з'являвся б аж на відпусканні — саме це й ховало від ока
+       зв'язок «далі вісь → більший I → повільніше розкручується». */
+    const S=this;
+    return {cx, cy, sc,
+      get phi(){return S.eps()*S.t*S.t/2;},
+      get ax(){return -this.phi;},
+      /* Центр мас обходить вісь по колу радіуса d. Для стрижня цей відрізок
+         лежить УЗДОВЖ стрижня — вісь можна пересунути лише по ньому, бо поза
+         стрижнем її просто нема до чого кріпити. Для решти тіл беремо напрям
+         під 90° до плеча сили, щоб підписи d і r не злипалися. */
+      get ac(){return S.body==='rod'?this.ax+Math.PI:this.ax-Math.PI/2;},
+      get cmx(){return cx+S.dNow()*sc*Math.cos(this.ac);},
+      get cmy(){return cy+S.dNow()*sc*Math.sin(this.ac);},
       kF:Math.min(this.R*sc*1.3,84)/this.FMAX};
   });},
+  /* У стрижня вісь не може вийти за його кінець: d ≤ півдовжина R */
+  dMax(){return this.body==='rod'?Math.min(this.DMAX,this.R):this.DMAX;},
+  dNow(){return Math.min(this.d,this.dMax());},
   side(){return 14+20*Math.sqrt(this.m);},   /* площа бруска — маса тіла */
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
@@ -1101,9 +1235,18 @@ const M2={
     const px=Q.cx+rr*Math.cos(ax), py=Q.cy+rr*Math.sin(ax);
     const tx=Math.sin(ax), ty=-Math.cos(ax), sd=this.side();
     return [
-      {id:'R', x:Q.cx-rp*Math.cos(ax), y:Q.cy-rp*Math.sin(ax), r:9, color:CLR.sec,
+      {id:'R', x:Q.cmx-rp*Math.cos(ax), y:Q.cmy-rp*Math.sin(ax), r:9, color:CLR.sec,
        hint:'радіус тіла',
-       move:(mx,my)=>{this.R=clamp(snap(Math.hypot(mx-Q.cx,my-Q.cy)/sc,0.01),0.2,0.5);
+       move:(mx,my)=>{this.R=clamp(snap(Math.hypot(mx-Q.cmx,my-Q.cmy)/sc,0.01),0.2,0.5);
+         this.d=Math.min(this.d,this.dMax()); this.reset();}},
+      /* центр мас: відтягуючи його від осі, задаємо плече d теореми Штейнера.
+         У стрижня рух ручки проєктуємо на сам стрижень — упоперек вісь не їде */
+      {id:'d', x:Q.cmx, y:Q.cmy, r:9, color:CLR.k3, hint:'віднести вісь від центра мас',
+       move:(mx,my)=>{
+         const dd=this.body==='rod'
+           ? Math.max(0,(mx-Q.cx)*Math.cos(Q.ac)+(my-Q.cy)*Math.sin(Q.ac))/sc
+           : Math.hypot(mx-Q.cx,my-Q.cy)/sc;
+         this.d=clamp(snap(dd,0.01),0,this.dMax());
          this.reset();}},
       {id:'r', x:px, y:py, r:8, color:CLR.k1, hint:'плече сили',
        move:(mx,my)=>{this.r=clamp(snap(Math.hypot(mx-Q.cx,my-Q.cy)/sc,0.01),0.05,this.R);
@@ -1117,7 +1260,7 @@ const M2={
     ];
   },
   init(){
-    seg('m2body',v=>{this.body=v; this.reset();});
+    seg('m2body',v=>{this.body=v; this.d=Math.min(this.d,this.dMax()); this.reset();});
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
@@ -1150,29 +1293,44 @@ const M2={
     const b=cvx('m2scene'); if(!b) return;
     const {g,w,h}=b, Q=this.geo(b);
     const cx=Q.cx, cy=Q.cy, sc=Q.sc;
+    const bx0=Q.cmx, by0=Q.cmy;            /* центр мас тіла */
     const rp=this.R*sc, rr=Math.min(this.r,this.R)*sc;
     const eps=this.eps(), phi=Q.phi, om=eps*this.t;
     const col={hoop:CLR.k1,disk:CLR.k2,ball:CLR.k3,rod:CLR.ink}[this.body];
     g.clearRect(0,0,w,h);
     const ax=Q.ax;
     if(this.body==='rod'){
-      g.save(); g.translate(cx,cy); g.rotate(ax);
+      g.save(); g.translate(bx0,by0); g.rotate(ax);
       g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=col; g.lineWidth=2.5;
       g.beginPath(); g.roundRect(-rp,-9,2*rp,18,4); g.fill(); g.stroke(); g.restore();
     } else {
       g.fillStyle=this.body==='hoop'?'transparent':'rgba(11,11,11,.05)';
-      if(this.body!=='hoop'){g.beginPath(); g.arc(cx,cy,rp,0,7); g.fill();}
+      if(this.body!=='hoop'){g.beginPath(); g.arc(bx0,by0,rp,0,7); g.fill();}
       g.strokeStyle=col; g.lineWidth=this.body==='hoop'?4:2.5;
-      g.beginPath(); g.arc(cx,cy,rp,0,7); g.stroke();
+      g.beginPath(); g.arc(bx0,by0,rp,0,7); g.stroke();
       if(this.body==='ball'){
         g.strokeStyle=CLR.grid; g.lineWidth=1;
-        g.beginPath(); g.ellipse(cx,cy,rp,rp*0.42,0,0,7); g.stroke();
+        g.beginPath(); g.ellipse(bx0,by0,rp,rp*0.42,0,0,7); g.stroke();
       }
       for(let k=0;k<4;k++){
         const a=ax+k*Math.PI/2;
         g.strokeStyle=CLR.grid; g.lineWidth=1.5;
-        g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+Math.cos(a)*rp,cy+Math.sin(a)*rp); g.stroke();
+        g.beginPath(); g.moveTo(bx0,by0); g.lineTo(bx0+Math.cos(a)*rp,by0+Math.sin(a)*rp); g.stroke();
       }
+    }
+    /* ---- вісь, центр мас і плече d (теорема Штейнера) ---------------------
+       Вісь стоїть на місці, а центр мас обходить її по колу радіуса d. Що
+       далі вісь від центра мас, то більший I = I_c + md² і то важче розкрутити
+       те саме тіло тим самим моментом. */
+    if(this.dNow()>0.005){
+      g.strokeStyle=CLR.k3; g.lineWidth=1.5; g.setLineDash([5,4]);
+      g.beginPath(); g.moveTo(cx,cy); g.lineTo(bx0,by0); g.stroke(); g.setLineDash([]);
+      /* підпис виносимо поперек самого відрізка d — уздовж нього вже лежать
+         плече r і дуга φ, і три підписи злипалися в одну пляму */
+      const ddx=bx0-cx, ddy=by0-cy, dl=Math.hypot(ddx,ddy)||1;
+      pill(g,'центр мас · d = '+fmt(this.dNow(),2)+' м',
+        (cx+bx0)/2-ddy/dl*22,(cy+by0)/2+ddx/dl*22,{color:'#0d7a55',size:11,bold:true});
+      dot(g,bx0,by0,4.5,CLR.k3,'#fff');
     }
     /* шків радіуса r, до якого прикладено силу */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
@@ -1196,17 +1354,25 @@ const M2={
     }
     /* мітка тіла — на чверть оберту попереду точки прикладання сили,
        інакше підписи v та F лягають один на одного */
-    const bx=ax+Math.PI/2, btx=Math.sin(bx), bty=-Math.cos(bx);
-    const mx=cx+rp*Math.cos(bx), my=cy+rp*Math.sin(bx);
+    const bx=ax+Math.PI/2;
+    const mx=bx0+rp*Math.cos(bx), my=by0+rp*Math.sin(bx);
     dot(g,mx,my,5,CLR.ink,'#fff');
-    const v=om*this.R, kv=Math.min(rp*1.1,72)/Math.max(1e-6,this.eps('ball')*this.T*this.R);
+    /* швидкість мітки — ω помножити на її відстань саме від осі, а не від
+       центра мас: при зміщеній осі це різні величини */
+    const rmx=mx-cx, rmy=my-cy, rm=Math.hypot(rmx,rmy)||1;
+    const btx=-rmy/rm, bty=rmx/rm;
+    const v=om*rm/sc;
+    const kv=Math.min(rp*1.1,72)/Math.max(1e-6,this.eps('ball')*this.T*(0.5+this.DMAX));
     if(v*kv>4){
       arrow(g,mx,my,mx+btx*v*kv,my+bty*v*kv,CLR.k2,2.5);
-      txt(g,'v = '+fmt(v,1)+' м/с',mx+btx*v*kv+(btx<0?-8:8),my+bty*v*kv+(bty<0?-8:14),
+      txt(g,'v = ω·r = '+fmt(v,1)+' м/с',mx+btx*v*kv+(btx<0?-8:8),my+bty*v*kv+(bty<0?-8:14),
         {color:'#b8431a',size:11,bold:true,align:btx<0?'right':'left'});
     }
-    dot(g,cx,cy,4,CLR.sec);
-    txt(g,'вісь',cx-9,cy+4,{color:CLR.mut,size:10,align:'right'});
+    /* вісь ⊙ — дивиться на глядача */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+    g.beginPath(); g.arc(cx,cy,7,0,7); g.stroke();
+    dot(g,cx,cy,2.2,CLR.sec);
+    txt(g,'вісь ⊙',cx,cy+22,{color:CLR.mut,size:10,align:'center'});
     /* брусок, площа якого дорівнює масі тіла: радіус уже зайнятий самим ободом,
        тож масі потрібен власний образ */
     const sd=this.side();
@@ -1224,6 +1390,13 @@ const M2={
     $('m2vr').textContent=fmt(this.r,2)+' м';
     $('m2vm').textContent=fmt(this.m,1)+' кг';
     $('m2vR').textContent=fmt(this.R,2)+' м';
+    $('m2vd').textContent=fmt(this.dNow(),2)+' м';
+    $('m2kIc').textContent=fmt(this.Ic(),3)+' кг·м²';
+    $('m2kSt').textContent=fmt(this.m*this.dNow()*this.dNow(),3)+' кг·м²';
+    $('m2fst').innerHTML=this.dNow()>0.005
+      ? 'теорема Штейнера: <i>I</i> = <i>I</i><sub>c</sub> + <i>md</i>² = '+fmt(this.Ic(),3)+' + '+
+        fmt(this.m,1)+'·'+fmt(this.dNow(),2)+'² = <b>'+fmt(this.I(),3)+' кг·м²</b> — те саме тіло, але розкрутити його важче'
+      : 'вісь проходить через центр мас: <i>d</i> = 0, тож <i>I</i> = <i>I</i><sub>c</sub>. Відтягніть центр мас від осі — додасться <i>md</i>²';
     $('m2kM').textContent=fmt(M,2)+' Н·м';
     $('m2kI').textContent=fmt(this.I(),3)+' кг·м²';
     $('m2kE').textContent=fmt(eps,2)+' рад/с²';
@@ -1265,9 +1438,32 @@ const M3={
   mode:'pair',
   F:30, m1:2, m2:3, al:0, mu:0.1,
   lm:70, la:2,
+  om:1.4, v0:0.5, rm:0.6,        /* обертова платформа: ω, швидкість пуску, маса шайби */
+  RP:1.0,                        /* радіус платформи, м — стала межа кадру */
   t:0, playing:true, waitT:0, hist:null,
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
-  T(){return this.mode==='pair'?4:8;},
+  T(){return this.mode==='pair'?4:this.mode==='rot'?this.RP/this.v0:8;},
+  /* --- вільна шайба на обертовій платформі ---------------------------------
+     Горизонтальних сил немає, тож у СВ землі шайба летить по прямій зі
+     сталою швидкістю. У СВ платформи та сама пряма виглядає закрученою, і
+     щоб пояснити викривлення, вводять дві сили інерції: відцентрову mω²r
+     і силу Коріоліса 2mωv′, перпендикулярну до швидкості в цій СВ. */
+  rot(t){
+    const om=this.om, v0=this.v0, a=om*t;
+    const ca=Math.cos(a), sa=Math.sin(a);
+    /* СВ землі: пряма вздовж осі x */
+    const X=v0*t, Y=0;
+    /* СВ платформи: та сама точка в осях, що обертаються разом із платформою */
+    const x=X*ca+Y*sa, y=-X*sa+Y*ca;
+    /* швидкість у СВ платформи */
+    const vx=v0*ca-v0*om*t*sa, vy=-v0*sa-v0*om*t*ca;
+    const r=Math.hypot(x,y), vp=Math.hypot(vx,vy);
+    /* Коріоліс: −2m(ω×v′); при ω = ω·ẑ це 2mω(v′_y, −v′_x) */
+    const fcx=2*this.rm*om*vy, fcy=-2*this.rm*om*vx;
+    const ffx=this.rm*om*om*x, ffy=this.rm*om*om*y;
+    return {X,Y,x,y,vx,vy,r,vp,a,
+      Fc:2*this.rm*om*vp, Ff:this.rm*om*om*r, fcx,fcy,ffx,ffy};
+  },
   /* --- зв'язані бруски на похилій площині --- */
   pair(F){
     const s=Math.sin(this.al*DEG), c=Math.cos(this.al*DEG), M=this.m1+this.m2;
@@ -1317,29 +1513,43 @@ const M3={
   showMode(){
     $('m3gPair').hidden=this.mode!=='pair';
     $('m3gLift').hidden=this.mode!=='lift';
+    $('m3gRot').hidden=this.mode!=='rot';
     $('m3kvPair').hidden=this.mode!=='pair';
     $('m3kvLift').hidden=this.mode!=='lift';
-    const pair=this.mode==='pair';
-    $('m3c1h').textContent=pair?'прискорення системи від сили тяги, м/с²':'прискорення кабіни, м/с²';
-    $('m3c2h').textContent=pair?'сила натягу нитки від сили тяги, Н':'показ ваг, Н';
-    $('m3c1l').innerHTML=pair?'<span><span class="chip cA"></span>a(F) — нуль, поки тяга не подолала тертя</span>'
-                             :'<span><span class="chip cA"></span>a(t)</span>';
-    $('m3c2l').innerHTML=pair?'<span><span class="chip cC"></span>T(F)</span>'
-                             :'<span><span class="chip cC"></span>N(t)</span><span><span class="chip cI"></span>вага в спокої mg</span>';
+    $('m3kvRot').hidden=this.mode!=='rot';
+    const pair=this.mode==='pair', rot=this.mode==='rot';
+    $('m3c1h').textContent=rot?'сили інерції в СВ платформи, Н'
+      :pair?'прискорення системи від сили тяги, м/с²':'прискорення кабіни, м/с²';
+    $('m3c2h').textContent=rot?'відстань шайби від осі, м'
+      :pair?'сила натягу нитки від сили тяги, Н':'показ ваг, Н';
+    $('m3c1l').innerHTML=rot?'<span><span class="chip cC"></span>Коріоліса 2mωv′</span><span><span class="chip cB"></span>відцентрова mω²r</span><span><span class="chip cI"></span>зараз</span>'
+      :pair?'<span><span class="chip cA"></span>a(F) — нуль, поки тяга не подолала тертя</span>'
+           :'<span><span class="chip cA"></span>a(t)</span>';
+    $('m3c2l').innerHTML=rot?'<span><span class="chip cA"></span>r = v₀t</span><span><span class="chip cI"></span>зараз</span>'
+      :pair?'<span><span class="chip cC"></span>T(F)</span>'
+           :'<span><span class="chip cC"></span>N(t)</span><span><span class="chip cI"></span>вага в спокої mg</span>';
     this.h1.xlab=pair?'F':'t'; this.h1.xunit=pair?'Н':'с'; this.h1.xdec=pair?0:1;
     this.h2.xlab=pair?'F':'t'; this.h2.xunit=pair?'Н':'с'; this.h2.xdec=pair?0:1;
+    /* Шахта ліфта потребує всієї висоти, а двом платформам вона ні до чого:
+       з нею під колами лишалася порожня третина кадру (§16). Полотно міняє
+       висоту разом із режимом, і кеш розмірів скидається. */
+    $('m3scene').style.height=rot?'560px':'';
+    delete CV['m3scene'];
   },
   MU:[['лід',0.02],['сталь',0.1],['дерево',0.3],['гума',0.5]],
   hgt(m){return 0.30+0.16*m;},          /* висота бруска ∝ масі */
   ALMAX:40, FMAX:60, LAMAX:4,     /* верхні межі ручок — звідси масштаби (§10) */
   geoPair(bb){
     const al=this.al*DEG;
-    /* Видима ділянка траси — 7,5 м; запасу 1,6 м над площиною вистачає найважчому
-       бруску разом із підписом. Кадр мусить умістити найкрутіший нахил діапазону,
-       тому світовий прямокутник високий, а полотно широке: ширину заповнює саме
-       довжина ділянки. */
-    const WW=7.5, HH=WW*Math.sin(this.ALMAX*DEG)+1.6;
-    const sc=fitScale(bb.w,bb.h,40,72,WW,HH,0,0);
+    /* Масштаб беремо з того, що мусить уміститися НАД площиною: найвищий брусок
+       діапазону разом зі стрілками й підписом. Підйом самої площини в бюджет не
+       входить — площина нескінченна, і їй належить виходити за краї кадру, а не
+       вписуватися в нього. Раніше кадр тримав усі 7,5 м траси разом із їхнім
+       підйомом, і бруски через це виходили завбільшки з власний підпис. */
+    const WREF=5.6, HH=this.hgt(5)+0.9;
+    const sc=fitScale(bb.w,bb.h,40,56,WREF,HH,0,0);
+    /* Намальована ділянка — рівно та, що вкриває полотно за поточного нахилу. */
+    const WW=(bb.w+120)/(Math.max(0.35,Math.cos(al))*sc);
     const cx0=bb.w/2, cy0=bb.h*0.62;
     /* Зсув камери береться в мить малювання, а не заморожується разом із кадром.
        Кожна ручка кличе reset(), t стає нулем — і замороженим зсувом бруски
@@ -1365,7 +1575,23 @@ const M3={
     return {sc,bh,floor,yMax,cx:bb.w*0.5, SY:u=>floor-(u+0.3)*sc,
       cy:floor-(this.liftY(this.t)+0.3)*sc};
   },
-  geo(b){return frozen(this,b,bb=>this.mode==='pair'?this.geoPair(bb):this.geoLift(bb));},
+  /* Кадр обертової платформи сталий: він задається радіусом самої платформи,
+     а не поточним положенням шайби (§10). Два кола — той самий рух у двох СВ. */
+  FMAXR:4,                       /* проєктна межа для стрілок сил інерції, Н */
+  geoRot(bb){
+    /* два кола поруч: ширина кадру й визначає радіус, а смуга керування
+       дістає власну висоту знизу (§19) */
+    const R=Math.min((bb.w*0.74-bb.w*0.26)/2-28,(bb.h-130)*0.46);
+    const BY=bb.h-28, BW=120;
+    return {R, sc:R/this.RP, y:(bb.h-70)*0.50,
+      x1:bb.w*0.27, x2:bb.w*0.73, BY, BW,
+      bars:[['om','ω, рад/с',0.3,2.5,0.1,CLR.k2,bb.w*0.10],
+            ['v0','v₀, м/с',0.2,1,0.05,CLR.k1,bb.w*0.42],
+            ['rm','m шайби, кг',0.2,2,0.1,CLR.k3,bb.w*0.74]],
+      kF:Math.min(R*0.8,90)/this.FMAXR};
+  },
+  geo(b){return frozen(this,b,bb=>this.mode==='pair'?this.geoPair(bb)
+    :this.mode==='rot'?this.geoRot(bb):this.geoLift(bb));},
   grips(){
     const b=cvx('m3scene'); if(!b) return [];
     const Q=this.geo(b);
@@ -1374,7 +1600,7 @@ const M3={
       const u2=Q.uc-0.6, u1=u2+bw+gap;
       const ux=Math.cos(al), uy=-Math.sin(al);
       const A1x=Q.SX(u1+bw/2,0.3), A1y=Q.SY(u1+bw/2,0.3);
-      const hx=Q.SX(Q.uc-Q.WW/2,0), hy=Q.SY(Q.uc-Q.WW/2,0);
+      const hx=Q.SX(Q.uc-Q.WW*0.22,0), hy=Q.SY(Q.uc-Q.WW*0.22,0);
       const blk=(id,u,key,col,hint)=>({id, x:Q.SX(u,this.hgt(this[key])),
         y:Q.SY(u,this.hgt(this[key])), r:8, color:col, hint,
         move:(px,py)=>{
@@ -1393,6 +1619,14 @@ const M3={
          move:(px,py)=>{this.al=clamp(snap(-Math.atan2(py-hy,px-hx)/DEG,1),0,40);
            this.reset();}}
       ].concat(shelfGrips(Q.mu,this.MU,v=>{this.mu=v; this.reset();}));
+    }
+    if(this.mode==='rot'){
+      /* ω, v₀ і маса власного розміру в кресленні не мають, тож кожна дістає
+         смугу під сценою — у тому самому кадрі, тягнеться пальцем (§19) */
+      return Q.bars.map(m=>({id:m[0], x:m[6]+(this[m[0]]-m[2])/(m[3]-m[2])*Q.BW,
+        y:Q.BY, r:8, color:m[5], hint:m[1],
+        move:px=>{this[m[0]]=clamp(snap((px-m[6])/Q.BW*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+          this.reset();}}));
     }
     const bw=118, sy=Q.cy-16, hr=5+this.lm*0.025;
     return [
@@ -1428,8 +1662,9 @@ const M3={
     this.render();
   },
   render(){
-    $('m3t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.T(),0)+' с';
+    $('m3t').textContent='t = '+fmt(this.t,2)+' с з '+fmt(this.T(),this.mode==='rot'?1:0)+' с';
     if(this.mode==='pair'){this.scenePair(); this.tablePair();}
+    else if(this.mode==='rot'){this.sceneRot(); this.tableRot();}
     else {this.sceneLift(); this.tableLift();}
     this.charts();
   },
@@ -1458,7 +1693,7 @@ const M3={
     }
     txt(g,'шлях уздовж площини, м',w-12,h-5,{color:CLR.mut,size:10,align:'right'});
     if(this.al>0.5){
-      const hx=SX(u0,0),hy=SY(u0,0);
+      const hx=SX(uc-WW*0.22,0),hy=SY(uc-WW*0.22,0);
       g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(hx,hy); g.lineTo(hx+70,hy); g.stroke(); g.setLineDash([]);
       arc(g,hx,hy,40,0,-al,CLR.k3,1.5);
@@ -1564,6 +1799,95 @@ const M3={
     txt(g,ph[2],12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
+  sceneRot(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w,h}=b, Q=this.geo(b), sc=Q.sc, R=Q.R;
+    const q=this.rot(this.t);
+    g.clearRect(0,0,w,h);
+    /* ---- платформа: коло, спиця-орієнтир і напрям обертання ---- */
+    const plat=(cx,ang,col,lab,sub)=>{
+      dot(g,cx,Q.y,R,'rgba(11,11,11,.03)');
+      g.strokeStyle=CLR.axis; g.lineWidth=2;
+      g.beginPath(); g.arc(cx,Q.y,R,0,7); g.stroke();
+      /* концентричні кола — щоб було видно, що платформа крутиться */
+      g.strokeStyle=CLR.grid; g.lineWidth=1;
+      for(const f of [0.33,0.66]){g.beginPath(); g.arc(cx,Q.y,R*f,0,7); g.stroke();}
+      /* спиця-орієнтир: у СВ землі вона біжить, у СВ платформи стоїть */
+      for(let k=0;k<4;k++){
+        const a=ang+k*Math.PI/2;
+        g.strokeStyle=k?CLR.grid:col; g.lineWidth=k?1.2:2.5;
+        g.beginPath(); g.moveTo(cx,Q.y); g.lineTo(cx+Math.cos(a)*R,Q.y+Math.sin(a)*R); g.stroke();
+      }
+      dot(g,cx+Math.cos(ang)*R,Q.y+Math.sin(ang)*R,5,col,'#fff');
+      /* вісь ⊙ — ω дивиться на глядача */
+      g.strokeStyle=CLR.sec; g.lineWidth=1.5;
+      g.beginPath(); g.arc(cx,Q.y,7,0,7); g.stroke();
+      dot(g,cx,Q.y,2.2,CLR.sec);
+      txt(g,lab,cx,Q.y+R+24,{color:col===CLR.k2?'#b8431a':'#1c5cab',size:12.5,bold:true,align:'center'});
+      txt(g,sub,cx,Q.y+R+39,{color:CLR.mut,size:10.5,align:'center'});
+    };
+    /* ---- ліворуч: СВ землі. Платформа крутиться, шайба летить по прямій ---- */
+    plat(Q.x1,q.a,CLR.k2,'СВ землі — платформа крутиться','жодної горизонтальної сили немає');
+    g.strokeStyle=CLR.ink; g.lineWidth=2; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(Q.x1,Q.y); g.lineTo(Q.x1+q.X*sc,Q.y); g.stroke(); g.setLineDash([]);
+    dot(g,Q.x1+q.X*sc,Q.y,5+this.rm*2.5,CLR.ink,'#fff');
+    if(q.X>0.05)
+      pill(g,'пряма · v₀ = '+fmt(this.v0,2)+' м/с',Q.x1+q.X*sc*0.55,Q.y-16,
+        {color:CLR.ink,size:11,bold:true});
+    /* ---- праворуч: СВ платформи. Платформа стоїть, слід закручений ---- */
+    plat(Q.x2,0,CLR.k1,'СВ платформи — платформа стоїть','пряму видно закрученою');
+    g.strokeStyle=CLR.ink; g.lineWidth=2; g.setLineDash([4,3]); g.beginPath();
+    for(let i=0;i<=90;i++){
+      const p=this.rot(this.t*i/90);
+      const X=Q.x2+p.x*sc, Y=Q.y+p.y*sc;
+      i?g.lineTo(X,Y):g.moveTo(X,Y);
+    }
+    g.stroke(); g.setLineDash([]);
+    const PX=Q.x2+q.x*sc, PY=Q.y+q.y*sc;
+    /* сили інерції та швидкість у цій СВ */
+    const kF=Q.kF, vp=Math.hypot(q.vx,q.vy)||1;
+    const kv=Math.min(R*0.5,60)/Math.max(0.05,1*Math.sqrt(1+Math.pow(2.5*this.RP/0.2,2)));
+    if(this.t>0.02){
+      arrow(g,PX,PY,PX+q.vx*kv,PY+q.vy*kv,CLR.ink,2.2);
+      txt(g,'v′',PX+q.vx*kv+(q.vx<0?-8:8),PY+q.vy*kv+4,
+        {color:CLR.ink,size:11,bold:true,align:q.vx<0?'right':'left'});
+      const force=(fx,fy,F,col,txc,lab)=>{
+        const L=Math.hypot(fx,fy); if(L<1e-6||F<0.01) return;
+        const sN=Math.min(1,this.FMAXR/L)*kF;
+        arrow(g,PX,PY,PX+fx*sN,PY+fy*sN,col,2.8);
+        const d=Math.max(L*sN,34)+20;
+        pill(g,lab+' '+fmt(F,2)+' Н',PX+fx/L*d,PY+fy/L*d,{color:txc,size:10.5,bold:true});
+      };
+      force(q.fcx,q.fcy,q.Fc,CLR.k3,'#0d7a55','Коріоліса');
+      force(q.ffx,q.ffy,q.Ff,CLR.k2,'#b8431a','відцентрова');
+    }
+    dot(g,PX,PY,5+this.rm*2.5,CLR.ink,'#fff');
+    /* ---- смуги керування ---- */
+    for(const m of Q.bars){
+      const x0=m[6], f=(this[m[0]]-m[2])/(m[3]-m[2]);
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(x0,Q.BY+.5); g.lineTo(x0+Q.BW,Q.BY+.5); g.stroke();
+      g.strokeStyle=m[5]; g.lineWidth=3;
+      g.beginPath(); g.moveTo(x0,Q.BY); g.lineTo(x0+clamp(f,0,1)*Q.BW,Q.BY); g.stroke();
+      txt(g,m[1]+' = '+fmt(this[m[0]],2),x0,Q.BY-10,{color:CLR.sec,size:10.5,bold:true});
+    }
+    txt(g,'той самий рух із двох систем відліку',12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'сили інерції не мають джерела — це плата за те, що СВ обертається',
+      12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  tableRot(){
+    const q=this.rot(this.t);
+    $('m3vom').textContent=fmt(this.om,2)+' рад/с';
+    $('m3vv0').textContent=fmt(this.v0,2)+' м/с';
+    $('m3vrm').textContent=fmt(this.rm,2)+' кг';
+    $('m3krr').textContent=fmt(q.r,2)+' м';
+    $('m3krv').textContent=fmt(q.vp,2)+' м/с';
+    $('m3krc').textContent=fmt(q.Fc,2)+' Н';
+    $('m3krf').textContent=fmt(q.Ff,2)+' Н';
+    $('m3rfx').innerHTML='<i>F</i><sub>кор</sub> = 2<i>mωv</i>′ = 2·'+fmt(this.rm,2)+'·'+
+      fmt(this.om,2)+'·'+fmt(q.vp,2)+' = <b>'+fmt(q.Fc,2)+' Н</b>';
+  },
   tablePair(){
     const p=this.pair(this.F);
     $('m3vF').textContent=fmt(this.F,0)+' Н';
@@ -1589,6 +1913,40 @@ const M3={
   },
   charts(){
     const pair=this.mode==='pair';
+    /* обертова платформа має власну пару графіків: сили інерції від часу
+       й віддалення шайби від осі */
+    if(this.mode==='rot'){
+      const T=this.T();
+      const b1=cvx('m3c1');
+      if(b1){
+        const ts=[],yc=[],yf=[];
+        for(let i=0;i<=120;i++){
+          const t=T*i/120, p=this.rot(t);
+          ts.push(t); yc.push(p.Fc); yf.push(p.Ff);
+        }
+        const hi=Math.max(0.5,...yc,...yf);
+        const now=this.rot(this.t);
+        const r=drawChart(b1,{tMax:T,yMin:-0.05*hi,yMax:1.14*hi,yLab:'Н',xStep:niceStep(T/5),
+          xDec:1,yDec:2,hover:this.h1.x,
+          series:[{ts,ys:yc,color:CLR.k3,label:'Коріоліса'},
+                  {ts,ys:yf,color:CLR.k2,label:'відцентрова'},
+                  {ts:[this.t,this.t],ys:[-0.05*hi,Math.max(now.Fc,now.Ff)],
+                   color:CLR.ink,label:'зараз',dash:[4,3]}]});
+        showTip(this.tip1,r,'Н',this.h1,
+          [['Коріоліса',CLR.k3],['відцентрова',CLR.k2],['зараз',CLR.ink]],2);
+      }
+      const b2=cvx('m3c2');
+      if(b2){
+        const ts=[],ys=[];
+        for(let i=0;i<=60;i++){const t=T*i/60; ts.push(t); ys.push(this.v0*t);}
+        const r=drawChart(b2,{tMax:T,yMin:0,yMax:this.RP*1.12,yLab:'м',xStep:niceStep(T/5),
+          xDec:1,yDec:2,hover:this.h2.x,
+          series:[{ts,ys,color:CLR.k1,label:'r = v₀t'},
+                  {ts:[this.t,this.t],ys:[0,this.v0*this.t],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+        showTip(this.tip2,r,'м',this.h2,[['r',CLR.k1],['зараз',CLR.ink]],2);
+      }
+      return;
+    }
     const b1=cvx('m3c1');
     if(b1){
       let opt;
@@ -1778,6 +2136,8 @@ const M4={
 };
 
 /* ===================== МОДУЛЬ 5 · супутники й орбіти ===================== */
+const T_EARTH=86164;     /* зоряна доба, с — саме з неї рахується геостаціонарний радіус */
+const R_GEO=Math.cbrt(MU_E*T_EARTH*T_EARTH/(4*Math.PI*Math.PI));
 const M5={
   v0:6.9, h0:2000, beta:0,
   HMIN:2000,     /* найнижча точка запуску, км: нижче вона зливається з поверхнею */
@@ -1835,7 +2195,7 @@ const M5={
   MX:{low:(R_E+3e6)*1.3, geo:(R_E+36e6)*1.05, esc:12*R_E},
   get MXORB(){return this.MX[this.view];},
   geo(b){return frozen(this,b,bb=>{
-    const sc=fitScale(bb.w,bb.h,40,56,2.2*this.MXORB,2.2*this.MXORB,0,0);
+    const sc=fitScale(bb.w,bb.h,40,40,2.05*this.MXORB,2.05*this.MXORB,0,0);
     const cx=bb.w/2, cy=bb.h/2+8;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
   });},
@@ -1871,7 +2231,8 @@ const M5={
     seg('m5orb',v=>{
       this.view=v;
       if(v==='low')      preset(this.HMIN,Math.round(Math.sqrt(MU_E/rOf(this.HMIN))/10)/100,0);
-      else if(v==='geo') preset(35800,Math.round(Math.sqrt(MU_E/rOf(35800))/10)/100,0);
+      else if(v==='geo') preset(Math.round((R_GEO-R_E)/1e3),
+        Math.round(Math.sqrt(MU_E/R_GEO)/10)/100,0);
       else               preset(this.HMIN,Math.round(Math.sqrt(2*MU_E/rOf(this.HMIN))/10)/100+0.05,0);
     });
     $('m5play').onclick=()=>{
@@ -1910,7 +2271,29 @@ const M5={
       g.beginPath(); g.arc(cx,cy,R_E*sc*k/3,0,7); g.stroke();
     }
     dot(g,cx,cy,3,CLR.sec);
+    /* ---- добове обертання Землі й підсупутникова точка -------------------
+       Геостаціонарність — це рівність двох періодів: супутник обходить Землю
+       рівно за зоряну добу, тож він і мітка на екваторі весь час лишаються
+       на одному радіусі. Радіус такої орбіти дає T² = 4π²r³/μ. */
+    const aE=2*Math.PI*P.t/T_EARTH;
+    const ex=cx+Math.cos(aE)*R_E*sc, ey=cy-Math.sin(aE)*R_E*sc;
+    g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(ex,ey); g.stroke();
+    dot(g,ex,ey,4.5,CLR.k1,'#fff');
+    /* промінь на супутник: там, де він перетинає поверхню, і є підсупутникова точка */
+    const rr=Math.hypot(P.x,P.y)||1;
+    const sx=cx+P.x/rr*R_E*sc, sy=cy-P.y/rr*R_E*sc;
+    g.strokeStyle=CLR.k2; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(SX(P.x),SY(P.y)); g.stroke(); g.setLineDash([]);
+    dot(g,sx,sy,4,CLR.k2,'#fff');
+    /* різниця двох кутів і є відповідь: нуль — супутник висить над тією самою точкою */
+    const da=((Math.atan2(P.y,P.x)-aE)/DEG%360+540)%360-180;
     txt(g,'Земля',cx,cy+R_E*sc+16,{color:'#1c5cab',size:11,bold:true,align:'center'});
+    if(P.t>60){
+      pill(g,Math.abs(da)<2.5?'супутник висить над тією самою точкою'
+        :'супутник зсунувся на '+fmt(Math.abs(da),0)+'° від мітки',
+        cx,cy+R_E*sc+38,{color:Math.abs(da)<2.5?'#0d7a55':CLR.sec,size:11,bold:true});
+    }
     /* уся траєкторія — допоміжна геометрія, пройдена частина — слід */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]); g.beginPath();
     for(let k=0;k<o.pts.length;k+=2){
@@ -1967,6 +2350,53 @@ const M5={
       :o.E>=0?'швидкості вистачило, щоб подолати тяжіння назавжди'
       :'снаряд весь час падає на Землю — і весь час її промахує',
       12,36,{color:CLR.mut,size:10.5});
+    /* ---- той самий рух у кадрі, що обертається разом із Землею ----------
+       Геостаціонарність видно тільки з Землі: там супутник не літає по колу,
+       а стоїть над однією точкою. Кадр тут обертається з кутовою швидкістю
+       Землі, тож кутова координата супутника в ньому — це θ(t) − ω_З·t.
+       Коли період орбіти дорівнює зоряній добі, ця різниця стала — і слід
+       вироджується в точку. Будь-яка інша висота дає дрейф. */
+    {
+      const IW=Math.min(258,w*0.29), IH=Math.min(250,h*0.35);
+      const bx0=12, by0=h-IH-30;
+      g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(bx0,by0,IW,IH,10); g.fill(); g.stroke();
+      g.save(); g.beginPath(); g.roundRect(bx0,by0,IW,IH,10); g.clip();
+      txt(g,'той самий рух із Землі',bx0+10,by0+17,{color:CLR.k1,size:11.5,bold:true});
+      txt(g,'кадр обертається разом із планетою',bx0+10,by0+31,{color:CLR.mut,size:9.5});
+      const ecx=bx0+IW/2, ecy=by0+IH*0.56;
+      let rMax=R_E;
+      for(const q of o.pts) rMax=Math.max(rMax,q.r);
+      const isc=Math.min(IW*0.42,IH*0.30)/Math.min(rMax,8*R_E);
+      /* планета — нерухома: це і є кадр, зв'язаний із нею */
+      dot(g,ecx,ecy,R_E*isc,'rgba(42,120,214,.10)');
+      g.strokeStyle=CLR.k1; g.lineWidth=1.6;
+      g.beginPath(); g.arc(ecx,ecy,R_E*isc,0,7); g.stroke();
+      /* мітка на екваторі — нерухома в цьому кадрі */
+      g.strokeStyle=CLR.k1; g.lineWidth=2;
+      g.beginPath(); g.moveTo(ecx,ecy); g.lineTo(ecx+R_E*isc,ecy); g.stroke();
+      dot(g,ecx+R_E*isc,ecy,3.5,CLR.k1,'#fff');
+      const wE=2*Math.PI/T_EARTH;
+      const rot=q=>{const a=Math.atan2(q.y,q.x)-wE*q.t, rq=Math.min(q.r,8*R_E);
+        return {x:ecx+Math.cos(a)*rq*isc, y:ecy-Math.sin(a)*rq*isc};};
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]); g.beginPath();
+      for(let k=0;k<o.pts.length;k+=2){
+        const u=rot(o.pts[k]); k?g.lineTo(u.x,u.y):g.moveTo(u.x,u.y);
+      }
+      g.stroke(); g.setLineDash([]);
+      g.strokeStyle=CLR.k2; g.lineWidth=2.2; g.beginPath();
+      for(let k=0;k<=i;k++){const u=rot(o.pts[k]); k?g.lineTo(u.x,u.y):g.moveTo(u.x,u.y);}
+      g.stroke();
+      const up=rot(P);
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(ecx,ecy); g.lineTo(up.x,up.y); g.stroke(); g.setLineDash([]);
+      dot(g,up.x,up.y,5,CLR.ink,'#fff');
+      const drift=Math.abs(((Math.atan2(P.y,P.x)-wE*P.t)/DEG%360+540)%360-180);
+      txt(g,drift<2.5?'стоїть над тією самою точкою'
+        :'зсувається: '+fmt(drift,0)+'° за '+fmt(P.t/3600,1)+' год',
+        bx0+10,by0+IH-10,{color:drift<2.5?'#0d7a55':CLR.sec,size:10.5,bold:true});
+      g.restore();
+    }
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,'тягніть точку запуску вздовж радіуса, а вістря стрілки — куди й як швидко',
       12,h-10,{color:CLR.mut,size:10.5});
@@ -1983,6 +2413,8 @@ const M5={
     $('m5kApo').textContent=isFinite(o.ra)?fmt((o.ra-R_E)/1e3,0)+' км над поверхнею':'—';
     $('m5kE').textContent=fmt(o.e,3);
     $('m5kT').textContent=isFinite(o.T)?(o.T<7200?fmt(o.T/60,1)+' хв':fmt(o.T/3600,2)+' год'):'—';
+    $('m5kSyn').textContent=isFinite(o.T)?fmt(o.T/T_EARTH,3):'—';
+    $('m5kRg').textContent=fmt(R_GEO/1e3,0)+' км';
     $('m5kV').textContent=fmt(P.v/1e3,2)+' км/с';
     $('m5kEn').textContent=sci(P.v*P.v/2-MU_E/P.r,3)+' Дж/кг';
     $('m5kL').textContent=sci(o.L,3)+' м²/с';

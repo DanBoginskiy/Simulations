@@ -13,7 +13,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1120px; margin:0 auto; padding:18px 20px 40px}
+.wrap{max-width:1320px; margin:0 auto; padding:18px 20px 40px}
 header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
 h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
 h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
@@ -26,6 +26,19 @@ h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
 .module.active{display:block}
 .caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
 .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+/* розкриття сцени на весь екран */
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
 .panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
 canvas{display:block}
 /* segmented control */
@@ -84,7 +97,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:230px}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -102,11 +115,11 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 /*gauged*/
-#m1scene{width:100%; height:450px}
-#m2scene{width:100%; height:450px}
-#m3scene{width:100%; height:430px}
-#m4scene{width:100%; height:430px}
-#m5scene{width:100%; height:470px}
+#m1scene{width:100%; height:570px}
+#m2scene{width:100%; height:570px}
+#m3scene{width:100%; height:540px}
+#m4scene{width:100%; height:540px}
+#m5scene{width:100%; height:590px}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:900px){
@@ -141,6 +154,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           <div class="seg" id="m1mode">
             <button data-v="edge" class="active" style="--c:var(--k3)">межа двох середовищ</button>
             <button data-v="plate" style="--c:var(--k1)">плоскопаралельна пластина</button>
+            <button data-v="plate2" style="--c:var(--sec)">дві пластини</button>
             <button data-v="fiber" style="--c:var(--k2)">оптоволокно</button>
           </div>
           <span class="lbl" id="m1state" style="font-weight:600"></span>
@@ -504,8 +518,72 @@ function cvx(id){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   return CV[id]={g,w:r.width,h:r.height,el:c};
 }
-window.addEventListener('resize',()=>{for(const k in CV) delete CV[k];
-  for(const k in CHFIT) delete CHFIT[k];});
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+    });
+    p.appendChild(b);
+  }
+})();
 
 function seg(id,cb){
   const el=$(id);
@@ -949,7 +1027,7 @@ const M1={
     this.showMode();
   },
   showMode(){
-    $('m1rowSh').hidden=this.mode!=='plate';
+    $('m1rowSh').hidden=this.mode!=='plate'&&this.mode!=='plate2';
     $('m1rowNa').hidden=this.mode!=='fiber';
     $('m1kvh').textContent={edge:'Швидкості й відбивання',plate:'Пластина',fiber:'Оптоволокно'}[this.mode];
   },
@@ -965,7 +1043,10 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     const H=this.band(bb).H, cx=bb.w*0.42, cy=H*0.54;
     return {H, cx, cy, L:Math.min(bb.w*0.30,H*0.40), fcy:H*0.58, ax:bb.w*0.17,
-      get thick(){return M1.mode==='plate'?Math.max(24,Math.min(110,M1.d*3)):0;},
+      /* дві пластини малюємо тоншими, щоб обидві з проміжком умістилися в кадр */
+      get thick(){return M1.mode==='plate'?Math.max(24,Math.min(110,M1.d*3))
+        :M1.mode==='plate2'?Math.max(16,Math.min(64,M1.d*1.8)):0;},
+      get gap(){return Math.max(18,Math.min(70,M1.d*2));},
       get core(){return Math.max(26,Math.min(120,M1.d*3));}};
   });},
   grips(){
@@ -1018,6 +1099,7 @@ const M1={
     const a2=this.a2(), tir=a2==null;
     const nm={edge:['промінь на межі двох середовищ',CLR.k3],
       plate:['плоскопаралельна пластина: промінь виходить паралельно, але зсунутим',CLR.k1],
+      plate2:['дві пластини: кожна додає свій зсув, а напрям лишається тим самим',CLR.sec],
       fiber:['оптоволокно: промінь біжить усередині, весь час зазнаючи повного відбивання',CLR.k2]}[this.mode];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     if(this.mode==='fiber')
@@ -1030,7 +1112,16 @@ const M1={
     if(this.mode==='fiber'){this.sceneFiber(g,w,h,Q); return;}
     const cx=Q.cx, cy=Q.cy, L=Q.L, thick=Q.thick;
     /* середовища */
-    if(this.mode==='plate'){
+    if(this.mode==='plate2'){
+      /* дві однакові пластини з проміжком повітря між ними */
+      const gp=Q.gap, y0=cy-gp/2-thick, y1=cy+gp/2;
+      for(const yy of [y0,y1]){
+        g.fillStyle='rgba(42,120,214,.08)'; g.fillRect(0,yy,w,thick);
+        g.strokeStyle=CLR.k3; g.lineWidth=1.6;
+        g.beginPath(); g.moveTo(0,yy); g.lineTo(w,yy);
+        g.moveTo(0,yy+thick); g.lineTo(w,yy+thick); g.stroke();
+      }
+    } else if(this.mode==='plate'){
       g.fillStyle='rgba(42,120,214,.08)'; g.fillRect(0,cy-thick/2,w,thick);
       g.strokeStyle=CLR.k3; g.lineWidth=1.6;
       g.beginPath(); g.moveTo(0,cy-thick/2); g.lineTo(w,cy-thick/2);
@@ -1053,11 +1144,13 @@ const M1={
     txt(g,'n₁ = '+fmt(this.n1,2),12,cy-thick/2-10,{color:CLR.sec,size:11,bold:true});
     txt(g,'n₂ = '+fmt(this.n2,2),12,cy+(this.mode==='plate'?0:22)+(this.mode==='plate'?4:0),
       {color:'#1c5cab',size:11,bold:true});
+    const aIn=this.a1*DEG;
+    const yTop=this.mode==='plate2'?cy-Q.gap/2-thick:cy-thick/2;
+    const yBotN=this.mode==='plate2'?cy+Q.gap/2+thick:cy+thick/2;
     /* нормаль */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(cx,cy-thick/2-L*0.9); g.lineTo(cx,cy+thick/2+L*0.9); g.stroke(); g.setLineDash([]);
-    txt(g,'нормаль',cx+6,cy-thick/2-L*0.9+12,{color:CLR.mut,size:10});
-    const aIn=this.a1*DEG, yTop=cy-thick/2;
+    g.beginPath(); g.moveTo(cx,yTop-L*0.9); g.lineTo(cx,yBotN+L*0.9); g.stroke(); g.setLineDash([]);
+    txt(g,'нормаль',cx+6,yTop-L*0.9+12,{color:CLR.mut,size:10});
     /* падаючий */
     const sx=cx-L*Math.sin(aIn), sy=yTop-L*Math.cos(aIn);
     arrow(g,sx,sy,cx-L*0.12*Math.sin(aIn),yTop-L*0.12*Math.cos(aIn),CLR.k1,2.4);
@@ -1073,13 +1166,43 @@ const M1={
     txt(g,'α = '+fmt(this.a1,0)+'°',cx+30,yTop-30,{color:CLR.sec,size:10.5,bold:true});
     txt(g,'відбитий · '+fmt(100*R,1)+' %',cx+L*0.85*Math.sin(aIn)+6,yTop-L*0.85*Math.cos(aIn)+4,
       {color:'#0d7a55',size:10.5,bold:true});
-    /* заломлений */
+    /* ---- заломлений: його яскравість — це те, що не відбилося ------------
+       Частка R іде у відбитий промінь, решта (1 − R) — у заломлений. Раніше
+       заломлений малювався завжди однаково яскравим, тож розподіл енергії між
+       двома променями був невидимий. */
     if(!tir){
       const a2r=a2*DEG;
-      if(this.mode==='plate'){
+      const al2=0.30+0.70*(1-R), w2=1.4+1.6*(1-R);
+      if(this.mode==='plate2'){
+        /* Кожна пластина зміщує промінь на ту саму величину: після першої він
+           знову йде під кутом α₁, тож друга повторює те саме. Сумарний зсув
+           подвоюється, а напрям не змінюється взагалі. */
+        const gp=Q.gap, sh=this.shift();
+        const t1=cx+thick*Math.tan(a2r);              /* вихід із першої */
+        const x2=t1+gp*Math.tan(aIn);                 /* вхід у другу */
+        const t2=x2+thick*Math.tan(a2r);              /* вихід із другої */
+        const yA=yTop, yB=yTop+thick, yC=yB+gp, yD=yC+thick;
+        g.strokeStyle=CLR.k2; g.lineWidth=w2;
+        g.globalAlpha=al2;
+        g.beginPath();
+        g.moveTo(cx,yA); g.lineTo(t1,yB); g.lineTo(x2,yC); g.lineTo(t2,yD);
+        g.stroke();
+        rayLine(g,t2,yD,Math.PI/2-aIn,L*0.7,CLR.k2,w2);
+        g.globalAlpha=1;
+        /* продовження початкового напряму — щоб було видно подвоєний зсув */
+        g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash([3,3]);
+        g.beginPath(); g.moveTo(cx,yA);
+        g.lineTo(cx+(yD-yA+L*0.7*Math.cos(aIn))*Math.tan(aIn),yD+L*0.7*Math.cos(aIn));
+        g.stroke(); g.setLineDash([]);
+        txt(g,'сумарний зсув '+fmt(2*sh,2)+' мм',t2-14,yD+40,
+          {color:'#b8431a',size:11,bold:true,align:'right'});
+        txt(g,'напрям на виході той самий, що й на вході',12,yD+58,
+          {color:CLR.mut,size:10});
+      } else if(this.mode==='plate'){
         const xin=cx+thick*Math.tan(a2r);
-        g.strokeStyle=CLR.k2; g.lineWidth=2.4;
+        g.strokeStyle=CLR.k2; g.lineWidth=w2; g.globalAlpha=al2;
         g.beginPath(); g.moveTo(cx,yTop); g.lineTo(xin,cy+thick/2); g.stroke();
+        g.globalAlpha=1;
         arc(g,cx,yTop,Math.min(30,thick*0.5),Math.PI/2,Math.PI/2-a2r,CLR.sec,1.3);
         txt(g,'α₂ = '+fmt(a2,1)+'°',cx+Math.min(34,thick*0.5)+4,yTop+18,
           {color:CLR.sec,size:11,bold:true});
@@ -1093,10 +1216,13 @@ const M1={
         txt(g,'зсув '+fmt(this.shift(),2)+' мм',xin-14,cy+thick/2+44,
           {color:'#b8431a',size:11,bold:true,align:'right'});
       } else {
-        rayLine(g,cx,cy,Math.PI/2-a2r,L*0.9,CLR.k2,2.4);
+        g.globalAlpha=al2;
+        rayLine(g,cx,cy,Math.PI/2-a2r,L*0.9,CLR.k2,w2);
+        g.globalAlpha=1;
         arc(g,cx,cy,34,Math.PI/2,Math.PI/2-a2r,CLR.sec,1.3);
         txt(g,'α₂ = '+fmt(a2,1)+'°',cx+42,cy+46,{color:CLR.sec,size:11,bold:true});
-        txt(g,'заломлений',cx+L*0.9*Math.sin(a2r)+6,cy+L*0.9*Math.cos(a2r),
+        txt(g,'заломлений · '+fmt(100*(1-R),1)+' %',
+          cx+L*0.9*Math.sin(a2r)+6,cy+L*0.9*Math.cos(a2r),
           {color:'#b8431a',size:10.5,bold:true});
       }
     } else {
@@ -1250,7 +1376,9 @@ const M2={
        hint:'предмет: відстань і висота',
        move:(px,py)=>{
          this.d=clamp(Math.round((Q.cx-px)/Q.sx),3,90);
-         this.h=clamp(snap((Q.cy-py)/Q.sx,0.5),1,10);
+         /* нуль дозволено: точка на головній оптичній осі — окремий випадок,
+            для якого два класичні промені вироджуються і потрібна побічна вісь */
+         this.h=clamp(snap((Q.cy-py)/Q.sx,0.5),0,10);
        }},
       {id:'F', x:Q.cx-Q.S(this.F), y:Q.cy, r:8, color:CLR.k2, hint:'фокус лінзи',
        move:(px)=>{this.F=clamp(Math.round((Q.cx-px)/Q.sx),5,40);}}
@@ -1301,6 +1429,30 @@ const M2={
       dot(g,cx+s*S(2*this.F),cy,3,CLR.mut);
       txt(g,'2F',cx+s*S(2*this.F),cy+18,{color:CLR.mut,size:10,align:'center'});
     }
+    /* ---- паралельний пучок: саме він і означає, що таке фокус ------------
+       Підпис обіцяв «паралельні промені сходяться у фокусі», але такого пучка
+       ніхто не малював. Тепер він є: кілька променів, паралельних осі, і точка,
+       у якій вони сходяться (у розсіювальної — звідки розходяться). */
+    {
+      const bx=w*0.06;
+      for(const q of [-0.8,-0.45,0.45,0.8]){
+        const yy=cy+q*lh;
+        g.strokeStyle=CLR.k3; g.lineWidth=1.2; g.globalAlpha=0.5;
+        g.beginPath(); g.moveTo(bx,yy); g.lineTo(cx,yy); g.stroke();
+        if(conv){
+          g.beginPath(); g.moveTo(cx,yy); g.lineTo(cx+S(this.F),cy); g.stroke();
+        } else {
+          const kk=(yy-cy)/S(this.F);
+          g.beginPath(); g.moveTo(cx,yy); g.lineTo(w*0.98,yy+kk*(w*0.98-cx)); g.stroke();
+          g.setLineDash([3,3]);
+          g.beginPath(); g.moveTo(cx,yy); g.lineTo(cx-S(this.F),cy); g.stroke(); g.setLineDash([]);
+        }
+        g.globalAlpha=1;
+      }
+      txt(g,conv?'паралельний пучок сходиться у фокусі'
+                :'паралельний пучок розходиться так, ніби йшов із фокуса',
+        bx,cy-lh-10,{color:'#0d7a55',size:10.5,bold:true});
+    }
     /* предмет */
     const ox=cx-S(this.d), oy=cy-S(this.h);
     arrow(g,ox,cy,ox,oy,CLR.k1,2.6);
@@ -1318,6 +1470,37 @@ const M2={
       g.beginPath(); g.moveTo(cx,oy); g.lineTo(w*0.98,oy+k*(w*0.98-cx)); g.stroke();
       g.setLineDash([3,3]); g.strokeStyle=CLR.sec;
       g.beginPath(); g.moveTo(cx,oy); g.lineTo(cx-S(this.F)*1.4,oy-k*S(this.F)*1.4); g.stroke(); g.setLineDash([]);
+    }
+    /* ---- точка на головній оптичній осі ---------------------------------
+       Обидва класичні промені для неї вироджуються в саму вісь. Будують її
+       зображення побічною віссю: беруть довільний промінь, проводять паралельну
+       йому побічну вісь через центр і фокальну площину — їхній перетин і задає
+       напрям променя після лінзи. */
+    if(this.h<0.01&&conv&&f!=null){
+      const yA=cy-lh*0.6;
+      const kAux=(cy-yA)/S(this.d);
+      /* довільний промінь із точки на осі */
+      g.strokeStyle=CLR.k2; g.lineWidth=1.8;
+      g.beginPath(); g.moveTo(ox,cy); g.lineTo(cx,yA); g.stroke();
+      /* побічна вісь, паралельна йому, через оптичний центр */
+      g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash([4,3]);
+      g.beginPath();
+      g.moveTo(cx-S(this.F)*1.2,cy+kAux*S(this.F)*1.2);
+      g.lineTo(cx+S(this.F)*1.6,cy-kAux*S(this.F)*1.6); g.stroke();
+      /* фокальна площина */
+      g.beginPath(); g.moveTo(cx+S(this.F),cy-lh); g.lineTo(cx+S(this.F),cy+lh); g.stroke();
+      g.setLineDash([]);
+      txt(g,'фокальна площина',cx+S(this.F)+6,cy-lh+12,{color:CLR.mut,size:10});
+      /* точка перетину побічної осі з фокальною площиною */
+      const py2=cy-kAux*S(this.F);
+      dot(g,cx+S(this.F),py2,4,CLR.sec);
+      /* промінь після лінзи йде через цю точку й приходить на вісь у точку f */
+      g.strokeStyle=CLR.k2; g.lineWidth=1.8;
+      g.beginPath(); g.moveTo(cx,yA); g.lineTo(cx+S(f),cy); g.stroke();
+      dot(g,cx+S(f),cy,5,CLR.k2,'#fff');
+      txt(g,'зображення точки',cx+S(f),cy+22,{color:'#b8431a',size:10.5,bold:true,align:'center'});
+      txt(g,'предмет — точка на осі: будуємо побічною віссю',ox,cy-16,
+        {color:'#1c5cab',size:10.5,bold:true});
     }
     /* 2: через оптичний центр */
     g.strokeStyle=CLR.k2; g.lineWidth=1.8;
@@ -1550,15 +1733,26 @@ const M3={
     arrow(g,ox,cy+26,ox,cy-26,CLR.k1,2.4);
     txt(g,'предмет · '+fmt(this.d,0)+' см',ox,cy-34,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
     /* фокус: зсув від сітківки пропорційний нескомпенсованій силі */
+    /* Сітківка лежить на ex + R, і саме туди має падати фокус за норми.
+       Раніше базою був центр очного яблука (ex), тож «нормальне око» малювалося
+       з фокусом на цілий радіус перед сітківкою — просто в склистому тілі. */
     const dev=Math.max(-1,Math.min(1,(this.Dneed()-this.Drel()-Math.min(this.acc,Math.max(0,this.used())))/8));
-    const fx=ex+R*dev*0.9;
+    const retX=ex+R;
+    const fx=retX+R*0.55*dev;
     for(const s of [-1,1]){
       g.strokeStyle=CLR.k2; g.lineWidth=1.6;
       g.beginPath();
       g.moveTo(ox,cy+s*22); g.lineTo(ex-R*0.82,cy+s*R*0.42); g.lineTo(fx,cy); g.stroke();
     }
     dot(g,fx,cy,4.5,Math.abs(dev)<0.03?CLR.k3:CLR.k2,'#fff');
-    txt(g,Math.abs(dev)<0.03?'фокус на сітківці':(dev<0?'фокус перед сітківкою':'фокус за сітківкою'),
+    /* коли фокус не на сітківці — показуємо саму розбіжність */
+    if(Math.abs(dev)>=0.03){
+      g.strokeStyle=CLR.k2; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(fx,cy); g.lineTo(retX,cy); g.stroke(); g.setLineDash([]);
+      arrow(g,fx,cy+20,retX,cy+20,CLR.k2,1.6);
+      pill(g,'не доходить до сітківки',(fx+retX)/2,cy+38,{color:'#b8431a',size:10,bold:true});
+    }
+    txt(g,Math.abs(dev)<0.03?'фокус точно на сітківці':(dev<0?'фокус перед сітківкою':'фокус за сітківкою'),
       fx,cy-16,{color:Math.abs(dev)<0.03?'#0d7a55':'#b8431a',size:10.5,bold:true,align:'center'});
     /* окуляри */
     if(Math.abs(def)>0.05){
@@ -1590,10 +1784,39 @@ const M3={
     g.moveTo(lx,ly-34); g.quadraticCurveTo(lx-13,ly,lx,ly+34); g.stroke();
     arrow(g,lx-70,ly+16,lx-70,ly-4,CLR.k1,2.2);
     arrow(g,lx+66,ly+30,lx+66,ly-30,CLR.k2,2.6);
-    g.strokeStyle=CLR.sec; g.lineWidth=1.4;
-    g.beginPath(); g.moveTo(lx-70,ly-4); g.lineTo(lx,ly-16); g.lineTo(lx+66,ly-30); g.stroke();
+    /* ---- справжня побудова в лупі ---------------------------------------
+       Предмет стоїть трохи ближче за фокус, тож зображення уявне, пряме й
+       збільшене: справжні промені після лупи розходяться, а око бачить їх так,
+       ніби вони йдуть із далекої великої стрілки. Тому продовження — штрихові:
+       там світла немає, там лише те, що «здається» оку. */
+    {
+      const oX=lx-70, oTop=ly-4;            /* предмет: вістря */
+      /* промінь 1: паралельний осі → після лупи йде через задній фокус */
+      g.strokeStyle=CLR.k2; g.lineWidth=1.6;
+      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx,oTop); g.stroke();
+      const kF=(ly-oTop)/34;
+      g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx+120,oTop+kF*120); g.stroke();
+      /* промінь 2: через оптичний центр — не заломлюється */
+      const k2=(ly-oTop)/70;
+      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx+120,oTop+k2*(lx+120-oX)); g.stroke();
+      /* зворотні продовження — там, де око «бачить» зображення */
+      g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx-150,oTop-kF*150); g.stroke();
+      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx-150,oTop-k2*(150+lx-oX)); g.stroke();
+      g.setLineDash([]);
+      /* уявне зображення на відстані найкращого зору */
+      arrow(g,lx-150,ly,lx-150,oTop-kF*150,CLR.k2,2.4);
+      txt(g,'уявне зображення на 25 см',lx-150,oTop-kF*150-8,
+        {color:'#b8431a',size:10.5,bold:true,align:'center'});
+      /* око, що дивиться крізь лупу */
+      const exq=lx+96;
+      g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+      g.beginPath(); g.ellipse(exq,ly,16,12,0,0,7); g.fill(); g.stroke();
+      dot(g,exq-5,ly,4,CLR.ink);
+      txt(g,'око',exq,ly+26,{color:CLR.sec,size:10,bold:true,align:'center'});
+    }
     txt(g,'лупа F = '+fmt(this.Fl,1)+' см',lx,ly-46,{color:'#1c5cab',size:11,bold:true,align:'center'});
-    txt(g,'Γ = 25/F = '+fmt(this.gLoupe(),1)+'×',lx+80,ly+4,{color:'#b8431a',size:11.5,bold:true});
+    txt(g,'Γ = 25/F = '+fmt(this.gLoupe(),1)+'×',lx+80,ly-16,{color:'#b8431a',size:11.5,bold:true});
     dimF(g,lx,Q.ly+56,lx-20-this.fr('Fl',this.Fl)*120,'F = '+fmt(this.Fl,1)+' см',CLR.sec);
     /* мікроскоп */
     const my=Q.my, mx=Q.mx;
@@ -1613,7 +1836,36 @@ const M3={
     g.beginPath(); g.moveTo(mx,my-40); g.lineTo(mx+tl,my-40); g.stroke(); g.setLineDash([]);
     txt(g,'Δ = '+fmt(this.tub,0)+' мм',mx+tl/2,my-46,{color:CLR.mut,size:10,align:'center'});
     arrow(g,mx-60,my+18,mx-60,my-2,CLR.k1,2.2);
-    txt(g,'Γ = (Δ/Fоб)·(250/Fок) = '+fmt(this.gMic(),0)+'×',w*0.76,my,{color:CLR.ink,size:12,bold:true});
+    txt(g,'предмет',mx-60,my+32,{color:'#1c5cab',size:10,bold:true,align:'center'});
+    /* ---- хід променів крізь тубус ---------------------------------------
+       Об'єктив будує проміжне ДІЙСНЕ зображення — перевернуте й збільшене — у
+       передній фокальній площині окуляра. Окуляр далі працює як лупа: дивиться
+       на це зображення. Без проміжного зображення мікроскоп не пояснити зовсім. */
+    {
+      const oT=my-20;                          /* вістря предмета */
+      const iX=mx+tl-this.fr('Foc',this.Foc)*40-18;   /* проміжне зображення */
+      const iT=my+26;                          /* перевернуте */
+      g.strokeStyle=CLR.k2; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(mx-60,oT); g.lineTo(mx,oT); g.lineTo(iX,iT); g.stroke();
+      g.beginPath(); g.moveTo(mx-60,oT); g.lineTo(mx,my); g.lineTo(iX,iT); g.stroke();
+      arrow(g,iX,my,iX,iT,CLR.k2,2.4);
+      txt(g,'проміжне дійсне зображення',iX-30,iT+32,
+        {color:'#b8431a',size:10,bold:true,align:'center'});
+      /* окуляр перетворює його на уявне — промені виходять паралельним пучком */
+      const exq=mx+tl+64;
+      for(const q of [-0.5,0,0.5]){
+        g.strokeStyle=CLR.k2; g.lineWidth=1.3;
+        g.beginPath(); g.moveTo(iX,iT); g.lineTo(mx+tl,my+q*22);
+        g.lineTo(exq+10,my+q*22-6); g.stroke();
+      }
+      /* око біля окуляра */
+      g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+      g.beginPath(); g.ellipse(exq+22,my,16,12,0,0,7); g.fill(); g.stroke();
+      dot(g,exq+17,my,4,CLR.ink);
+      txt(g,'око',exq+22,my+26,{color:CLR.sec,size:10,bold:true,align:'center'});
+    }
+    txt(g,'Γ = (Δ/Fоб)·(250/Fок) = '+fmt(this.gMic(),0)+'×',w*0.76,my-40,
+      {color:CLR.ink,size:12,bold:true});
     txt(g,'дрібніше за 0,2 мкм не покаже жоден світловий мікроскоп — заважає сама довжина хвилі',
       12,h-12,{color:CLR.sec,size:11.5,bold:true});
   },
