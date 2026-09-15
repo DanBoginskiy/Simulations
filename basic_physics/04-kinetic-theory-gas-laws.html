@@ -277,8 +277,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="toolbar">
           <span class="lbl">Зафіксовано:</span>
           <div class="seg" id="m3path">
-            <button data-v="line" class="active" style="--c:var(--ink)">нічого</button>
-            <button data-v="iso_p" style="--c:var(--k1)">p</button>
+            <button data-v="iso_p" class="active" style="--c:var(--k1)">p</button>
             <button data-v="iso_v" style="--c:var(--k3)">V</button>
             <button data-v="iso_t" style="--c:var(--k2)">T</button>
             <button data-v="adiab" style="--c:var(--sec)">Q = 0</button>
@@ -1205,9 +1204,13 @@ const M2={
   BMAX:{iso_t:{p:500,V:40,T:500}, iso_p:{p:200,V:40,T:600}, iso_v:{p:300,V:50,T:600}},
   geo(b){return frozen(this,b,bb=>{
     const ch=bb.h-90, cy=bb.h*0.5+10, M=this.BMAX[this.proc];
-    /* три стовпчики мусять уміститися у вужчу колонку — крок рахуємо з ширини */
-    const dx=Math.min(72,(bb.w*0.44)/3);
-    return {ch,cy,cx:bb.w*0.30,bx:bb.w*0.52,dx,Vmax:M.V,pmax:M.p,Tmax:M.T};
+    /* Стовпчики починаються праворуч від НАЙШИРШОГО циліндра діапазону, а не
+       від поточного: ширина циліндра росте з кількістю речовини, і на ν = 2
+       його стінка наїжджала просто на стовпчик тиску. */
+    const cwMax=80+2*90, cx=bb.w*0.30;
+    const bx=Math.max(bb.w*0.52,cx+cwMax/2+18);
+    const dx=Math.min(72,Math.max(40,(bb.w-bx-34)/2.2));
+    return {ch,cy,cx,bx,dx,Vmax:M.V,pmax:M.p,Tmax:M.T};
   });},
   /* висота стовпчика величини у стовпчиковій діаграмі та зворотне до неї */
   barH(Q,val,vmax){return (Q.ch-10)*Math.min(1,val/vmax)*0.9;},
@@ -1376,7 +1379,10 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · рівняння стану ===================== */
 const M3={
-  path:'line',
+  /* Варіанта «нічого не зафіксовано» більше немає: модуль саме про те, що
+     фіксують один параметр, а решта йде за рівнянням стану. Довільна пряма
+     в p–V жодному ізопроцесу не відповідає й лише збивала. */
+  path:'iso_p',
   p1:100, V1:20, p2:250, V2:45, nu:1,
   GAM:1.4,                       /* двоатомний газ — для адіабати */
   TSHOW:8, t:0, playing:true,
@@ -1390,7 +1396,7 @@ const M3={
     if(P==='iso_v') return {p:this.p2, V:this.V1};
     if(P==='iso_t') return {p:this.p1*this.V1/this.V2, V:this.V2};
     if(P==='adiab') return {p:this.p1*Math.pow(this.V1/this.V2,this.GAM), V:this.V2};
-    return {p:this.p2, V:this.V2};
+    return {p:this.p1, V:this.V2};
   },
   st(u){
     const P=this.path, e=this.end();
@@ -1400,7 +1406,7 @@ const M3={
     else {p=this.p1+(e.p-this.p1)*u; V=this.V1+(e.V-this.V1)*u;}
     return {p,V,T:p*1000*V/1000/(this.nu*RGAS)};
   },
-  FIX:{line:['нічого не зафіксовано','пряма в p–V: змінюються всі три величини',CLR.ink],
+  FIX:{
        iso_p:['p = const — ізобара','V/T = const: обʼєм росте разом із температурою',CLR.k1],
        iso_v:['V = const — ізохора','p/T = const: тиск росте разом із температурою',CLR.k3],
        iso_t:['T = const — ізотерма','pV = const: у скільки разів більший обʼєм, у стільки менший тиск',CLR.k2],
@@ -1438,7 +1444,7 @@ const M3={
        hint:this.path==='iso_v'?'стан 2: тільки тиск':'стан 2',
        move:(px,py)=>{
          if(this.path!=='iso_v') this.V2=clamp(snap(Q.iV(px),1),5,60);
-         if(this.path==='line'||this.path==='iso_v') this.p2=clamp(snap(Q.iP(py),10),50,400);
+         if(this.path==='iso_v') this.p2=clamp(snap(Q.iP(py),10),50,400);
          this.reset();}},
       {id:'nu', x:Q.cx+this.cw()/2, y:Q.cy, r:8, color:CLR.k2, hint:'кількість речовини',
        move:px=>{this.nu=clamp(snap((2*(px-Q.cx)-60)/50,0.05),0.1,3); this.reset();}}

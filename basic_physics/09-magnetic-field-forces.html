@@ -468,7 +468,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <button data-v="pos" class="active" style="--c:var(--k2)">заряд +</button>
             <button data-v="neg" style="--c:var(--k1)">заряд −</button>
           </div>
-          <button class="ibtn" id="m6play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m6prev" title="попередній крок">◀</button>
+          <button class="ibtn" id="m6next" title="наступний крок">▶</button>
+          <button class="ibtn" id="m6play" title="показувати самому">⏸</button>
           <button class="ibtn" id="m6re" title="почати спочатку">↺</button>
           <span class="lbl" id="m6t"></span>
         </div>
@@ -1386,13 +1388,39 @@ const M2={
       }
     }
     txt(g,'B = '+fmt(this.B,2)+' Тл, від нас',12,h-10,{color:'#0d7a55',size:11,bold:true});
-    /* провідник під кутом α до поля — у площині малюнка */
+    /* ---- сам провідник -----------------------------------------------------
+       Раніше це була просто товста синя риска — вона однаково читалася б і як
+       вектор, і як вісь. Тепер це відрізок дроту: металеве тіло з обідком,
+       затискачі на кінцях і підвідні кінці, що йдуть за край поля. Стрілки
+       всередині — напрям струму, а не напрям якогось вектора. */
     const A=this.a*DEG, L=this.l*7;
-    const dx=Math.cos(A-Math.PI/2)*L/2, dy=Math.sin(A-Math.PI/2)*L/2;
-    g.strokeStyle=CLR.k1; g.lineWidth=5;
-    g.beginPath(); g.moveTo(cx-dx,cy-dy); g.lineTo(cx+dx,cy+dy); g.stroke();
-    arrow(g,cx,cy,cx+dx*0.7,cy+dy*0.7,CLR.k1,2.5);
-    txt(g,'I = '+fmt(this.I,1)+' А',cx+dx*0.8+8,cy+dy*0.8,{color:'#1c5cab',size:11.5,bold:true});
+    const ux=Math.cos(A-Math.PI/2), uy=Math.sin(A-Math.PI/2);
+    const dx=ux*L/2, dy=uy*L/2, nx=-uy, ny=ux, tw=5.5;
+    /* підвідні кінці */
+    g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([6,4]);
+    g.beginPath();
+    g.moveTo(cx-dx,cy-dy); g.lineTo(cx-ux*(L/2+52),cy-uy*(L/2+52));
+    g.moveTo(cx+dx,cy+dy); g.lineTo(cx+ux*(L/2+52),cy+uy*(L/2+52));
+    g.stroke(); g.setLineDash([]);
+    /* тіло провідника */
+    g.save(); g.translate(cx,cy); g.rotate(Math.atan2(uy,ux));
+    g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.roundRect(-L/2,-tw,L,2*tw,tw); g.fill(); g.stroke();
+    /* затискачі на кінцях */
+    g.fillStyle='rgba(11,11,11,.18)'; g.strokeStyle=CLR.sec; g.lineWidth=1.4;
+    for(const sg of [-1,1]){
+      g.beginPath(); g.roundRect(sg*L/2-5,-tw-3,10,2*tw+6,2); g.fill(); g.stroke();
+    }
+    /* напрям струму — стрілки всередині дроту */
+    const dI=this.I>=0?1:-1, nA=Math.max(2,Math.min(5,Math.round(L/46)));
+    for(let i=0;i<nA;i++){
+      const px2=-L/2+L*(i+0.5)/nA;
+      arrow(g,px2-9*dI,0,px2+9*dI,0,CLR.k1,1.8);
+    }
+    g.restore();
+    txt(g,'провідник · I = '+fmt(this.I,1)+' А',cx+ux*(L/2+58)+(ux<0?-6:6),
+      cy+uy*(L/2+58)+(uy<0?-6:14),
+      {color:'#1c5cab',size:11.5,bold:true,align:ux<0?'right':'left'});
     /* сила Ампера — перпендикулярно до провідника й до B, тобто в площині */
     /* Проєктна межа для стрілки: 4 Н. Повний розмах діапазону (до 16 Н) робив
        стрілку за типових значень коротшою за вістря, і сцена помилково писала
@@ -1637,6 +1665,7 @@ const M3={
     return {helix, sc:Math.min(bb.w*0.22,bb.h*0.24)/this.radRef(),
       cx:bb.w*0.28, cy:bb.h*0.5,
       vx:bb.w*0.80, vy:bb.h-52, bx:bb.w*0.92, by:bb.h-52, Bh:bb.h*0.4,
+      avx:bb.w*0.70, avy:bb.h*0.60, ar:Math.min(bb.w*0.11,bb.h*0.19),
       pt:{y:64,x0:bb.w-4*80-8,dx:80}};
   });},
   grips(){
@@ -1648,10 +1677,13 @@ const M3={
       {id:'B', x:Q.bx, y:Q.by-this.B/0.2*Q.Bh, r:8, color:CLR.k3, hint:'індукція поля',
        move:(px,py)=>{this.B=clamp(snap((Q.by-py)/Q.Bh*0.2,0.005),0.005,0.2);}},
       /* кут між швидкістю й полем — точка на дузі біля частинки */
-      {id:'b', x:Q.cx+74*Math.cos((90-this.b)*DEG), y:Q.cy-74*Math.sin((90-this.b)*DEG),
-       r:8, color:CLR.k1, hint:'кут між v і B',
-       move:(px,py)=>{const a=Math.atan2(Q.cy-py,px-Q.cx)/DEG;
-         this.b=clamp(snap(90-a,5),0,90);}}
+      /* ручка сидить на вістрі вектора v у діаграмі напрямів: кут між
+         векторами міняють, повертаючи сам вектор, а не точку на голій дузі */
+      {id:'b', x:Q.avx+Math.sin(this.b*DEG)*Q.ar*0.85,
+       y:Q.avy-Math.cos(this.b*DEG)*Q.ar*0.85,
+       r:9, color:CLR.k2, hint:'кут між v і B',
+       move:(px,py)=>{const a=Math.atan2(px-Q.avx,Q.avy-py)/DEG;
+         this.b=clamp(snap(a,5),0,90);}}
     ].concat(shelfGrips(Q.pt,this.PART,v=>{this.p=v;},'pt'));
   },
   init(){
@@ -1729,15 +1761,48 @@ const M3={
     g.fillStyle='rgba(27,175,122,.32)';
     g.fillRect(Q.bx-5,Q.by-this.B/0.2*Q.Bh,10,this.B/0.2*Q.Bh);
     txt(g,'B',Q.bx,Q.by+16,{color:'#0d7a55',size:10.5,bold:true,align:'center'});
-    /* Кут задають точкою на дузі — тож сама дуга має бути видимим слідом, по якому
-       та точка ходить: спершу бліда напрямна на всю чверть, поверх неї — набраний
-       кут. Раніше була сама дуга кута радіуса 56, і що вона орган керування,
-       здогадатися було ніяк. */
-    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
-    g.beginPath(); g.arc(cx,cy,74,-Math.PI/2,0); g.stroke(); g.setLineDash([]);
-    arc(g,cx,cy,74,-Math.PI/2,-(90-this.b)*DEG,CLR.k1,2.2);
-    txt(g,fmt(this.b,0)+'°',cx+86*Math.cos((90-this.b)*DEG*0.5),
-      cy-86*Math.sin((90-this.b)*DEG*0.5)+4,{color:'#1c5cab',size:11,bold:true});
+    /* ---- кут між v і B — окремою діаграмою напрямів ----------------------
+       У самій сцені цей кут показати нічим: поле дивиться на глядача, а
+       швидкість лежить у площині екрана, тож кут між ними в цю площину не
+       проєктується. Тому напрями винесено в окрему діаграму: обидва вектори
+       з однієї точки, дуга між ними — і той самий кут далі розкладає швидкість
+       на v∥ (уздовж поля — вона дає крок гвинта) та v⊥ (упоперек — вона й
+       закручує коло). Раніше кут набирали точкою на голій дузі, і жодного
+       другого вектора поруч не було. */
+    const ox=Q.avx, oy=Q.avy, AR=Q.ar, ab=this.b*DEG;
+    g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.roundRect(ox-AR*1.25,oy-AR*1.45,AR*2.7,AR*2.05,10);
+    g.fill(); g.stroke();
+    txt(g,'кут між v і B',ox-AR*1.15,oy-AR*1.45+16,{color:CLR.k1,size:11.5,bold:true});
+    txt(g,'обидва вектори — з однієї точки',ox-AR*1.15,oy-AR*1.45+30,
+      {color:CLR.mut,size:9.5});
+    const LV=AR*0.85;
+    const vx2=ox+Math.sin(ab)*LV, vy2=oy-Math.cos(ab)*LV;
+    /* розклад швидкості на складові вздовж і впоперек поля */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(vx2,vy2); g.lineTo(ox,vy2);
+    g.moveTo(vx2,vy2); g.lineTo(vx2,oy); g.stroke(); g.setLineDash([]);
+    if(Math.abs(Math.cos(ab))>0.06){
+      arrow(g,ox,oy,ox,vy2,CLR.k1,2);
+      txt(g,'v∥',ox-8,(oy+vy2)/2+4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    }
+    if(Math.sin(ab)>0.06){
+      arrow(g,ox,oy,vx2,oy,CLR.k1,2);
+      txt(g,'v⊥',(ox+vx2)/2,oy+15,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    }
+    arrow(g,ox,oy,ox,oy-LV,CLR.k3,2.8);
+    txt(g,'B',ox-9,oy-LV-4,{color:'#0d7a55',size:12,bold:true,align:'right'});
+    arrow(g,ox,oy,vx2,vy2,CLR.k2,2.8);
+    txt(g,'v',vx2+9,vy2-4,{color:'#b8431a',size:12,bold:true});
+    arc(g,ox,oy,AR*0.34,-Math.PI/2,-Math.PI/2+ab,CLR.sec,1.8);
+    /* підпис кута ведемо вліво від дуги — праворуч від неї проходить сам вектор v */
+    txt(g,'β = '+fmt(this.b,0)+'°',ox+Math.sin(ab/2)*AR*0.52-5,
+      oy-Math.cos(ab/2)*AR*0.52+4,{color:CLR.sec,size:11,bold:true,align:'right'});
+    dot(g,ox,oy,3.5,CLR.sec);
+    txt(g,'v⊥ = v·sin β = '+fmt(this.v*Math.sin(ab),2)+'·10⁶ м/с — закручує коло',
+      ox-AR*1.15,oy+AR*0.40,{color:'#1c5cab',size:9.5,bold:true});
+    txt(g,'v∥ = v·cos β = '+fmt(this.v*Math.cos(ab),2)+'·10⁶ м/с — дає крок гвинта',
+      ox-AR*1.15,oy+AR*0.52,{color:'#1c5cab',size:9.5,bold:true});
     shelf(g,Q.pt,this.PART,this.p,'частинка');
     for(const hh of this.grips()) drawGrip(g,hh,this);
     txt(g,helix?'швидкість під кутом до поля — траєкторія гвинтова'
@@ -1746,10 +1811,8 @@ const M3={
     txt(g,'сила Лоренца весь час перпендикулярна до швидкості, тому змінює лише напрям руху',
       12,36,{color:CLR.mut,size:10.5});
     /* векторний добуток q·v×B — окремою тривісною побудовою */
-    txt(g,'напрям F — за правилом правої руки для v × B;',w*0.78,h*0.56,
-      {color:CLR.mut,size:10.5,align:'center'});
-    txt(g,'уся побудова — на вкладці «6 · Векторний добуток»',w*0.78,h*0.56+15,
-      {color:CLR.mut,size:10.5,align:'center'});
+    txt(g,'напрям F — за правилом правої руки для v × B; уся побудова — на вкладці «6 · Векторний добуток»',
+      12,h-26,{color:CLR.mut,size:10.5});
   },
   table(){
     $('m3vp').textContent=this.P().n;
@@ -2358,6 +2421,11 @@ const M5={
    того, ЯК саме знаходять напрям, і з числами під нею. */
 const M6={
   pair:'ab', qneg:false, al:55, t:0, playing:true,
+  /* Демонстрація має два режими. Автоматичний прокручує всі п'ять кроків
+     підряд; покроковий спиняється на кожному, поки не натиснуть «далі» —
+     саме він і потрібен, коли правило пояснюють, а не просто показують. */
+  manual:false, step:0,
+  STEPU:[0.18,0.34,0.50,0.68,0.88],
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   CYC:9,                                   /* тривалість повного показу, с */
   /* Величини кожної пари сталі: змінюють тут лише кут, бо саме від нього
@@ -2383,7 +2451,7 @@ const M6={
   },
   /* знак результату: у від'ємного заряду сила протилежна до v × B */
   sgn(){return this.pair==='lor'&&this.qneg?-1:1;},
-  u(){return (this.t%this.CYC)/this.CYC;},
+  u(){return this.manual?this.STEPU[this.step]:(this.t%this.CYC)/this.CYC;},
   seg(a0,a1){return clamp((this.u()-a0)/(a1-a0),0,1);},
   /* межі кроків збігаються з початком відповідної анімації — інакше смуга
      встигала перемкнутися на «результат» ще до того, як вектор з'являвся */
@@ -2433,17 +2501,20 @@ const M6={
     seg('m6pair',v=>{this.pair=v; $('m6q').hidden=v!=='lor';});
     seg('m6q',v=>{this.qneg=v==='neg';});
     grip('m6scene',this,()=>this.grips());
+    const stop=()=>{this.manual=true; this.playing=false; $('m6play').textContent='▶';};
+    $('m6prev').onclick=()=>{stop(); this.step=(this.step+4)%5;};
+    $('m6next').onclick=()=>{stop(); this.step=(this.step+1)%5;};
     $('m6play').onclick=()=>{
-      this.playing=!this.playing;
+      this.manual=false; this.playing=!this.playing;
       $('m6play').textContent=this.playing?'⏸':'▶';
     };
-    $('m6re').onclick=()=>{this.t=0;};
+    $('m6re').onclick=()=>{this.t=0; this.step=0;};
     this.tip1=makeTip('m6c1w'); this.tip2=makeTip('m6c2w');
     hover('m6c1',this.h1); hover('m6c2',this.h2);
     this.h1.xlab='α'; this.h1.xunit='°'; this.h1.xdec=0;
     this.h2.xlab='α'; this.h2.xunit='°'; this.h2.xdec=0;
   },
-  tick(dt){if(this.playing&&this._grab==null) this.t+=dt; this.render();},
+  tick(dt){if(this.playing&&!this.manual&&this._grab==null) this.t+=dt; this.render();},
   render(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m6scene'); if(!b) return;
@@ -2531,6 +2602,45 @@ const M6={
           {color:'#1c5cab',size:10.5,bold:true});
     }
     dot(g,O[0],O[1],3.5,CLR.sec);
+    /* ---- права рука окремою рамкою ---------------------------------------
+       Правило треба впізнати, а не прочитати. Малювати руку просто серед
+       векторів не вийшло: у косій проєкції вона зливається з дугою повороту
+       й накриває початок координат. Тому це окрема схема збоку — долоня,
+       чотири пальці, що згинаються, і відставлений великий палець. */
+    if(pr>0){
+      const HW=Math.min(244,w*0.26), HH=Math.min(176,h*0.36);
+      const hx0=12, hy0=h*0.36;
+      g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(hx0,hy0,HW,HH,10); g.fill(); g.stroke();
+      txt(g,'правило правої руки',hx0+10,hy0+17,{color:CLR.k3,size:11.5,bold:true});
+      const px2=hx0+HW*0.40, py2=hy0+HH*0.62;
+      /* долоня */
+      g.fillStyle='rgba(11,11,11,.12)'; g.strokeStyle='rgba(11,11,11,.45)'; g.lineWidth=1.6;
+      g.beginPath(); g.roundRect(px2-26,py2-30,44,64,12); g.fill(); g.stroke();
+      /* чотири пальці: виходять праворуч і згинаються донизу */
+      g.strokeStyle='rgba(11,11,11,.45)'; g.lineWidth=7; g.lineCap='round';
+      for(let i=0;i<4;i++){
+        const fy=py2-22+i*13;
+        g.beginPath(); g.moveTo(px2+14,fy);
+        g.quadraticCurveTo(px2+56,fy,px2+60,fy+19);
+        g.stroke();
+      }
+      /* великий палець — угору, уздовж результату */
+      g.strokeStyle='rgba(27,175,122,.85)'; g.lineWidth=9;
+      g.beginPath(); g.moveTo(px2-4,py2+4); g.lineTo(px2-4,py2-52); g.stroke();
+      g.lineCap='butt';
+      arrow(g,px2-4,py2-52,px2-4,py2-64,CLR.k3,2.4);
+      txt(g,V.nc.split('=')[0].trim(),px2+4,py2-58,{color:'#0d7a55',size:11,bold:true});
+      /* дуга, що показує, куди згинаються пальці */
+      arc(g,px2+22,py2-4,42,-0.55,0.55,CLR.k2,2.2);
+      arrow(g,px2+22+Math.cos(0.42)*42,py2-4+Math.sin(0.42)*42,
+              px2+22+Math.cos(0.55)*42,py2-4+Math.sin(0.55)*42,CLR.k2,2.2);
+      txt(g,'від '+V.na+' до '+V.nb,px2+70,py2-6,{color:'#b8431a',size:10.5,bold:true});
+      txt(g,'пальці ставлять уздовж '+V.na+' і згинають до '+V.nb,
+        hx0+10,hy0+HH-24,{color:CLR.mut,size:9.5});
+      txt(g,'великий палець показує '+V.nc.split('=')[0].trim(),
+        hx0+10,hy0+HH-10,{color:CLR.mut,size:9.5});
+    }
     /* ---- смуга кроків: видно, який саме крок показують зараз -------------- */
     const S0=w*0.03, S1=w*0.97, sw=(S1-S0)/5, sy=h-30, ph=this.phase();
     for(let i=0;i<5;i++){
@@ -2542,11 +2652,12 @@ const M6={
       txt(g,String(i+1),x0+11,sy+4,{color:on?CLR.ink:CLR.mut,size:11,bold:on});
       txt(g,this.PHS[i],x0+24,sy+4,{color:on?CLR.ink:CLR.mut,size:10.5,bold:on});
     }
-    txt(g,'крок '+(ph+1)+': '+this.PH[ph],12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'крок '+(ph+1)+' з 5: '+this.PH[ph],12,20,{color:CLR.k3,size:12.5,bold:true});
     txt(g,'модуль добутку — площа паралелограма на множниках; напрям — перпендикуляр до нього',
       12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
-    txt(g,'тягніть вістря другого вектора — воно ходить по площині множників',
+    txt(g,this.manual?'кроки перемикають ◀ і ▶ угорі; ⏸ повертає автоматичний показ'
+      :'натисніть ◀ або ▶ угорі, щоб розібрати побудову крок за кроком',
       12,h-8,{color:CLR.mut,size:10.5});
   },
   table(){

@@ -247,7 +247,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span><var>r</var> — плече сили від осі обертання<span class="badge">точка прикладання</span></span><b id="m2vr"></b></div>
         <div class="kv"><span><var>m</var> — маса тіла<span class="badge">брусок унизу</span></span><b id="m2vm"></b></div>
         <div class="kv"><span><var>R</var> — радіус (для стрижня — піврозмір)<span class="badge">обід тіла</span></span><b id="m2vR"></b></div>
-        <div class="kv"><span><var>d</var> — на скільки вісь віднесено від центра мас<span class="badge">центр мас</span></span><b id="m2vd"></b></div>
+        <div class="kv"><span><var>d</var> — на скільки вісь віднесено від центра мас<span class="badge">повзунок нижче</span></span><b id="m2vd"></b></div>
+        <label class="sl"><span><var>d</var> — зміщення осі від центра мас</span>
+          <input type="range" id="m2sd" min="0" max="0.35" step="0.01" value="0.2"><output id="m2sdo"></output></label>
+        <div class="formulas" id="m2dnote"></div>
       </div>
       <div class="panel">
         <h3>Величини обертання</h3>
@@ -485,6 +488,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>синхронність із добою <var>T</var>/доба<span class="badge">1,00 — геостаціонарна</span></span><b id="m5kSyn"></b></div>
         <div class="kv"><span>геостаціонарний радіус ∛(<var>μT</var>²/4π²)<span class="badge">35 793 км над Землею</span></span><b id="m5kRg"></b></div>
         <div class="kv"><span>швидкість зараз</span><b id="m5kV"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Тяжіння, яке його тримає</h3>
+        <label class="sl"><span><var>m</var> — маса тіла, яке запускають</span>
+          <input type="range" id="m5sm" min="50" max="3000" step="50" value="500"><output id="m5smo"></output></label>
+        <div class="kv"><span>сила тяжіння зараз <var>F</var> = <var>GMm</var>/<var>r</var>²</span><b id="m5kF"></b></div>
+        <div class="kv"><span>вага того самого тіла на поверхні <var>mg</var><sub>0</sub></span><b id="m5kF0"></b></div>
+        <div class="kv"><span>у скільки разів тяжіння слабше, ніж на поверхні<span class="badge">як (R/r)²</span></span><b id="m5kFr"></b></div>
+        <div class="kv"><span>прискорення вільного падіння тут <var>g</var> = <var>GM</var>/<var>r</var>²</span><b id="m5kg"></b></div>
+        <div class="formulas" id="m5fg"></div>
       </div>
       <div class="panel">
         <h3>Закони збереження на орбіті</h3>
@@ -1227,6 +1240,19 @@ const M2={
   /* У стрижня вісь не може вийти за його кінець: d ≤ півдовжина R */
   dMax(){return this.body==='rod'?Math.min(this.DMAX,this.R):this.DMAX;},
   dNow(){return Math.min(this.d,this.dMax());},
+  /* Верхня межа повзунка живе разом із тілом: у стрижня вісь не може вийти
+     за його кінець, тож там d ≤ R. Нижня межа завжди нуль. */
+  syncD(){
+    const i=$('m2sd'); if(!i) return;
+    const mx=Math.round(this.dMax()*100)/100;
+    if(+i.max!==mx) i.max=mx;
+    this.d=Math.min(this.d,this.dMax());
+    if(document.activeElement!==i) i.value=this.d;
+    $('m2sdo').textContent=fmt(this.d,2)+' м';
+    $('m2dnote').textContent=this.body==='rod'
+      ?'у стрижня вісь ходить лише вздовж нього, тож d не більше за піврозмір R'
+      :'d = 0 — вісь проходить через центр мас; далі нуля вона не зсувається';
+  },
   side(){return 14+20*Math.sqrt(this.m);},   /* площа бруска — маса тіла */
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
@@ -1238,16 +1264,11 @@ const M2={
       {id:'R', x:Q.cmx-rp*Math.cos(ax), y:Q.cmy-rp*Math.sin(ax), r:9, color:CLR.sec,
        hint:'радіус тіла',
        move:(mx,my)=>{this.R=clamp(snap(Math.hypot(mx-Q.cmx,my-Q.cmy)/sc,0.01),0.2,0.5);
-         this.d=Math.min(this.d,this.dMax()); this.reset();}},
-      /* центр мас: відтягуючи його від осі, задаємо плече d теореми Штейнера.
-         У стрижня рух ручки проєктуємо на сам стрижень — упоперек вісь не їде */
-      {id:'d', x:Q.cmx, y:Q.cmy, r:9, color:CLR.k3, hint:'віднести вісь від центра мас',
-       move:(mx,my)=>{
-         const dd=this.body==='rod'
-           ? Math.max(0,(mx-Q.cx)*Math.cos(Q.ac)+(my-Q.cy)*Math.sin(Q.ac))/sc
-           : Math.hypot(mx-Q.cx,my-Q.cy)/sc;
-         this.d=clamp(snap(dd,0.01),0,this.dMax());
-         this.reset();}},
+         this.syncD(); this.reset();}},
+      /* Зміщення осі ручки на кресленні не має: центр мас обходить вісь по
+         колу, і поки тіло крутиться, ручка тікала з-під пальця — а разом із
+         нею й повзла сама вісь. Тепер d задає повзунок у бічній колонці,
+         у якого є чесний нуль: далі нуля вісь нікуди не рухається. */
       {id:'r', x:px, y:py, r:8, color:CLR.k1, hint:'плече сили',
        move:(mx,my)=>{this.r=clamp(snap(Math.hypot(mx-Q.cx,my-Q.cy)/sc,0.01),0.05,this.R);
          this.reset();}},
@@ -1260,7 +1281,8 @@ const M2={
     ];
   },
   init(){
-    seg('m2body',v=>{this.body=v; this.d=Math.min(this.d,this.dMax()); this.reset();});
+    seg('m2body',v=>{this.body=v; this.syncD(); this.reset();});
+    this.sd=slider('m2sd','м',2,v=>{this.d=Math.min(v,this.dMax()); this.reset();});
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
@@ -1288,7 +1310,7 @@ const M2={
     }
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table(); this.charts(); this.syncD();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
     const {g,w,h}=b, Q=this.geo(b);
@@ -2139,6 +2161,11 @@ const M4={
 const T_EARTH=86164;     /* зоряна доба, с — саме з неї рахується геостаціонарний радіус */
 const R_GEO=Math.cbrt(MU_E*T_EARTH*T_EARTH/(4*Math.PI*Math.PI));
 const M5={
+  /* Маса самого тіла на форму орбіти не впливає (вона скорочується в рівнянні
+     руху), але саме вона задає силу тяжіння — а модуль про те, що гармата
+     Ньютона й закон тяжіння це одне й те саме явище. Тому масу тут задають,
+     і F = GMm/r² показано просто на стрілці. */
+  m:500,
   v0:6.9, h0:2000, beta:0,
   HMIN:2000,     /* найнижча точка запуску, км: нижче вона зливається з поверхнею */
   view:'low',    /* обраний випадок — від нього кадр */
@@ -2223,8 +2250,10 @@ const M5={
          this.reset();}}
     ];
   },
+  Fgrav(r){return MU_E*this.m/(r*r);},
   init(){
     grip('m5scene',this,()=>this.grips());
+    slider('m5sm','кг',0,v=>{this.m=v;});
     const preset=(h,vv,bb)=>{this.h0=h; this.beta=bb; this.v0=vv; this.reset();};
     /* швидкості пресетів обчислені з μ і радіуса, а не вписані «на око» */
     const rOf=km=>R_E+km*1e3;
@@ -2330,10 +2359,16 @@ const M5={
       {color:'#b8431a',size:11.5,bold:true,align:vx<0?'right':'left'});
     const gl=Math.hypot(P.x,P.y)||1;
     const gdx=-P.x/gl, gdy=P.y/gl;
-    arrow(g,px,py,px+gdx*40,py+gdy*40,CLR.k3,2.5);
+    /* Довжина стрілки тяжіння — від сили на поверхні (§10): на низькій орбіті
+       вона майже повна, на геостаціонарній помітно коротша, і це видно оком. */
+    const Fg=this.Fgrav(gl), F0=this.Fgrav(R_E);
+    const Lg=Math.max(14,Math.min(64,64*Fg/F0));
+    arrow(g,px,py,px+gdx*Lg,py+gdy*Lg,CLR.k3,2.5);
     /* підпис збоку від стрілки: вістря дивиться в центр Землі, і напис у його
        кінці лягав би просто на кулю */
-    txt(g,'тяжіння',px+gdx*20-gdy*17,py+gdy*20+gdx*17+4,
+    txt(g,'F = GMm/r²',px+gdx*Lg*0.5-gdy*19,py+gdy*Lg*0.5+gdx*19+4,
+      {color:'#0d7a55',size:10.5,bold:true,align:'center'});
+    txt(g,sci(Fg,2)+' Н',px+gdx*Lg*0.5-gdy*19,py+gdy*Lg*0.5+gdx*19+17,
       {color:'#0d7a55',size:10.5,bold:true,align:'center'});
     dot(g,px,py,6,CLR.ink,'#fff');
     if(o.hit&&i>=o.pts.length-1){
@@ -2415,6 +2450,15 @@ const M5={
     $('m5kT').textContent=isFinite(o.T)?(o.T<7200?fmt(o.T/60,1)+' хв':fmt(o.T/3600,2)+' год'):'—';
     $('m5kSyn').textContent=isFinite(o.T)?fmt(o.T/T_EARTH,3):'—';
     $('m5kRg').textContent=fmt(R_GEO/1e3,0)+' км';
+    const rr=Math.hypot(P.x,P.y)||R_E;
+    const Fg=this.Fgrav(rr), F0=this.Fgrav(R_E);
+    $('m5kF').textContent=sci(Fg,3)+' Н';
+    $('m5kF0').textContent=sci(F0,3)+' Н';
+    $('m5kFr').textContent='у '+fmt(F0/Fg,2)+' раза';
+    $('m5kg').textContent=fmt(MU_E/(rr*rr),3)+' м/с²';
+    $('m5fg').innerHTML='<i>F</i> = 6,67·10⁻¹¹·5,97·10²⁴·'+fmt(this.m,0)+' / ('+
+      fmt(rr/1e3,0)+'·10³)² = <b>'+sci(Fg,3)+' Н</b> — та сама сила, що й вага на землі, '+
+      'тільки послаблена квадратом відстані';
     $('m5kV').textContent=fmt(P.v/1e3,2)+' км/с';
     $('m5kEn').textContent=sci(P.v*P.v/2-MU_E/P.r,3)+' Дж/кг';
     $('m5kL').textContent=sci(o.L,3)+' м²/с';

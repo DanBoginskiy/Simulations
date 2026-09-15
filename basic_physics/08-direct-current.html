@@ -989,8 +989,9 @@ const M1={
       {id:'t', x:Q.tx, y:Q.tb-(this.t+50)/650*Q.th, r:8, color:CLR.k3,
        hint:'температура провідника',
        move:(px,py)=>{this.t=clamp(snap((Q.tb-py)/Q.th*650-50,10),-50,600);}},
-      {id:'U', x:Q.sx+this.bl(), y:Q.cy+64, r:8, color:CLR.k2, hint:'напруга джерела',
-       move:px=>{this.U=clamp(snap((px-Q.sx-10)/0.9,0.5),0,24);}}
+      /* ручка на вістрі довгої пластини: тягнеш її вгору — росте напруга */
+      {id:'U', x:Q.sx-9, y:Q.cy+64-this.bl(), r:8, color:CLR.k2, hint:'напруга джерела',
+       move:(px,py)=>{this.U=clamp(snap((Q.cy+64-py-10)/0.9,0.5),0,24);}}
     ];
   },
   init(){
@@ -1034,14 +1035,17 @@ const M1={
     /* джерело й прилади */
     g.strokeStyle=CLR.sec; g.lineWidth=1.8;
     g.beginPath();
-    const bl=this.bl(), sx=Q.sx;
-    g.moveTo(x0,cy); g.lineTo(x0-30,cy); g.lineTo(x0-30,cy+64); g.lineTo(sx-bl,cy+64);
-    g.moveTo(sx+bl,cy+64); g.lineTo(x1+30,cy+64); g.lineTo(x1+30,cy); g.lineTo(x1,cy); g.stroke();
-    /* довжина пластини джерела — сама напруга */
-    g.lineWidth=3; g.beginPath(); g.moveTo(sx-bl,cy+56); g.lineTo(sx-bl,cy+72); g.stroke();
-    g.lineWidth=1.6; g.beginPath(); g.moveTo(sx+bl,cy+58); g.lineTo(sx+bl,cy+70); g.stroke();
-    g.lineWidth=3; g.beginPath(); g.moveTo(sx-bl,cy+64); g.lineTo(sx+bl,cy+64); g.stroke();
-    txt(g,fmt(this.U,1)+' В',sx,cy+88,{color:CLR.sec,size:11.5,bold:true,align:'center'});
+    const bl=this.bl(), sx=Q.sx, sy=cy+64;
+    g.moveTo(x0,cy); g.lineTo(x0-30,cy); g.lineTo(x0-30,sy); g.lineTo(sx-9,sy);
+    g.moveTo(sx+9,sy); g.lineTo(x1+30,sy); g.lineTo(x1+30,cy); g.lineTo(x1,cy); g.stroke();
+    /* Пластини джерела стоять УПОПЕРЕК дроту — так само, як усередині самого
+       джерела вони лежать упоперек силових ліній. Раніше довга пластина йшла
+       вздовж нижнього дроту й читалася як його потовщення, а не як батарея;
+       напругу тепер показує саме висота довгої пластини. */
+    g.lineWidth=3; g.beginPath(); g.moveTo(sx-9,sy-bl); g.lineTo(sx-9,sy+bl); g.stroke();
+    g.lineWidth=1.6; g.beginPath(); g.moveTo(sx+9,sy-8); g.lineTo(sx+9,sy+8); g.stroke();
+    txt(g,'+',sx-17,sy-bl-4,{color:CLR.sec,size:12,bold:true,align:'center'});
+    txt(g,fmt(this.U,1)+' В',sx,sy+bl+18,{color:CLR.sec,size:11.5,bold:true,align:'center'});
     /* амперметр і вольтметр */
     const meter=(x,y,lab,val,unit,col2)=>{
       dot(g,x,y,20,'#fff'); g.strokeStyle=col2; g.lineWidth=2;
@@ -1442,6 +1446,11 @@ const M3={
       {color:shortC?CLR.k3:CLR.k1,size:12.5,bold:true});
     txt(g,'сума напруг на R і r завжди дорівнює ЕРС — це закон Ома для повного кола',
       12,36,{color:CLR.mut,size:10.5});
+    /* Ручки тут були, але їх ніколи не малювали: параметри тягнулися, а за що
+       саме — доводилося вгадувати. Тепер у кожного своя видима точка. */
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+    txt(g,'тягніть кольорові точки: пластину джерела — ЕРС, краї коробок — опори',
+      12,h-10,{color:CLR.mut,size:10.5});
   },
   table(){
     const I=this.I(this.R), U=this.U(this.R);

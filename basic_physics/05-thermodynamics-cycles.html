@@ -177,15 +177,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="kv"><span><var>ν</var> — кількість речовини<span class="badge">смужка ν</span></span><b id="m1vnu"></b></div>
-        <div class="kv"><span><var>T</var><sub>1</sub> — початкова температура<span class="badge" id="m1bsT1">смужка T₁</span><span class="badge" id="m1bT1" hidden>стала в цьому процесі</span></span><b id="m1vT1"></b></div>
-        <div class="kv"><span><var>p</var><sub>1</sub> — початковий тиск<span class="badge" id="m1bsp1">смужка p₁</span><span class="badge" id="m1bp1" hidden>стала в цьому процесі</span></span><b id="m1vp1"></b></div>
-        <div class="kv"><span><var>V</var><sub>1</sub> — початковий обʼєм<span class="badge" id="m1bsV1">точка 1 по горизонталі</span><span class="badge" id="m1bV1" hidden>стала в цьому процесі</span></span><b id="m1vV1"></b></div>
+        <div class="kv"><span><var>ν</var> — кількість речовини</span><b id="m1vnu"></b></div>
+        <label class="sl"><span><var>ν</var>, моль</span>
+          <input type="range" id="m1snu" min="0.1" max="2" step="0.05" value="1"><output id="m1snuo"></output></label>
+        <div class="kv"><span><var>T</var><sub>1</sub> — початкова температура<span class="badge" id="m1bT1" hidden>стала в цьому процесі</span></span><b id="m1vT1"></b></div>
+        <label class="sl"><span><var>T</var><sub>1</sub>, K</span>
+          <input type="range" id="m1sT" min="200" max="600" step="10" value="300"><output id="m1sTo"></output></label>
+        <div class="kv"><span><var>p</var><sub>1</sub> — початковий тиск<span class="badge" id="m1bp1" hidden>стала в цьому процесі</span></span><b id="m1vp1"></b></div>
+        <div class="kv"><span><var>V</var><sub>1</sub> — початковий обʼєм<span class="badge" id="m1bV1" hidden>стала в цьому процесі</span></span><b id="m1vV1"></b></div>
+        <label class="sl"><span id="m1sthL"></span>
+          <input type="range" id="m1sth" min="5" max="40" step="1" value="20"><output id="m1stho"></output></label>
         <div class="kv"><span><var>V</var><sub>2</sub>/<var>V</var><sub>1</sub> — у скільки разів змінюється обʼєм (для ізохори — тиск)<span class="badge">точка 2</span></span><b id="m1vkk"></b></div>
-        <div class="grp" id="m1gConst">
-          <label class="sl"><span id="m1sconstL"></span>
-            <input type="range" id="m1sconst" min="0" max="1" step="1" value="0"><output id="m1sconsto"></output></label>
-        </div>
         <div class="formulas" id="m1constNote"></div>
       </div>
       <div class="panel">
@@ -883,9 +885,9 @@ const M1={
     const E=this.E(), s2=E.s2;
     /* T = 64, а не 48: кадр сталий, тож верхня поділка тепер завжди стоїть рівно вгорі —
        підпису осі треба власний рядок над нею, і він не має налізти на текст сцени */
-    /* B=84: смуги керування дістають власну смугу внизу кадру й не налазять
-       на підписи поділок осі V (брендбук §19) */
-    const L=44,R=44,T=64,B=84, pw=bb.w-L-R, ph=bb.h-T-B;
+    /* Смуг керування внизу кадру більше немає — вони переїхали в бічну
+       колонку, — тож нижнє поле скорочено до підписів поділок осі V. */
+    const L=44,R=44,T=64,B=46, pw=bb.w-L-R, ph=bb.h-T-B;
     /* Осі діаграми сталі (§10). Раніше вони підганялися під самі стани, тож процес
        завжди займав ту саму площу екрана: тягнеш стан 2 — а картинка не змінюється.
        Обʼєм: V₁ ∈ [5;40] л, k ∈ [0,4;3] дають щонайбільше 120 л, але проєктною межею
@@ -908,7 +910,7 @@ const M1={
       iV:px=>(px-L)/pw*(Vhi-Vlo)+Vlo, iP:py=>(1-(py-T)/ph)*pHi,
       /* три смуги керування під діаграмою: кількість речовини, температура й тиск
          стану 1. Тиск не є незалежним (p = νRT/V), тож його смуга змінює обʼєм. */
-      BW:110, by:bb.h-14, nx:bb.w*0.26, tx:bb.w*0.50, px:bb.w*0.74};
+      };
   });},
   grips(){
     const b=cvx('m1scene'); if(!b) return [];
@@ -916,84 +918,53 @@ const M1={
     /* стан, що вийшов за сталий кадр, лишається взятним: ручку притискаємо до краю */
     const gx=V=>clamp(Q.SX(V),Q.L,b.w-Q.R), gy=p=>clamp(Q.SY(p),Q.T,b.h-Q.B);
     return [
-      /* Величину, яку процес тримає сталою, задає рівно один орган керування —
-         повзунок «стала величина процесу» в бічній колонці. Тому в ізохорному
-         процесі точка 1 ходить лише вертикально (обʼєм задає посудина, а не
-         жест), а смуги T₁ і p₁ зникають там, де сталими є саме вони. */
-      {id:'s1', x:gx(this.V1), y:gy(Q.p1), r:9, color:CLR.k1,
-       hint:this.proc==='iso_v'?'стан 1: температура (обʼєм сталий)'
-                               :'стан 1: обʼєм і температура',
-       move:(px,py)=>{
-         if(this.proc!=='iso_v') this.V1=clamp(snap(Q.iV(px),1),5,40);
-         const p=Math.max(1,Q.iP(py));
-         this.T1=clamp(snap(p*this.V1/(this.nu*RGAS),10),200,600);}},
       {id:'s2', x:gx(s2.V), y:gy(Q.p2), r:9, color:CLR.k2, hint:'стан 2',
        move:(px,py)=>{
          if(this.proc==='iso_v')
            this.kk=clamp(snap(Math.max(1,Q.iP(py))/Q.p1,0.05),0.4,3);
          else
            this.kk=clamp(snap(Q.iV(px)/this.V1,0.05),0.4,3);}},
-      /* кількість речовини з діаграми не читається — ν і T входять у тиск
-         тільки добутком, тож їй дано власну смужку в кадрі */
-      {id:'nu', x:Q.nx+(this.nu-0.1)/1.9*Q.BW, y:Q.by, r:8, color:CLR.k3,
-       hint:'кількість речовини',
-       move:px=>{this.nu=clamp(snap((px-Q.nx)/Q.BW*1.9+0.1,0.05),0.1,2);}},
-      ...(this.proc==='iso_t'?[]:[{id:'T1', x:Q.tx+(this.T1-200)/400*Q.BW, y:Q.by,
-       r:8, color:CLR.k1, hint:'температура стану 1',
-       move:px=>{this.T1=clamp(snap((px-Q.tx)/Q.BW*400+200,10),200,600);}}]),
-      /* тиск незалежним параметром бути не може: p = νRT/V. Тягнучи p при сталій
-         температурі, змінюємо обʼєм — саме так тиск і задають у досліді. */
-      ...(this.proc==='iso_p'?[]:[{id:'p1', x:Q.px+clamp((Q.p1-20)/480,0,1)*Q.BW,
-       y:Q.by, r:8, color:CLR.k1, hint:'тиск стану 1 (міняє обʼєм)',
-       move:px=>{const pp=clamp(snap((px-Q.px)/Q.BW*480+20,5),20,500);
-         this.V1=clamp(snap(this.nu*RGAS*this.T1/pp,1),5,40);}}])
     ];
   },
-  /* Кожен ізопроцес тримає сталою свою величину. Тягнути її на діаграмі
-     незручно — стала величина не має на ній власної точки, — тож їй дано
-     окремий повзунок, який міняє підпис і межі разом із вибраним процесом.
-     Адіабата сталої величини не має взагалі: у ній нуль — це Q. */
-  CONST:{
-    iso_p:{lab:'p — сталий тиск процесу',unit:'кПа',dec:0,min:20,max:500,step:5,
-      get:function(M){return M.p(M.V1,M.T1);},
-      set:function(M,v){M.V1=clamp(snap(M.nu*RGAS*M.T1/v,1),5,40);}},
-    iso_v:{lab:'V — сталий обʼєм процесу',unit:'л',dec:0,min:5,max:40,step:1,
-      get:function(M){return M.V1;},
-      set:function(M,v){M.V1=v;}},
-    iso_t:{lab:'T — стала температура процесу',unit:'K',dec:0,min:200,max:600,step:10,
-      get:function(M){return M.T1;},
-      set:function(M,v){M.T1=v;}}
+  /* Кожна величина має рівно один орган керування. ν і T₁ — свої повзунки;
+     третій повзунок задає ту саму ступінь вільності двома способами залежно
+     від процесу: в ізобарному природно ставити тиск (обʼєм тоді йде за
+     рівнянням стану), в решті — обʼєм. Ручок на діаграмі для стану 1 більше
+     немає: точка 1 рухалася і по горизонталі (обʼєм), і по вертикалі
+     (температура), тобто дублювала обидва повзунки. Точка 2 лишається —
+     вона задає ступінь зміни, і в неї свого повзунка немає. */
+  third(){
+    return this.proc==='iso_p'
+      ? {lab:'p — сталий тиск процесу',unit:'кПа',dec:0,min:20,max:500,step:5,
+         get:M=>M.p(M.V1,M.T1),
+         set:(M,v)=>{M.V1=clamp(snap(M.nu*RGAS*M.T1/v,1),5,40);}}
+      : {lab:this.proc==='iso_v'?'V — сталий обʼєм процесу':'V₁ — початковий обʼєм',
+         unit:'л',dec:0,min:5,max:40,step:1,
+         get:M=>M.V1, set:(M,v)=>{M.V1=v;}};
   },
   BADGE:{iso_p:'m1bp1',iso_v:'m1bV1',iso_t:'m1bT1'},
-  /* позначка «де шукати орган керування» — у сталої величини він один */
-  BADGE0:{iso_p:'m1bsp1',iso_v:'m1bsV1',iso_t:'m1bsT1'},
   syncConst(){
-    const c=this.CONST[this.proc];
-    /* у рядку відповідної величини вмикаємо позначку «стала в цьому процесі»
-       і прибираємо застарілу вказівку на смужку в кадрі: смужки там уже немає */
-    for(const k in this.BADGE){
-      $(this.BADGE[k]).hidden=k!==this.proc;
-      $(this.BADGE0[k]).hidden=k===this.proc;
-    }
-    $('m1gConst').hidden=!c;
-    $('m1constNote').textContent=c?''
-      :'адіабатний процес: сталої величини немає — нулем тут є теплота, Q = 0';
-    if(!c) return;
-    const i=$('m1sconst');
-    $('m1sconstL').textContent=c.lab;
-    i.min=c.min; i.max=c.max; i.step=c.step;
+    for(const k in this.BADGE) $(this.BADGE[k]).hidden=k!==this.proc;
+    const c=this.third(), i=$('m1sth');
+    $('m1sthL').textContent=c.lab;
+    if(+i.min!==c.min){i.min=c.min; i.max=c.max; i.step=c.step;}
     if(document.activeElement!==i)
       i.value=clamp(Math.round(c.get(this)/c.step)*c.step,c.min,c.max);
-    $('m1sconsto').textContent=fmt(+i.value,c.dec)+' '+c.unit;
+    $('m1stho').textContent=fmt(+i.value,c.dec)+' '+c.unit;
+    $('m1constNote').textContent=this.proc==='adiab'
+      ?'адіабатний процес: сталої величини немає — нулем тут є теплота, Q = 0'
+      :'стала величина процесу позначена в списку вище';
   },
   init(){
     seg('m1proc',v=>{this.proc=v; this.syncConst();});
     seg('m1gas',v=>{this.gas=v;});
     grip('m1scene',this,()=>this.grips());
-    $('m1sconst').addEventListener('input',e=>{
-      const c=this.CONST[this.proc]; if(!c) return;
+    slider('m1snu','моль',2,v=>{this.nu=v;});
+    slider('m1sT','K',0,v=>{this.T1=v;});
+    $('m1sth').addEventListener('input',e=>{
+      const c=this.third();
       c.set(this,+e.target.value);
-      $('m1sconsto').textContent=fmt(+e.target.value,c.dec)+' '+c.unit;
+      $('m1stho').textContent=fmt(+e.target.value,c.dec)+' '+c.unit;
     });
     this.syncConst();
   },
@@ -1058,19 +1029,10 @@ const M1={
       adiab:['адіабатний: Q = 0',CLR.ink,'теплообміну немає: газ виконує роботу лише за рахунок власної внутрішньої енергії']}[this.proc];
     txt(g,nm[0],12,20,{color:nm[1],size:12.5,bold:true});
     txt(g,nm[2],12,36,{color:CLR.mut,size:10.5});
-    /* смуги керування: ν, T₁, p₁ */
-    const bar=(x,frac,col,lab,txc)=>{
-      g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.moveTo(x,Q.by+.5); g.lineTo(x+Q.BW,Q.by+.5); g.stroke();
-      g.strokeStyle=col; g.lineWidth=3;
-      g.beginPath(); g.moveTo(x,Q.by); g.lineTo(x+clamp(frac,0,1)*Q.BW,Q.by); g.stroke();
-      txt(g,lab,x,Q.by-10,{color:txc,size:10.5,bold:true});
-    };
-    bar(Q.nx,(this.nu-0.1)/1.9,CLR.k3,'ν = '+fmt(this.nu,2)+' моль','#0d7a55');
-    if(this.proc!=='iso_t')
-      bar(Q.tx,(this.T1-200)/400,CLR.k1,'T₁ = '+fmt(this.T1,0)+' K','#1c5cab');
-    if(this.proc!=='iso_p')
-      bar(Q.px,(p1-20)/480,CLR.k1,'p₁ = '+fmt(p1,0)+' кПа','#1c5cab');
+    /* Смуг керування в кадрі більше немає: кожну величину задає рівно один
+       повзунок у бічній колонці, а на діаграмі лишається одна ручка — стан 2. */
+    txt(g,'ν = '+fmt(this.nu,2)+' моль · T₁ = '+fmt(this.T1,0)+' K · p₁ = '+
+      fmt(p1,0)+' кПа · V₁ = '+fmt(this.V1,0)+' л',12,h-10,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){

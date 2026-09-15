@@ -272,7 +272,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="toolbar">
           <div class="seg" id="m3mode">
             <button data-v="eye" class="active" style="--c:var(--k1)">око й окуляри</button>
-            <button data-v="inst" style="--c:var(--k2)">лупа й мікроскоп</button>
+            <button data-v="loupe" style="--c:var(--k2)">лупа</button>
+            <button data-v="micro" style="--c:var(--k3)">мікроскоп</button>
           </div>
           <span class="lbl" id="m3state" style="font-weight:600"></span>
         </div>
@@ -1561,16 +1562,23 @@ const M2={
     const F=this.Fs(), CAP=200;
     const bf=cvx('m2cf');
     if(bf){
-      const ts=[],ys=[];
+      /* Дві окремі гілки, а не одна ламана: при d = F зображення йде в
+         нескінченність, і з'єднувати гілки лінією не можна — виходило б, ніби
+         f плавно переходить з мінус нескінченності в плюс. Саму асимптоту
+         позначаємо вертикальним пунктиром: це і є розрив. */
+      const tsA=[],ysA=[],tsB=[],ysB=[];
       for(let i=0;i<=300;i++){
         const d=1+89*i/300;
         if(Math.abs(d-F)<0.4) continue;
-        const f=d*F/(d-F);
-        if(Math.abs(f)>CAP) continue;
-        ts.push(d); ys.push(f);
+        const ff=d*F/(d-F);
+        if(Math.abs(ff)>CAP) continue;
+        if(d<F){tsA.push(d); ysA.push(ff);} else {tsB.push(d); ysB.push(ff);}
       }
       const f=this.f();
-      const ser=[{ts,ys,color:CLR.k2,label:'f'}];
+      const ser=[];
+      if(tsA.length>1) ser.push({ts:tsA,ys:ysA,color:CLR.k2,label:''});
+      if(tsB.length>1) ser.push({ts:tsB,ys:ysB,color:CLR.k2,label:'f'});
+      if(F>1&&F<89) ser.push({ts:[F,F],ys:[-CAP,CAP],color:CLR.mut,label:'d = F',dash:[3,3]});
       if(f!=null&&Math.abs(f)<=CAP) ser.push({ts:[this.d,this.d],ys:[0,f],color:CLR.ink,label:'обрана',dash:[4,3]});
       const r=drawChart(bf,{tMax:90,yMin:this.kind==='conv'?-CAP*0.35:-CAP*0.25,
         yMax:this.kind==='conv'?CAP:CAP*0.05,yLab:'см',xLab:'d, см',yDec:0,xDec:0,xStep:15,
@@ -1579,17 +1587,20 @@ const M2={
     }
     const bg=cvx('m2cg');
     if(bg){
-      const ts=[],ys=[];
+      const tsA=[],ysA=[],tsB=[],ysB=[];
       for(let i=0;i<=300;i++){
         const d=1+89*i/300;
         if(Math.abs(d-F)<0.4) continue;
-        const G=Math.abs(F/(d-F));
-        if(G>8) continue;
-        ts.push(d); ys.push(G);
+        const gg=Math.abs(F/(d-F));
+        if(gg>8) continue;
+        if(d<F){tsA.push(d); ysA.push(gg);} else {tsB.push(d); ysB.push(gg);}
       }
       const G=this.gam();
-      const ser=[{ts,ys,color:CLR.k3,label:'Γ'},
-        {ts:[0,90],ys:[1,1],color:CLR.k1,label:'1',dash:[2,3]}];
+      const ser=[];
+      if(tsA.length>1) ser.push({ts:tsA,ys:ysA,color:CLR.k3,label:''});
+      if(tsB.length>1) ser.push({ts:tsB,ys:ysB,color:CLR.k3,label:'Γ'});
+      if(F>1&&F<89) ser.push({ts:[F,F],ys:[0,8],color:CLR.mut,label:'d = F',dash:[3,3]});
+      ser.push({ts:[0,90],ys:[1,1],color:CLR.k1,label:'1',dash:[2,3]});
       if(G!=null&&G<=8) ser.push({ts:[this.d,this.d],ys:[0,G],color:CLR.ink,label:'обрана',dash:[4,3]});
       const r=drawChart(bg,{tMax:90,yMin:0,yMax:8,yLab:'разів',xLab:'d, см',yDec:0,xDec:0,xStep:15,
         hover:this.hg.x,series:ser});
@@ -1626,6 +1637,7 @@ const M3={
     $('m3ch').textContent=e?'Око: сила й межі чіткого бачення':'Прилади: збільшення';
     $('m3c1h').textContent=e?'потрібна оптична сила ока, дптр':'збільшення лупи від її фокусної відстані';
     $('m3c2h').textContent=e?'межі чіткого бачення від вади, см':'збільшення мікроскопа від об’єктива';
+    $('m3state').textContent={eye:'',loupe:'лупа — одна лінза',micro:'мікроскоп — дві лінзи'}[this.mode]||'';
     $('m3c1l').innerHTML=e
       ? '<span><span class="chip cB"></span>D = 1/d + 1/L</span><span><span class="chip cA"></span>сила ока зараз</span><span><span class="chip cI"></span>обрана d</span>'
       : '<span><span class="chip cB"></span>Γ = 25/F</span><span><span class="chip cI"></span>обрана F</span>';
@@ -1669,20 +1681,23 @@ const M3={
         .concat(shelfGrips({x0:M.x0,dx:M.dx,y:M.y1},DEFS,v=>{this.def=v;},'d'),
                 shelfGrips({x0:M.x0,dx:M.dx,y:M.y2},ACCS,v=>{this.acc=v;},'a'));
     }
-    const tl=this.tubL(Q);
+    if(this.mode==='loupe'){
+      const L=this.loupeGeo(b);
+      return [{id:'Fl', x:L.lx-20-this.fr('Fl',this.Fl)*120, y:L.ay+70, r:8, color:CLR.sec,
+        hint:'фокусна відстань лупи',
+        move:px=>{this.Fl=snap(this.inv('Fl',(L.lx-20-px)/120),0.5);}}];
+    }
+    /* мікроскоп стоїть вертикально, тож і ручки живуть уздовж його осі */
+    const S=this.microGeo(b);
     return [
-      {id:'Fl', x:Q.lx-20-this.fr('Fl',this.Fl)*120, y:Q.ly+56, r:8, color:CLR.sec,
-       hint:'фокусна лупи',
-       move:(px)=>{this.Fl=clamp(snap(this.inv('Fl',(Q.lx-20-px)/120),0.5),2,15);}},
-      {id:'Fob', x:Q.mx-20-this.fr('Fob',this.Fob)*110, y:Q.my+46, r:8, color:CLR.k1,
+      {id:'Fob', x:S.ax-58, y:S.yOb-this.fr('Fob',this.Fob)*90, r:8, color:CLR.k1,
        hint:'фокусна об’єктива',
-       move:(px)=>{this.Fob=clamp(snap(this.inv('Fob',(Q.mx-20-px)/110),0.5),1,20);}},
-      {id:'tub', x:Q.mx+tl, y:Q.my-26, r:8, color:CLR.k3, hint:'довжина тубуса Δ',
-       move:(px)=>{this.tub=clamp(snap(this.inv('tub',(px-Q.mx-60)/Q.tld),10),100,250);}},
-      {id:'Foc', x:Q.mx+tl+20+this.fr('Foc',this.Foc)*110, y:Q.my+46, r:8, color:CLR.k2,
+       move:(px,py)=>{this.Fob=clamp(snap(this.inv('Fob',(S.yOb-py)/90),0.5),1,20);}},
+      {id:'tub', x:S.ax+58, y:S.yOc, r:8, color:CLR.k3, hint:'довжина тубуса Δ',
+       move:(px,py)=>{this.tub=clamp(snap(this.inv('tub',(S.yOb-py)/S.tld),10),100,250);}},
+      {id:'Foc', x:S.ax-58, y:S.yOc+this.fr('Foc',this.Foc)*90, r:8, color:CLR.k2,
        hint:'фокусна окуляра',
-       move:(px)=>{this.Foc=clamp(Math.round(this.inv('Foc',
-         (px-Q.mx-tl-20)/110)),5,40);}}
+       move:(px,py)=>{this.Foc=clamp(Math.round(this.inv('Foc',(py-S.yOc)/90)),5,40);}}
     ];
   },
   gdraw(){
@@ -1710,7 +1725,9 @@ const M3={
     const {g,w}=b, h=this.gcol(b).gtop;
     g.clearRect(0,0,w,b.h);
     const Q=this.geo(b);
-    if(this.mode==='eye') this.sceneEye(g,w,h,Q); else this.sceneInst(g,w,h,Q);
+    if(this.mode==='eye') this.sceneEye(g,w,h,Q);
+    else if(this.mode==='micro') this.sceneMicro(g,w,h,Q);
+    else this.sceneLoupe(g,w,h,Q);
   },
   sceneEye(g,w,h,Q){
     const def=this.def;
@@ -1771,103 +1788,157 @@ const M3={
     txt(g,'чітко видно від '+fmt(nr,0)+' см'+(isFinite(fr)?' до '+fmt(fr,0)+' см':' і до нескінченності'),
       12,h-12,{color:CLR.sec,size:11.5,bold:true});
   },
-  sceneInst(g,w,h,Q){
-    txt(g,'лупа й мікроскоп збільшують кут зору: дрібне ми бачимо так, ніби воно велике й близьке',
-      12,20,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'відстань найкращого зору — 25 см: саме з нею порівнюють усі збільшення',
+  /* ---- лупа ------------------------------------------------------------
+     Тепер це окремий режим, і тут намальовано сам прилад: лінза в оправі з
+     ручкою, предмет перед нею, око за нею. Раніше лупа й мікроскоп ділили
+     одне полотно, і на прилади там не лишалося ні місця, ні уваги. */
+  loupeGeo(b){
+    const H=this.band(b).H;
+    return {H, ay:H*0.52, lx:b.w*0.46, lr:Math.min(56,H*0.17)};
+  },
+  sceneLoupe(g,w,h,Q){
+    const L=this.loupeGeo(cvx('m3scene'));
+    const ay=L.ay, lx=L.lx, lr=L.lr;
+    txt(g,'лупа: одна збиральна лінза, предмет ближче за фокус',12,20,
+      {color:CLR.k2,size:12.5,bold:true});
+    txt(g,'зображення уявне, пряме й збільшене; його відносять на відстань найкращого зору — 25 см',
       12,36,{color:CLR.mut,size:10.5});
-    /* лупа */
-    const ly=Q.ly, lx=Q.lx;
-    g.strokeStyle=CLR.k1; g.lineWidth=2.4;
-    g.beginPath();
-    g.moveTo(lx,ly-34); g.quadraticCurveTo(lx+13,ly,lx,ly+34);
-    g.moveTo(lx,ly-34); g.quadraticCurveTo(lx-13,ly,lx,ly+34); g.stroke();
-    arrow(g,lx-70,ly+16,lx-70,ly-4,CLR.k1,2.2);
-    arrow(g,lx+66,ly+30,lx+66,ly-30,CLR.k2,2.6);
-    /* ---- справжня побудова в лупі ---------------------------------------
-       Предмет стоїть трохи ближче за фокус, тож зображення уявне, пряме й
-       збільшене: справжні промені після лупи розходяться, а око бачить їх так,
-       ніби вони йдуть із далекої великої стрілки. Тому продовження — штрихові:
-       там світла немає, там лише те, що «здається» оку. */
-    {
-      const oX=lx-70, oTop=ly-4;            /* предмет: вістря */
-      /* промінь 1: паралельний осі → після лупи йде через задній фокус */
-      g.strokeStyle=CLR.k2; g.lineWidth=1.6;
-      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx,oTop); g.stroke();
-      const kF=(ly-oTop)/34;
-      g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx+120,oTop+kF*120); g.stroke();
-      /* промінь 2: через оптичний центр — не заломлюється */
-      const k2=(ly-oTop)/70;
-      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx+120,oTop+k2*(lx+120-oX)); g.stroke();
-      /* зворотні продовження — там, де око «бачить» зображення */
-      g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash([4,3]);
-      g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx-150,oTop-kF*150); g.stroke();
-      g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx-150,oTop-k2*(150+lx-oX)); g.stroke();
-      g.setLineDash([]);
-      /* уявне зображення на відстані найкращого зору */
-      arrow(g,lx-150,ly,lx-150,oTop-kF*150,CLR.k2,2.4);
-      txt(g,'уявне зображення на 25 см',lx-150,oTop-kF*150-8,
-        {color:'#b8431a',size:10.5,bold:true,align:'center'});
-      /* око, що дивиться крізь лупу */
-      const exq=lx+96;
-      g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
-      g.beginPath(); g.ellipse(exq,ly,16,12,0,0,7); g.fill(); g.stroke();
-      dot(g,exq-5,ly,4,CLR.ink);
-      txt(g,'око',exq,ly+26,{color:CLR.sec,size:10,bold:true,align:'center'});
-    }
-    txt(g,'лупа F = '+fmt(this.Fl,1)+' см',lx,ly-46,{color:'#1c5cab',size:11,bold:true,align:'center'});
-    txt(g,'Γ = 25/F = '+fmt(this.gLoupe(),1)+'×',lx+80,ly-16,{color:'#b8431a',size:11.5,bold:true});
-    dimF(g,lx,Q.ly+56,lx-20-this.fr('Fl',this.Fl)*120,'F = '+fmt(this.Fl,1)+' см',CLR.sec);
-    /* мікроскоп */
-    const my=Q.my, mx=Q.mx;
+    /* оптична вісь */
     g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.moveTo(w*0.06,my); g.lineTo(w*0.72,my); g.stroke();
-    for(const [x,lab,col] of [[mx,'об’єктив',CLR.k1],[mx+this.tubL(Q),'окуляр',CLR.k2]]){
-      g.strokeStyle=col; g.lineWidth=2.4;
+    g.beginPath(); g.moveTo(w*0.04,ay); g.lineTo(w*0.92,ay); g.stroke();
+    /* ---- сам прилад: скло, оправа, ручка -------------------------------- */
+    g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=CLR.k1; g.lineWidth=2.4;
+    g.beginPath();
+    g.moveTo(lx,ay-lr); g.quadraticCurveTo(lx+18,ay,lx,ay+lr);
+    g.quadraticCurveTo(lx-18,ay,lx,ay-lr); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle=CLR.sec; g.lineWidth=5; g.lineCap='round';
+    g.beginPath(); g.ellipse(lx,ay,19,lr+4,0,0,7); g.stroke();
+    /* ручка — донизу-вправо від оправи */
+    g.lineWidth=9;
+    g.beginPath(); g.moveTo(lx+8,ay+lr+6); g.lineTo(lx+34,ay+lr+62); g.stroke();
+    g.lineCap='butt';
+    txt(g,'лупа F = '+fmt(this.Fl,1)+' см',lx,ay-lr-16,
+      {color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    /* ---- предмет і побудова --------------------------------------------- */
+    const oX=lx-120, oTop=ay-30;
+    arrow(g,oX,ay,oX,oTop,CLR.k1,2.6);
+    txt(g,'предмет',oX,ay+18,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    const kF=(ay-oTop)/lr;
+    g.strokeStyle=CLR.k2; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx,oTop); g.stroke();
+    g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx+150,oTop+kF*150); g.stroke();
+    const k2=(ay-oTop)/(lx-oX);
+    g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx+150,oTop+k2*(lx+150-oX)); g.stroke();
+    /* зворотні продовження — там око й «бачить» зображення */
+    g.strokeStyle=CLR.sec; g.lineWidth=1.2; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(lx,oTop); g.lineTo(lx-210,oTop-kF*210); g.stroke();
+    g.beginPath(); g.moveTo(oX,oTop); g.lineTo(lx-210,oTop-k2*(210+lx-oX)); g.stroke();
+    g.setLineDash([]);
+    arrow(g,lx-210,ay,lx-210,oTop-kF*210,CLR.k2,2.6);
+    txt(g,'уявне зображення на 25 см',lx-210,oTop-kF*210-10,
+      {color:'#b8431a',size:10.5,bold:true,align:'center'});
+    /* око за лупою */
+    const ex=lx+140;
+    g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.ellipse(ex,ay,20,15,0,0,7); g.fill(); g.stroke();
+    dot(g,ex-6,ay,5,CLR.ink);
+    txt(g,'око',ex,ay+34,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    /* фокусна відстань — розмірна лінія під приладом */
+    dimF(g,lx,ay+70,lx-20-this.fr('Fl',this.Fl)*120,'F = '+fmt(this.Fl,1)+' см',CLR.sec);
+    pill(g,'Γ = 25/F = '+fmt(this.gLoupe(),1)+'×',lx,ay+lr+96,
+      {color:'#b8431a',size:12,bold:true});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
+  },
+  /* ---- мікроскоп --------------------------------------------------------
+     Малюємо справжній прилад і саме так, як він стоїть: вертикально. Предмет
+     лежить на столику, об'єктив будує над ним проміжне дійсне зображення, а
+     окуляр дивиться на нього як лупа. Горизонтальна «розгортка» тубуса, яка
+     була тут раніше, на жоден мікроскоп не схожа. */
+  microGeo(b){
+    const H=this.band(b).H;
+    const ax=b.w*0.40, ySt=H*0.80, tld=H*0.30;
+    const yOb=ySt-56;
+    const yIm=yOb-(60+this.fr('tub',this.tub)*tld);
+    const yOc=yIm-(26+this.fr('Foc',this.Foc)*70);
+    return {H,ax,ySt,yOb,yIm,yOc,tld};
+  },
+  sceneMicro(g,w,h,Q){
+    const S=this.microGeo(cvx('m3scene'));
+    const ax=S.ax, ySt=S.ySt, yOb=S.yOb, yIm=S.yIm, yOc=S.yOc;
+    txt(g,'мікроскоп: об’єктив будує проміжне зображення, окуляр дивиться на нього як лупа',
+      12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'загальне збільшення — добуток двох: Γ = (Δ/Fоб)·(250/Fок)',
+      12,36,{color:CLR.mut,size:10.5});
+    /* ---- корпус приладу -------------------------------------------------- */
+    g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.roundRect(ax-100,S.H-46,250,30,10); g.fill(); g.stroke();  /* підставка */
+    g.beginPath(); g.roundRect(ax+104,yOc-6,34,S.H-46-(yOc-6),12); g.fill(); g.stroke(); /* штатив */
+    g.beginPath(); g.roundRect(ax+24,yOb-14,84,16,6); g.fill(); g.stroke();     /* кронштейн */
+    g.fillStyle='rgba(11,11,11,.08)';
+    g.beginPath(); g.roundRect(ax-84,ySt,168,12,3); g.fill(); g.stroke();        /* столик */
+    g.fillStyle='#fff';
+    g.beginPath(); g.rect(ax-14,ySt,28,12); g.fill(); g.stroke();                /* отвір */
+    txt(g,'предметний столик',ax-90,ySt+28,{color:CLR.mut,size:10,align:'right'});
+    /* дзеркало під столиком */
+    g.save(); g.translate(ax,ySt+56); g.rotate(-0.5);
+    g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.sec; g.lineWidth=1.6;
+    g.beginPath(); g.ellipse(0,0,26,7,0,0,7); g.fill(); g.stroke(); g.restore();
+    g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.moveTo(ax,ySt+56); g.lineTo(ax,S.H-46); g.stroke();
+    txt(g,'дзеркало',ax-36,ySt+62,{color:CLR.mut,size:10,align:'right'});
+    /* тубус */
+    g.fillStyle='rgba(11,11,11,.05)'; g.strokeStyle=CLR.sec; g.lineWidth=2;
+    g.beginPath(); g.roundRect(ax-26,yOc-14,52,yOb-yOc+20,8); g.fill(); g.stroke();
+    /* оптична вісь */
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(ax,yOc-60); g.lineTo(ax,ySt+8); g.stroke(); g.setLineDash([]);
+    /* лінзи */
+    const lens=(y,r,col,lab,side)=>{
+      g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=col; g.lineWidth=2.4;
       g.beginPath();
-      g.moveTo(x,my-26); g.quadraticCurveTo(x+11,my,x,my+26);
-      g.moveTo(x,my-26); g.quadraticCurveTo(x-11,my,x,my+26); g.stroke();
-      txt(g,lab,x,my+42,{color:col===CLR.k1?'#1c5cab':'#b8431a',size:10.5,bold:true,align:'center'});
+      g.moveTo(ax-r,y); g.quadraticCurveTo(ax,y+9,ax+r,y);
+      g.quadraticCurveTo(ax,y-9,ax-r,y); g.closePath(); g.fill(); g.stroke();
+      txt(g,lab,ax+side*(r+8),y+4,
+        {color:col===CLR.k1?'#1c5cab':'#b8431a',size:10.5,bold:true,
+         align:side<0?'right':'left'});
+    };
+    lens(yOb,24,CLR.k1,'об’єктив',1);
+    lens(yOc,24,CLR.k2,'окуляр',1);
+    /* ---- предмет і хід променів ------------------------------------------ */
+    const oT=ySt-22;
+    arrow(g,ax,ySt,ax-0.001,oT,CLR.k1,2.6);
+    txt(g,'предмет',ax-40,oT-4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    const iB=ax+16;                       /* проміжне зображення — перевернуте */
+    g.strokeStyle=CLR.k2; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(ax-14,oT); g.lineTo(ax,yOb); g.lineTo(iB,yIm); g.stroke();
+    g.beginPath(); g.moveTo(ax-14,oT); g.lineTo(ax-14,yOb); g.lineTo(iB,yIm); g.stroke();
+    arrow(g,ax,yIm,iB,yIm,CLR.k2,2.4);
+    txt(g,'проміжне дійсне зображення',ax+30,yIm-10,{color:'#b8431a',size:10,bold:true});
+    /* окуляр перетворює його на уявне: промені виходять паралельним пучком */
+    for(const q of [-0.45,0,0.45]){
+      g.strokeStyle=CLR.k2; g.lineWidth=1.3;
+      g.beginPath(); g.moveTo(iB,yIm); g.lineTo(ax+q*20,yOc);
+      g.lineTo(ax+q*20+6,yOc-46); g.stroke();
     }
-    const tl=this.tubL(Q);
-    dimF(g,mx,my+46,mx-20-this.fr('Fob',this.Fob)*110,'Fоб = '+fmt(this.Fob,1)+' мм',CLR.k1);
-    dimF(g,mx+tl,my+46,mx+tl+20+this.fr('Foc',this.Foc)*110,'Fок = '+fmt(this.Foc,0)+' мм',CLR.k2);
-    g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
-    g.beginPath(); g.moveTo(mx,my-40); g.lineTo(mx+tl,my-40); g.stroke(); g.setLineDash([]);
-    txt(g,'Δ = '+fmt(this.tub,0)+' мм',mx+tl/2,my-46,{color:CLR.mut,size:10,align:'center'});
-    arrow(g,mx-60,my+18,mx-60,my-2,CLR.k1,2.2);
-    txt(g,'предмет',mx-60,my+32,{color:'#1c5cab',size:10,bold:true,align:'center'});
-    /* ---- хід променів крізь тубус ---------------------------------------
-       Об'єктив будує проміжне ДІЙСНЕ зображення — перевернуте й збільшене — у
-       передній фокальній площині окуляра. Окуляр далі працює як лупа: дивиться
-       на це зображення. Без проміжного зображення мікроскоп не пояснити зовсім. */
-    {
-      const oT=my-20;                          /* вістря предмета */
-      const iX=mx+tl-this.fr('Foc',this.Foc)*40-18;   /* проміжне зображення */
-      const iT=my+26;                          /* перевернуте */
-      g.strokeStyle=CLR.k2; g.lineWidth=1.5;
-      g.beginPath(); g.moveTo(mx-60,oT); g.lineTo(mx,oT); g.lineTo(iX,iT); g.stroke();
-      g.beginPath(); g.moveTo(mx-60,oT); g.lineTo(mx,my); g.lineTo(iX,iT); g.stroke();
-      arrow(g,iX,my,iX,iT,CLR.k2,2.4);
-      txt(g,'проміжне дійсне зображення',iX-30,iT+32,
-        {color:'#b8431a',size:10,bold:true,align:'center'});
-      /* окуляр перетворює його на уявне — промені виходять паралельним пучком */
-      const exq=mx+tl+64;
-      for(const q of [-0.5,0,0.5]){
-        g.strokeStyle=CLR.k2; g.lineWidth=1.3;
-        g.beginPath(); g.moveTo(iX,iT); g.lineTo(mx+tl,my+q*22);
-        g.lineTo(exq+10,my+q*22-6); g.stroke();
-      }
-      /* око біля окуляра */
-      g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
-      g.beginPath(); g.ellipse(exq+22,my,16,12,0,0,7); g.fill(); g.stroke();
-      dot(g,exq+17,my,4,CLR.ink);
-      txt(g,'око',exq+22,my+26,{color:CLR.sec,size:10,bold:true,align:'center'});
-    }
-    txt(g,'Γ = (Δ/Fоб)·(250/Fок) = '+fmt(this.gMic(),0)+'×',w*0.76,my-40,
-      {color:CLR.ink,size:12,bold:true});
-    txt(g,'дрібніше за 0,2 мкм не покаже жоден світловий мікроскоп — заважає сама довжина хвилі',
-      12,h-12,{color:CLR.sec,size:11.5,bold:true});
+    /* око над окуляром */
+    g.fillStyle='rgba(42,120,214,.06)'; g.strokeStyle=CLR.sec; g.lineWidth=1.8;
+    g.beginPath(); g.ellipse(ax,yOc-62,15,19,0,0,7); g.fill(); g.stroke();
+    dot(g,ax,yOc-56,5,CLR.ink);
+    txt(g,'око',ax+22,yOc-58,{color:CLR.sec,size:10.5,bold:true});
+    /* ---- розміри -------------------------------------------------------- */
+    const dimV=(y0,y1,x,lab,col,txc)=>{
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(x-9,y0); g.lineTo(x+9,y0);
+      g.moveTo(x-9,y1); g.lineTo(x+9,y1); g.stroke(); g.setLineDash([]);
+      arrow(g,x,y0,x,y1,col,1.6);
+      txt(g,lab,x-12,(y0+y1)/2+4,{color:txc,size:10.5,bold:true,align:'right'});
+    };
+    dimV(yOb,yOb-this.fr('Fob',this.Fob)*90,ax-58,'Fоб = '+fmt(this.Fob,1)+' мм',CLR.k1,'#1c5cab');
+    dimV(yOc,yOc+this.fr('Foc',this.Foc)*90,ax-58,'Fок = '+fmt(this.Foc,0)+' мм',CLR.k2,'#b8431a');
+    dimV(yOb,yOc,ax+58,'Δ = '+fmt(this.tub,0)+' мм',CLR.k3,'#0d7a55');
+    pill(g,'Γ = '+fmt(this.gObj(),0)+'× · '+fmt(this.gOc(),1)+'× = '+
+      fmt(this.gObj()*this.gOc(),0)+'×',w*0.78,S.H*0.5,{color:CLR.ink,size:12,bold:true});
+    for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   table(){
     if(this.mode==='eye'){

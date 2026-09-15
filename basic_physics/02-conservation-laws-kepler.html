@@ -2030,7 +2030,12 @@ const M4={
   hh:{x:null}, he:{x:null}, tiph:null, tipe:null,
   mk(){return this.m/1000;},                       /* маса кулі задана в грамах */
   V(){return this.mk()*this.v/(this.mk()+this.M);},
-  hMax(){return Math.min(2*this.L,this.V()*this.V()/(2*G));},
+  /* Маятник висить на нитках, а не на жорсткому стрижні: вище горизонталі
+     нитки провисають, і далі це вже не маятник, а вільний політ. Тому підйом
+     обмежено довжиною підвісу (кут 90°). Раніше межею було 2L — повний оберт,
+     і при великій швидкості брусок ішов угору крізь стелю й за край кадру. */
+  hMax(){return Math.min(this.L,this.V()*this.V()/(2*G));},
+  slack(){return this.V()*this.V()/(2*G)>this.L+1e-9;},
   thMax(){return Math.acos(Math.max(-1,1-this.hMax()/this.L));},
   /* коливання маятника — чисельно, бо амплітуда може бути далеко не малою */
   build(){
@@ -2039,8 +2044,8 @@ const M4={
     let a=0, om=w0, t=0;
     for(let i=0;i<4000;i++){
       om+=-(G/this.L)*Math.sin(a)*dt; a+=om*dt; t+=dt;
+      if(a>=Math.PI/2){a=Math.PI/2; th.push(a); ts.push(t); break;}
       th.push(a); ts.push(t);
-      if(a>=Math.PI){break;}
       if(om<0&&a<0) break;
     }
     this.sw={th,ts,tEnd:ts[ts.length-1]};
@@ -2114,10 +2119,15 @@ const M4={
     const bw=this.bw(), bh=this.bh();
     const bx=Q.bx, by=Q.by;
     g.clearRect(0,0,w,h);
-    /* стеля й підвіс */
-    g.fillStyle=CLR.ground; g.fillRect(0,0,w,py-6);
+    /* Кріплення — компактний кронштейн над самою віссю, а не смуга на всю
+       ширину кадру: у неї маятник упирався щоразу, коли відхилявся далеко. */
+    g.fillStyle=CLR.ground; g.fillRect(px-54,py-16,108,12);
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(0,py-6+.5); g.lineTo(w,py-6+.5); g.stroke();
+    g.beginPath(); g.moveTo(px-54,py-4+.5); g.lineTo(px+54,py-4+.5); g.stroke();
+    g.lineWidth=1;
+    for(let x=px-50;x<=px+46;x+=10){
+      g.beginPath(); g.moveTo(x,py-4); g.lineTo(x+7,py-13); g.stroke();
+    }
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(px,py); g.lineTo(px,py+this.L*sc+bh/2+20); g.stroke(); g.setLineDash([]);
     g.strokeStyle=CLR.sec; g.lineWidth=1.8;
@@ -2161,6 +2171,9 @@ const M4={
     const ph=this.phase()==='fly'
       ?['куля летить до бруска',CLR.k1,'імпульс кулі mv — зараз увесь імпульс системи']
       :['брусок із кулею піднімається',CLR.k2,'удару вже немає: далі енергія зберігається, і V² перетворюється на висоту'];
+    if(this.slack()&&this.phase()!=='fly')
+      pill(g,'швидкості вистачило б на більший підйом — але на нитках маятник вище 90° не іде',
+        w/2,py+this.L*sc+64,{color:CLR.mut,size:10.5});
     txt(g,ph[0],12,20,{color:ph[1],size:12.5,bold:true});
     txt(g,ph[2],12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);

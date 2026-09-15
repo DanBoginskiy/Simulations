@@ -203,12 +203,19 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <section class="module" id="m2">
   <p class="caption">Тіло стоїть, доки вертикаль, проведена через центр мас, не виходить за площу опори.
   На похилій площині змагаються два сценарії: ковзання (коли tg <var>α</var> &gt; <var>μ</var>)
-  і перекидання (коли tg <var>α</var> &gt; <var>b</var>/<var>h</var>). Що станеться раніше — залежить від форми тіла.</p>
+  і перекидання (коли tg <var>α</var> &gt; <var>b</var>/2<var>y</var><sub>ц</sub>). Що станеться раніше —
+  залежить від форми тіла: у конуса центр ваги лежить на чверті висоти, тож він стійкіший
+  за циліндр і брусок такого самого розміру.</p>
 
   <div class="pgrid">
     <div class="scene">
       <div class="panel">
         <div class="toolbar">
+          <div class="seg" id="m2body">
+            <button data-v="cyl" class="active" style="--c:var(--k1)">циліндр</button>
+            <button data-v="cone" style="--c:var(--k2)">конус</button>
+            <button data-v="box" style="--c:var(--k3)">брусок</button>
+          </div>
           <button class="ibtn" id="m2play" title="нахиляти / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="скинути кут">↺</button>
           <span class="lbl" id="m2t"></span>
@@ -221,7 +228,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="chartrow">
           <div class="chartbox" id="m2caw">
             <h4>критичні кути залежно від відношення <var>b</var>/<var>h</var>, °</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>перекидання arctg(b/h)</span><span><span class="chip cC"></span>ковзання arctg μ</span><span><span class="chip cI"></span>поточне b/h</span></div>
+            <div class="legend sm"><span><span class="chip cA"></span>перекидання: циліндр і брусок</span><span><span class="chip cB"></span>перекидання: конус</span><span><span class="chip cC"></span>ковзання arctg <var>μ</var></span><span><span class="chip cI"></span>поточне <var>b</var>/<var>h</var></span></div>
             <canvas id="m2ca"></canvas>
           </div>
           <div class="chartbox" id="m2cmw">
@@ -242,7 +249,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       </div>
       <div class="panel">
         <h3>Критичні кути</h3>
-        <div class="kv"><span>кут перекидання arctg(<var>b</var>/<var>h</var>)</span><b id="m2kTip"></b></div>
+        <div class="kv"><span>форма тіла<span class="badge">від неї висота центра ваги</span></span><b id="m2kBody"></b></div>
+        <div class="kv"><span>кут перекидання arctg(<var>b</var>/2<var>y</var><sub>ц</sub>)</span><b id="m2kTip"></b></div>
         <div class="kv"><span>кут ковзання arctg <var>μ</var></span><b id="m2kSlip"></b></div>
         <div class="kv"><span>що станеться раніше</span><b id="m2kFirst"></b></div>
         <div class="kv"><span>поточний кут <var>α</var></span><b id="m2kAl"></b></div>
@@ -1101,10 +1109,18 @@ const M1={
 };
 
 /* ===================== МОДУЛЬ 2 · центр мас і стійкість ===================== */
+/* Центр ваги однорідного тіла лежить на різній висоті залежно від форми:
+   у циліндра й бруска — на половині висоти, у конуса — на чверті. Саме через
+   це конус перекидається пізніше за циліндр тих самих розмірів. */
+const BODY2={cyl:{n:'циліндр',cg:0.5,col:'k1',tc:'#1c5cab'},
+             cone:{n:'конус',cg:0.25,col:'k2',tc:'#b8431a'},
+             box:{n:'брусок',cg:0.5,col:'k3',tc:'#0d7a55'}};
 const M2={
-  b:0.6, h:1.2, mu:0.6, al:0, playing:true,
+  b:0.6, h:1.2, mu:0.6, al:0, playing:true, body:'cyl',
   ha:{x:null}, hm:{x:null}, tipa:null, tipm:null,
-  aTip(){return Math.atan(this.b/this.h)/DEG;},
+  B(){return BODY2[this.body];},
+  cgh(){return this.B().cg*this.h;},              /* висота центра ваги, м */
+  aTip(){return Math.atan(this.b/2/this.cgh())/DEG;},
   aSlip(){return Math.atan(this.mu)/DEG;},
   state(){
     const a=this.al;
@@ -1162,6 +1178,7 @@ const M2={
     ].concat(shelfGrips(F.mu,this.MU,v=>{this.mu=v;}));
   },
   init(){
+    seg('m2body',v=>{this.body=v; this.al=0;});
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       this.playing=!this.playing;
@@ -1198,17 +1215,36 @@ const M2={
     g.save();
     g.translate(SX(uc+this.b/2,0),SY(uc+this.b/2,0));
     g.rotate(-al+tilt);
-    g.fillStyle='rgba(235,104,52,.09)'; g.strokeStyle=CLR.k2; g.lineWidth=2;
-    g.beginPath(); g.roundRect(-this.b*sc,-this.h*sc,this.b*sc,this.h*sc,3); g.fill(); g.stroke();
-    /* центр мас і вертикаль через нього */
-    const cmx=-this.b*sc/2, cmy=-this.h*sc/2;
+    /* Тіло малюємо за його формою: у циліндра видно верхній і нижній
+       еліпси, конус звужується вгору, брусок лишається прямокутником.
+       Форма тут не оздоба — від неї залежить висота центра ваги. */
+    const BW=this.b*sc, BH=this.h*sc, BD=BW*0.26;
+    const bd=this.B(), bcol=CLR[bd.col];
+    g.fillStyle=bd.col==='k1'?'rgba(42,120,214,.10)'
+      :bd.col==='k2'?'rgba(235,104,52,.10)':'rgba(27,175,122,.10)';
+    g.strokeStyle=bcol; g.lineWidth=2;
+    if(this.body==='cone'){
+      g.beginPath();
+      g.moveTo(-BW,0); g.lineTo(-BW/2,-BH); g.lineTo(0,0); g.closePath();
+      g.fill(); g.stroke();
+      g.beginPath(); g.ellipse(-BW/2,0,BW/2,BD/2,0,0,7); g.fill(); g.stroke();
+    } else if(this.body==='cyl'){
+      g.beginPath(); g.rect(-BW,-BH,BW,BH); g.fill(); g.stroke();
+      g.beginPath(); g.ellipse(-BW/2,0,BW/2,BD/2,0,0,7); g.fill(); g.stroke();
+      g.beginPath(); g.ellipse(-BW/2,-BH,BW/2,BD/2,0,0,7); g.fill(); g.stroke();
+    } else {
+      g.beginPath(); g.roundRect(-BW,-BH,BW,BH,3); g.fill(); g.stroke();
+    }
+    /* центр ваги — на своїй висоті для кожної форми */
+    const cmx=-BW/2, cmy=-this.B().cg*BH;
     dot(g,cmx,cmy,5,CLR.ink,'#fff');
     g.restore();
     /* вертикаль через ЦМ малюємо в екранних координатах */
     const ca=Math.cos(-al+tilt), sa=Math.sin(-al+tilt);
     const bx0=SX(uc+this.b/2,0), by0=SY(uc+this.b/2,0);
-    const cX=bx0+(-this.b*sc/2)*ca-(-this.h*sc/2)*sa;
-    const cY=by0+(-this.b*sc/2)*sa+(-this.h*sc/2)*ca;
+    const cgy=-this.B().cg*this.h*sc;
+    const cX=bx0+(-this.b*sc/2)*ca-cgy*sa;
+    const cY=by0+(-this.b*sc/2)*sa+cgy*ca;
     g.strokeStyle=CLR.k3; g.lineWidth=1.5; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(cX,cY); g.lineTo(cX,cY+this.h*sc*1.1); g.stroke(); g.setLineDash([]);
     arrow(g,cX,cY,cX,cY+Math.min(70,this.h*sc*0.7),CLR.k3,2.5);
@@ -1219,7 +1255,7 @@ const M2={
     dot(g,eX,eY,4,CLR.k2);
     txt(g,'ребро',eX+7,eY+14,{color:'#b8431a',size:10,bold:true});
     const col={'спокій':CLR.k1,'ковзає':CLR.k3,'перекидається':CLR.k2}[st];
-    txt(g,'тіло: '+st,12,20,{color:col,size:12.5,bold:true});
+    txt(g,this.B().n+': '+st,12,20,{color:col,size:12.5,bold:true});
     txt(g,st==='спокій'?'вертикаль через центр мас іще проходить усередині основи'
       :st==='ковзає'?'тертя вичерпано раніше, ніж вертикаль ЦМ дійшла до ребра'
       :'вертикаль ЦМ вийшла за ребро основи — момент ваги перекидає тіло',
@@ -1241,24 +1277,30 @@ const M2={
       this.aTip()>this.aSlip()?'ковзання':'одночасно';
     $('m2kAl').textContent=fmt(this.al,0)+'°';
     $('m2kState').textContent=st;
-    $('m2kCm').textContent=fmt(this.h/2,2)+' м';
-    const off=this.h/2*Math.tan(this.al*DEG);
+    $('m2kBody').textContent=this.B().n+' · y_ц = '+fmt(this.B().cg,2)+'h';
+    $('m2kCm').textContent=fmt(this.cgh(),2)+' м';
+    const off=this.cgh()*Math.tan(this.al*DEG);
     $('m2kOff').textContent=fmt(off,3)+' м';
     $('m2kMar').textContent=fmt(this.b/2-off,3)+' м';
   },
   charts(){
     const ba=cvx('m2ca');
     if(ba){
-      const ts=[],tip=[],sl=[];
+      /* дві криві перекидання: у циліндра й бруска центр ваги на h/2,
+         у конуса — на h/4, тож він тримається вдвічі довше */
+      const ts=[],tipC=[],tipK=[],sl=[];
       for(let i=0;i<=60;i++){
         const r=0.1+2.9*i/60; ts.push(r);
-        tip.push(Math.atan(r)/DEG); sl.push(this.aSlip());
+        tipC.push(Math.atan(r)/DEG); tipK.push(Math.atan(2*r)/DEG); sl.push(this.aSlip());
       }
       const r=drawChart(ba,{tMax:3,yMin:0,yMax:80,yLab:'°',xLab:'b/h',xStep:0.5,xDec:1,
         hover:this.ha.x,
-        series:[{ts,ys:tip,color:CLR.k2,label:'перекидання'},{ts,ys:sl,color:CLR.k3,label:'ковзання',dash:[5,4]},
+        series:[{ts,ys:tipC,color:CLR.k1,label:'циліндр і брусок'},
+                {ts,ys:tipK,color:CLR.k2,label:'конус'},
+                {ts,ys:sl,color:CLR.k3,label:'ковзання',dash:[5,4]},
                 {ts:[this.b/this.h,this.b/this.h],ys:[0,this.aTip()],color:CLR.ink,label:'b/h',dash:[4,3]}]});
-      showTip(this.tipa,r,'°',this.ha,[['перекидання',CLR.k2],['ковзання',CLR.k3],['поточне b/h',CLR.ink]],1);
+      showTip(this.tipa,r,'°',this.ha,[['циліндр і брусок',CLR.k1],['конус',CLR.k2],
+        ['ковзання',CLR.k3],['поточне b/h',CLR.ink]],1);
     }
     const bm=cvx('m2cm');
     if(bm){
@@ -1275,7 +1317,7 @@ const M2={
 
 /* ===================== МОДУЛЬ 3 · гідростатика ===================== */
 const M3={
-  mode:'float', rb:700, rl:1000, V:3, F1:100, d1:3, d2:24, s1:12,
+  mode:'float', rb:700, rl:1000, V:3, F1:100, d1:8, d2:20, s1:10,
   DEPTH:0.5,                                  /* глибина посудини, м */
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   frac(){return Math.min(1,this.rb/this.rl);},
@@ -1335,21 +1377,26 @@ const M3={
        .concat(shelfGrips(Q.rl,this.RL,v=>{this.rl=v;},'rl'));
     }
     const cy=Q.cy, sc=Q.sc, s2=this.s1*this.S(this.d1)/this.S(this.d2);
-    const dy=this.s1*0.9;
+    const dy=this.s1*1.8;
     return [
       {id:'d1', x:90+this.d1*sc, y:cy-4+dy, r:8, color:CLR.k1, hint:'діаметр малого поршня',
-       move:px=>{this.d1=clamp(snap((px-90)/sc,0.5),1,8);}},
+       move:px=>{this.d1=clamp(snap((px-90)/sc,0.5),4,12);
+         this.d2=clamp(this.d2,this.d1*1.5,this.d1*3);}},
       /* ліве ребро великого поршня: праве стоїть на місці за побудовою кадру,
          тож ручкою бути не може — вона б не рухалася за пальцем */
-      {id:'d2', x:b.w-90-this.d2*sc, y:cy-4-s2*0.9, r:8, color:CLR.k2,
+      {id:'d2', x:b.w-90-this.d2*sc, y:cy-4-s2*1.8, r:8, color:CLR.k2,
        hint:'діаметр великого поршня',
-       move:px=>{this.d2=clamp(snap((b.w-90-px)/sc,1),5,40);}},
+       /* Відношення діаметрів обмежено трьома: при d₂/d₁ = 8 виграш у силі
+          сягав 64 разів, і хід великого поршня ставав тоншим за лінію — на
+          кресленні його просто не було видно. Тепер виграш від 2,25 до 9, і
+          обидва ходи читаються в одному масштабі. */
+       move:px=>{this.d2=clamp(snap((b.w-90-px)/sc,1),this.d1*1.5,this.d1*3);}},
       {id:'F1', x:90+this.d1*sc/2, y:cy-16+dy-(20+this.F1*0.15), r:8, color:CLR.k1,
        hint:'сила на малий поршень',
        move:(px,py)=>{this.F1=clamp(snap((cy-16+dy-py-20)/0.15,10),10,400);}},
       {id:'s1', x:90+this.d1*sc/2-14, y:cy-4+dy, r:8, color:CLR.sec,
        hint:'хід малого поршня',
-       move:(px,py)=>{this.s1=clamp(snap((py-cy+4)/0.9,1),1,30);}}
+       move:(px,py)=>{this.s1=clamp(snap((py-cy+4)/1.8,1),1,16);}}
     ];
   },
   init(){
@@ -1468,7 +1515,7 @@ const M3={
        піднятий великий поршень висів би над порожнечею. Верх кожного стовпа —
        це низ відповідного поршня. */
     const s2f=this.s1*S1/S2;
-    const topL=cy+2+this.s1*0.9, topR=cy+2-s2f*0.9;
+    const topL=cy+2+this.s1*1.8, topR=cy+2-s2f*1.8;
     g.fillStyle='#e2edfa';
     g.beginPath();
     g.rect(x1-this.d1*sc/2,topL,this.d1*sc,cy+54-topL);
@@ -1496,16 +1543,29 @@ const M3={
         {color:col===CLR.k1?'#1c5cab':'#b8431a',size:10.5,bold:true,
          align:side<0?'right':'left'});
     };
-    pist(x1,this.d1,this.s1*0.9,CLR.k1,'d₁ = '+fmt(this.d1,1)+' см',-1);
-    pist(x2,this.d2,-s2*0.9,CLR.k2,'d₂ = '+fmt(this.d2,0)+' см',1);
+    pist(x1,this.d1,this.s1*1.8,CLR.k1,'d₁ = '+fmt(this.d1,1)+' см',-1);
+    pist(x2,this.d2,-s2*1.8,CLR.k2,'d₂ = '+fmt(this.d2,0)+' см',1);
+    /* ходи обох поршнів — в одному масштабі й з числами: саме їх відношення
+       і є зворотним боком виграшу в силі */
+    const stroke=(x,dyv,col,txc,lab)=>{
+      if(Math.abs(dyv)<1.5) return;
+      const y0=cy-4, y1=cy-4+dyv;
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(x-9,y0); g.lineTo(x+9,y0);
+      g.moveTo(x-9,y1); g.lineTo(x+9,y1); g.stroke(); g.setLineDash([]);
+      arrow(g,x,y0,x,y1,col,1.8);
+      txt(g,lab,x+12,(y0+y1)/2+4,{color:txc,size:10.5,bold:true});
+    };
+    stroke(x1-this.d1*sc/2-30,this.s1*1.8,CLR.k1,'#1c5cab','s₁ = '+fmt(this.s1,0)+' см');
+    stroke(x2+this.d2*sc/2+74,-s2*1.8,CLR.k2,'#b8431a','s₂ = '+fmt(s2,2)+' см');
     /* сили: довжина стрілки F₁ — сама сила, за її вістря й тягнуть */
     const k=Math.min(70,F2/1000*10+20)/Math.max(F2,1);
     const LF=20+this.F1*0.15;
-    arrow(g,x1,cy-16+this.s1*0.9-LF,x1,cy-16+this.s1*0.9,CLR.k1,2.5);
-    txt(g,'F₁ = '+fmt(this.F1,0)+' Н',x1+12,cy-20+this.s1*0.9-LF,
+    arrow(g,x1,cy-16+this.s1*1.8-LF,x1,cy-16+this.s1*1.8,CLR.k1,2.5);
+    txt(g,'F₁ = '+fmt(this.F1,0)+' Н',x1+12,cy-20+this.s1*1.8-LF,
       {color:'#1c5cab',size:11,bold:true});
-    arrow(g,x2,cy-18-s2*0.9,x2,cy-18-s2*0.9-Math.min(80,F2*k),CLR.k2,3);
-    txt(g,'F₂ = '+fmt(F2/1000,2)+' кН',x2,cy-26-s2*0.9-Math.min(80,F2*k),
+    arrow(g,x2,cy-18-s2*1.8,x2,cy-18-s2*1.8-Math.min(80,F2*k),CLR.k2,3);
+    txt(g,'F₂ = '+fmt(F2/1000,2)+' кН',x2,cy-26-s2*1.8-Math.min(80,F2*k),
       {color:'#b8431a',size:11.5,bold:true,align:'center'});
     pill(g,'p = '+fmt(p/1000,0)+' кПа — однаковий в усій рідині',(x1+x2)/2,cy+82,
       {color:CLR.ink,size:11.5,bold:true});
@@ -1719,9 +1779,14 @@ const M4={
        була б тоншою за лінію. */
     const hv1=v1*v1/(2*G), hv2Max=v2*v2/(2*G);
     const HTOT=p0/(this.rho*G)+hv1;
-    const span=Math.max(hv2Max*1.3,0.01);
+    /* Шкала висот мусить накривати ВЕСЬ розмах швидкісних напорів, а не лише
+       напір у звуженні. Коли широка частина вужча за «звуження» (d₁ < d₂),
+       найбільший напір має саме вона — і при старому span стовпці падали
+       нижче основи шкали та йшли за нижній край кадру. Верхнє поле теж
+       збільшено: за великого d₁ лінія повного напору впиралася в заголовок. */
+    const span=Math.max(Math.max(hv1,hv2Max)*1.3,0.01);
     const yBase=cy-this.d1*psc/2-26;
-    const HPX=Math.max(40,Math.min(h*0.34,yBase-62));
+    const HPX=Math.max(40,Math.min(h*0.34,yBase-78));
     const yOf=hh=>yBase-(hh-(HTOT-span))/span*HPX;
     const yTot=yOf(HTOT);
     /* лінія повного напору — горизонтальна, і це і є рівняння Бернуллі */
