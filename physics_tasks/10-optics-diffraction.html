@@ -106,6 +106,7 @@ table.read tr:last-child td{border-bottom:none}
 /* ============ сітки й полотна цієї теми ============ */
 #m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 #m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
@@ -210,6 +211,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Перекриття порядків</button>
   <button data-m="m2">2 · Від двох щілин до N</button>
+  <button data-m="m3">3 · Ешелета</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -275,6 +277,21 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
       </div>
     
 </section>
+<section class="module" id="m3">
+  <p class="caption">Звичайна ґратка більшу частину світла віддає в нульовий порядок, де спектра
+  немає зовсім. Ешелета — ґратка з пилкоподібним профілем: кожна грань нахилена так, щоб дзеркально
+  відбивати саме в той порядок, який і потрібен. Енергія йде туди, де її використовують.</p>
+  <p class="cond">Ґратку-ешелету зі сталою <b>d</b> нарізано з кутом блиску <b>γ</b>. Визначити
+  порядок <b>X</b>, у який піде майже вся енергія для світла з довжиною хвилі <b>λ</b>, і кут,
+  під яким його спостерігають.</p>
+  <div class="panel">
+    <div class="toolbar">
+      <button class="ibtn" id="m3re" title="заново">↺</button>
+    </div>
+    <canvas id="m3scene"></canvas>
+  </div>
+</section>
+
 
 <footer>Допоміжний матеріал з оптики · дифракційна ґратка · умова головних максимумів · роздільна здатність</footer>
 </div>
@@ -1543,7 +1560,142 @@ const M2={
 };
 
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2};
+
+/* ===================== МОДУЛЬ 3 · ешелета ===================== */
+const M3={
+  mode:'free', nmm:300, gam:12, lam:550, showAns:true,
+  hi:{x:null},
+  GG:[['nmm','штрихів на мм',100,900,10,CLR.k1,null,'m3vn',0,''],
+      ['gam','кут блиску γ, °',2,30,0.5,CLR.k2,null,'m3vg',1,''],
+      ['lam','хвиля λ, нм',400,700,5,CLR.k3,null,'m3vl',0,'']],
+  d(){return 1e6/this.nmm;},                   /* стала ґратки, нм */
+  /* нормальне падіння: d·sin θ = mλ */
+  ang(m){const t=m*this.lam/this.d(); return Math.abs(t)<=1?Math.asin(t):null;},
+  /* Дзеркальний напрям від нахиленої грані: падаючи по нормалі до ґратки,
+     промінь відбивається від грані під кутом 2γ до неї. Саме туди й «дивиться»
+     кожна сходинка, і саме там огинальна має максимум. */
+  thBlaze(){return 2*this.gam*DEG;},
+  /* Огинальна однієї грані: sinc² від різниці синусів; ширина задається
+     проєкцією грані d·cos γ. */
+  env(th){
+    const a=Math.PI*this.d()*Math.cos(this.gam*DEG)/this.lam*
+            (Math.sin(th)-Math.sin(this.thBlaze()));
+    return Math.abs(a)<1e-9?1:Math.pow(Math.sin(a)/a,2);
+  },
+  orders(){
+    const out=[];
+    for(let m=-6;m<=6;m++){
+      const th=this.ang(m);
+      if(th===null) continue;
+      out.push({m,th,I:this.env(th)});
+    }
+    return out;
+  },
+  best(){
+    let b=null;
+    for(const o of this.orders()) if(!b||o.I>b.I) b=o;
+    return b;
+  },
+  setTask(){this.nmm=300; this.gam=12; this.lam=550;},
+  setMode(m){this.mode=m; if(m==='task') this.setTask();},
+  syncAns(){},
+  init(){
+    grip('m3scene',this,()=>this.grips());
+    $('m3re').onclick=()=>this.setTask();
+    this.setTask();
+  },
+  gcol(b){return gcolOf(b,this.GG.length);},
+  geo(b){return frozen(this,b,bb=>{
+    const C=this.gcol(bb), H=C.gtop-52;
+    /* Профіль ліворуч великим планом, віяло порядків — праворуч від нього. */
+    const teeth=5, tw=Math.min(bb.w*0.075,96), ty=52+H*0.72;
+    return {C,H,teeth,tw,ty,px:bb.w*0.06,
+      fx:bb.w*0.52,fy:52+H*0.56,R:Math.min(bb.w*0.34,H*0.46)};
+  });},
+  grips(){return this.mode==='free'?gaugeGrips(this.gcol(cvx('m3scene')),this.GG,this):[];},
+  tick(){this.render();},
+  render(){this.scene(); this.gdraw();},
+  gdraw(){
+    const b=cvx('m3scene'); if(!b) return;
+    const C=this.gcol(b);
+    gaugeCol(b.g,C,this.GG,this);
+    for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
+  },
+  scene(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
+    g.clearRect(0,0,w,H);
+    const gm=this.gam*DEG, tw=Q.tw, th=tw*Math.tan(gm);
+    /* ---- пилкоподібний профіль ---- */
+    g.strokeStyle=CLR.ink; g.lineWidth=2.6; g.lineJoin='round';
+    g.fillStyle='rgba(11,11,11,.07)';
+    g.beginPath();
+    g.moveTo(Q.px,Q.ty);
+    for(let k=0;k<Q.teeth;k++){
+      const x0=Q.px+k*tw;
+      g.lineTo(x0+tw,Q.ty-th);
+      g.lineTo(x0+tw,Q.ty);
+    }
+    g.lineTo(Q.px+Q.teeth*tw,Q.ty+26); g.lineTo(Q.px,Q.ty+26); g.closePath();
+    g.fill(); g.stroke();
+    /* стала ґратки — розмір по одному зубцю */
+    const xA=Q.px+2*tw, xB=xA+tw;
+    arrow(g,xA,Q.ty+40,xB,Q.ty+40,CLR.k1,1.5);
+    arrow(g,xB,Q.ty+40,xA,Q.ty+40,CLR.k1,1.5);
+    txt(g,'d',(xA+xB)/2,Q.ty+56,{color:'#1c5cab',size:12,bold:true,align:'center'});
+    /* кут блиску між гранню й площиною ґратки */
+    const cx=xA, cy=Q.ty;
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+tw,cy); g.stroke(); g.setLineDash([]);
+    arc(g,cx,cy,tw*0.52,-gm,0,CLR.k2,1.6);
+    txt(g,'γ',cx+tw*0.62,cy-tw*0.16,{color:'#b8431a',size:12,bold:true});
+    /* нормаль до грані */
+    const mx=cx+tw*0.5, my=cy-th*0.5;
+    arrow(g,mx,my,mx+52*Math.sin(gm),my-52*Math.cos(gm),CLR.mut,1.6);
+    txt(g,'нормаль грані',mx+56*Math.sin(gm)+6,my-52*Math.cos(gm),
+      {color:CLR.mut,size:10.5});
+    /* ---- падаючий пучок і віяло порядків ---- */
+    const fx=Q.fx, fy=Q.fy, R=Q.R;
+    for(const dx of [-46,0,46]) arrow(g,fx+dx,fy-R-46,fx+dx,fy-14,CLR.k1,2);
+    txt(g,'світло падає по нормалі',fx+60,fy-R-30,{color:CLR.mut,size:10.5});
+    g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.rect(fx-70,fy-12,140,12); g.fill(); g.stroke();
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(fx,fy); g.lineTo(fx,fy+R+16); g.stroke(); g.setLineDash([]);
+    txt(g,'нормаль ґратки',fx+6,fy+R+30,{color:CLR.mut,size:10.5});
+    /* дзеркальний напрям грані — туди й «дивиться» ешелета */
+    const tb=this.thBlaze();
+    g.strokeStyle=CLR.k2; g.lineWidth=1.6; g.setLineDash([6,4]);
+    g.beginPath(); g.moveTo(fx,fy);
+    g.lineTo(fx+Math.sin(tb)*(R+26),fy+Math.cos(tb)*(R+26)); g.stroke(); g.setLineDash([]);
+    txt(g,'дзеркальний напрям грані',fx+Math.sin(tb)*(R+32),fy+Math.cos(tb)*(R+32)+4,
+      {color:'#b8431a',size:10.5,bold:true});
+    /* самі порядки: товщина променя — частка енергії, що в нього пішла */
+    const B=this.best();
+    for(const o of this.orders()){
+      const on=B&&o.m===B.m;
+      const ex=fx+Math.sin(o.th)*R, ey=fy+Math.cos(o.th)*R;
+      g.strokeStyle=on?CLR.k3:CLR.sec;
+      g.globalAlpha=on?1:0.28+0.55*o.I;
+      g.lineWidth=1+7*o.I;
+      g.beginPath(); g.moveTo(fx,fy); g.lineTo(ex,ey); g.stroke();
+      g.globalAlpha=1;
+      /* підписуємо лише ті порядки, які взагалі щось несуть: слабкі так
+         тісно, що їхні підписи лягають один на одного */
+      if(on||o.I>0.02||Math.abs(o.m)<=1)
+        txt(g,'m'+(o.m<0?'\u2212':'')+Math.abs(o.m),
+          fx+Math.sin(o.th)*(R+26),fy+Math.cos(o.th)*(R+26)+4,
+          {color:on?'#0d7a55':CLR.mut,size:on?13:10.5,bold:on,align:'center',raw:true});
+    }
+    capN(g,'ешелета: енергія йде в обраний порядок',12,20,{color:CLR.k3,size:12.5,bold:true});
+    capN(g,'кут блиску нахиляє грані так, щоб дзеркальний відбиток збігся з потрібним порядком',
+      12,36,{color:CLR.mut,size:10.5});
+    if(B) txt(g,'найяскравіший порядок — той, що лежить у дзеркальному напрямі грані',
+      12,52,{color:'#0d7a55',size:10.5,bold:true});
+  }
+};
+
+const MODULES={m1:M1,m2:M2,m3:M3};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;
