@@ -105,7 +105,7 @@ table.read tr:last-child td{border-bottom:none}
 
 /* ============ сітки й полотна цієї теми ============ */
 #m1scene{width:100%; aspect-ratio:990/407; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:990/560; min-height:min(210px,56vw)}
 #m3scene{width:100%; aspect-ratio:990/479; min-height:min(210px,56vw)}
 #m4scene{width:100%; aspect-ratio:990/466; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
@@ -1324,23 +1324,25 @@ const M1={
     this.hv.xlab='v'; this.hv.xunit='м/с'; this.hv.xdec=1;
     this.setTask(); this.syncAns(); this.reset();
   },
-  /* Кадр: три колонки однакової ширини, спільний масштаб векторів для всіх
-     трьох діаграм — інакше трикутники поруч не можна порівнювати (§15). */
+  /* Кадр: угорі — спільна дорога у три смуги, де попутний і зустрічний
+     трамваї справді їдуть назустріч один одному повз нерухомий; унизу — три
+     трикутники швидкостей, по одному під кожною смугою. Масштаб векторів
+     спільний для всіх трьох, інакше трикутники поруч не порівняти (§15). */
   geo(b){return frozen(this,b,bb=>{
     const pad=8, colW=(bb.w-2*pad)/3;
-    /* Вектори — головне в цьому модулі, тож їм віддано весь вільний кадр.
-       Вертикальний бюджет раніше був сталим числом 132 і не залежав від висоти
-       канви: на великому екрані півполотна лишалося порожнім. Тепер він
-       рахується від того, що реально є під початком трикутника (oy = 288),
-       а бічні відступи зменшено зі 150 до 96 px. Вузли-ручки натомість
-       дрібніші, щоб читалася стрілка, а не кружок на її кінці. */
-    /* На короткій канві трикутник підіймається ближче до дороги (нижче 252
-       не можна — там колеса й лінія землі), щоб вектор не обрізався знизу. */
-    const oy=bb.h<440?258:288;
-    const vAvail=Math.max(96,bb.h-oy-30);
-    const vsc=fitScale(colW,vAvail+24,96,24,this.WMAX+this.VMAX,this.UMAX,0,0);
-    return {pad,colW,vsc, cxOf:i=>pad+colW*(i+0.5),
-      ttl:58, wy:106, wh:104, gy:236, vy:228, ox:-35, oy};
+    const top=46;
+    const triH=Math.max(92,Math.min(bb.h*0.42,182));
+    const roadH=Math.max(90,bb.h-top-triH-8);
+    const laneH=roadH/3;
+    const bh=Math.max(24,Math.min(laneH-20,68));
+    const bw=Math.max(54,Math.min(bb.w*0.25,160));
+    const oy=top+roadH+30;
+    const vAvail=Math.max(68,bb.h-oy-16);
+    const vsc=fitScale(colW,vAvail+24,70,24,this.WMAX+this.VMAX,this.UMAX,0,0);
+    return {pad,colW,vsc,top,roadH,laneH,bh,bw,oy,
+      cxOf:i=>pad+colW*(i+0.5),
+      ox:-Math.min(34,colW*0.22), vy:oy-26,
+      laneY:i=>top+laneH*(i+1)-10};
   });},
   /* три спостерігачі: власна швидкість відносно землі й колір СВ */
   OBS(){return [
@@ -1370,10 +1372,8 @@ const M1={
          трамвая — трамвай штовхають, а вектор росте за ним. */
       {id:'v', x:O1.x+this.v*Q.vsc, y:Q.vy, r:6, color:CLR.k2,
        pull:true,
-       hint:'тягніть вузол або сам трамвай — довжина вектора це v',
-       hit:(px,py)=>onSeg(O1.x,Q.vy,O1.x+this.v*Q.vsc,Q.vy,px,py,13)
-         ||(Math.abs(px-Q.cxOf(1))<=Math.min(Q.colW-24,176)/2+8
-            &&py>=Q.wy-16&&py<=Q.wy+Q.wh+16),
+       hint:'тягніть вузол — довжина вектора це v',
+       hit:(px,py)=>onSeg(O1.x,Q.vy,O1.x+this.v*Q.vsc,Q.vy,px,py,14),
        move:px=>{this.v=clamp(snap((px-O1.x)/Q.vsc,0.1),0,this.VMAX); this.t=0;}}
     ];
   },
@@ -1386,89 +1386,127 @@ const M1={
     const b=cvx('m1scene'); if(!b) return;
     const {g,w,h}=b, Q=this.geo(b);
     g.clearRect(0,0,w,h);
-    capN(g,'Три спостерігачі — один і той самий дощ',12,20,{color:CLR.ink,size:12.5,bold:true});
-    capN(g,'кут сліду на склі задає горизонтальна швидкість краплі відносно цього скла',12,36,{color:CLR.mut,size:10.5});
+    capN(g,'Один дощ, три спостерігачі — і вони роз\u2019їжджаються назустріч',12,20,
+      {color:CLR.ink,size:12.5,bold:true});
+    capN(g,'кут сліду на склі задає горизонтальна швидкість краплі відносно цього скла',12,36,
+      {color:CLR.mut,size:10.5});
     const obs=this.OBS();
-    for(let i=0;i<3;i++) this.column(g,Q,i,obs[i]);
+    this.rainField(g,Q,w);
+    for(let i=0;i<3;i++) this.lane(g,Q,i,obs[i],w);
+    for(let i=0;i<3;i++) this.tri(g,Q,i,obs[i]);
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
-  column(g,Q,i,o){
-    const cx=Q.cxOf(i), colW=Q.colW;
-    const dx=this.w-o.vs;                  /* горизонтальна швидкість краплі відносно скла */
-    const th=Math.atan2(dx,this.u);        /* кут сліду від вертикалі */
-    const sp=Math.hypot(dx,this.u);
-    txt(g,o.n,cx,Q.ttl,{color:o.tc,size:12,bold:true,align:'center'});
-    txt(g,o.s,cx,Q.ttl+15,{color:CLR.mut,size:10,align:'center'});
-    /* корпус трамвая: дах зі струмознімачем, бічне скло, двері, колеса */
-    const bw=Math.min(colW-24,176), bx=cx-bw/2, by=Q.wy, bh=Q.wh;
-    g.strokeStyle=o.col; g.lineWidth=2;
-    g.beginPath(); g.moveTo(cx-9,by-13); g.lineTo(cx,by-4); g.lineTo(cx+9,by-13);
-    g.stroke();
-    g.beginPath(); g.moveTo(cx-16,by-13); g.lineTo(cx+16,by-13); g.stroke();
-    g.fillStyle='rgba(252,252,251,.92)';
-    g.beginPath(); g.roundRect(bx,by,bw,bh,8); g.fill(); g.stroke();
-    g.fillStyle=o.col; g.globalAlpha=0.12;
-    g.beginPath(); g.roundRect(bx,by,bw,11,[8,8,0,0]); g.fill(); g.globalAlpha=1;
-    /* двері праворуч — щоб корпус читався як вагон, а не як рамка */
-    g.strokeStyle='rgba(11,11,11,.16)'; g.lineWidth=1;
-    g.beginPath();
-    g.moveTo(bx+bw-26,by+13); g.lineTo(bx+bw-26,by+bh-4);
-    g.moveTo(bx+bw-13,by+13); g.lineTo(bx+bw-13,by+bh-4); g.stroke();
-    /* бічне скло зі слідами крапель */
-    const gx=bx+11, gy=by+15, gw=bw-42, gh=bh-28;
+  /* Дощ малюється одним полем на всю дорогу: краплі падають з однією і тією
+     самою швидкістю (w, u) відносно землі — різниця між спостерігачами
+     народжується не з дощу, а з їхнього власного руху. */
+  rainField(g,Q,w){
+    const y0=Q.top-6, y1=Q.laneY(2)+4;
+    const sp=Math.hypot(this.w,this.u);
+    const dx=this.w/sp, dy=this.u/sp, per=34, N=Math.max(6,Math.round(w/38));
+    const span=Math.abs(dx)*(y1-y0);
     g.save();
-    g.beginPath(); g.roundRect(gx,gy,gw,gh,4); g.clip();
-    g.fillStyle='#eef4fb'; g.fillRect(gx,gy,gw,gh);
-    const dirx=Math.sin(th), diry=Math.cos(th), per=30, NS=7;
-    const span=Math.abs(dirx)*gh;
-    g.lineCap='round';
-    for(let j=0;j<NS;j++){
-      const ph=((this.t*sp*11)+j*11)%per;
-      const sx=gx-span+(j+0.5)*(gw+2*span)/NS;
-      for(let m=-1;m<gh/per+1;m++){
-        const d=ph+m*per, x1=sx+dirx*d, y1=gy-12+diry*d;
-        g.strokeStyle='rgba(134,182,239,.9)'; g.lineWidth=1.6;
-        g.beginPath(); g.moveTo(x1,y1); g.lineTo(x1+dirx*12,y1+diry*12); g.stroke();
-        dot(g,x1+dirx*12,y1+diry*12,1.8,CLR.drop);
+    g.beginPath(); g.rect(0,y0,w,y1-y0); g.clip();
+    g.lineCap='round'; g.strokeStyle='rgba(134,182,239,.55)'; g.lineWidth=1.3;
+    for(let j=0;j<N;j++){
+      const ph=((this.t*sp*13)+j*13)%per;
+      const sx=-span+(j+0.5)*(w+2*span)/N;
+      for(let m=-1;m<(y1-y0)/per+1;m++){
+        const d=ph+m*per, x1=sx+dx*d, yy=y0-14+dy*d;
+        g.beginPath(); g.moveTo(x1,yy); g.lineTo(x1+dx*10,yy+dy*10); g.stroke();
       }
     }
     g.restore();
-    g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.roundRect(gx,gy,gw,gh,4); g.stroke();
-    /* кут сліду просто на склі: вертикаль-орієнтир і дуга до напряму сліду */
-    const ax=gx+gw/2, ay=gy+gh-13;
-    g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
-    g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax,ay-34); g.stroke(); g.setLineDash([]);
-    g.strokeStyle=o.col; g.lineWidth=2;
-    g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax+dirx*34,ay-diry*34); g.stroke();
-    arc(g,ax,ay,20,-Math.PI/2,-Math.PI/2+th,o.col,1.4);
-    pillN(g,fmt(Math.abs(th/DEG),1)+'°',ax+(dx<0?-30:30),ay-24,{color:o.tc,size:11.5,bold:true});
-    /* колеса й дорога */
-    g.fillStyle='rgba(11,11,11,.05)';
-    g.beginPath(); g.roundRect(bx+14,by+bh,bw-28,7,2); g.fill();
-    dot(g,bx+30,by+bh+9,7,'#fff',o.col); dot(g,bx+bw-30,by+bh+9,7,'#fff',o.col);
-    g.fillStyle=CLR.ground; g.fillRect(cx-colW/2+4,Q.gy,colW-8,26);
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(cx-colW/2+4,Q.gy+.5); g.lineTo(cx+colW/2-4,Q.gy+.5); g.stroke();
-    /* стовпи — орієнтири, нерухомі відносно землі: у СВ трамвая вони біжать (§7.2) */
-    const step=46, shift=((-o.vs*this.t*9)%step+step)%step;
-    for(let k=-1;k<colW/step+1;k++){
-      const px=cx-colW/2+6+k*step+shift;
-      if(px<cx-colW/2+4||px>cx+colW/2-4) continue;
-      g.strokeStyle=CLR.mut; g.lineWidth=1.5;
-      g.beginPath(); g.moveTo(px+.5,Q.gy); g.lineTo(px+.5,Q.gy-13); g.stroke();
-      dot(g,px+.5,Q.gy-18,4,'#e9e8e2','#b9b7ae');
+  },
+  /* Одна смуга спільної дороги: нерухомий трамвай стоїть, попутний іде
+     праворуч, зустрічний — ліворуч; стовпи прив\u2019язані до землі й не
+     рухаються, бо кадр знятий саме в системі землі. */
+  lane(g,Q,i,o,w){
+    const gy=Q.laneY(i), bh=Q.bh, bw=Q.bw;
+    g.fillStyle=CLR.ground; g.fillRect(0,gy,w,Math.max(6,Q.laneH*0.26));
+    g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+    g.beginPath(); g.moveTo(0,gy+.5); g.lineTo(w,gy+.5); g.stroke();
+    const step=Math.max(38,w/9);
+    for(let k=0;k<w/step+1;k++){
+      const px=10+k*step;
+      if(px>w-6) continue;
+      g.strokeStyle=CLR.mut; g.lineWidth=1.3;
+      g.beginPath(); g.moveTo(px+.5,gy); g.lineTo(px+.5,gy-Math.min(11,bh*0.2)); g.stroke();
+      dot(g,px+.5,gy-Math.min(15,bh*0.28),3,'#e9e8e2','#b9b7ae');
     }
-    /* швидкість трамвая відносно землі */
-    const O={x:cx+Q.ox, y:Q.oy}, vpx=o.vs*Q.vsc;
-    if(Math.abs(vpx)>1.5){
-      arrow(g,O.x,Q.vy,O.x+vpx,Q.vy,o.col,2.5);
-      txtN(g,fmt(Math.abs(o.vs),1)+' м/с',O.x+vpx+(vpx<0?-7:7),Q.vy+4,
-        {color:o.tc,size:11,bold:true,align:vpx<0?'right':'left'});
-    } else txt(g,'стоїть',O.x+6,Q.vy+4,{color:o.tc,size:11,bold:true});
-    /* трикутник швидкостей краплі в цій СВ: складові — кольором СВ,
-       результуюча — чорнилом (§8) */
-    const ux=this.u*Q.vsc, hx=dx*Q.vsc;
+    const cx=this.tramX(i,w,Q);
+    this.tram(g,Q,i,o,cx,gy);
+  },
+  /* Положення трамвая вздовж кадру. Нерухомий стоїть посередині; двоє інших
+     виїжджають із протилежних країв і сходяться — те, заради чого сцена й
+     одна: зустріч видно, а не домальована в уяві. */
+  tramX(i,w,Q){
+    if(i===0) return w*0.5;
+    const span=w+Q.bw*1.6;
+    /* Старт зсунуто до середини: зустріч має бути видно з перших секунд,
+       а не аж тоді, коли трамваї доїдуть із протилежних країв. */
+    const s=((this.t*this.v*11+span*0.30)%span+span)%span;
+    return i===1 ? -Q.bw*0.8+s : w+Q.bw*0.8-s;
+  },
+  tram(g,Q,i,o,cx,gy){
+    const bh=Q.bh, bw=Q.bw, by=gy-bh-9, bx=cx-bw/2;
+    const dx=this.w-o.vs, th=Math.atan2(dx,this.u);
+    g.strokeStyle=o.col; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx-8,by-11); g.lineTo(cx,by-3); g.lineTo(cx+8,by-11); g.stroke();
+    g.beginPath(); g.moveTo(cx-14,by-11); g.lineTo(cx+14,by-11); g.stroke();
+    g.fillStyle='rgba(252,252,251,.94)';
+    g.beginPath(); g.roundRect(bx,by,bw,bh,7); g.fill(); g.stroke();
+    g.fillStyle=o.col; g.globalAlpha=0.12;
+    g.beginPath(); g.roundRect(bx,by,bw,Math.min(10,bh*0.18),[7,7,0,0]); g.fill(); g.globalAlpha=1;
+    /* бічне скло зі слідами крапель — те саме, що бачить пасажир */
+    const gx=bx+8, gyy=by+Math.min(13,bh*0.22), gw=bw-30, gh=bh-Math.min(24,bh*0.4);
+    if(gw>16&&gh>12){
+      g.save();
+      g.beginPath(); g.roundRect(gx,gyy,gw,gh,3); g.clip();
+      g.fillStyle='#eef4fb'; g.fillRect(gx,gyy,gw,gh);
+      const dirx=Math.sin(th), diry=Math.cos(th), sp=Math.hypot(dx,this.u);
+      const per=22, NS=5, span=Math.abs(dirx)*gh;
+      g.lineCap='round'; g.strokeStyle='rgba(134,182,239,.95)'; g.lineWidth=1.5;
+      for(let j=0;j<NS;j++){
+        const ph=((this.t*sp*11)+j*9)%per;
+        const sx=gx-span+(j+0.5)*(gw+2*span)/NS;
+        for(let m=-1;m<gh/per+1;m++){
+          const d=ph+m*per, x1=sx+dirx*d, y1=gyy-10+diry*d;
+          g.beginPath(); g.moveTo(x1,y1); g.lineTo(x1+dirx*9,y1+diry*9); g.stroke();
+        }
+      }
+      g.restore();
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(gx,gyy,gw,gh,3); g.stroke();
+      /* кут сліду просто на склі: вертикаль-орієнтир і дуга до напряму сліду */
+      const ax=gx+gw/2, ay=gyy+gh-4, L=Math.min(gh-4,26);
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax,ay-L); g.stroke(); g.setLineDash([]);
+      g.strokeStyle=o.col; g.lineWidth=2;
+      g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax+Math.sin(th)*L,ay-Math.cos(th)*L); g.stroke();
+      arc(g,ax,ay,L*0.6,-Math.PI/2,-Math.PI/2+th,o.col,1.3);
+    }
+    /* колеса й підпис із власною швидкістю */
+    dot(g,bx+Math.min(24,bw*0.2),gy-4,5,'#fff',o.col);
+    dot(g,bx+bw-Math.min(24,bw*0.2),gy-4,5,'#fff',o.col);
+    txt(g,o.n,cx,by-16,{color:o.tc,size:10.5,bold:true,align:'center',max:bw*1.5});
+    const vpx=o.vs*Q.vsc*0.7;
+    if(Math.abs(vpx)>2) arrow(g,cx,by-4+bh/2,cx+vpx,by-4+bh/2,o.col,2);
+  },
+  /* Трикутник швидкостей краплі в системі цього спостерігача: складові —
+     кольором СВ, результуюча — чорнилом (§8). */
+  tri(g,Q,i,o){
+    const cx=Q.cxOf(i);
+    const dx=this.w-o.vs, sp=Math.hypot(dx,this.u);
+    const O={x:cx+Q.ox, y:Q.oy}, ux=this.u*Q.vsc, hx=dx*Q.vsc;
+    txt(g,o.s,cx,Q.oy-42,{color:CLR.mut,size:9.5,align:'center',max:Q.colW-8});
+    if(i===1){
+      const vpx=this.v*Q.vsc;
+      if(Math.abs(vpx)>1.5){
+        arrow(g,O.x,Q.vy,O.x+vpx,Q.vy,o.col,2.5);
+        txtN(g,'v = '+fmt(this.v,1)+' м/с',O.x+vpx/2,Q.vy-7,
+          {color:o.tc,size:11,bold:true,align:'center'});
+      } else txt(g,'стоїть',O.x+6,Q.vy+4,{color:o.tc,size:11,bold:true});
+    }
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
     g.beginPath();
     g.moveTo(O.x,O.y+ux); g.lineTo(O.x+hx,O.y+ux);
@@ -1478,15 +1516,15 @@ const M1={
     txt(g,'u',O.x-7,O.y+ux/2+4,{color:o.tc,size:11,bold:true,align:'right'});
     if(Math.abs(hx)>1.5){
       arrow(g,O.x,O.y,O.x+hx,O.y,o.col,2);
-      txt(g,i===0?'w':(i===1?'w − v':'w + v'),O.x+hx/2,O.y-6,
+      txt(g,i===0?'w':(i===1?'w \u2212 v':'w + v'),O.x+hx/2,O.y-6,
         {color:o.tc,size:11,bold:true,align:'center'});
     }
     arrow(g,O.x,O.y,O.x+hx,O.y+ux,CLR.ink,2.5);
-    arc(g,O.x,O.y,17,Math.PI/2,Math.atan2(ux,hx),CLR.mut,1.2);
+    arc(g,O.x,O.y,16,Math.PI/2,Math.atan2(ux,hx),CLR.mut,1.2);
     txtN(g,fmt(sp,1)+' м/с',O.x+hx+(hx<0?-8:8),O.y+ux+13,
       {color:CLR.ink,size:11.5,bold:true,align:hx<0?'right':'left'});
-    txt(g,'швидкість краплі відносно скла',cx,O.y+this.UMAX*Q.vsc+22,
-      {color:CLR.mut,size:9.5,align:'center'});
+    pillN(g,fmt(Math.abs(Math.atan2(dx,this.u)/DEG),1)+'\u00b0',cx,Q.oy-24,
+      {color:o.tc,size:11.5,bold:true});
   },
   table(){
     const al=this.alpha(), be=this.beta(), tr=this.ang(this.v);
@@ -1546,7 +1584,7 @@ const M1={
 const M2={
   mode:'free', u:2, v:3.6, L:25,
   t:0, playing:true, waitT:0, showAns:true, SPD:3,
-  LMAX:30, LMIN:8, UMAX:5, UMIN:0.2, VMAX:6,
+  LMAX:28, LMIN:8, UMAX:5, UMIN:0.2, VMAX:6,
   hr:{x:null}, hd:{x:null}, tipr:null, tipd:null,
   TASK:{u:2, eta:1.8, L:25},
   /* швидкість поперек течії: складова, що лишається після компенсації зносу */
@@ -1583,25 +1621,23 @@ const M2={
     this.hr.xlab='η'; this.hr.xunit=''; this.hr.xdec=2;
     this.setTask(); this.syncAns(); this.reset();
   },
-  /* Кадр: ширина ріки — 2·L_max, щоб поворотна позначка човна «поперек»
-     завжди лишалася в воді; масштаб береться з верхньої межі L (§10). */
+  /* Кадр: одна сцена — система відліку, прив\u2019язана до бакена. Він стоїть
+     посеред ріки, тож саме від нього відлічуються обидві відстані L, і саме в
+     цій системі задача й поставлена. Друга система тут нічого не додавала б:
+     човни в ній ішли б прямими, але бакен поїхав би геть із кадру.
+     Ширина ріки — 2·L_max, щоб поворотна позначка човна «поперек» завжди
+     лишалася у воді; масштаб береться з верхньої межі L (§10). */
   geo(b){return frozen(this,b,bb=>{
-    const LM=this.LMAX, colW=bb.w/2;
-    /* обидві СВ поруч і в одному масштабі — інакше довжини й ширини
-       в двох панелях не можна порівнювати очима (§15) */
-    const sc=fitScale(colW,bb.h,30,104,1.9*LM,2.4*LM,0,0);
-    const oy=bb.h-34, yF=oy-2*LM*sc;
-    /* Камера панелі СВ води. У СВ води обидва човни й береги зносяться ліворуч
-       на u·t, тож при спільному з панеллю берега початку координат зелений човен
-       (а згодом і чорний) виходить за кадр. Зсуваємо початок панелі праворуч на
-       весь майбутній знос u·T — зсув СТАЛИЙ під час прогону, тож СВ лишається
-       інерціальною і масштаб спільний (§15). Обмеження — щоб при великих u
-       початок не виїхав за праву межу панелі. */
-    const back=Math.max(colW*0.26-24,Math.min(this.u*this.T()*sc,colW-96));
-    return {sc,oy,LM,colW,yF,vsc:62/this.VMAX,
-      oxOf:i=>i?colW+24+back:colW*0.26,
-      SY:y=>oy-y*sc,
-      ux0:colW*0.30, uy0:yF-16, vx0:colW*1.30, vy0:yF-16};
+    const LM=this.LMAX;
+    /* У кадрі — та частина ріки, де щось відбувається: від десяти метрів
+       нижче бакена до дальнього берега. Ближній берег лишається за кадром —
+       інакше половина води стояла б порожньою тільки заради симетрії. */
+    const BOT=LM-7, TOP=2*LM;
+    const sc=fitScale(bb.w,bb.h,60,80,2.4*LM,TOP-BOT+2,0,0);
+    const oy=bb.h-24, yF=oy-(TOP-BOT)*sc;
+    return {sc,oy,LM,yF,BOT,vsc:Math.min(72,bb.w*0.09)/this.VMAX,
+      ox:bb.w*0.30, SY:y=>oy-(y-BOT)*sc,
+      ux0:bb.w*0.10, uy0:yF-16, vx0:bb.w*0.52, vy0:yF-16};
   });},
   /* положення човнів у СВ берега: (x уздовж течії, y поперек від бакена) */
   boat1(t){
@@ -1630,9 +1666,9 @@ const M2={
       /* Поворотна позначка: тягнеться вздовж течії, та сама відстань і для
          човна поперек — у задачі шляхи однакові. Позначка прив'язана до берега,
          тож у СВ води вона зноситься разом із ним — ручка їде за нею. */
-      {id:'L', x:Q.oxOf(0)+this.L*Q.sc, y:Q.SY(Q.LM), r:10, color:CLR.k1,
+      {id:'L', x:Q.ox+this.L*Q.sc, y:Q.SY(Q.LM), r:10, color:CLR.k1,
        hint:'відстань до повороту',
-       move:px=>{this.L=clamp(snap((px-Q.oxOf(0))/Q.sc,1),this.LMIN,this.LMAX); this.reset();}}
+       move:px=>{this.L=clamp(snap((px-Q.ox)/Q.sc,1),this.LMIN,this.LMAX); this.reset();}}
     ];
   },
   tick(dt){
@@ -1650,10 +1686,8 @@ const M2={
     const b=cvx('m2scene'); if(!b) return;
     const {g,w,h}=b, Q=this.geo(b);
     g.clearRect(0,0,w,h);
-    this.panel(g,Q,0); this.panel(g,Q,1);
-    g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.moveTo(Q.colW+.5,46); g.lineTo(Q.colW+.5,h-6); g.stroke();
-    /* вектори, якими задають швидкості — над панеллю, до якої вони належать */
+    this.panel(g,Q);
+    /* вектори, якими задають швидкості */
     arrow(g,Q.ux0,Q.uy0,Q.ux0+this.u*Q.vsc,Q.uy0,CLR.k2,2.5);
     txtN(g,'течія u = '+fmt(this.u,1)+' м/с',Q.ux0,Q.uy0-9,{color:'#b8431a',size:11,bold:true});
     arrow(g,Q.vx0,Q.vy0,Q.vx0+this.v*Q.vsc,Q.vy0,CLR.ink,2.5);
@@ -1661,80 +1695,103 @@ const M2={
       {color:CLR.ink,size:11,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
-  panel(g,Q,i){
-    const water=i===1, t=this.t, LM=Q.LM, sc=Q.sc, ox=Q.oxOf(i), SY=Q.SY;
-    const x0=Q.colW*i, x1=x0+Q.colW;
-    /* у СВ води береги й бакен зносяться ліворуч, вода стоїть */
-    const drOf=tt=>water?-this.u*tt:0;
+  panel(g,Q){
+    const t=this.t, LM=Q.LM, sc=Q.sc, ox=Q.ox, SY=Q.SY;
+    const b=cvx('m2scene'), W=b?b.w:0;
     const SX=x=>ox+x*sc;
-    const yF=SY(2*LM), yN=SY(0);
-    g.save(); g.beginPath(); g.rect(x0,42,Q.colW,Q.oy+18-42); g.clip();
-    g.fillStyle=CLR.ground; g.fillRect(x0,42,Q.colW,yF-42); g.fillRect(x0,yN,Q.colW,Q.oy+18-yN);
-    g.fillStyle=CLR.water; g.fillRect(x0,yF,Q.colW,yN-yF);
+    const yF=SY(2*LM), yN=Q.oy;
+    g.save(); g.beginPath(); g.rect(0,42,W,Q.oy+6-42); g.clip();
+    g.fillStyle=CLR.ground; g.fillRect(0,42,W,yF-42);
+    g.fillStyle=CLR.water; g.fillRect(0,yF,W,yN-yF+6);
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(x0,yF+.5); g.lineTo(x1,yF+.5);
-    g.moveTo(x0,yN+.5); g.lineTo(x1,yN+.5); g.stroke();
-    /* кущі на берегах — нерухомі відносно берега; у СВ води вони пливуть (§7.2) */
-    const dr=drOf(t);
-    for(let k=-3;k<12;k++){
-      const bx=SX(k*0.5*LM-0.9*LM+dr);
-      if(bx<x0-14||bx>x1+14) continue;
-      for(const yy of [yF-12,yN+14]){
-        g.fillStyle='#e4e3db'; g.strokeStyle='#c9c7bd'; g.lineWidth=1;
-        g.beginPath(); g.arc(bx,yy,7,0,7); g.fill(); g.stroke();
-      }
+    g.beginPath(); g.moveTo(0,yF+.5); g.lineTo(W,yF+.5); g.stroke();
+    /* кущі на дальньому березі — нерухомі відносно бакена, як і сам берег */
+    for(let k=-3;k<14;k++){
+      const bx=SX(k*0.5*LM-1.4*LM);
+      if(bx<-14||bx>W+14) continue;
+      g.fillStyle='#e4e3db'; g.strokeStyle='#c9c7bd'; g.lineWidth=1;
+      g.beginPath(); g.arc(bx,yF-12,7,0,7); g.fill(); g.stroke();
     }
-    /* течія: у СВ води вода стоїть — стрілок немає, і саме це видно */
-    if(!water){
-      for(let k=0;k<5;k++){
-        const ax=x0+22+k*(Q.colW-44)/4.5, ay=yF+(yN-yF)*(0.14+0.7*((k*2)%5)/5);
-        arrow(g,ax,ay,ax+Math.min(34,this.u*Q.vsc*0.45),ay,CLR.drop,2);
-      }
+    /* течія: вода тече повз нерухомий бакен */
+    for(let k=0;k<6;k++){
+      const ax=18+k*(W-52)/5.5, ay=yF+(yN-yF)*(0.12+0.74*((k*2)%5)/5);
+      arrow(g,ax,ay,ax+Math.min(38,this.u*Q.vsc*0.5),ay,CLR.drop,2);
     }
     /* пройдені шляхи */
-    const P=(bx,by,tt)=>({x:SX(bx+drOf(tt)), y:SY(LM+by)});
+    const P=(bx,by)=>({x:SX(bx), y:SY(LM+by)});
     for(const f of ['boat1','boat2']){
       g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([2,3]); g.beginPath();
       for(let k=0;k<=60;k++){
-        const tt=t*k/60, q=this[f](tt), pp=P(q.x,q.y,tt);
+        const tt=t*k/60, q=this[f](tt), pp=P(q.x,q.y);
         k?g.lineTo(pp.x,pp.y):g.moveTo(pp.x,pp.y);
       }
       g.stroke(); g.setLineDash([]);
     }
-    /* бакен і поворотні позначки — нерухомі відносно берега */
-    const bu=P(0,0,t), m1=P(this.L,0,t), m2=P(0,this.L,t);
+    /* бакен і поворотні позначки */
+    const bu=P(0,0), m1=P(this.L,0), m2=P(0,this.L);
     for(const m of [m1,m2]){
       g.strokeStyle=CLR.k1; g.lineWidth=1.5; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(m.x,m.y-10); g.lineTo(m.x,m.y+10); g.stroke(); g.setLineDash([]);
       dot(g,m.x,m.y,4,'#fff',CLR.k1);
     }
+    /* сам бакен: поплавок на якорі з прапорцем — видно, що він стоїть */
     g.strokeStyle=CLR.k1; g.lineWidth=2;
-    g.beginPath(); g.moveTo(bu.x,bu.y); g.lineTo(bu.x,bu.y-15); g.stroke();
-    dot(g,bu.x,bu.y-17,4,CLR.k1);
-    dot(g,bu.x,bu.y,5.5,'#fff',CLR.k1);
-    if(!water) txt(g,'бакен',bu.x-9,bu.y+15,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
-    if(!water) txtN(g,'L = '+fmt(this.L,0)+' м',m1.x,m1.y-16,
+    g.beginPath(); g.moveTo(bu.x,bu.y); g.lineTo(bu.x,bu.y-19); g.stroke();
+    g.fillStyle=CLR.k1;
+    g.beginPath(); g.moveTo(bu.x,bu.y-19); g.lineTo(bu.x+11,bu.y-15);
+    g.lineTo(bu.x,bu.y-11); g.closePath(); g.fill();
+    g.fillStyle='#fff'; g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(bu.x-7,bu.y-2); g.lineTo(bu.x+7,bu.y-2);
+    g.lineTo(bu.x+4,bu.y+5); g.lineTo(bu.x-4,bu.y+5); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle='rgba(42,120,214,.5)'; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(bu.x,bu.y+5); g.lineTo(bu.x,bu.y+16); g.stroke(); g.setLineDash([]);
+    txt(g,'бакен',bu.x-11,bu.y+16,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+    txtN(g,'L = '+fmt(this.L,0)+' м',m1.x,m1.y-16,
       {color:'#1c5cab',size:10.5,bold:true,align:'center'});
-    /* човни */
-    const drawBoat=(q,col,tc,name,tau,dy)=>{
-      const pp=P(q.x,q.y,t);
-      g.save(); g.translate(pp.x,pp.y); g.rotate(q.back?Math.PI:0);
-      g.fillStyle=col===CLR.ink?'rgba(11,11,11,.10)':'rgba(27,175,122,.12)';
-      g.strokeStyle=col; g.lineWidth=2;
-      g.beginPath(); g.moveTo(-10,-4.5); g.lineTo(6,-4.5); g.lineTo(11,0);
-      g.lineTo(6,4.5); g.lineTo(-10,4.5); g.closePath(); g.fill(); g.stroke();
+    txtN(g,'L = '+fmt(this.L,0)+' м',m2.x+8,m2.y+4,{color:'#1c5cab',size:10.5,bold:true});
+    /* ---- човни -----------------------------------------------------------
+       Човен малюється з корпусом, банкою, веслярем і веслами: видно, куди він
+       повернутий носом, а веслами — що він гребе відносно води, а не землі. */
+    const drawBoat=(q,col,tc,tau,dy,cross)=>{
+      const pp=P(q.x,q.y);
+      const ang=cross ? (q.back?Math.PI/2:-Math.PI/2) : (q.back?Math.PI:0);
+      g.save(); g.translate(pp.x,pp.y); g.rotate(ang);
+      /* кільватерний слід */
+      g.strokeStyle='rgba(42,120,214,.35)'; g.lineWidth=1.2;
+      for(let k=1;k<=3;k++){
+        g.beginPath(); g.arc(-13-k*4,0,3+k*1.6,-1.0,1.0); g.stroke();
+      }
+      /* корпус */
+      g.fillStyle=col===CLR.ink?'rgba(11,11,11,.10)':'rgba(27,175,122,.14)';
+      g.strokeStyle=col; g.lineWidth=2; g.lineJoin='round';
+      g.beginPath();
+      g.moveTo(-13,-5); g.lineTo(7,-5); g.lineTo(14,0); g.lineTo(7,5); g.lineTo(-13,5);
+      g.closePath(); g.fill(); g.stroke();
+      /* банка й транець */
+      g.strokeStyle=col; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(-3,-5); g.lineTo(-3,5);
+      g.moveTo(-13,-5); g.lineTo(-13,5); g.stroke();
+      /* весляр */
+      g.fillStyle=col;
+      g.beginPath(); g.arc(-6,0,2.6,0,7); g.fill();
+      /* весла — гойдаються в такт руху */
+      const ph=Math.sin(this.t*7)*0.5;
+      g.strokeStyle=col; g.lineWidth=1.6; g.lineCap='round';
+      for(const sgn of [-1,1]){
+        g.beginPath(); g.moveTo(-6,sgn*2);
+        g.lineTo(-6-7*Math.cos(ph),sgn*(6+7*Math.abs(Math.sin(ph))+3));
+        g.stroke();
+      }
       g.restore();
-      pillN(g,fmt(Math.min(t,tau),1)+' с'+(q.done?' ✓':''),pp.x,pp.y+dy,
+      pillN(g,fmt(Math.min(t,tau),1)+' с'+(q.done?' \u2713':''),pp.x,pp.y+dy,
         {color:tc,size:11,bold:true});
     };
-    drawBoat(this.boat2(t),CLR.k3,'#0d7a55','поперек',this.t2(),-14);
-    drawBoat(this.boat1(t),CLR.ink,CLR.ink,'за течією',this.t1(),24);
+    drawBoat(this.boat2(t),CLR.k3,'#0d7a55',this.t2(),-20,true);
+    drawBoat(this.boat1(t),CLR.ink,CLR.ink,this.t1(),28,false);
     g.restore();
-    const fr=water
-      ? ['СВ води',CLR.k2,'обидва човни йдуть прямими з тією самою швидкістю v']
-      : ['СВ берега',CLR.k1,'човен за течією виграє туди рівно стільки, скільки втрачає назад'];
-    txt(g,fr[0],x0+12,20,{color:fr[1],size:12.5,bold:true});
-    txt(g,fr[2],x0+12,36,{color:CLR.mut,size:10.5});
+    txt(g,'СВ бакена',12,20,{color:CLR.k1,size:12.5,bold:true});
+    txt(g,'бакен стоїть, вода тече повз нього — і саме від нього відлічують обидві L',
+      12,36,{color:CLR.mut,size:10.5});
   },
   table(){
     const t1=this.t1(), t2=this.t2(), c=this.cross(), et=this.eta();

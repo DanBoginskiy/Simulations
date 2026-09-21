@@ -317,7 +317,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <p class="cond">При вертикальному зануренні капілярної трубки діаметром <b>d = 0,5 мм</b>
         у посудину з водою (поверхневий натяг <b>σ = 74 мН/м</b>) вода піднялася на висоту
         <b>h = 2,5 см</b> над рівнем у посудині. Визначити радіус кривини <b>R</b> меніска.</p>
-        <div class="kv"><span><var>d</var> — діаметр обраної трубки</span><b id="m3vd"></b></div>
+        <div class="kv"><span><var>d</var> — діаметр трубки<span class="badge">задаєте ви</span></span><b id="m3vd2"></b></div>
         <div class="kv"><span><var>σ</var> — поверхневий натяг<span class="badge">задаєте ви</span></span><b id="m3vsig2"></b></div>
         <div class="kv"><span><var>ρ</var> — густина<span class="badge">задаєте ви</span></span><b id="m3vrho2"></b></div>
         <div class="kv"><span><var>θ</var> — крайовий кут<span class="badge">наслідок σ, не ручка</span></span><b id="m3vth"></b></div>
@@ -1322,18 +1322,22 @@ const LIQ={
    довідкового θ₀ при довідковому σ і далі тримаємо сталим. */
 for(const k in LIQ) LIQ[k].adh=LIQ[k].sig*Math.cos(LIQ[k].th0*Math.PI/180);
 const M3={
-  mode:'free', liq:'water', sel:2, showAns:true,
+  mode:'free', liq:'water', dmm:0.5, showAns:true,
+  DMIN:0.15, DMAX:1.6,
   /* σ тримаємо в мН/м — тих самих одиницях, що й доріжка повзунка та підписи.
      Раніше стан був у Н/м, а межі ручки в мН/м: перетягування заганяло σ у
      тисячу разів завелике значення, cos θ падав до 0.0008, кут застрягав на
      89.9° і за весь хід мінявся на 0.04°. */
   sig:74, rho:1000,                    /* ручки: натяг (мН/м) і густина */
-  DS:[0.2,0.35,0.5,0.8,1.4],            /* діаметри трубок у ряді, мм */
+  /* Трубка одна, а діаметр у неї змінний: ряд із п'яти окремих трубок
+     показував п'ять різних дослідів поруч, а тут видно один дослід, у
+     якому змінюють саме те, від чого залежить висота. */
   ha:{x:null}, hh:{x:null}, tiph:null, tipa:null,
-  GG:[['sig','поверхневий натяг σ, мН/м',37,148,0.5,CLR.k3,null,'m3vsig2',1,'мН/м'],
+  GG:[['dmm','діаметр трубки d, мм',0.15,1.6,0.05,CLR.k2,null,'m3vd2',2,'мм'],
+      ['sig','поверхневий натяг σ, мН/м',37,148,0.5,CLR.k3,null,'m3vsig2',1,'мН/м'],
       ['rho','густина ρ, кг/м³',500,2000,25,CLR.k1,null,'m3vrho2',0,'кг/м³']],
   L(){return LIQ[this.liq];},
-  d(){return this.DS[this.sel]*1e-3;},
+  d(){return this.dmm*1e-3;},
   /* θ — наслідок: cos θ = adh/σ. При adh ≥ σ маємо повне змочування (θ = 0). */
   sigSI(){return this.sig*1e-3;},
   cosTh(){return clamp(this.L().adh/Math.max(1e-9,this.sigSI()),-1,1);},
@@ -1349,12 +1353,12 @@ const M3={
   setLiq(v){
     const L=LIQ[v], s0=L.sig*1000;         /* мН/м */
     this.liq=v; this.sig=s0; this.rho=L.rho;
-    this.GG[0][2]=s0*0.5; this.GG[0][3]=s0*2; this.GG[0][4]=s0<=100?0.5:5;
-    this.GG[0][8]=s0<=100?1:0;
-    this.GG[1][2]=Math.round(L.rho*0.5); this.GG[1][3]=Math.round(L.rho*2);
-    this.GG[1][4]=Math.max(5,Math.round(L.rho/40));
+    this.GG[1][2]=s0*0.5; this.GG[1][3]=s0*2; this.GG[1][4]=s0<=100?0.5:5;
+    this.GG[1][8]=s0<=100?1:0;
+    this.GG[2][2]=Math.round(L.rho*0.5); this.GG[2][3]=Math.round(L.rho*2);
+    this.GG[2][4]=Math.max(5,Math.round(L.rho/40));
   },
-  setTask(){this.sel=2; this.setLiq('water');
+  setTask(){this.dmm=0.5; this.setLiq('water');
     document.querySelectorAll('#m3liq button').forEach(b=>b.classList.toggle('active',b.dataset.v==='water'));},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns();},
@@ -1376,8 +1380,11 @@ const M3={
      σ, ρ, θ — у см. Старий кадр рахувався лише під підйом води при θ = 0 і
      тому не вміщав опускання ртуті: стовпці вилазили за дно посудини. */
   hRange(){
+    /* Межі — по всьому діапазону діаметрів, а не по поточному: інакше кадр
+       «дихав» би на кожен рух ручки (§10). */
     let up=0,dn=0;
-    for(const dmm of this.DS){
+    for(let k=0;k<=12;k++){
+      const dmm=this.DMIN+(this.DMAX-this.DMIN)*k/12;
       const h=this.hOf(dmm*1e-3)*100;
       if(h>up) up=h;
       if(-h>dn) dn=-h;
@@ -1395,18 +1402,14 @@ const M3={
     const sc=Math.min(60,
       (y0-topY-pad)/Math.max(0.6,A.up),
       (botY-pad-y0)/Math.max(0.6,A.dn));
-    return {C,H,sc,y0,x0:74,dx:Math.min(84,(bb.w*0.58)/this.DS.length),
+    return {C,H,sc,y0,x0:74,dx:Math.min(84,bb.w*0.12),
       zx:bb.w*0.80,zy:52+H*0.30,zr:Math.min(64,H*0.16)};
   });},
   grips(){
     if(this.mode!=='free') return [];
     const b=cvx('m3scene'); if(!b) return [];
     const Q=this.geo(b);
-    /* трубку обирають дотиком — це перемикач режиму, а не величина (§10) */
-    const pick=this.DS.map((d,i)=>({id:'tube'+i, x:Q.x0+i*Q.dx, y:Q.y0+34, r:15,
-      bare:true, mode:true, color:CLR.sec, hint:'трубка '+fmt(d,2)+' мм',
-      move:()=>{this.sel=i;}}));
-    return pick.concat(gaugeGrips(this.gcol(b),this.GG,this));
+    return gaugeGrips(this.gcol(b),this.GG,this);
   },
   tick(){this.render();},
   render(){this.scene(); this.table(); this.charts(); this.gdraw();},
@@ -1423,6 +1426,7 @@ const M3={
       txt(b.g,'умова задачі: вода, d = 0,5 мм, підйом 2,5 см',C.w/2,C.gtop+30,
         {color:CLR.mut,size:10.5,align:'center'});
     }
+    $('m3vd2').textContent=fmt(this.dmm,2)+' мм';
     $('m3vsig2').textContent=fmt(this.sig,1)+' мН/м';
     $('m3vrho2').textContent=fmt(this.rho,0)+' кг/м³';
   },
@@ -1430,7 +1434,7 @@ const M3={
     const b=cvx('m3scene'); if(!b) return;
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, L=this.L(), col=CLR[L.col];
     g.clearRect(0,0,w,H);
-    const vy=Q.y0, vw=Q.x0+this.DS.length*Q.dx+16, hgQ=this.liq==='hg';
+    const vy=Q.y0, vw=Q.x0+Q.dx*3.2+16, hgQ=this.liq==='hg';
     g.fillStyle=hgQ?'#d8d6d2':CLR.water;
     g.fillRect(26,vy,vw-26,H-vy-30);
     g.strokeStyle=CLR.axis; g.lineWidth=2;
@@ -1441,24 +1445,17 @@ const M3={
     /* Підпис рівня — усередині посудини ліворуч, а не праворуч від неї:
        там він налазив на виноску висоти обраної трубки. */
     txt(g,'рівень у посудині',32,vy+14,{color:CLR.mut,size:10});
-    /* ряд капілярів: що тонша трубка, то вище підйом */
+    /* одна трубка: змінюємо її діаметр і дивимося, як іде за ним висота */
     const top=52+8;
-    this.DS.forEach((dmm,i)=>{
-      const x=Q.x0+i*Q.dx, hcm=this.hOf(dmm*1e-3)*100, hp=hcm*Q.sc;
-      const tw=Math.max(6,dmm*11), on=i===this.sel;
-      g.strokeStyle=on?CLR.ink:CLR.axis; g.lineWidth=on?2.2:1.4;
+    {
+      const dmm=this.dmm, x=Q.x0+Q.dx*1.6, hcm=this.hOf(dmm*1e-3)*100, hp=hcm*Q.sc;
+      const tw=Math.max(7,dmm*26);
+      g.strokeStyle=CLR.ink; g.lineWidth=2.2;
       g.beginPath(); g.moveTo(x-tw/2,top); g.lineTo(x-tw/2,H-34);
       g.moveTo(x+tw/2,top); g.lineTo(x+tw/2,H-34); g.stroke();
       const my=vy-hp, rw=tw/2-1, yBot=H-34;
-      /* Прогин меніска — справжня стріла сферичного сегмента:
-         s = r(1 − sin θ)/|cos θ|. Раніше тут стояло min(tw·0.45, 7): величина
-         від кута не залежала взагалі, мінявся тільки знак — тому меніск і
-         «не рухався» при зміні натягу. */
       const cth=this.cosTh(), sth=Math.sqrt(Math.max(0,1-cth*cth));
       const sag=(cth<0?-1:1)*Math.min(rw,rw*(1-sth)/Math.max(0.10,Math.abs(cth)));
-      /* Заливка стовпа йде по меніску, а не по прямій. Плаский верх прямокутника
-         накривав угнутий меніск зверху, і рідина читалася як опукла. Рідина в
-         трубці стоїть від меніска до дна, а не смугою відносно рівня. */
       g.fillStyle=hgQ?'rgba(120,118,112,.55)':'rgba(42,120,214,.34)';
       g.beginPath();
       g.moveTo(x-rw,my);
@@ -1467,18 +1464,15 @@ const M3={
       g.strokeStyle=col; g.lineWidth=2;
       g.beginPath(); g.moveTo(x-rw,my);
       g.quadraticCurveTo(x,my+2*sag,x+rw,my); g.stroke();
-      txtN(g,fmt(dmm,2),x,H-16,{color:on?CLR.ink:CLR.mut,size:10,bold:on,align:'center'});
-      if(on){
-        arrow(g,x+tw/2+18,vy,x+tw/2+18,my,CLR.k2,1.6);
-        arrow(g,x+tw/2+18,my,x+tw/2+18,vy,CLR.k2,1.6);
-        /* Коли стовп короткий, середина виноски збігається з лінією рівня і
-           підпис лягає на нього. Тоді відсуваємо підпис за вістря стрілки. */
-        const ly=Math.abs(hp)>34?(vy+my)/2+4:(hp>=0?my-9:my+17);
-        pillN(g,fmt(hcm,2)+' см',x+tw/2+54,ly,{color:'#b8431a',size:11,bold:true});
-      }
-    });
-    txt(g,'діаметр трубки, мм',Q.x0+this.DS.length*Q.dx*0.5,H-3,
-      {color:CLR.mut,size:10,align:'center'});
+      /* розмір діаметра просто на трубці — величина, яку зараз крутять */
+      arrow(g,x-tw/2,top-12,x+tw/2,top-12,CLR.k2,1.5);
+      arrow(g,x+tw/2,top-12,x-tw/2,top-12,CLR.k2,1.5);
+      pillN(g,'d = '+fmt(dmm,2)+' мм',x,top-18,{color:'#b8431a',size:11,bold:true});
+      arrow(g,x+tw/2+18,vy,x+tw/2+18,my,CLR.k2,1.6);
+      arrow(g,x+tw/2+18,my,x+tw/2+18,vy,CLR.k2,1.6);
+      const ly=Math.abs(hp)>34?(vy+my)/2+4:(hp>=0?my-9:my+17);
+      pillN(g,'h = '+fmt(hcm,2)+' см',x+tw/2+62,ly,{color:'#b8431a',size:11,bold:true});
+    }
     /* меніск крупним планом: радіус кривини й крайовий кут */
     const zx=Q.zx, zy=Q.zy, zr=Q.zr, cth=this.cosTh();
     const Rpx=zr/Math.max(0.10,Math.abs(cth));
@@ -1506,14 +1500,13 @@ const M3={
   },
   table(){
     const L=this.L(), h=this.hOf(this.d())*100, R=this.Rof();
-    $('m3t').textContent='трубка '+fmt(this.DS[this.sel],2)+' мм';
-    $('m3vd').textContent=fmt(this.DS[this.sel],2)+' мм';
+    $('m3t').textContent='трубка '+fmt(this.dmm,2)+' мм';
     $('m3vth').textContent=fmt(this.th(),1)+'°';
     $('m3rH').textContent=fmt(h,2)+' см';
     $('m3rR').textContent=fmt(R*1000,3)+' мм';
     $('m3kLiq').textContent=L.n;
     $('m3kRho').textContent=fmt(this.rho,0)+' кг/м³';
-    $('m3kr').textContent=fmt(this.DS[this.sel]/2,3)+' мм';
+    $('m3kr').textContent=fmt(this.dmm/2,3)+' мм';
     $('m3kR').textContent=fmt(R*1000,3)+' мм';
     $('m3kdP').textContent=fmt(2*this.sigSI()/R,0)+' Па';
     $('m3kSt').textContent=this.cosTh()>0.001?'піднімається':
@@ -1538,7 +1531,7 @@ const M3={
       const r=drawChart(bh,{tMax:1.6,yMin:Math.min(-6,-lim*0.2),yMax:lim*0.75,yLab:'см',
         xLab:'d, мм',xStep:0.2,xDec:1,yDec:0,hover:this.hh.x,
         series:[{ts,ys,color:CLR.k1,label:'h(d)'},
-                {ts:[this.DS[this.sel],this.DS[this.sel]],ys:[Math.min(-6,-lim*0.2),hh],
+                {ts:[this.dmm,this.dmm],ys:[Math.min(-6,-lim*0.2),hh],
                  color:CLR.ink,label:'трубка',dash:[4,3]}]});
       showTip(this.tiph,r,'см',this.hh,[['h',CLR.k1],['обрана',CLR.ink]],2);
     }

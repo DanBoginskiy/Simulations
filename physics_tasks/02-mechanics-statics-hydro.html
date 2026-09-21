@@ -1455,6 +1455,19 @@ const M2={
     if(lev>0.4) txt(g,'вода 1,0',xl+6,yWTop+15,{color:'#1c5cab',size:10,bold:true});
     /* сам циліндр */
     const cw=1.7*sc, cx0=Q.cx-cw/2;
+    /* Де циліндр стояв, поки води не було: пунктирний контур лишається на
+       місці, тож видно не саме положення, а його зміну — циліндр спливає, а
+       не тоне, і рівно на стільки, на скільки вода накрила його бік. */
+    const hg0=this.hHg(0);
+    if(Math.abs(hg0-hg)>0.02){
+      g.strokeStyle=CLR.mut; g.lineWidth=1.5; g.setLineDash([4,3]);
+      g.beginPath(); g.rect(cx0,SY(this.h-hg0),cw,this.h*sc); g.stroke(); g.setLineDash([]);
+      txt(g,'без води',cx0-6,SY(this.h-hg0)+12,
+        {color:CLR.mut,size:10,bold:true,align:'right'});
+      arrow(g,Q.cx,SY(this.h-hg0),Q.cx,SY(this.h-hg),CLR.k3,2);
+      pillN(g,'спливло на '+fmt(hg0-hg,2)+' см',Q.cx,SY(this.h-hg0)-14,
+        {color:'#0d7a55',size:11,bold:true});
+    }
     g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.rect(cx0,SY(this.h-hg),cw,this.h*sc); g.fill(); g.stroke();
     txtN(g,'ρ = '+fmt(this.rho,1),Q.cx,SY(this.h-hg)-8,
@@ -1471,6 +1484,10 @@ const M2={
     dim(xr+44,SY(0),SY(-hg),CLR.k2,'#b8431a','у ртуті '+fmt(hg,2)+' см');
     if(hw>0.05) dim(xr+44,SY(hw),SY(0),CLR.k1,'#1c5cab','у воді '+fmt(hw,2)+' см');
     dim(xl-46,SY(lev),SY(0),CLR.k3,'#0d7a55','налито '+fmt(lev,2)+' см');
+    /* висота, що стирчить над усією рідиною — те, що видно оком збоку */
+    const hOut=Math.max(0,this.h-hg-hw);
+    if(hOut>0.05) dim(xr+44,SY(hw+hOut),SY(hw),CLR.sec,CLR.sec,
+      'над рідиною '+fmt(hOut,2)+' см');
     /* виштовхувальні сили від кожного шару — окремо */
     const kF=Math.min(70,cw*1.5)/(this.RHO_HG*this.HMAX);
     const Fhg=this.RHO_HG*hg, Fw=this.RHO_W*hw;

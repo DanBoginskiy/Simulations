@@ -280,7 +280,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 2 ================= -->
 <section class="module" id="m2">
-  <p class="caption">Вибух розкидає осколки, але не діє на систему ззовні — тому центр мас
+  <p class="caption">Вибух розкидає осколки, але не діє на систему ззовні — тому уявний нерозірваний снаряд
   рухається далі тією самою параболою, ніби нічого не сталося. Це видно лише тоді,
   коли поруч летить «привид» нерозірваної гранати.</p>
 
@@ -299,7 +299,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="chartrow">
           <div class="chartbox" id="m2chw">
             <h4>висота над землею, м</h4>
-            <div class="legend sm"><span><span class="chip cI"></span>центр мас</span><span><span class="chip cA"></span>осколок 1</span><span><span class="chip cB"></span>осколок 2</span></div>
+            <div class="legend sm"><span><span class="chip cI"></span>якби не розірвалася</span><span><span class="chip cA"></span>осколок 1</span><span><span class="chip cB"></span>осколок 2</span></div>
             <canvas id="m2ch"></canvas>
           </div>
           <div class="chartbox" id="m2cvw">
@@ -337,12 +337,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="kv"><span>горизонтальна складова<span class="badge">не змінюється вибухом</span></span><b id="m2kPx"></b></div>
         <div class="kv"><span>вертикальна складова</span><b id="m2kPy"></b></div>
         <div class="kv"><span>перший осколок летить</span><b id="m2kDir"></b></div>
-        <div class="kv"><span>центр мас<span class="badge">на незбуреній параболі</span></span><b id="m2kCm"></b></div>
+        <div class="kv"><span>уявний снаряд<span class="badge">незбурена парабола</span></span><b id="m2kCm"></b></div>
         <div class="kv"><span>осколок 1 — відстань від початку СВ</span><b id="m2kD1"></b></div>
         <div class="kv"><span>осколок 2 — відстань від початку СВ</span><b id="m2kD2"></b></div>
         <div class="kv"><span>місця падіння осколків<span class="badge">від початку СВ</span></span><b id="m2kXh"></b></div>
         <div class="kv"><span>нев'язка <var>p</var> після вибуху<span class="badge">має бути 0</span></span><b id="m2kRes"></b></div>
-        <div class="formulas">осколки однакові, тож ЦМ — просто середина відрізка між ними</div>
+        <div class="formulas">осколки однакові, тож уявний снаряд летить рівно посередині між ними</div>
       </div>
     </div>
   </div>
@@ -1290,8 +1290,11 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-46;
     const sc=fitScale(bb.w*0.56,H,54,56,2.2*this.RMAX,2.2*this.RMAX,0,0);
-    return {sc,C,cx:bb.w*0.27,cy:46+(H-26)/2,gy:46+H-14,
-      dx:bb.w*0.73,dy:46+H*0.44,dr:Math.min(H*0.34,100)};
+    return {sc,C,cx:bb.w*0.26,cy:46+(H-26)/2,gy:46+H-14,
+      dx:bb.w*0.62,dy:46+H*0.42,dr:Math.min(H*0.30,88),
+      /* крісло пілота — окремим кадром праворуч: на самій петлі фігурка була б
+         завбільшки з точку, а саме на ній і видно, звідки береться перевантаження */
+      px0:bb.w*0.85,py0:46+H*0.46,pr:Math.min(H*0.34,96)};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1368,17 +1371,52 @@ const M1={
     const N=this.N(ph), kN=Math.min(64,rp*0.62)/(this.m*(this.VMAX*this.VMAX/this.RMIN+G));
     const nx=(Q.cx-px)/rp, ny=(Q.cy-py)/rp;
     arrow(g,px,py,px+nx*N*kN,py+ny*N*kN,CLR.k3,3);
-    /* підпис зсуваємо впоперек стрілки — уздовж радіуса він лягає на диск і на R */
-    pillN(g,'N = '+fmt(N,0)+' Н',px+nx*N*kN*0.55-ny*30,py+ny*N*kN*0.55+nx*30,
-      {color:'#0d7a55',size:11,bold:true});
+    /* числа — у кадрі пілота праворуч; на петлі вони лягали на диск і на R */
     arrow(g,px,py,px,py+this.m*G*kN,CLR.sec,2);
-    txt(g,'mg',px+9,py+this.m*G*kN+2,{color:CLR.sec,size:10.5,bold:true});
     dot(g,px,py,4,CLR.k2);
     /* прилад перевантаження — стрілка на шкалі, як у кабіні */
     this.dial(g,Q.dx,Q.dy,Q.dr,N/(this.m*G));
+    this.pilot(g,Q,ph,N);
     capN(g,'мертва петля зі сталою швидкістю',12,20,{color:CLR.k1,size:12.5,bold:true});
     capN(g,'вага пілота міняється по колу, маса — ні',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='R') drawGrip(g,hh,this);
+  },
+  /* ---- крісло пілота зблизька ---------------------------------------------
+     На пілота діють рівно дві сили: тяжіння mg — завжди вниз, і реакція крісла
+     N — завжди перпендикулярно до спинки, тобто до центра петлі. Їхня сума й
+     дає доцентрове прискорення; саме N пілот відчуває як свою вагу, і саме її
+     показує прилад. Кадр повертається разом із літаком, щоб було видно, як
+     «низ» для пілота розходиться з «низом» для землі. */
+  pilot(g,Q,ph,N){
+    const cx=Q.px0, cy=Q.py0, r=Q.pr;
+    g.fillStyle='#fff'; g.strokeStyle=CLR.grid; g.lineWidth=1;
+    g.beginPath(); g.roundRect(cx-r,cy-r,2*r,2*r,10); g.fill(); g.stroke();
+    txt(g,'що відчуває пілот',cx,cy-r+14,{color:CLR.sec,size:11,bold:true,align:'center'});
+    /* напрям «до центра петлі» в цій точці — туди ж дивиться спинка крісла */
+    const nx=-Math.sin(ph), ny=-Math.cos(ph);
+    g.save(); g.translate(cx,cy+6); g.rotate(Math.atan2(-nx,ny));
+    const k=r*0.30;
+    /* крісло: спинка знизу (з боку, куди тисне N), сидіння — праворуч */
+    g.fillStyle='rgba(42,120,214,.12)'; g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.roundRect(-k*0.9,k*0.15,k*1.8,k*0.42,4); g.fill(); g.stroke();
+    g.beginPath(); g.roundRect(-k*0.9,-k*1.0,k*0.42,k*1.2,4); g.fill(); g.stroke();
+    /* пілот: голова, тулуб, ноги */
+    g.strokeStyle=CLR.ink; g.lineWidth=2.4; g.lineCap='round';
+    g.beginPath(); g.moveTo(-k*0.42,-k*0.5); g.lineTo(k*0.35,-k*0.5); g.stroke();
+    g.beginPath(); g.moveTo(k*0.35,-k*0.5); g.lineTo(k*0.75,k*0.1); g.stroke();
+    dot(g,-k*0.64,-k*0.5,k*0.24,'#fff',CLR.ink);
+    g.restore();
+    /* сили: N — до центра петлі, mg — завжди вниз екрана */
+    /* Довжина mg стала — вона і є мірилом: N довша рівно в стільки разів, у
+       скільки пілот важчий за себе в спокої. Стеля не дає стрілці вийти за кадр. */
+    const kk=Math.min(r*0.26/(this.m*G), r*0.72/Math.max(1,N));
+    arrow(g,cx,cy+6,cx+nx*N*kk,cy+ny*N*kk,CLR.k3,3);
+    txtN(g,'N = '+fmt(N,0)+' Н',cx+nx*N*kk+(nx<0?-6:6),cy+ny*N*kk+(ny<0?-6:14),
+      {color:'#0d7a55',size:11,bold:true,align:nx<0?'right':'left'});
+    arrow(g,cx,cy+6,cx,cy+6+this.m*G*kk,CLR.sec,2.2);
+    txt(g,'mg',cx+8,cy+6+this.m*G*kk+2,{color:CLR.sec,size:10.5,bold:true});
+    txtN(g,'вага пілота = N = '+fmt(N/(this.m*G),2)+' mg',cx,cy+r-8,
+      {color:CLR.ink,size:11,bold:true,align:'center',max:2*r-12});
   },
   /* стрілочний покажчик перевантаження: 0…6 g */
   dial(g,cx,cy,r,n){
@@ -1456,7 +1494,7 @@ const M1={
 const M2={
   mode:'free', v0:10, al:60, be:45, tb:0.25,
   t:0, playing:true, waitT:0, showAns:true,
-  VMIN:8, VMAX:12, ALMIN:45, ALMAX:75, BEMIN:20, BEMAX:60,
+  VMIN:8, VMAX:12, ALMIN:45, ALMAX:75, BEMIN:20, BEMAX:50,
   hh:{x:null}, hv:{x:null}, tiph:null, tipv:null,
   TASK:{v0:10, al:60, be:45, tb:0.25},
   vx(){return this.v0*Math.cos(this.al*DEG);},
@@ -1483,6 +1521,38 @@ const M2={
   },
   T(){return Math.max(this.tFall(),this.tHit(0),this.tHit(1));},
   tbMax(){return Math.max(0.02,this.tFall()*0.92);},
+  /* ---- межі кадру: найдальша й найвища точка, досяжна в межах ручок --------
+     Скануємо кути кидка й миті розриву при найбільшій швидкості та найбільшому
+     β — саме там осколок летить найдалі. Результат кешується: межі залежать
+     лише від сталих діапазонів, а не від поточного стану. */
+  _fr:null,
+  frameScan(){
+    if(this._fr) return this._fr;
+    let X=0,Y=0;
+    const keep={v0:this.v0,al:this.al,be:this.be,tb:this.tb};
+    this.v0=this.VMAX; this.be=this.BEMAX;
+    for(let ia=0;ia<=4;ia++){
+      this.al=this.ALMIN+(this.ALMAX-this.ALMIN)*ia/4;
+      const tf=this.tFall();
+      for(let ib=0;ib<=4;ib++){
+        this.tb=Math.max(0.05,tf*0.92*(0.1+0.9*ib/4));
+        for(const i of [0,1]){
+          const th=this.tHit(i);
+          X=Math.max(X,this.frag(i,th).x);
+          for(let k=0;k<=8;k++) Y=Math.max(Y,this.frag(i,this.tb+(th-this.tb)*k/8).y);
+        }
+      }
+    }
+    Object.assign(this,keep);
+    return this._fr={X,Y};
+  },
+  /* Осколок при великому β летить утричі-вчетверо далі за саму гранату, і
+     кадр під найгірший випадок зробив би гранату крапкою. Тому межа — не
+     більша за 2,8 дальності найдальшого кидка: звичайні розльоти вміщаються
+     цілком, а рідкісний крайній випадок і далі показує вказівник на краю. */
+  RGmax(){return this.VMAX*this.VMAX*Math.sin(2*this.ALMIN*DEG)/G;},
+  frameX(){return Math.min(this.frameScan().X,this.RGmax()*2.2);},
+  frameY(){return Math.min(this.frameScan().Y*1.08,this.RGmax()*0.62);},
   setTask(){const T=this.TASK; this.v0=T.v0; this.al=T.al; this.be=T.be; this.tb=T.tb;},
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
@@ -1505,12 +1575,12 @@ const M2={
   /* Кадр — під найдальший кидок діапазону; осколки можуть вилітати за нього,
      тому по висоті лишаємо запас на найшвидший осколок (§10). */
   geo(b){return frozen(this,b,bb=>{
-    /* Кадр міряємо по самій гранаті — вона тут головна. Осколок може вилетіти
-       за кадр (при β → 90° його швидкість необмежена); тоді його показує
-       вказівник на краю, а не мовчазне зникнення (§10). */
-    const RM=this.VMAX*this.VMAX*Math.sin(2*this.ALMIN*DEG)/G;
-    const HM=this.VMAX*this.VMAX*Math.pow(Math.sin(this.ALMAX*DEG),2)/(2*G)*1.25;
-    const sc=fitScale(bb.w,bb.h,80,86,RM*1.15,HM,0,0);
+    /* Кадр міряємо не по гранаті, а по найдальшому осколку, який узагалі
+       можливий у межах ручок: інакше саме найцікавіший розліт вилітав би за
+       край. Межі скануються по кутах і миті розриву — це верхня межа
+       діапазону, а не поточне значення (§10). */
+    const RM=this.frameX(), HM=this.frameY();
+    const sc=fitScale(bb.w,bb.h,80,86,RM*1.06,HM,0,0);
     return {sc,ox:44,oy:bb.h-34,RM,HM,
       SX:x=>44+x*sc, SY:y=>bb.h-34-y*sc, kv:Math.min(9,sc*0.9)};
   });},
@@ -1570,11 +1640,27 @@ const M2={
       txtN(g,fmt(x,0),px,gy+19,{color:CLR.mut,size:9.5,align:'center'});
     }
     txt(g,'відстань, м',w-12,h-8,{color:CLR.mut,size:10,align:'right'});
-    /* «привид» нерозірваної гранати — уся парабола */
+    /* Гармата в початку координат: видно, звідки й під яким кутом пішов кидок. */
+    (function(sx,sy,al){
+      const L=Math.min(46,Math.max(26,Q.sc*2.2)), a=al*DEG;
+      g.save(); g.translate(sx,sy);
+      g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.ink; g.lineWidth=2;
+      g.beginPath(); g.roundRect(-16,-9,32,11,3); g.fill(); g.stroke();
+      dot(g,-9,3,5,'#fff',CLR.ink); dot(g,9,3,5,'#fff',CLR.ink);
+      g.save(); g.rotate(-a);
+      g.fillStyle='rgba(11,11,11,.14)'; g.strokeStyle=CLR.ink; g.lineWidth=2.4;
+      g.beginPath(); g.roundRect(-4,-5,L,10,3); g.fill(); g.stroke();
+      g.restore(); g.restore();
+    })(SX(0),SY(0),this.al);
+    /* «привид» нерозірваної гранати — уся парабола, і на ній саме тіло: видно,
+       де воно було б зараз, якби вибуху не сталося. */
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]); g.beginPath();
     for(let i=0;i<=120;i++){const p=this.pos(this.tFall()*i/120); i?g.lineTo(SX(p.x),SY(p.y)):g.moveTo(SX(p.x),SY(p.y));}
     g.stroke(); g.setLineDash([]);
-    /* сліди осколків після розриву */
+    /* сліди осколків після розриву. Перший летить строго вертикально, і слід
+       від нього — пряма; щоб не здавалося, ніби він падає рівномірно, на ньому
+       ставимо позначки через рівні проміжки часу: вони згущуються вгорі й
+       розходяться внизу — це і є прискорення. */
     if(t>this.tb){
       for(const [i,col] of [[0,CLR.k1],[1,CLR.k2]]){
         g.strokeStyle=col; g.lineWidth=1.6; g.setLineDash([2,3]); g.beginPath();
@@ -1583,22 +1669,50 @@ const M2={
           k?g.lineTo(SX(q.x),SY(q.y)):g.moveTo(SX(q.x),SY(q.y));
         }
         g.stroke(); g.setLineDash([]);
+        const th=this.tHit(i), dT=0.1;
+        for(let k=1;;k++){
+          const tt=this.tb+k*dT;
+          if(tt>Math.min(t,th)) break;
+          const q=this.frag(i,tt);
+          dot(g,SX(q.x),SY(q.y),2.4,col);
+        }
       }
     }
     /* пройдений шлях до розриву */
     g.strokeStyle=CLR.sec; g.lineWidth=2; g.setLineDash([2,3]); g.beginPath();
     for(let i=0;i<=60;i++){const p=this.pos(Math.min(t,this.tb)*i/60); i?g.lineTo(SX(p.x),SY(p.y)):g.moveTo(SX(p.x),SY(p.y));}
     g.stroke(); g.setLineDash([]);
+    /* уявний снаряд на привидній параболі */
+    if(t>this.tb){
+      const Cg=this.pos(Math.min(t,this.tFall()));
+      g.strokeStyle=CLR.mut; g.lineWidth=1.8; g.fillStyle='rgba(252,252,251,.9)';
+      g.beginPath(); g.arc(SX(Cg.x),SY(Cg.y),6,0,7); g.fill(); g.stroke();
+      txt(g,'якби не розірвалася',SX(Cg.x)+10,SY(Cg.y)+16,
+        {color:CLR.mut,size:10.5,bold:true,max:w-SX(Cg.x)-16});
+    }
     /* точка розриву */
     const PB=this.pos(this.tb);
     g.strokeStyle=CLR.k2; g.lineWidth=1.5; g.setLineDash([4,3]);
     g.beginPath(); g.arc(SX(PB.x),SY(PB.y),13,0,7); g.stroke(); g.setLineDash([]);
+    /* мить вибуху підписана явно: розрив стається не «десь», а на t = tb */
+    if(t>=this.tb){
+      g.strokeStyle=CLR.k2; g.lineWidth=1.8;
+      for(let k=0;k<8;k++){
+        const a=k*Math.PI/4, r1=14, r2=14+(k%2?5:9);
+        g.beginPath();
+        g.moveTo(SX(PB.x)+r1*Math.cos(a),SY(PB.y)+r1*Math.sin(a));
+        g.lineTo(SX(PB.x)+r2*Math.cos(a),SY(PB.y)+r2*Math.sin(a));
+        g.stroke();
+      }
+    }
+    pillN(g,'вибух на t = '+fmt(this.tb,2)+' с',SX(PB.x)+62,SY(PB.y)-30,
+      {color:'#b8431a',size:11,bold:true});
     if(t<this.tb){
       const P=this.pos(t);
       dot(g,SX(P.x),SY(P.y),6,CLR.ink,'#fff');
       txt(g,'граната',SX(P.x)+10,SY(P.y)-8,{color:CLR.ink,size:11,bold:true});
     } else {
-      /* осколки й центр мас — саме він і лишається на незбуреній параболі */
+      /* осколки; уявний снаряд малюється вище, на незбуреній параболі */
       const A=this.frag(0,Math.min(t,this.tHit(0))), B=this.frag(1,Math.min(t,this.tHit(1)));
       const mark=(q,col,tc,lab,dy)=>{
         const sx=SX(q.x), sy=SY(q.y);
@@ -1613,9 +1727,8 @@ const M2={
         pillN(g,lab+' — за кадром, '+fmt(Math.hypot(q.x,q.y),1)+' м',
           ex-64,ey+ (sy<8?26:-14),{color:tc,size:10.5,bold:true});
       };
-      mark(A,CLR.k1,'#1c5cab','осколок 1',-7);
-      mark(B,CLR.k2,'#b8431a','осколок 2',14);
-      const C=this.pos(Math.min(t,this.tFall()));
+      mark(A,CLR.k1,'#1c5cab','осколок 1',-11);
+      mark(B,CLR.k2,'#b8431a','осколок 2',18);
       g.strokeStyle=CLR.grid; g.lineWidth=1;
       g.beginPath(); g.moveTo(SX(A.x),SY(A.y)); g.lineTo(SX(B.x),SY(B.y)); g.stroke();
       /* Відстань розльоту кожного осколка — від початку системи відліку,
@@ -1636,8 +1749,10 @@ const M2={
         g.strokeStyle=col; g.lineWidth=1.6; g.globalAlpha=.5; g.setLineDash([5,4]);
         g.beginPath(); g.moveTo(ox,oy); g.lineTo(ex,ey); g.stroke();
         g.setLineDash([]); g.globalAlpha=1;
+        const L=Math.hypot(ex-ox,ey-oy)||1;
         pillN(g,fmt(Math.hypot(q.x,q.y),2)+' м'+(k<0.999?' →':''),
-          (ox+ex)/2,(oy+ey)/2-9,{color:tc,size:10.5,bold:true});
+          ox+dx*k*0.72-(ey-oy)/L*11,oy+dy*k*0.72+(ex-ox)/L*11-4,
+          {color:tc,size:10.5,bold:true});
       }
       for(const [i,col] of [[0,CLR.k1],[1,CLR.k2]]){
         if(t<this.tHit(i)) continue;
@@ -1651,9 +1766,7 @@ const M2={
         txtN(g,(off?'→ ':'')+fmt(xh,1)+' м',sx,SY(0)+31,
           {color:tc,size:10,bold:true,align:off?'right':'center'});
       }
-      dot(g,SX(C.x),SY(C.y),7,'#fff',CLR.ink);
-      dot(g,SX(C.x),SY(C.y),3,CLR.ink);
-      pill(g,'центр мас',SX(C.x)+2,SY(C.y)+30,{color:CLR.ink,size:11,bold:true});
+
     }
     /* вектор кидка і кут β — те, що тягнуть */
     const O={x:SX(0),y:SY(0)};
@@ -1666,7 +1779,7 @@ const M2={
     arrow(g,BX,BY,BX+LB*Math.cos(be),BY-LB*Math.sin(be),CLR.k2,2);
     arc(g,BX,BY,26,0,-be,CLR.k2,1.4);
     txtN(g,'β = '+fmt(this.be,0)+'°',BX+LB+20,BY+4,{color:'#b8431a',size:11,bold:true});
-    capN(g,t<this.tb?'граната летить цілою':'вибух стався — ЦМ його не помітив',12,20,{color:t<this.tb?CLR.ink:CLR.k2,size:12.5,bold:true});
+    capN(g,t<this.tb?'граната летить цілою':'вибух стався — уявний снаряд його не помітив',12,20,{color:t<this.tb?CLR.ink:CLR.k2,size:12.5,bold:true});
     capN(g,'пунктирна парабола — шлях, яким летіла б нерозірвана граната',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
@@ -1706,20 +1819,23 @@ const M2={
     const T=this.T(), N=70;
     const bh=cvx('m2ch');
     if(bh){
-      const ts=[],cm=[],f1=[],f2=[];
-      for(let i=0;i<=N;i++){
-        const tt=this.t*i/N; ts.push(tt);
-        cm.push(Math.max(0,this.pos(Math.min(tt,this.tFall())).y));
-        f1.push(tt<this.tb?this.pos(tt).y:Math.max(0,this.frag(0,Math.min(tt,this.tHit(0))).y));
-        f2.push(tt<this.tb?this.pos(tt).y:Math.max(0,this.frag(1,Math.min(tt,this.tHit(1))).y));
-      }
-      if(this.t<1e-6){ts.push(1e-6); cm.push(0); f1.push(0); f2.push(0);}
+      /* Щойно тіло торкнулося землі, крива обривається: далі малювати нічого,
+         а нуль уздовж осі читався б як «воно ще летить на нульовій висоті». */
+      const build=(tEnd,fy)=>{
+        const te=Math.min(this.t,tEnd), ts=[],ys=[];
+        for(let i=0;i<=N;i++){const tt=te*i/N; ts.push(tt); ys.push(Math.max(0,fy(tt)));}
+        if(te<1e-6){ts.push(1e-6); ys.push(0);}
+        return {ts,ys};
+      };
+      const Sg=build(this.tFall(),tt=>this.pos(tt).y);
+      const S1=build(this.tHit(0),tt=>tt<this.tb?this.pos(tt).y:this.frag(0,tt).y);
+      const S2=build(this.tHit(1),tt=>tt<this.tb?this.pos(tt).y:this.frag(1,tt).y);
       const hi=this.VMAX*this.VMAX*Math.pow(Math.sin(this.ALMAX*DEG),2)/(2*G)*1.35;
       const r=drawChart(bh,{tMax:T,yMin:0,yMax:hi,yLab:'м',xDec:2,hover:this.hh.x,
-        series:[{ts,ys:f1,color:CLR.k1,label:'1'},
-                {ts,ys:f2,color:CLR.k2,label:'2'},
-                {ts,ys:cm,color:CLR.ink,label:'ЦМ'}]});
-      showTip(this.tiph,r,'м',this.hh,[['осколок 1',CLR.k1],['осколок 2',CLR.k2],['ЦМ',CLR.ink]],2);
+        series:[{ts:S1.ts,ys:S1.ys,color:CLR.k1,label:'1'},
+                {ts:S2.ts,ys:S2.ys,color:CLR.k2,label:'2'},
+                {ts:Sg.ts,ys:Sg.ys,color:CLR.ink,label:'ціла'}]});
+      showTip(this.tiph,r,'м',this.hh,[['осколок 1',CLR.k1],['осколок 2',CLR.k2],['якби не розірвалася',CLR.ink]],2);
     }
     const bv=cvx('m2cv');
     if(bv){
@@ -2050,8 +2166,14 @@ const M4={
     g.fillStyle=CLR.ground; g.fillRect(Q.px-120,Q.py-58,240,16);
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
     g.beginPath(); g.moveTo(Q.px-120,Q.py-42.5); g.lineTo(Q.px+120,Q.py-42.5); g.stroke();
+    /* Брус підвішено за краї на двох нитках. Вони лишаються паралельними, тож
+       брус увесь час горизонтальний: удар кулі не закручує його, а просто
+       відводить убік — саме та ідеалізація, у якій задача й розв'язується. */
+    const HW=26;
     g.fillStyle='#e9e8e2'; g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.roundRect(Q.px-7,Q.py-42,14,42,3); g.fill(); g.stroke();
+    for(const sx of [Q.px-HW,Q.px+HW]){
+      g.beginPath(); g.roundRect(sx-5,Q.py-42,10,42,3); g.fill(); g.stroke();
+    }
     /* прямовисна лінія й дуга відхилення */
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(Q.px,Q.py); g.lineTo(Q.px,Q.py+L+26); g.stroke(); g.setLineDash([]);
@@ -2065,21 +2187,30 @@ const M4={
     if(this.overTop())
       pill(g,'мотузка провисає вище 90° — це вже не маятник; зменште v або збільште η',
         Q.px,Q.py-70,{color:CLR.k2,size:10.5,bold:true});
-    /* мотузка й брус */
+    /* нитки й брус */
     const bx=Q.px+L*Math.sin(th), by=Q.py+L*Math.cos(th);
     g.strokeStyle=CLR.k1; g.lineWidth=2;
-    g.beginPath(); g.moveTo(Q.px,Q.py); g.lineTo(bx,by); g.stroke();
-    dot(g,Q.px,Q.py,4,CLR.sec);
-    g.save(); g.translate(bx,by); g.rotate(th);
+    for(const sx of [Q.px-HW,Q.px+HW]){
+      g.beginPath(); g.moveTo(sx,Q.py); g.lineTo(sx+L*Math.sin(th),Q.py+L*Math.cos(th)-20);
+      g.stroke();
+      dot(g,sx,Q.py,3.5,CLR.sec);
+    }
+    g.save(); g.translate(bx,by);
     g.fillStyle='rgba(42,120,214,.10)'; g.strokeStyle=CLR.k1; g.lineWidth=2.5;
-    g.beginPath(); g.roundRect(-26,-20,52,40,4); g.fill(); g.stroke();
-    if(this.phase==='swing') dot(g,0,0,3.5,CLR.ink);
+    g.beginPath(); g.roundRect(-HW,-20,2*HW,40,4); g.fill(); g.stroke();
+    /* куля входить у ліву грань — саме там, де торкнулася, а не в центр мас */
+    if(this.phase!=='fly'){
+      dot(g,-HW,0,3.4,CLR.ink);
+      g.strokeStyle=CLR.ink; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(-HW,0); g.lineTo(-HW+11,0); g.stroke();
+    }
     g.restore();
-    txtN(g,'l = '+fmt(this.l,2)+' м',Q.px-10,Q.py+L*0.30,
+    txtN(g,'l = '+fmt(this.l,2)+' м',Q.px-HW-10,Q.py+L*0.30,
       {color:'#1c5cab',size:10.5,bold:true,align:'right'});
     /* куля до удару */
     if(this.phase==='fly'){
-      const px=Q.px-140+(this.bx+1)*130, py=Q.py+L;
+      /* куля летить на рівні грані бруса й зупиняється рівно об неї */
+      const px=Math.min(Q.px-HW-9,Q.px-140+(this.bx+1)*130), py=Q.py+L;
       g.fillStyle=CLR.ink;
       g.beginPath(); g.ellipse(px,py,9,4.5,0,0,7); g.fill();
       arrow(g,Q.px-140,Q.py+L+26,Q.px-140+this.v*Q.kv,Q.py+L+26,CLR.ink,2.5);

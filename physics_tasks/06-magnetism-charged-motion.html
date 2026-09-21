@@ -1335,7 +1335,10 @@ const M1={
     txt(g,'рівновіддалені точки',SX(0)+7,68,{color:CLR.mut,size:10});
     /* пробна точка: два внески й сума */
     const P={x:SX(this.px),y:SY(this.py)}, B=this.B(this.px,this.py);
-    const kB=Math.min(96,Q.sc*0.5)/(MU0*this.IMAX/(2*Math.PI*0.02));
+    /* Стрілки були короткі: мірилом стояло поле на 2 см від дроту при
+       найбільшому струмі — величина, якої в кадрі майже ніколи немає. Беремо
+       вдвічі слабше мірило, і типовий вектор стає вдвічі довшим (§10). */
+    const kB=Math.min(150,Q.sc*0.82)/(MU0*this.IMAX/(2*Math.PI*0.04));
     const a1={x:-this.py,y:this.px+this.a/2}, n1=Math.hypot(a1.x,a1.y)||1;
     const a2={x:-this.py,y:this.px-this.a/2}, n2=Math.hypot(a2.x,a2.y)||1;
     arrow(g,P.x,P.y,P.x+a1.x/n1*B.b1*kB,P.y-a1.y/n1*B.b1*kB,CLR.k1,2);
@@ -1380,39 +1383,49 @@ const M1={
       'до радіуса, проведеного від провідника';
   },
   charts(){
+    /* Для струмів в один бік цікава нульова точка між дротами, для зустрічних —
+       максимум рівно там само. Тому графіки не однакові в обох режимах: кожен
+       показує саме ту особливість, заради якої цей випадок і розглядають. */
+    const par=this.dir==='par';
     const by=cvx('m1cy');
     if(by){
-      const ts=[],p=[],an=[];
-      const s0=this.dir;
-      for(let i=0;i<=80;i++){
-        const y=-this.WMAX+2*this.WMAX*i/80; ts.push(y*100);
-        this.dir='par'; p.push(this.Bmod(0,y)*1e6);
-        this.dir='anti'; an.push(this.Bmod(0,y)*1e6);
+      const ts=[],ys=[];
+      for(let i=0;i<=120;i++){
+        const y=-this.WMAX+2*this.WMAX*i/120; ts.push(y*100);
+        ys.push(this.Bmod(0,y)*1e6);
       }
-      this.dir=s0;
       const lim=2*MU0*this.IMAX/(Math.PI*this.AMIN)*1e6*0.7;
-      const r=drawChart(by,{tMax:this.WMAX*100,yMin:-this.WMAX*100,yMax:lim,yLab:'мкТл',
-        xLab:'y, см',xStep:4,yDec:0,hover:this.hy.x,
-        series:[{ts,ys:p,color:CLR.k1,label:'в один бік'},
-                {ts,ys:an,color:CLR.k2,label:'назустріч'},
+      const b0=this.Bmod(0,0)*1e6;
+      const r=drawChart(by,{tMin:-this.WMAX*100,tMax:this.WMAX*100,yMin:0,yMax:lim,
+        yLab:'мкТл',xLab:'y, см',xStep:4,yDec:0,hover:this.hy.x,
+        series:[{ts,ys,color:par?CLR.k1:CLR.k2,label:'|B|'},
+                {ts:[0,0],ys:[0,Math.max(b0,lim*0.12)],color:CLR.k3,
+                 label:par?'нуль між дротами':'максимум',dash:[4,3]},
                 {ts:[this.py*100,this.py*100],ys:[0,this.Bmod(0,this.py)*1e6],
                  color:CLR.ink,label:'точка',dash:[4,3]}]});
       showTip(this.tipy,r,'мкТл',this.hy,
-        [['в один бік',CLR.k1],['назустріч',CLR.k2],['точка',CLR.ink]],2);
+        [['|B|',par?CLR.k1:CLR.k2],[par?'нуль':'максимум',CLR.k3],['точка',CLR.ink]],2);
     }
     const bx=cvx('m1cx');
     if(bx){
+      /* Біля самого дроту B → ∞: без стелі крива стискала б усю решту графіка
+         в риску під віссю. Зрізаємо її на розумному рівні й кажемо про це. */
+      const lim=MU0*this.IMAX/(2*Math.PI*this.AMIN*0.45)*1e6;
       const ts=[],ys=[];
-      for(let i=0;i<=120;i++){
-        const x=-this.WMAX+2*this.WMAX*i/120; ts.push(x*100); ys.push(this.Bmod(x,0)*1e6);
+      for(let i=0;i<=200;i++){
+        const x=-this.WMAX+2*this.WMAX*i/200; ts.push(x*100);
+        ys.push(Math.min(lim*0.98,this.Bmod(x,0)*1e6));
       }
-      const lim=MU0*this.IMAX/(2*Math.PI*0.006)*1e6*0.5;
-      const r=drawChart(bx,{tMax:this.WMAX*100,yMin:-this.WMAX*100,yMax:lim,yLab:'мкТл',
-        xLab:'x, см',xStep:4,yDec:0,hover:this.hx.x,
-        series:[{ts,ys,color:CLR.k3,label:'B(x)'},
-                {ts:[this.px*100,this.px*100],ys:[0,this.Bmod(this.px,0)*1e6],
+      const xw=this.a/2*100;
+      const r=drawChart(bx,{tMin:-this.WMAX*100,tMax:this.WMAX*100,yMin:0,yMax:lim,
+        yLab:'мкТл',xLab:'x, см',xStep:4,yDec:0,hover:this.hx.x,
+        series:[{ts,ys,color:par?CLR.k1:CLR.k2,label:'|B| (зрізано)'},
+                {ts:[-xw,-xw],ys:[0,lim],color:CLR.grid,label:'',dash:[3,3]},
+                {ts:[xw,xw],ys:[0,lim],color:CLR.grid,label:'дроти',dash:[3,3]},
+                {ts:[this.px*100,this.px*100],
+                 ys:[0,Math.min(lim*0.98,this.Bmod(this.px,0)*1e6)],
                  color:CLR.ink,label:'точка',dash:[4,3]}]});
-      showTip(this.tipx,r,'мкТл',this.hx,[['B',CLR.k3],['точка',CLR.ink]],2);
+      showTip(this.tipx,r,'мкТл',this.hx,[['|B|',par?CLR.k1:CLR.k2],['точка',CLR.ink]],2);
     }
   }
 };
@@ -1425,7 +1438,7 @@ const M2={
      собою і те, що відбирають, і те, з чого відбирають, а крізь щілину
      завжди проходили ті самі частинки. Відбирає тепер саме поле: вікно
      v = E/B рухається вздовж нерухомого пучка. */
-  mode:'free', E:1e4, B:1e-2, slit:2, L:0.003,
+  mode:'free', E:1e4, B:1e-2, slit:2, L:0.004,
   t:0, playing:true, showAns:true, N:25,
   VMIN:0.5e6, VMAX:1.8e6,
   SLMIN:0.2, SLMAX:12,
@@ -1468,7 +1481,7 @@ const M2={
     const pad=Math.max((hi-lo)*0.12,(V1-V0)*0.02);
     return [Math.max(V0,lo-pad),Math.min(V1,hi+pad)];
   },
-  setTask(){this.E=1e4; this.B=1e-2; this.slit=2; this.L=0.003;},
+  setTask(){this.E=1e4; this.B=1e-2; this.slit=2; this.L=0.004;},
   reset(){this.t=0; this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
@@ -1489,11 +1502,13 @@ const M2={
   gcol(b){return gcolOf(b,this.GG.length);},
   /* Вертикальний масштаб більше не фіксований: фільтр коротший за старий у
      двадцять разів, і кадр має підлаштовуватися під щілину та довжину. */
-  YM(){return Math.max(0.004,this.slit/1000*1.3,this.L*0.45);},
+  /* Півширина кадру: щілина має вміщатися з запасом, але не робити камеру
+     вищою за довжину — інакше прилад на кресленні стає вузькою баштою. */
+  YM(){return Math.max(this.slit/1000*1.35,this.L*0.30);},
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-52;
-    const sc=fitScale(bb.w,H,120,80,this.L*1.35,this.YM()*2.2,0,0);
-    const ox=bb.w*0.12, oy=52+H*0.52;
+    const sc=fitScale(bb.w,H,230,96,this.L*1.35,this.YM()*2.3,0,0);
+    const ox=bb.w*0.17, oy=52+H*0.52;
     return {C,H,sc,ox,oy,SX:x=>ox+x*sc,SY:y=>oy-y*sc};
   });},
   grips(){
@@ -1527,12 +1542,44 @@ const M2={
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, SX=Q.SX, SY=Q.SY;
     const YM=this.YM(), vs=this.vSel();
     g.clearRect(0,0,w,H);
-    const yT=SY(YM), yB=SY(-YM);
+    const yT=SY(YM), yB=SY(-YM), x0=SX(0), x1=SX(this.L);
     g.fillStyle='rgba(27,175,122,.06)';
-    g.fillRect(SX(0),yT,this.L*Q.sc,yB-yT);
-    g.strokeStyle=CLR.k3; g.lineWidth=2;
-    g.beginPath(); g.moveTo(SX(0),yT); g.lineTo(SX(this.L),yT);
-    g.moveTo(SX(0),yB); g.lineTo(SX(this.L),yB); g.stroke();
+    g.fillRect(x0,yT,this.L*Q.sc,yB-yT);
+    /* ---- прилад, а не прямокутник ----------------------------------------
+       Ліворуч — джерело з розжареним катодом і діафрагмою, що вирізає пучок;
+       у камері — дві пластини конденсатора з батареєю (вони й створюють E) і
+       поле магніту ⊗ на нас; праворуч — щілина в заслінці й лічильник. Усе
+       те саме, що й було, але видно, який саме прилад стоїть на столі. */
+    g.fillStyle='#e9e8e2'; g.strokeStyle=CLR.axis; g.lineWidth=1.6;
+    g.beginPath(); g.roundRect(x0-58,SY(0)-26,44,52,5); g.fill(); g.stroke();
+    g.strokeStyle=CLR.k2; g.lineWidth=2;
+    g.beginPath(); g.moveTo(x0-48,SY(0)-9); g.lineTo(x0-40,SY(0)); g.lineTo(x0-48,SY(0)+9);
+    g.stroke();
+    txt(g,'джерело',x0-36,SY(0)-32,{color:CLR.sec,size:10,bold:true,align:'center'});
+    g.fillStyle='#d8d6d2'; g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+    g.beginPath(); g.rect(x0-12,yT-16,8,(SY(0)-14)-(yT-16)); g.fill(); g.stroke();
+    g.beginPath(); g.rect(x0-12,SY(0)+14,8,(yB+16)-(SY(0)+14)); g.fill(); g.stroke();
+    /* пластини конденсатора */
+    g.fillStyle='rgba(42,120,214,.16)'; g.strokeStyle=CLR.k1; g.lineWidth=3;
+    g.beginPath(); g.rect(x0,yT-9,this.L*Q.sc,9); g.fill(); g.stroke();
+    g.beginPath(); g.rect(x0,yB,this.L*Q.sc,9); g.fill(); g.stroke();
+    txt(g,'−',x0+14,yT-14,{color:'#1c5cab',size:14,bold:true});
+    txt(g,'+',x0+14,yB+24,{color:'#1c5cab',size:14,bold:true});
+    /* батарея, що тримає напругу на пластинах */
+    const bxx=x0-30;
+    g.strokeStyle=CLR.k1; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(x0,yT-5); g.lineTo(bxx,yT-5); g.lineTo(bxx,SY(0)-13);
+    g.moveTo(x0,yB+5); g.lineTo(bxx,yB+5); g.lineTo(bxx,SY(0)+13); g.stroke();
+    g.beginPath(); g.moveTo(bxx-9,SY(0)-13); g.lineTo(bxx+9,SY(0)-13);
+    g.moveTo(bxx-5,SY(0)-7); g.lineTo(bxx+5,SY(0)-7);
+    g.moveTo(bxx-9,SY(0)+13); g.lineTo(bxx+9,SY(0)+13);
+    g.moveTo(bxx-5,SY(0)+7); g.lineTo(bxx+5,SY(0)+7); g.stroke();
+    /* рамка магніту */
+    g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([5,4]);
+    g.beginPath(); g.roundRect(x0-4,yT-20,this.L*Q.sc+8,(yB+20)-(yT-20),8); g.stroke();
+    g.setLineDash([]);
+    txt(g,'магніт: B ⊗ у площину',x0+this.L*Q.sc/2,yB+36,
+      {color:'#0d7a55',size:10.5,bold:true,align:'center'});
     for(let i=0;i<6;i++){
       const x=SX(this.L*(0.09+0.163*i));
       arrow(g,x,yB-14,x,yT+14,CLR.k1,1.6);
@@ -1566,9 +1613,17 @@ const M2={
     g.strokeStyle=CLR.k2; g.lineWidth=5;
     g.beginPath(); g.moveTo(sx,yT); g.lineTo(sx,SY(this.slit/2000)); g.stroke();
     g.beginPath(); g.moveTo(sx,SY(-this.slit/2000)); g.lineTo(sx,yB); g.stroke();
-    txtN(g,'щілина '+fmt(this.slit,1)+' мм',sx+12,SY(0)+4,{color:'#b8431a',size:11,bold:true});
+    /* заслінка зі щілиною і лічильник за нею */
+    g.fillStyle='#d8d6d2'; g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+    g.beginPath(); g.rect(sx,yT,9,SY(this.slit/2000)-yT); g.fill(); g.stroke();
+    g.beginPath(); g.rect(sx,SY(-this.slit/2000),9,yB-SY(-this.slit/2000)); g.fill(); g.stroke();
+    g.fillStyle='rgba(11,11,11,.06)'; g.strokeStyle=CLR.ink; g.lineWidth=1.6;
+    g.beginPath(); g.roundRect(sx+30,SY(0)-22,34,44,5); g.fill(); g.stroke();
+    txt(g,'лічильник',sx+47,SY(0)-28,{color:CLR.sec,size:10,bold:true,align:'center'});
+    txtN(g,'щілина '+fmt(this.slit,1)+' мм',sx+12,SY(0)+40,{color:'#b8431a',size:11,bold:true});
     txtN(g,'v = E/B = '+fmt(vs/1e6,3)+' Мм/с',SX(0)+6,yB+26,{color:CLR.ink,size:12,bold:true});
-    txt(g,'пройшло '+this.passed()+' з '+this.N,sx+12,yB+26,{color:CLR.sec,size:11,bold:true});
+    txtN(g,this.passed()+' з '+this.N,sx+47,SY(0)+5,
+      {color:CLR.ink,size:12,bold:true,align:'center'});
     capN(g,'селектор швидкостей',12,20,{color:CLR.k3,size:12.5,bold:true});
     capN(g,'прямо йде лише той, у кого електрична й магнітна сили рівні',12,36,{color:CLR.mut,size:10.5});
   },
@@ -1658,7 +1713,7 @@ const M3={
   VMIN:3e5, VMAX:8e5, EMIN:500, EMAX:4000, BMIN:8e-3, BMAX:2e-2,
   hz:{x:null}, hx:{x:null}, tipz:null, tipx:null,
   GG:[['vMm','швидкість, Мм/с',0.3,0.8,0.02,CLR.k2,null,'m3vv',2,'Мм/с'],
-      ['Ekv','поле E, кВ/м',0.5,4,0.1,CLR.k1,null,'m3ve',1,'кВ/м'],
+      ['Ekv','поле E, кВ/м',0.02,4,0.02,CLR.k1,null,'m3ve',2,'кВ/м'],
       ['Bmt','поле B, мТл',8,20,0.5,CLR.k3,null,'m3vb',1,'мТл']],
   get vMm(){return this.v0/1e6;}, set vMm(v){this.v0=v*1e6;},
   get Ekv(){return this.E/1000;}, set Ekv(v){this.E=v*1000;},
@@ -1676,7 +1731,25 @@ const M3={
     const vd=this.E/this.B;
     return {x:r*Math.sin(w*tt)+vd*tt, y:r*(1-Math.cos(w*tt)), z:0};
   },
+  /* ---- діапазон E свій для кожної конфігурації ----------------------------
+     Уздовж B поле розганяє частинку квадратично: при кіловольтах на метр крок
+     спіралі за два оберти виходить у сотні радіусів, і «спіраль» на кресленні
+     перетворюється на майже пряму. Для E ∥ B беремо вольти на метр — тоді крок
+     сумірний із радіусом і витків справді видно. Для E ⊥ B, навпаки, потрібні
+     кіловольти: дрейф E/B має бути сумірним зі швидкістю обертання. */
+  setConf(v){
+    this.conf=v;
+    const par=v==='par';
+    /* Доріжка E опускається до сотих кіловольта на метр: саме там крок спіралі
+       стає сумірним із радіусом і витки видно. Умова задачі лишається на своєму
+       місці — у режимі «задача» повертаються її власні 2 кВ/м. */
+    this.GG[1][2]=par?0.02:0.5; this.GG[1][3]=4;
+    this.GG[1][4]=par?0.02:0.1; this.GG[1][8]=2;
+    if(this.mode!=='task') this.E=par?100:2000;
+    this.reset();
+  },
   setTask(){this.conf='par'; this.v0=5e5; this.E=2000; this.B=1e-2;
+    this.GG[1][2]=0.02; this.GG[1][3]=4; this.GG[1][4]=0.02; this.GG[1][8]=2;
     document.querySelectorAll('#m3conf button').forEach(b=>b.classList.toggle('active',b.dataset.v==='par'));},
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
@@ -1685,7 +1758,7 @@ const M3={
   syncAns(){const task=this.mode==='task';
     $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
   init(){
-    seg('m3conf',v=>{this.conf=v; this.reset();});
+    seg('m3conf',v=>this.setConf(v));
     grip('m3scene',this,()=>this.grips());
     dragView('m3scene',this);
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
@@ -1697,13 +1770,15 @@ const M3={
     hover('m3cz',this.hz); hover('m3cx',this.hx);
     this.hz.xlab='обертів'; this.hz.xunit=''; this.hz.xdec=1;
     this.hx.xlab='обертів'; this.hx.xunit=''; this.hx.xdec=1;
-    this.setTask(); this.syncAns(); this.reset();
+    this.setTask(); this.E=100; this.syncAns(); this.reset();
   },
   gcol(b){return gcolOf(b,this.GG.length);},
   /* скільки обертів показує сценарій і який світовий об'єм із цього виходить */
-  NREV:2,
+  NREV:5,
   Tend(){return this.NREV*this.Tc();},
-  ZMAX(){return this.qm*this.EMAX*Math.pow(this.NREV*2*Math.PI/(this.qm*this.BMAX),2)/2;},
+  /* Верхня межа осьового зсуву — за найбільшим E саме цієї конфігурації. */
+  ZMAX(){const Em=this.conf==='par'?50:this.EMAX;
+    return this.qm*Em*Math.pow(this.NREV*2*Math.PI/(this.qm*this.BMAX),2)/2;},
   RMAXm(){return this.VMAX/(this.qm*this.BMIN);},
   /* Крок спіралі в задачі у вісім разів більший за радіус кола, тож у єдиному
      масштабі спіраль вироджується в майже пряму. Тому вісь B малюємо стиснутою
@@ -1790,7 +1865,7 @@ const M3={
         {color:CLR.mut,size:10.5,align:'center'});
     }
     $('m3vv').textContent=fmt(this.vMm,2)+' Мм/с';
-    $('m3ve').textContent=fmt(this.Ekv,1)+' кВ/м';
+    $('m3ve').textContent=fmt(this.Ekv,2)+' кВ/м';
     $('m3vb').textContent=fmt(this.Bmt,1)+' мТл';
   },
   scene(){
