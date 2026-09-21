@@ -542,7 +542,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -596,6 +596,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1190,6 +1198,9 @@ const M1={
     g.beginPath(); g.moveTo(-6,-4); g.lineTo(-13,-13); g.lineTo(-1,-4); g.stroke();
     g.beginPath(); g.moveTo(-6,4); g.lineTo(-13,13); g.lineTo(-1,4); g.stroke();
     g.restore();
+    /* власна швидкість літака — саме її й треба знайти */
+    arrow(g,px+20,py,px+62,py,CLR.k1,2.2);
+    txt(g,'X',px+68,py+4,{color:CLR.k1,size:13,bold:true});
     txtN(g,'M = '+fmt(this.M,2),px,py-20,{color:CLR.ink,size:11.5,bold:true,align:'center'});
     /* момент, коли удар доходить до спостерігача */
     const tau=this.tau();
@@ -1411,7 +1422,7 @@ const M2={
       g.beginPath(); g.moveTo(x0,cy); g.lineTo(x0,yy); g.stroke();
       g.setLineDash([]); g.globalAlpha=1;
       arrow(g,x0,yy,xe,yy,col,1.8);
-      pillN(g,fmt(this.v,0)+' м/с',(x0+xe)/2,yy-5,{color:col,size:10.5,bold:true});
+      pillN(g,fmt(this.v,0)+' м/с',(x0+xe)/2,yy-5,{color:col,size:10.5,bold:true,name:'v'});
     };
     sigRay('x1',CLR.k1,1,cy-92);
     sigRay('x2',CLR.k2,-1,cy-112);
@@ -1423,7 +1434,7 @@ const M2={
     pillN(g,'λ позаду '+fmt(lb*100,1)+' см',SX(x1)-70,cy-52,
       {color:CLR.sec,size:10.5,bold:true});
     /* авто */
-    const car=(x,dirs,col,tc,lab,f)=>{
+    const car=(x,dirs,col,tc,lab,f,nm)=>{
       const px=SX(x);
       g.save(); g.translate(px,cy); g.scale(dirs,1);
       g.fillStyle=col===CLR.k1?'rgba(42,120,214,.12)':'rgba(235,104,52,.12)';
@@ -1433,20 +1444,21 @@ const M2={
       g.restore();
       dot(g,px-13,cy+11,5,'#fff',col); dot(g,px+13,cy+11,5,'#fff',col);
       txt(g,lab,px,cy-30,{color:tc,size:11,bold:true,align:'center'});
-      pillN(g,'чує '+fmt(f,1)+' Гц',px,cy+62,{color:tc,size:11.5,bold:true});
+      /* частота, яку чує водій, — шукана величина */
+      pillN(g,'чує '+fmt(f,1)+' Гц',px,cy+62,{color:tc,size:12,bold:true,name:nm});
     };
-    car(x1,1,CLR.k1,'#1c5cab','водій I · сирена '+fmt(this.n10,0)+' Гц',this.nI());
-    car(x2,-s,CLR.k2,'#b8431a','водій II · сирена '+fmt(this.n20,0)+' Гц',this.nII());
+    car(x1,1,CLR.k1,'#1c5cab','водій I · сирена '+fmt(this.n10,0)+' Гц',this.nI(),'X\u1d62');
+    car(x2,-s,CLR.k2,'#b8431a','водій II · сирена '+fmt(this.n20,0)+' Гц',this.nII(),'X\u1d62\u1d62');
     const head=this.dir==='head';
     capN(g,head?'авто зближуються':'авто розходяться',12,20,{color:head?CLR.k1:CLR.k2,size:12.5,bold:true});
     capN(g,'попереду кожного авто фронти стиснуті, позаду — розріджені',12,36,{color:CLR.mut,size:10.5});
-    txtN(g,'сигнал в повітрі — '+fmt(this.v,0)+' м/с для обох авто однаково',
+    txt(g,'сигнал в повітрі йде зі швидкістю v — для обох авто однаково',
       12,56,{color:CLR.sec,size:11,bold:true});
     txtN(g,'фронт другого підходить до водія I зі швидкістю '+
       fmt(this.v+s*this.v1,1)+' м/с',12,72,{color:'#1c5cab',size:10.5});
     txtN(g,'фронт першого підходить до водія II зі швидкістю '+
       fmt(this.v+s*this.v2,1)+' м/с',12,88,{color:'#b8431a',size:10.5});
-    txtN(g,'показ уповільнено в '+fmt(1/this.K(),0)+' разів — і звук, і авто однаково, '+
+    txt(g,'показ уповільнено — але і звук, і авто однаково, '+
       'тож відношення швидкостей і вся картина фронтів точні',
       12,H-10,{color:CLR.mut,size:10.5});
   },

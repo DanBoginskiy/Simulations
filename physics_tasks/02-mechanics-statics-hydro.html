@@ -528,7 +528,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -582,6 +582,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1181,6 +1189,9 @@ const M1={
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(Q.hx,Q.hy); g.lineTo(Q.hx+L+30,Q.hy); g.stroke(); g.setLineDash([]);
     arc(g,Q.hx,Q.hy,58,0,-a,CLR.k3,1.8);
+    /* найбільший кут, за якого тіло ще стоїть, і є шуканим */
+    txt(g,'X',Q.hx+66*Math.cos(a/2),Q.hy-66*Math.sin(a/2)+4,
+      {color:'#0d7a55',size:13,bold:true});
     txtN(g,'φ = '+fmt(this.phi,1)+'°',Q.hx+66,Q.hy-24,{color:'#0d7a55',size:12,bold:true});
     /* тіло стоїть на дошці: основа шириною d = 1, висота k·d */
     const u=2.0;                                  /* положення основи вздовж дошки */
@@ -1441,7 +1452,8 @@ const M2={
     };
     dim(xr+44,SY(0),SY(-hg),CLR.k2,'#b8431a','у ртуті '+fmt(hg,2)+' см');
     if(hw>0.05) dim(xr+44,SY(hw),SY(0),CLR.k1,'#1c5cab','у воді '+fmt(hw,2)+' см');
-    dim(xl-46,SY(lev),SY(0),CLR.k3,'#0d7a55','налито '+fmt(lev,2)+' см');
+    /* налитий шар — саме його товщину й шукають */
+    dim(xl-46,SY(lev),SY(0),CLR.k3,'#0d7a55','X');
     /* висота, що стирчить над усією рідиною — те, що видно оком збоку */
     const hOut=Math.max(0,this.h-hg-hw);
     if(hOut>0.05) dim(xr+44,SY(hw+hOut),SY(hw),CLR.sec,CLR.sec,
@@ -1450,7 +1462,12 @@ const M2={
     const kF=Math.min(70,cw*1.5)/(this.RHO_HG*this.HMAX);
     const Fhg=this.RHO_HG*hg, Fw=this.RHO_W*hw;
     arrow(g,Q.cx-cw*0.26,SY(-hg),Q.cx-cw*0.26,SY(-hg)-Fhg*kF,CLR.k2,2.5);
-    if(Fw*kF>5) arrow(g,Q.cx+cw*0.26,SY(0),Q.cx+cw*0.26,SY(0)-Fw*kF,CLR.k1,2.5);
+    txt(g,'F_р',Q.cx-cw*0.26-6,SY(-hg)-Fhg*kF-6,
+      {color:'#b8431a',size:11.5,bold:true,align:'right'});
+    if(Fw*kF>5){
+      arrow(g,Q.cx+cw*0.26,SY(0),Q.cx+cw*0.26,SY(0)-Fw*kF,CLR.k1,2.5);
+      txt(g,'F_в',Q.cx+cw*0.26+6,SY(0)-Fw*kF-6,{color:'#1c5cab',size:11.5,bold:true});
+    }
     /* баланс сил: вага стоїть, а виштовхування ділиться між двома рідинами */
     const W=this.rho*this.h, Bh=this.RHO_HG*hg, Bw=this.RHO_W*hw;
     const Fmax=this.RHO_HG*this.HMAX*0.62;

@@ -574,7 +574,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -628,6 +628,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1233,7 +1241,7 @@ const M1={
     ant(ax,1,'#1c5cab','#1c5cab','мураха');
     ant(ix,Gm,'#b8431a','#b8431a','зображення');
     /* два спідометри — швидкості предмета й зображення */
-    const spd=(cx,val,lim,col,tc,lab)=>{
+    const spd=(cx,val,lim,col,tc,lab,nm)=>{
       const r=Math.min(52,Q.H*0.17);
       g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1.4;
       g.beginPath(); g.arc(cx,Q.C.gtop-r-42,r,Math.PI*0.8,Math.PI*0.2); g.fill(); g.stroke();
@@ -1241,11 +1249,12 @@ const M1={
       arrow(g,cx,Q.C.gtop-r-42,cx+Math.cos(a)*(r-12),Q.C.gtop-r-42+Math.sin(a)*(r-12),col,2.5);
       dot(g,cx,Q.C.gtop-r-42,3.5,col);
       txt(g,lab,cx,Q.C.gtop-r-42-r-8,{color:tc,size:11,bold:true,align:'center'});
-      txtN(g,fmt(val,2)+' мм/с',cx,Q.C.gtop-30,{color:CLR.ink,size:12,bold:true,align:'center'});
+      txtN(g,fmt(val,2)+' мм/с',cx,Q.C.gtop-30,
+        {color:CLR.ink,size:12.5,bold:true,align:'center',name:nm});
     };
     const lim=this.VMAX*4;
-    spd(w*0.16,this.v,lim,CLR.k1,'#1c5cab','мураха');
-    spd(w*0.34,Math.min(lim,this.vImg(this.d)),lim,CLR.k2,'#b8431a','зображення');
+    spd(w*0.16,this.v,lim,CLR.k1,'#1c5cab','мураха','v');
+    spd(w*0.34,Math.min(lim,this.vImg(this.d)),lim,CLR.k2,'#b8431a','зображення','X');
     /* відстані */
     arrow(g,ax,cy+hM*0.7,Q.mx,cy+hM*0.7,CLR.sec,1.4);
     pillN(g,'d = '+fmt(this.d*100,1)+' см',(ax+Q.mx)/2,cy+hM*0.7+4,
@@ -1433,6 +1442,13 @@ const M2={
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
     g.strokeRect(Q.sx+.5,ys+.5,Q.sw-1,Q.hScr-1);
     txt(g,'екран',Q.sx-8,ys+Q.hScr/2+4,{color:CLR.sec,size:10.5,bold:true,align:'right'});
+    /* відстань від щілин до екрана */
+    {
+      const lx=Q.sx+Q.sw-16;
+      arrow(g,lx,s1.y+2,lx,ys-2,CLR.mut,1.2);
+      arrow(g,lx,ys-2,lx,s1.y+2,CLR.mut,1.2);
+      txt(g,'l',lx-7,(s1.y+ys)/2+4,{color:CLR.sec,size:13,bold:true,align:'right'});
+    }
     /* шкала й ширина смуги */
     const dx=this.dx();
     g.strokeStyle=CLR.axis; g.lineWidth=1;
@@ -1444,7 +1460,9 @@ const M2={
     txt(g,'x, мм',Q.sx+Q.sw+6,ys+Q.hScr+19,{color:CLR.mut,size:10});
     arrow(g,Q.SXm(0),ys-14,Q.SXm(dx),ys-14,CLR.k2,1.6);
     arrow(g,Q.SXm(dx),ys-14,Q.SXm(0),ys-14,CLR.k2,1.6);
-    pillN(g,'Δx = '+fmt(dx,3)+' мм',Q.SXm(dx/2),ys-10,{color:'#b8431a',size:11,bold:true});
+    /* ширина смуги — шукана величина */
+    pillN(g,'Δx = '+fmt(dx,3)+' мм',Q.SXm(dx/2),ys-10,
+      {color:'#b8431a',size:12,bold:true,name:'X'});
     capN(g,white?'біле світло: центральний максимум білий, решта — райдужні'
                :'монохроматичне світло: смуги однакової ширини',12,20,{color:white?CLR.k2:CLR.k1,size:12.5,bold:true});
     capN(g,'звужуємо щілини — смуги ширшають: Δx = λl/d',12,36,{color:CLR.mut,size:10.5});
@@ -1668,10 +1686,13 @@ const M3={
     }
     arc(g,xA,yA,24,-Math.PI/2,-Math.PI/2+a,CLR.k3,1.4);
     txtN(g,'α = '+fmt(this.al,0)+'°',xA+28,yA-24,{color:'#0d7a55',size:10.5,bold:true});
-    txt(g,'клин: нижня межа нахилена — промені 1 і 2 вже не паралельні',
+    txt(g,'клин: нижня межа нахилена — промені вже не паралельні',
       zx,zy-58,{color:CLR.mut,size:10});
-    txtN(g,'d = '+fmt(this.d,3)+' мкм',zx+Wz+8,zy+T/2+4,{color:CLR.ink,size:11,bold:true});
-    txt(g,'втрата λ/2 на верхній межі',zx,yBot(zx+Wz)+16,{color:CLR.mut,size:10.5});
+    /* товщина плівки — шукана величина */
+    txtN(g,'d = '+fmt(this.d,3)+' мкм',zx+Wz+8,zy+T/2+4,
+      {color:CLR.ink,size:13,bold:true,name:'X'});
+    txt(g,'втрата λ/2 на верхній межі',zx,yBot(zx+Wz)+16,
+      {color:CLR.mut,size:10.5,raw:true});
     /* смужка кольору цієї товщини */
     const c=this.colorAt(this.d);
     g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';

@@ -545,7 +545,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -599,6 +599,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1247,7 +1255,7 @@ const M1={
       {color:CLR.mut,size:10,align:'center'});
     for(const hh of this.grips()) if(hh.id==='mem') drawGrip(g,hh,this);
     /* два манометри — тиск як показ приладу, а не як формула */
-    const gauge2=(cx,val,lab,col,tc)=>{
+    const gauge2=(cx,val,lab,col,tc,nm)=>{
       const r=Math.min(46,Q.bh*0.3);
       g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1.4;
       g.beginPath(); g.arc(cx,Q.by+Q.bh+r+22,r,Math.PI*0.78,Math.PI*0.22); g.fill(); g.stroke();
@@ -1262,13 +1270,18 @@ const M1={
       arrow(g,cx,Q.by+Q.bh+r+22,cx+Math.cos(a)*(r-12),Q.by+Q.bh+r+22+Math.sin(a)*(r-12),col,2.5);
       dot(g,cx,Q.by+Q.bh+r+22,3.5,col);
       txt(g,lab,cx,Q.by+Q.bh+r+46,{color:tc,size:11,bold:true,align:'center'});
-      txtN(g,fmt(val,1)+' кПа',cx,Q.by+Q.bh+r+62,{color:CLR.ink,size:12.5,bold:true,align:'center'});
+      txtN(g,fmt(val,1)+' кПа',cx,Q.by+Q.bh+r+62,
+        {color:CLR.ink,size:13,bold:true,align:'center',name:nm});
     };
-    gauge2(X(0.5),q.p1,'ліва половина',CLR.k1,'#1c5cab');
-    gauge2(X(1.5),q.p2,'права половина',CLR.k2,'#b8431a');
-    /* лічильники молекул просто в половинах */
-    txt(g,'H₂ '+c.h1+' · He '+c.e1,X(0.5),Q.by+16,{color:CLR.sec,size:11,bold:true,align:'center'});
-    txt(g,'H₂ '+c.h2+' · He '+c.e2,X(1.5),Q.by+16,{color:CLR.sec,size:11,bold:true,align:'center'});
+    /* обидва тиски після дифузії — це і є відповідь задачі */
+    gauge2(X(0.5),q.p1,'ліва половина',CLR.k1,'#1c5cab','X₁');
+    gauge2(X(1.5),q.p2,'права половина',CLR.k2,'#b8431a','X₂');
+    /* Склад половин видно з самих молекул, тож замість лічильників —
+       легенда кольору: числа зі сцени прибрано, а картинка лишилася. */
+    dot(g,X(0.5)-52,Q.by+13,3.2,CLR.k1);
+    txt(g,'H₂',X(0.5)-44,Q.by+17,{color:CLR.sec,size:11,bold:true});
+    dot(g,X(0.5)-8,Q.by+13,4.2,CLR.k3);
+    txt(g,'He',X(0.5),Q.by+17,{color:CLR.sec,size:11,bold:true});
     const done=Math.abs(c.h1-c.h2)<=Math.max(3,this.N*0.06);
     capN(g,done?'дифузія припинилася':'водень розходиться крізь мембрану',12,20,{color:done?CLR.k1:CLR.ink,size:12.5,bold:true});
     capN(g,'гелій лишається зліва, тому ліворуч тиск більший',12,36,{color:CLR.mut,size:10.5});
@@ -1452,6 +1465,8 @@ const M3={
     /* висота стовпа як розмір */
     arrow(g,Q.cx-cw/2-16,Q.yb,Q.cx-cw/2-16,yT,CLR.sec,1.6);
     arrow(g,Q.cx-cw/2-16,yT,Q.cx-cw/2-16,Q.yb,CLR.sec,1.6);
+    /* переміщення поршня — шукана величина цієї задачі */
+    txt(g,'X',Q.cx-cw/2-22,(Q.yb+yT)/2+4,{color:CLR.ink,size:13,bold:true,align:'right'});
     txtN(g,fmt(ln,1)+' см',Q.cx-cw/2-22,(Q.yb+yT)/2+4,
       {color:CLR.sec,size:11,bold:true,align:'right'});
     /* термометр і смуга тиску праворуч */

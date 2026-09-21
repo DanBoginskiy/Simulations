@@ -542,7 +542,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -596,6 +596,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1213,12 +1221,13 @@ const M2={
       g.strokeStyle=CLR.k2; g.lineWidth=2;
       arrow(g,cx+gw*0.48,y2,cx+gw*0.48,y1,CLR.k2,2);
       arrow(g,cx+gw*0.48,y1,cx+gw*0.48,y2,CLR.k2,2);
-      pill(g,'надлишок',cx+gw*0.5,(y1+y2)/2+4,{color:'#b8431a',size:10.5,bold:true});
+      /* надлишок пари, що випадає росою, — шукана маса */
+      pill(g,'X — надлишок',cx+gw*0.5,(y1+y2)/2+4,{color:'#b8431a',size:11.5,bold:true});
     }
     txt(g,'г/м³',cx-6,gy-7,{color:CLR.mut,size:10,align:'right'});
     const reached=T<=td+1e-9;
     capN(g,reached?'точку роси пройдено':'до точки роси ще далеко',12,20,{color:reached?CLR.k1:CLR.ink,size:12.5,bold:true});
-    txtN(g,'точка роси '+fmt(td,1)+' °C — там крива насичення дорівнює наявній парі',
+    txt(g,'точка роси — там крива насичення дорівнює наявній парі',
       12,36,{color:CLR.mut,size:10.5});
   },
   table(){
@@ -1431,6 +1440,7 @@ const M3={
       pillN(g,'d = '+fmt(dmm,2)+' мм',x,top-18,{color:'#b8431a',size:11,bold:true});
       arrow(g,x+tw/2+18,vy,x+tw/2+18,my,CLR.k2,1.6);
       arrow(g,x+tw/2+18,my,x+tw/2+18,vy,CLR.k2,1.6);
+      txt(g,'h',x+tw/2+26,(vy+my)/2+4,{color:'#b8431a',size:12,bold:true});
       const ly=Math.abs(hp)>34?(vy+my)/2+4:(hp>=0?my-9:my+17);
       pillN(g,'h = '+fmt(hcm,2)+' см',x+tw/2+62,ly,{color:'#b8431a',size:11,bold:true});
     }
@@ -1450,7 +1460,7 @@ const M3={
     g.beginPath(); g.moveTo(zx,cy2); g.lineTo(zx-zr,zy); g.stroke(); g.setLineDash([]);
     dot(g,zx,cy2,3,CLR.sec);
     txt(g,'меніск крупно',zx,zy-zr*1.5,{color:CLR.sec,size:11,bold:true,align:'center'});
-    txtN(g,'R = '+fmt(this.Rof()*1000,3)+' мм',zx,zy+zr*1.45,
+    txt(g,'X',zx,zy+zr*1.45,
       {color:L.tc,size:11.5,bold:true,align:'center'});
     txtN(g,'θ = '+fmt(this.th(),1)+'° = arccos(σ_тг−σ_тр)/σ',zx,zy+zr*1.45+16,
       {color:CLR.sec,size:10.5,align:'center'});

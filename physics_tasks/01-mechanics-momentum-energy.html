@@ -576,7 +576,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -630,6 +630,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1226,8 +1234,14 @@ const M1={
     const N=this.N(ph), kN=Math.min(64,rp*0.62)/(this.m*(this.VMAX*this.VMAX/this.RMIN+G));
     const nx=(Q.cx-px)/rp, ny=(Q.cy-py)/rp;
     arrow(g,px,py,px+nx*N*kN,py+ny*N*kN,CLR.k3,3);
+    txt(g,'N',px+nx*N*kN+nx*10,py+ny*N*kN+ny*10+4,
+      {color:'#0d7a55',size:12,bold:true,align:'center'});
     /* числа — у кадрі пілота праворуч; на петлі вони лягали на диск і на R */
     arrow(g,px,py,px,py+this.m*G*kN,CLR.sec,2);
+    txt(g,'mg',px+8,py+this.m*G*kN+2,{color:CLR.sec,size:11,bold:true});
+    /* шукана — швидкість літака; вона й спрямована по дотичній */
+    arrow(g,px,py,px+tx*44,py+ty*44,CLR.k1,2.6);
+    txt(g,'X',px+tx*56,py+ty*56+4,{color:CLR.k1,size:13,bold:true,align:'center'});
     dot(g,px,py,4,CLR.k2);
     this.pilot(g,Q,ph,N);
     capN(g,'мертва петля зі сталою швидкістю',12,20,{color:CLR.k1,size:12.5,bold:true});
@@ -1632,12 +1646,21 @@ const M2={
     const O={x:SX(0),y:SY(0)};
     arrow(g,O.x,O.y,O.x+this.vx()*Q.kv,O.y-this.v0*Math.sin(this.al*DEG)*Q.kv,CLR.k1,2.5);
     arc(g,O.x,O.y,30,0,-this.al*DEG,CLR.k1,1.4);
+    txt(g,'α',O.x+34*Math.cos(this.al*DEG/2),O.y-34*Math.sin(this.al*DEG/2)+4,
+      {color:'#1c5cab',size:12,bold:true});
+    txt(g,'v₀',O.x+this.vx()*Q.kv+8,O.y-this.v0*Math.sin(this.al*DEG)*Q.kv,
+      {color:'#1c5cab',size:12,bold:true});
     txtN(g,'α = '+fmt(this.al,0)+'°',O.x+36,O.y-14,{color:'#1c5cab',size:11,bold:true});
     const be=this.be*DEG, LB=54, BX=SX(PB.x), BY=SY(PB.y);
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(BX,BY); g.lineTo(BX+LB+16,BY); g.stroke(); g.setLineDash([]);
     arrow(g,BX,BY,BX+LB*Math.cos(be),BY-LB*Math.sin(be),CLR.k2,2);
+    /* напрям другого осколка — його швидкість і є шуканою */
+    txt(g,'X',BX+LB*Math.cos(be)+10,BY-LB*Math.sin(be)-2,
+      {color:'#b8431a',size:13,bold:true});
     arc(g,BX,BY,26,0,-be,CLR.k2,1.4);
+    txt(g,'β',BX+30*Math.cos(be/2),BY-30*Math.sin(be/2)+4,
+      {color:'#b8431a',size:12,bold:true});
     txtN(g,'β = '+fmt(this.be,0)+'°',BX+LB+20,BY+4,{color:'#b8431a',size:11,bold:true});
     capN(g,t<this.tb?'граната летить цілою':'вибух стався — уявний снаряд його не помітив',12,20,{color:t<this.tb?CLR.ink:CLR.k2,size:12.5,bold:true});
     capN(g,'пунктирна парабола — шлях, яким летіла б нерозірвана граната',12,36,{color:CLR.mut,size:10.5});
@@ -1817,8 +1840,10 @@ const M3={
         g.beginPath(); g.moveTo(bx+3,Q.ytop+18+s*Q.bh/3.4);
         g.lineTo(bx+Q.bw-4,Q.ytop+18+s*Q.bh/3.4); g.stroke();
       }
-      txt(g,String(n+1),bx+Q.bw/2,Q.ytop+Q.bh+15,
-        {color:(n+1===st)?'#b8431a':CLR.mut,size:10,bold:n+1===st,align:'center'});
+      /* номер дошки — це і є відповідь, тож саме на ній стоїть X */
+      txt(g,(n+1===st)?'X':String(n+1),bx+Q.bw/2,Q.ytop+Q.bh+15,
+        {color:(n+1===st)?'#b8431a':CLR.mut,size:(n+1===st)?13:10,
+         bold:n+1===st,align:'center'});
     }
     txt(g,'дошки однакові, сила опору в них однакова',Q.x0,Q.ytop-10,
       {color:CLR.mut,size:10.5});
@@ -1829,9 +1854,10 @@ const M3={
     if(x<nMax-1e-6){
       const vv=this.vAt(x);
       arrow(g,bx+12,by,bx+12+Math.min(70,vv*0.13),by,CLR.k2,2.5);
+    txt(g,'v',bx+16+Math.min(70,vv*0.13),by-6,{color:'#b8431a',size:12,bold:true});
       txtN(g,fmt(vv,0)+' м/с',bx+16+Math.min(70,vv*0.13),by+4,{color:'#b8431a',size:11,bold:true});
     } else {
-      pill(g,'застрягла в '+st+'-й дошці',bx+8,by-16,{color:CLR.ink,size:11.5,bold:true});
+      pill(g,'куля застрягла тут',bx+8,by-16,{color:CLR.ink,size:11.5,bold:true});
     }
     /* дві шкали поруч: та сама подія, дві різні величини */
     const vRel=this.vAt(x)/this.v0, eRel=Math.max(0,1-this.kE()*x);
@@ -1859,8 +1885,8 @@ const M3={
     capN(g,'поділки — межі дощок: на шкалі енергії вони рівномірні, на шкалі швидкості — ні',
       Q.x0,Q.barY+88,{color:CLR.mut,size:10.5});
     capN(g,'куля втрачає енергію рівними порціями',12,20,{color:CLR.ink,size:12.5,bold:true});
-    txtN(g,'у першій дошці −'+fmt(this.eta*100,0)+' % швидкості, але одразу −'+
-      fmt(this.kE()*100,0)+' % енергії',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'у першій дошці швидкість спадає на частку η, а енергія — одразу вдвічі більше',
+      12,36,{color:CLR.mut,size:10.5});
   },
   table(){
     const x=this.xNow(), k=this.kE();
@@ -2053,6 +2079,8 @@ const M4={
     const am=this.alCap()*DEG;
     if(am>0.02){
       arc(g,Q.px,Q.py,L*0.72,Math.PI/2,Math.PI/2-am,CLR.k2,1.6);
+    txt(g,'X',Q.px+L*0.80*Math.sin(am/2)+8,Q.py+L*0.80*Math.cos(am/2),
+      {color:'#b8431a',size:13,bold:true});
       txtN(g,'α = '+fmt(this.alCap(),1)+'°'+(this.overTop()?' (упор)':''),
         Q.px+L*0.78*Math.sin(am/2)+10,
         Q.py+L*0.78*Math.cos(am/2)+4,{color:'#b8431a',size:11.5,bold:true});
@@ -2089,6 +2117,7 @@ const M4={
       g.fillStyle=CLR.ink;
       g.beginPath(); g.ellipse(px,py,9,4.5,0,0,7); g.fill();
       arrow(g,Q.px-140,Q.py+L+26,Q.px-140+this.v*Q.kv,Q.py+L+26,CLR.ink,2.5);
+      txt(g,'v',Q.px-136+this.v*Q.kv,Q.py+L+20,{color:CLR.ink,size:12,bold:true});
       txtN(g,'v = '+fmt(this.v,0)+' м/с',Q.px-140,Q.py+L+44,{color:CLR.ink,size:11,bold:true});
     }
     /* два стовпчики енергії: до удару й одразу після нього */

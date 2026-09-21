@@ -567,7 +567,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -621,6 +621,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1212,7 +1220,8 @@ const M1={
     for(let k=-118;k<118;k+=5){
       g.beginPath(); g.moveTo(gx+k,gy-9); g.lineTo(gx+k,gy+2); g.stroke();
     }
-    txtN(g,fmt(this.nmm,0)+' штрихів/мм',gx,gy-15,{color:CLR.ink,size:11,bold:true,align:'center'});
+    txtN(g,fmt(this.nmm,0)+' штрихів/мм',gx,gy-15,
+      {color:CLR.ink,size:11,bold:true,align:'center',name:'n'});
     for(const dxi of [-60,0,60]) arrow(g,gx+dxi,gy-44,gx+dxi,gy-12,CLR.k1,1.8);
     txt(g,'світло падає',gx+128,gy-24,{color:CLR.mut,size:10});
     /* ---- плоский екран унизу ---------------------------------------------- */
@@ -1225,7 +1234,7 @@ const M1={
       g.beginPath(); g.moveTo(px,sy+15); g.lineTo(px,sy+21); g.stroke();
       txtN(g,fmt(Math.abs(x)<1e-9?0:x*100,0),px,sy+33,{color:CLR.mut,size:9.5,align:'center'});
     }
-    txt(g,'екран, см',SX(XM)+6,sy+33,{color:CLR.mut,size:10});
+    txt(g,'екран, см',Math.min(SX(XM)+6,w-58),sy+33,{color:CLR.mut,size:10});
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(gx-215,gy+2); g.lineTo(gx-215,sy); g.stroke(); g.setLineDash([]);
     arrow(g,gx-215,gy+2,gx-215,sy,CLR.mut,1.4);
@@ -1250,6 +1259,23 @@ const M1={
       if(Math.abs(xM)<=XM*0.97)
         for(const sgn of [-1,1])
           txt(g,'m = '+o.m,SX(sgn*xM),sy+46,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+    }
+    /* Скільки спектрів укладається по один бік — це й є шукана величина,
+       тож охоплюємо їх дужкою просто на екрані. */
+    {
+      let xa=null,xb=null;
+      for(const o of ords){
+        const aM=(o.a1+Math.min(o.a2,62*DEG))/2, xm=this.xOf(aM);
+        if(Math.abs(xm)>XM*0.97) continue;
+        if(xa===null) xa=xm;
+        xb=xm;
+      }
+      if(xa!==null&&SX(xb)-SX(xa)>14){
+        const yy=sy-30;
+        arrow(g,SX(xa),yy,SX(xb),yy,CLR.k2,1.6);
+        arrow(g,SX(xb),yy,SX(xa),yy,CLR.k2,1.6);
+        txt(g,'X',(SX(xa)+SX(xb))/2,yy-6,{color:CLR.k2,size:13,bold:true,align:'center'});
+      }
     }
     /* ---- перекриття сусідніх порядків ------------------------------------- */
     let ovPair='';
@@ -1284,7 +1310,7 @@ const M1={
     }
     txtN(g,'λ = '+fmt(this.lam,0)+' нм',gx+130,gy+16,{color:CLR.ink,size:11,bold:true});
     capN(g,'плоский екран: x = L·tg θ',12,20,{color:CLR.ink,size:12.5,bold:true});
-    capN(g,ovPair?('спектри '+ovPair+' порядків уже налазять один на одний')
+    capN(g,ovPair?'сусідні спектри вже налазять один на одний'
       :'спектри всіх порядків іще розділені',12,36,{color:CLR.mut,size:10.5});
   },
   table(){
@@ -1450,8 +1476,9 @@ const M2={
       g.beginPath(); g.moveTo(x0,gy-14-i*9); g.lineTo(x0+ww,gy-14-i*9); g.stroke();
     }
     g.globalAlpha=1;
+    /* довжину хвилі падаючого світла й треба знайти */
     txtN(g,fmt(this.lam,0)+' нм · '+wlName(this.lam)+' · плоска хвиля по нормалі',
-      x0+ww/2,gy-64,{color:cs,size:11.5,bold:true,align:'center'});
+      x0+ww/2,gy-64,{color:cs,size:13,bold:true,align:'center',name:'X'});
     /* ---- смуга екрана: інтенсивність у кольорі ---- */
     const ys=Q.yScr, hs=Q.hScr, NPX=Math.max(60,Math.round(ww));
     for(let i=0;i<NPX;i++){
@@ -1682,10 +1709,16 @@ const M3={
       g.globalAlpha=1;
       /* підписуємо лише ті порядки, які взагалі щось несуть: слабкі так
          тісно, що їхні підписи лягають один на одного */
-      if(on||o.I>0.02||Math.abs(o.m)<=1)
+      /* Підпис найяскравішого порядку ставимо не на кінці променя, а на
+         ньому самому: кінець віяла впирається в нижній край кадру, і «X»
+         там просто зрізало б. */
+      if(on)
+        pill(g,'X',fx+Math.sin(o.th)*R*0.68,fy+Math.cos(o.th)*R*0.68+4,
+          {color:'#0d7a55',size:13.5,bold:true,raw:true});
+      else if(o.I>0.02||Math.abs(o.m)<=1)
         txt(g,'m'+(o.m<0?'\u2212':'')+Math.abs(o.m),
           fx+Math.sin(o.th)*(R+26),fy+Math.cos(o.th)*(R+26)+4,
-          {color:on?'#0d7a55':CLR.mut,size:on?13:10.5,bold:on,align:'center',raw:true});
+          {color:CLR.mut,size:10.5,align:'center',raw:true});
     }
     capN(g,'ешелета: енергія йде в обраний порядок',12,20,{color:CLR.k3,size:12.5,bold:true});
     capN(g,'кут блиску нахиляє грані так, щоб дзеркальний відбиток збігся з потрібним порядком',

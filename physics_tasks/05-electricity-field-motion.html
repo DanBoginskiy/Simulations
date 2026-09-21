@@ -582,7 +582,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -636,6 +636,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1203,7 +1211,8 @@ const M1={
         arrow(g,xm-Math.sign(ez)*len/2,y,xm+Math.sign(ez)*len/2,y,
           ez>0?CLR.k1:CLR.k2,1.8);
       }
-      pillN(g,fmt(ez,0)+' В/м',(x0+x1)/2,cy+hh+22,{color:CLR.ink,size:11,bold:true});
+      pillN(g,fmt(ez,0)+' В/м',(x0+x1)/2,cy+hh+22,
+        {color:CLR.ink,size:11,bold:true,name:'Eₓ'});
     }
     /* самі пластини */
     const plate=(x,s,lab,col,tc)=>{
@@ -1278,7 +1287,7 @@ const M1={
       const lim=Em*d*1.1+10;
       const r=drawChart(bf,{tMin:-HX,tMax:HX,yMin:-lim,yMax:lim,yLab:'В',
         xLab:'x від середини, см',xStep:2,yDec:0,hover:this.hf.x,
-        series:[{ts:X,ys:Fy,color:CLR.k2,label:'φ'},
+        series:[{ts:X,ys:Fy,color:CLR.k2,label:'X = φ'},
                 {ts:[0,0],ys:[-lim,lim],color:CLR.grid,label:'',dash:[3,3]}]});
       showTip(this.tipf,r,'В',this.hf,[['φ',CLR.k2]],1);
     }
@@ -1456,8 +1465,9 @@ const M2={
     /* результуючий вектор: на осі він уздовж неї, поза віссю — уже ні */
     if(st>=4) arrow(g,P.x,P.y,P.x+Ev.ex*kE,P.y-Ev.ey*kE,CLR.ink,3);
     dot(g,P.x,P.y,6,CLR.ink,'#fff');
+    /* результуюча напруженість у точці на осі — шукана величина */
     if(st>=4) pillN(g,fmt(Ev.mag/1000,2)+' кВ/м',P.x+Ev.ex*kE+52,P.y-Ev.ey*kE-16,
-      {color:CLR.ink,size:11.5,bold:true});
+      {color:CLR.ink,size:12.5,bold:true,name:'X'});
     if(!this.onAxis()){
       g.strokeStyle=CLR.k2; g.lineWidth=1.2; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(P.x,oy); g.lineTo(P.x,P.y); g.stroke(); g.setLineDash([]);
@@ -1480,7 +1490,7 @@ const M2={
       {color:'#1c5cab',size:11,bold:true,align:'right'});
     const S=this.STEPS[st];
     capN(g,'крок '+(st+1)+' з '+this.STEPS.length+' · '+S[0],12,20,
-      {color:st>=5?CLR.k3:CLR.ink,size:12.5,bold:true});
+      {color:st>=5?CLR.k3:CLR.ink,size:12.5,bold:true,raw:true});
     capN(g,S[1],12,36,{color:CLR.mut,size:10.5});
     if(!this.onAxis()) capN(g,'точка зійшла з осі — симетрія порушена, поперечні вже не гасяться',
       12,52,{color:CLR.k2,size:10.5,bold:true});
@@ -1690,7 +1700,11 @@ const M3={
     arrow(g,px,py,px+vx*kv,py-vy*kv,CLR.ink,2.5);
     dot(g,px,py,6,CLR.k1,'#fff');
     txt(g,'e⁻',px-11,py-9,{color:'#1c5cab',size:11,bold:true,align:'right'});
-    txtN(g,fmt(vl/1e7,2)+'·10⁷ м/с',px+vx*kv+7,py-vy*kv-5,{color:CLR.ink,size:11,bold:true});
+    /* поки електрон у смузі — це просто його швидкість; коли вилетів,
+       саме її й питає умова, тож підпис стає X. */
+    const outNow=this.passes()&&t>=ti+Tin;
+    txtN(g,fmt(vl/1e7,2)+'·10⁷ м/с',px+vx*kv+7,py-vy*kv-5,
+      {color:CLR.ink,size:outNow?13:11,bold:true,name:outNow?'X':'v'});
     /* кут входу */
     arc(g,SX(0),SY(0),34,0,-this.al*DEG,CLR.k2,1.6);
     txtN(g,'α = '+fmt(this.al,0)+'°',SX(0)+40,SY(0)-16,{color:'#b8431a',size:11,bold:true});

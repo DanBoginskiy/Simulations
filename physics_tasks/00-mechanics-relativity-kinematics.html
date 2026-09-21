@@ -588,7 +588,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -642,6 +642,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1345,13 +1353,20 @@ const M1={
       g.strokeStyle=o.col; g.lineWidth=2;
       g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax+Math.sin(th)*L,ay-Math.cos(th)*L); g.stroke();
       arc(g,ax,ay,L*0.6,-Math.PI/2,-Math.PI/2+th,o.col,1.3);
+      /* кут сліду: у нерухомого це α з умови, у зустрічного — та сама шукана X */
+      if(i!==1) txt(g,i===0?'α':'X',ax+Math.sin(th/2)*L*0.82+(th<0?-6:6),
+        ay-Math.cos(th/2)*L*0.82,{color:o.tc,size:12,bold:true});
     }
     /* колеса й підпис із власною швидкістю */
     dot(g,bx+Math.min(24,bw*0.2),gy-4,5,'#fff',o.col);
     dot(g,bx+bw-Math.min(24,bw*0.2),gy-4,5,'#fff',o.col);
     txt(g,o.n,cx,by-16,{color:o.tc,size:10.5,bold:true,align:'center',max:bw*1.5});
     const vpx=o.vs*Q.vsc*0.7;
-    if(Math.abs(vpx)>2) arrow(g,cx,by-4+bh/2,cx+vpx,by-4+bh/2,o.col,2);
+    if(Math.abs(vpx)>2){
+      arrow(g,cx,by-4+bh/2,cx+vpx,by-4+bh/2,o.col,2);
+      txt(g,i===1?'v':'\u2212v',cx+vpx+(vpx<0?-7:7),by+bh/2,
+        {color:o.tc,size:12,bold:true,align:vpx<0?'right':'left'});
+    }
   },
   /* Трикутник швидкостей краплі в системі цього спостерігача: складові —
      кольором СВ, результуюча — чорнилом (§8). */
@@ -1381,7 +1396,12 @@ const M1={
         {color:o.tc,size:11,bold:true,align:'center'});
     }
     arrow(g,O.x,O.y,O.x+hx,O.y+ux,CLR.ink,2.5);
+    /* результуюча — швидкість краплі відносно цього скла */
+    txt(g,'v\u2032',O.x+hx+(hx<0?-8:8),O.y+ux+4,
+      {color:CLR.ink,size:12,bold:true,align:hx<0?'right':'left'});
     arc(g,O.x,O.y,16,Math.PI/2,Math.atan2(ux,hx),CLR.mut,1.2);
+    if(i!==1) txt(g,i===0?'α':'X',O.x+(hx<0?-20:20),O.y+22,
+      {color:o.tc,size:12,bold:true,align:'center'});
     txtN(g,fmt(sp,1)+' м/с',O.x+hx+(hx<0?-8:8),O.y+ux+13,
       {color:CLR.ink,size:11.5,bold:true,align:hx<0?'right':'left'});
     pillN(g,fmt(Math.abs(Math.atan2(dx,this.u)/DEG),1)+'\u00b0',cx,Q.oy-24,
@@ -1550,8 +1570,10 @@ const M2={
     this.panel(g,Q);
     /* вектори, якими задають швидкості */
     arrow(g,Q.ux0,Q.uy0,Q.ux0+this.u*Q.vsc,Q.uy0,CLR.k2,2.5);
+    txt(g,'u',Q.ux0+this.u*Q.vsc+8,Q.uy0+4,{color:'#b8431a',size:12,bold:true});
     txtN(g,'течія u = '+fmt(this.u,1)+' м/с',Q.ux0,Q.uy0-9,{color:'#b8431a',size:11,bold:true});
     arrow(g,Q.vx0,Q.vy0,Q.vx0+this.v*Q.vsc,Q.vy0,CLR.ink,2.5);
+    txt(g,'v',Q.vx0+this.v*Q.vsc+8,Q.vy0+4,{color:CLR.ink,size:12,bold:true});
     txtN(g,'човен відносно води v = '+fmt(this.v,1)+' м/с',Q.vx0,Q.vy0-9,
       {color:CLR.ink,size:11,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
@@ -1613,7 +1635,7 @@ const M2={
     /* ---- човни -----------------------------------------------------------
        Човен малюється з корпусом, банкою, веслярем і веслами: видно, куди він
        повернутий носом, а веслами — що він гребе відносно води, а не землі. */
-    const drawBoat=(q,col,tc,tau,dy,cross)=>{
+    const drawBoat=(q,col,tc,tau,dy,cross,nm)=>{
       const pp=P(q.x,q.y);
       const ang=cross ? (q.back?Math.PI/2:-Math.PI/2) : (q.back?Math.PI:0);
       g.save(); g.translate(pp.x,pp.y); g.rotate(ang);
@@ -1644,11 +1666,13 @@ const M2={
         g.stroke();
       }
       g.restore();
-      pillN(g,fmt(Math.min(t,tau),1)+' с'+(q.done?' \u2713':''),pp.x,pp.y+dy,
-        {color:tc,size:11,bold:true});
+      pill(g,nm+(q.done?' \u2713':''),pp.x,pp.y+dy,{color:tc,size:12,bold:true});
     };
-    drawBoat(this.boat2(t),CLR.k3,'#0d7a55',this.t2(),-20,true);
-    drawBoat(this.boat1(t),CLR.ink,CLR.ink,this.t1(),28,false);
+    drawBoat(this.boat2(t),CLR.k3,'#0d7a55',this.t2(),-20,true,'\u03c4\u2082');
+    drawBoat(this.boat1(t),CLR.ink,CLR.ink,this.t1(),28,false,'\u03c4\u2081');
+    /* шукане — відношення цих двох часів */
+    pill(g,'X = \u03c4\u2081/\u03c4\u2082',SX(this.L*0.5),SY(LM)-30,
+      {color:CLR.ink,size:13,bold:true});
     g.restore();
     txt(g,'СВ бакена',12,20,{color:CLR.k1,size:12.5,bold:true});
     txt(g,'бакен стоїть, вода тече повз нього — і саме від нього відлічують обидві L',
@@ -1898,6 +1922,9 @@ const M3={
     }
     g.stroke(); g.setLineDash([]);
     dot(g,cx+hw*0.45,SY(yb),6,CLR.ink,'#fff');
+    /* Шукане — час падіння кульки на підлогу; позначаємо його біля самої
+       кульки, бо саме її політ і триває цей час. */
+    txt(g,'X',cx+hw*0.45+10,SY(yb)-8,{color:CLR.ink,size:13,bold:true});
     g.restore();
     /* мірні рейки: шлях і переміщення від точки відриву, у масштабі сцени */
     const y0=SY(this.h);
@@ -2183,6 +2210,8 @@ const M4={
     g.beginPath(); g.moveTo(nO.x,nO.y); g.lineTo(nO.x+92,nO.y+(Q.rot?-92*Math.tan(A):0));
     g.stroke(); g.setLineDash([]);
     arc(g,nO.x,nO.y,R,Q.rot?-A:0,Q.rot?0:A,CLR.k3,1.8);
+    txt(g,'α',nO.x+R*0.78*Math.cos(A/2),nO.y-R*0.78*Math.sin(A/2)+4,
+      {color:'#0d7a55',size:12.5,bold:true});
     g.strokeStyle=CLR.k3; g.lineWidth=1.4;
     g.beginPath(); g.moveTo(nO.x,nO.y);
     g.lineTo(nO.x+(R+16)*Math.cos(A),nO.y+sg*(R+16)*Math.sin(A)); g.stroke();
@@ -2215,8 +2244,11 @@ const M4={
       g.moveTo(b2.x,b2.y); g.lineTo(a2.x,a2.y); g.stroke(); g.setLineDash([]);
       arrow(g,a1.x,a1.y,a2.x,a2.y,CLR.k2,1.6);
       arrow(g,a2.x,a2.y,a1.x,a1.y,CLR.k2,1.6);
-      pillN(g,(n?'L'+'₁₂₃₄₅₆'[n]:'L')+' = '+fmt(B[n].L,2)+' м',
-        (a1.x+a2.x)/2,(a1.y+a2.y)/2-2,{color:'#b8431a',size:11.5,bold:true});
+      pill(g,n?'L'+'₁₂₃₄₅₆'[n]:'L',
+        (a1.x+a2.x)/2,(a1.y+a2.y)/2-2,{color:'#b8431a',size:12.5,bold:true});
+      /* час до першого ж повторного удару — те, що шукають */
+      if(n===0) pill(g,'X',(a1.x+a2.x)/2,(a1.y+a2.y)/2-24,
+        {color:CLR.ink,size:13,bold:true});
     }
     /* точка старту й вертикаль вільного падіння */
     const xr=-this.h*Math.sin(A);
@@ -2238,10 +2270,12 @@ const M4={
       g.moveTo(Pn.x,Pn.y); g.lineTo(PV.x,PV.y); g.stroke(); g.setLineDash([]);
       arrow(g,P.x,P.y,Px.x,Px.y,CLR.k2,2);
       arrow(g,P.x,P.y,Pn.x,Pn.y,CLR.k2,2);
+      txt(g,'v\u2225',Px.x+6,Px.y+4,{color:'#b8431a',size:11,bold:true});
+      txt(g,'v\u22a5',Pn.x+6,Pn.y+4,{color:'#b8431a',size:11,bold:true});
     }
     arrow(g,P.x,P.y,PV.x,PV.y,CLR.ink,2.5);
     dot(g,P.x,P.y,6,CLR.ink,'#fff');
-    txtN(g,fmt(Math.hypot(V.vxi,V.veta),2)+' м/с',PV.x+7,PV.y-5,{color:CLR.ink,size:11,bold:true});
+    txt(g,'v',PV.x+7,PV.y-5,{color:CLR.ink,size:12.5,bold:true});
     if(!Q.rot){
       /* Стрілка g — легенда кадру, а не предмет у ньому. Її якір рахувався у
          фізичних (ξ, η) через M(), тож вона гойдалася разом із нахилом дошки:
@@ -2256,7 +2290,7 @@ const M4={
     if(Q.rot) this.hitDiagram(g,84,74,Q.C.w);
     const fr=Q.rot
       ? ['осі вздовж дошки',CLR.k2,'звичайний похилий кидок: уздовж — розгін g sin α, поперек — відскок']
-      : ['звичайні осі x, y',CLR.k1,'кулька падає вертикально й відбивається під кутом 2α до вертикалі'];
+      : ['звичайні осі x, y',CLR.k1,'кулька падає вертикально й відбивається під подвоєним кутом до вертикалі'];
     capN(g,fr[0],12,20,{color:fr[1],size:12.5,bold:true});
     capN(g,fr[2],12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='h'||hh.id==='al') drawGrip(g,hh,this);

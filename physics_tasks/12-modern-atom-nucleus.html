@@ -534,7 +534,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -588,6 +588,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1169,7 +1177,7 @@ const M1={
     const on=t=>this.ser==='all'||t.lo===+this.ser;
     /* ---------- драбина рівнів ---------- */
     txt(g,'Рівні атома водню',14,24,{color:CLR.k1,size:12.5,bold:true});
-    capN(g,'вертикаль стиснута як 1 − 1/n — інакше рівні 4…8 злиплися б',14,40,
+    capN(g,'вертикаль стиснута — інакше верхні рівні злиплися б',14,40,
       {color:CLR.mut,size:10.5});
     capN(g,'справжні енергії — підписи праворуч від кожного рівня',14,54,
       {color:CLR.mut,size:10.5});
@@ -1210,11 +1218,12 @@ const M1={
     dot(g,Q.lx+Q.lw*0.5,this.yOf(Q,this.n),7,CLR.ink,'#fff');
     txt(g,'електрон на n = '+this.n,Q.lx+Q.lw*0.5+12,this.yOf(Q,this.n)-10,
       {color:CLR.ink,size:10.5,bold:true});
-    txt(g,'стрілок униз: '+this.count(),14,Q.bot+30,{color:CLR.k2,size:12.5,bold:true});
+    /* скільки стрілок униз — стільки й ліній; це і є шукана величина */
+    txt(g,'ліній у спектрі: X',14,Q.bot+30,{color:CLR.k2,size:13,bold:true});
     txt(g,'кожна стрілка — окрема лінія у спектрі',14,Q.bot+46,{color:CLR.mut,size:10.5});
     /* ---------- спектральна шкала ---------- */
     txt(g,'Спектр випромінювання',Q.sx-10,24,{color:CLR.k2,size:12.5,bold:true});
-    txt(g,'шкала логарифмічна — від 90 до 4500 нм',Q.sx-10,40,
+    txt(g,'шкала логарифмічна — від ультрафіолету до інфрачервоного',Q.sx-10,40,
       {color:CLR.mut,size:10.5});
     const yb=Q.sy, hs=54;
     /* смуга видимого діапазону справжніми кольорами */
@@ -1262,9 +1271,9 @@ const M1={
       txt(g,t.up+'→'+t.lo,x,yb-hs-20,{color:lineCol(t.l),size:9.5,align:'center'});
       txtN(g,fmt(t.l,0),x,yb+33,{color:lineCol(t.l),size:9.5,align:'center'});
     }
-    txt(g,'ліній у спектрі: '+this.count(),Q.sx-10,yb+62,
+    txt(g,'ліній у спектрі: X',Q.sx-10,yb+62,
       {color:CLR.k2,size:12.5,bold:true});
-    txt(g,'з них у видимому діапазоні: '+this.visCount(),Q.sx-10,yb+78,
+    txt(g,'з них частина потрапляє у видимий діапазон',Q.sx-10,yb+78,
       {color:CLR.mut,size:10.5});
     /* список видимих ліній — те, що око справді побачить */
     const vis=sorted.filter(t=>t.l>=380&&t.l<=780);
@@ -1274,8 +1283,7 @@ const M1={
     vis.slice(0,5).forEach((t,i2)=>{
       const yy=yb+124+i2*17;
       g.fillStyle=lineCol(t.l); g.fillRect(Q.sx-10,yy-9,10,10);
-      txtN(g,fmt(t.l,1)+' нм · перехід '+t.up+' → '+t.lo,Q.sx+6,yy,
-        {color:CLR.ink,size:10.5});
+      txt(g,'λ · перехід n → n\u2032',Q.sx+6,yy,{color:CLR.ink,size:10.5});
     });
     for(const hh of this.grips()) if(hh.id==='el') drawGrip(g,hh,this);
   },
@@ -1510,7 +1518,7 @@ const M2={
         g.globalAlpha=1;
         dot(g,cxd,cy,5,CLR.k2);
         txt(g,'складене ядро ₉¹⁸F*',cxd+16,cy-16,{color:'#b8431a',size:10.5,bold:true});
-        txtN(g,'збуджене: Tα·m_N/(m_α+m_N) + Q = '+fmt(this.Ecm(),2)+' МеВ у СЦМ',
+        txt(g,'збуджене: Tα·m_N/(m_α+m_N) + Q — це енергія у СЦМ',
           cxd+16,cy-2,{color:CLR.mut,size:9.5});
         txtN(g,'летить уперед з V_цм = '+sci(this.Vcm(),2)+' м/с',
           cxd+16,cy+12,{color:CLR.sec,size:9.5});
@@ -1523,8 +1531,9 @@ const M2={
           {color:CLR.ink,size:10.5,bold:true});
         const LO=rng(this.TO(),8);
         const eo={x:cx+Math.cos(-ph)*LO, y:cy-Math.sin(-ph)*LO};
+        /* який саме нуклід народився — шукане */
         txtN(g,'₈¹⁷O · '+fmt(this.TO(),2)+' МеВ',eo.x+10,eo.y+16,
-          {color:CLR.k3,size:10.5,bold:true});
+          {color:CLR.k3,size:12.5,bold:true,name:'X'});
         /* кути — те, що вимірювали прямо на фотографії */
         arc(g,cx,cy,40,-th,0,CLR.k2,1.5);
         txtN(g,'θ = '+fmt(this.th(),0)+'°',cx+Math.cos(th/2)*52,cy-Math.sin(th/2)*52,
@@ -1572,7 +1581,7 @@ const M2={
         Q.bx+10,cy+Q.bh*0.38,{color:CLR.sec,size:10.5});
     }
     /* реакція текстом і стан порога */
-    pillN(g,'₇¹⁴N + ₂⁴He → ₈¹⁷O + ₁¹H · Q = '+fmt(this.Q(),2)+' МеВ',
+    pillN(g,'₇¹⁴N + ₂⁴He → X + ₁¹H · Q = '+fmt(this.Q(),2)+' МеВ',
       cx,Q.by+Q.bh-16,{color:CLR.ink,size:12,bold:true});
     if(!this.open())
       pillN(g,'нижче порога '+fmt(this.Ethr(),2)+' МеВ — реакція не йде',

@@ -556,7 +556,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -610,6 +610,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1237,6 +1245,8 @@ const M1={
     /* сам стрижень */
     this.ladder(g,bx,yb,px,-py,CLR.ink,13);
     dot(g,bx,yb,4,CLR.ink);
+    /* довжина стрижня в цій СВ — шукана величина */
+    txt(g,'X',bx+px*0.5-16,yb-py*0.5-12,{color:CLR.ink,size:13,bold:true});
     const R=Math.min(48,Math.max(20,px*0.5));
     arc(g,bx,yb,R,-Math.atan2(py,Math.max(1e-6,px)),0,CLR.k1,1.6);
     txt(g,'θ',bx+R+8,yb-8,{color:CLR.k1,size:11.5,bold:true});
@@ -1402,7 +1412,7 @@ const M2={
     txt(g,lab,x,y-16,{color:col,size:10.5,bold:true,align:'center'});
   },
   /* смуга швидкості: 0…2c з червоною межею на c */
-  speedo(g,x,y,W,v,col,lab){
+  speedo(g,x,y,W,v,col,lab,nm){
     g.fillStyle='#eceae3'; g.beginPath(); g.roundRect(x,y-8,W,16,5); g.fill();
     g.strokeStyle=CLR.axis; g.lineWidth=1; g.stroke();
     const f=Math.max(0,Math.min(1,v/2));
@@ -1411,10 +1421,11 @@ const M2={
     g.strokeStyle='#c0392b'; g.lineWidth=2.5;
     g.beginPath(); g.moveTo(x+W/2,y-12); g.lineTo(x+W/2,y+12); g.stroke();
     txt(g,'c',x+W/2,y+24,{color:'#c0392b',size:10.5,bold:true,align:'center'});
-    txt(g,'0',x,y+24,{color:CLR.mut,size:9,align:'center'});
-    txt(g,'2c',x+W,y+24,{color:CLR.mut,size:9,align:'center'});
+    txt(g,'0',x,y+24,{color:CLR.mut,size:9,align:'center',raw:true});
+    txt(g,'2c',x+W,y+24,{color:CLR.mut,size:9,align:'center',raw:true});
     txt(g,lab,x,y-18,{color:CLR.sec,size:10.5,bold:true});
-    txtN(g,fmt(v,3)+' c',x+W+10,y+4,{color:v>1?'#c0392b':CLR.ink,size:12,bold:true});
+    txtN(g,fmt(v,3)+' c',x+W+10,y+4,
+      {color:v>1?'#c0392b':CLR.ink,size:12.5,bold:true,name:nm});
   },
   scene(){
     const b=cvx('m2scene'); if(!b) return;
@@ -1453,7 +1464,7 @@ const M2={
         g.beginPath(); g.moveTo(px+.5,y+22); g.lineTo(px+.5,y+32); g.stroke();
         if(P===0&&k%2===0) txt(g,String(k),px,y+44,{color:CLR.mut,size:9,align:'center'});
       }
-      txtN(g,P===0?'позначки через 1 світлову секунду'
+      txtN(g,P===0?'позначки через світлову секунду'
         :'ті самі позначки, стиснуті в γ₁ = '+fmt(gamOf(this.b1),3)+' разів',
         x0,y+((P===0)?58:44),{color:CLR.mut,size:9.5});
       /* частинки */
@@ -1474,7 +1485,8 @@ const M2={
         {color:P?CLR.k2:CLR.k1,size:11,bold:true,align:'right'});
       /* смуга швидкості */
       this.speedo(g,x0,ySpd,Math.max(60,tw-70),P===0?clo:rel,P===0?CLR.sec:CLR.ink,
-        P===0?'швидкість зближення β₁ + β₂':'швидкість другої відносно першої');
+        P===0?'швидкість зближення β₁ + β₂':'швидкість другої відносно першої',
+        P===0?'X':'β');
       if(P===0&&clo>1)
         capN(g,'більше за c — і це не порушує СТВ: це швидкість зміни відстані,',
           x0,ySpd+42,{color:'#c0392b',size:10});
@@ -1769,8 +1781,7 @@ const M4={
     txt(g,'СВ сарая',14,22,{color:CLR.k1,size:12.5,bold:true});
     capN(g,'сарай нерухомий, драбина летить і вкорочена в γ разів',
       14,38,{color:CLR.sec,size:10.5,max:Q.half-28});
-    txtN(g,'драбина '+fmt(this.Lc(),2)+' м у сараї '+fmt(this.D0,2)+' м — '+
-      (this.fits()?'уміщується':'не вміщується'),
+    txt(g,'скорочена драбина '+(this.fits()?'уміщується в сараї':'не вміщується в сараї'),
       14,54,{color:this.fits()?CLR.k1:CLR.k2,size:11.5,bold:true,max:Q.half-28});
     this.barn(g,Q.SXA,0,this.D0,yb,inB,inB);
     M1.ladder(g,Q.SXA(v*t),yb-16,this.Lc()*Q.sc,0,CLR.k2,20);
@@ -1780,15 +1791,14 @@ const M4={
       {color:'#1c5cab',size:10.5,bold:true,align:'center'});
     this.strip(g,0,Q.half,Q.ts,this.tMin(),this.tMax(),t,
       [{w:wB,col:CLR.k1,lab:'передня'},{w:wB,col:CLR.k2,lab:'задня'}],
-      'годинник сарая  t = '+fmt(t,1)+' нс  ·  обидві смуги збігаються: зачинено одночасно');
+      'годинник сарая · обидві смуги збігаються: зачинено одночасно');
 
     /* ---------- панель 2: СВ драбини ---------- */
     const x0=Q.half;
     txt(g,'СВ драбини',x0+14,22,{color:CLR.k2,size:12.5,bold:true});
     capN(g,'драбина нерухома, сарай летить назустріч і вкорочений',
       x0+14,38,{color:CLR.sec,size:10.5,max:Q.half-28});
-    txtN(g,'сарай '+fmt(this.Dc(),2)+' м проти драбини '+fmt(this.L0,2)+
-      ' м — не вміщується ніколи',
+    txt(g,'скорочений сарай проти власної драбини — не вміщується ніколи',
       x0+14,54,{color:CLR.k2,size:11.5,bold:true,max:Q.half-28});
     const bx=-v*tp;
     this.barn(g,Q.SXB,bx,bx+this.Dc(),yb,inF,inK);

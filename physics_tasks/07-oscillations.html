@@ -565,7 +565,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -619,6 +619,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1259,6 +1267,10 @@ const M1={
       g.moveTo(cx-78,SY(-A)+.5); g.lineTo(cx+96,SY(-A)+.5); g.stroke(); g.setLineDash([]);
       arrow(g,cx+74,SY(0),cx+74,SY(A),CLR.k2,1.6);
       arrow(g,cx+74,SY(A),cx+74,SY(0),CLR.k2,1.6);
+      /* повний хід туди й назад — це і є шуканий період */
+      arrow(g,cx-88,SY(-A),cx-88,SY(A),CLR.k1,1.5);
+      arrow(g,cx-88,SY(A),cx-88,SY(-A),CLR.k1,1.5);
+      txt(g,'X',cx-96,SY(0)+4,{color:CLR.k1,size:13,bold:true,align:'right'});
       pillN(g,'A = '+fmt(A*100,2)+' см',cx+74,SY(A/2)+4,{color:'#b8431a',size:11,bold:true});
     }
     const ph=!hit?['пластилін падає',CLR.k2,'до удару пластина стоїть на старій рівновазі']
@@ -1450,6 +1462,11 @@ const M2={
     arrow(g,px+7+FR*kP,cy+ch*0.22,px+7,cy+ch*0.22,CLR.k2,2.4);
     txt(g,'p₁S',px-9-FL*kP,cy-ch*0.22-7,{color:'#1c5cab',size:10,bold:true,align:'right'});
     txt(g,'p₂S',px+9+FR*kP,cy+ch*0.22-7,{color:'#b8431a',size:10,bold:true});
+    /* розмах руху поршня: час повного проходу туди й назад — шуканий період */
+    const axp=Math.max(8,(this.amp||0.02)*sc);
+    arrow(g,cx-axp,cy+ch*0.42,cx+axp,cy+ch*0.42,CLR.k1,1.4);
+    arrow(g,cx+axp,cy+ch*0.42,cx-axp,cy+ch*0.42,CLR.k1,1.4);
+    txt(g,'X',cx,cy+ch*0.42-7,{color:CLR.k1,size:13,bold:true,align:'center'});
     for(const hh of this.grips()) if(hh.id==='x') drawGrip(g,hh,this);
     /* повертальна сила: точна й лінійна поруч */
     const F=this.F(x), Fl=this.Flin(x);
@@ -1659,7 +1676,9 @@ const M3={
     txt(g,'−A',cx-this.A*sc,yb+16,{color:CLR.mut,size:10,align:'center'});
     arrow(g,cx,yb+32,wx,yb+32,CLR.k2,1.6);
     arrow(g,wx,yb+32,cx,yb+32,CLR.k2,1.6);
-    pillN(g,'L = '+fmt(this.L*100,1)+' см',(cx+wx)/2,yb+36,{color:'#b8431a',size:11,bold:true});
+    /* саме цю відстань до стінки й треба знайти */
+    pillN(g,'L = '+fmt(this.L*100,1)+' см',(cx+wx)/2,yb+36,
+      {color:'#b8431a',size:12,bold:true,name:'X'});
     /* лічильник періоду */
     pillN(g,'T = '+fmt(this.T(),3)+' с = '+fmt(this.ratio(),3)+'·T₀',
       cx,cy-72,{color:CLR.ink,size:12,bold:true});
@@ -1705,7 +1724,7 @@ const M3={
     txt(g,'φ = ω₀t',cx+R*0.5*Math.cos(ph/2),cy-R*0.5*Math.sin(ph/2)-6,
       {color:CLR.sec,size:10,bold:true,align:'center'});
     txtN(g,'лишилося '+fmt(this.ratio()*100,1)+' % кола',cx,cy-R-24,
-      {color:'#0d7a55',size:11,bold:true,align:'center'});
+      {color:'#0d7a55',size:11,bold:true,align:'center',name:'частка кола'});
   },
   table(){
     const T=this.T(), r=this.ratio();

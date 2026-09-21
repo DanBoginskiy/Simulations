@@ -579,7 +579,7 @@ function letterOf(s,o){
   if(o&&o.name) return o.name;
   const str=String(s), i=str.indexOf('=');
   let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
-  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
   return (head&&!/[0-9]/.test(head))?head:'';
 }
 function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
@@ -633,6 +633,14 @@ function arrow(g,x1,y1,x2,y2,color,w=2){
   g.closePath(); g.fill();
 }
 function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
   g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
   const wd=g.measureText(s).width+14*TK;
   g.fillStyle=o.bg||'rgba(252,252,251,.92)';
@@ -1263,10 +1271,15 @@ const M1={
     const a1={x:-this.py,y:this.px+this.a/2}, n1=Math.hypot(a1.x,a1.y)||1;
     const a2={x:-this.py,y:this.px-this.a/2}, n2=Math.hypot(a2.x,a2.y)||1;
     arrow(g,P.x,P.y,P.x+a1.x/n1*B.b1*kB,P.y-a1.y/n1*B.b1*kB,CLR.k1,2);
+    txt(g,'B₁',P.x+a1.x/n1*B.b1*kB+6,P.y-a1.y/n1*B.b1*kB,{color:'#1c5cab',size:11.5,bold:true});
     arrow(g,P.x,P.y,P.x+this.s2()*a2.x/n2*B.b2*kB,P.y-this.s2()*a2.y/n2*B.b2*kB,CLR.k2,2);
+    txt(g,'B₂',P.x+this.s2()*a2.x/n2*B.b2*kB+6,P.y-this.s2()*a2.y/n2*B.b2*kB,
+      {color:'#b8431a',size:11.5,bold:true});
     const bm=Math.hypot(B.x,B.y);
     if(bm*kB>3){
       arrow(g,P.x,P.y,P.x+B.x*kB,P.y-B.y*kB,CLR.ink,3);
+    /* результуюча індукція в рівновіддаленій точці — шукана */
+    txt(g,'X',P.x+B.x*kB+10,P.y-B.y*kB-4,{color:CLR.ink,size:13,bold:true});
       pillN(g,fmt(bm*1e6,1)+' мкТл',P.x+B.x*kB+50,P.y-B.y*kB-14,
         {color:CLR.ink,size:11.5,bold:true});
     } else pill(g,'B = 0',P.x+42,P.y-16,{color:'#0d7a55',size:11.5,bold:true});
@@ -1510,6 +1523,7 @@ const M2={
     for(let i=0;i<6;i++){
       const x=SX(this.L*(0.09+0.163*i));
       arrow(g,x,yB-14,x,yT+14,CLR.k1,1.6);
+      if(i===0) txt(g,'E',x-8,(yT+yB)/2,{color:'#1c5cab',size:12,bold:true,align:'right'});
     }
     for(let i=0;i<5;i++) for(let j=0;j<3;j++){
       const x=SX(this.L*(0.17+0.17*i)), y=yT+26+j*(yB-yT-52)/2;
@@ -1548,9 +1562,11 @@ const M2={
     g.beginPath(); g.roundRect(sx+30,SY(0)-22,34,44,5); g.fill(); g.stroke();
     txt(g,'лічильник',sx+47,SY(0)-28,{color:CLR.sec,size:10,bold:true,align:'center'});
     txtN(g,'щілина '+fmt(this.slit,1)+' мм',sx+12,SY(0)+40,{color:'#b8431a',size:11,bold:true});
-    txtN(g,'v = E/B = '+fmt(vs/1e6,3)+' Мм/с',SX(0)+6,yB+26,{color:CLR.ink,size:12,bold:true});
+    /* швидкість, за якої поля гасять одне одного, — шукана величина */
+    txtN(g,'v = E/B = '+fmt(vs/1e6,3)+' Мм/с',SX(0)+6,yB+26,
+      {color:CLR.ink,size:13,bold:true,name:'X = E/B'});
     txtN(g,this.passed()+' з '+this.N,sx+47,SY(0)+5,
-      {color:CLR.ink,size:12,bold:true,align:'center'});
+      {color:CLR.ink,size:12,bold:true,align:'center',name:'пройшло'});
     capN(g,'селектор швидкостей',12,20,{color:CLR.k3,size:12.5,bold:true});
     capN(g,'прямо йде лише той, у кого електрична й магнітна сили рівні',12,36,{color:CLR.mut,size:10.5});
   },
@@ -1821,9 +1837,11 @@ const M3={
       arrow(g,O.x,O.y,q.x,q.y,CLR.k1,2.2);
       txt(g,'E',q.x+7,q.y-8,{color:'#1c5cab',size:11,bold:true});
     }
+    /* Два підписи стояли на одному рядку й накладалися; пояснення про
+       силові лінії піднімаємо на рядок вище. */
     txt(g,this.conf==='par'?'штрихові лінії — силові лінії E ∥ B'
                            :'зелені лінії — B, сині — E: вони поперечні, звідси й дрейф',
-      12,H-10,{color:CLR.mut,size:10});
+      12,H-26,{color:CLR.mut,size:10});
     /* Тінь траєкторії на підлозі — саме вона показує, що рух іде в об'ємі:
        згори видно коло, збоку синусоїду, а тінь замикає одне з одним. */
     const yF=-Q.span*0.34;
@@ -1855,6 +1873,19 @@ const M3={
     g.beginPath(); g.moveTo(pp.x,pp.y); g.lineTo(sh.x,sh.y); g.stroke(); g.setLineDash([]);
     dot(g,sh.x,sh.y,3.5,CLR.grid);
     dot(g,pp.x,pp.y,6,CLR.ink,'#fff');
+    /* Повне прискорення протона — те, що треба знайти. Доданки беремо
+       справжні: доосьовий qvB до центра кола і, коли E ∥ B, ще й розгін
+       уздовж осі. */
+    {
+      const rr=this.rc(), acc=this.qm*this.v0*this.B,
+            azv=(this.conf==='par'?this.az():0);
+      const cxx=-p3.x, cyy=rr-p3.y, cn=Math.hypot(cxx,cyy)||1;
+      const vx=cxx/cn*acc, vy=cyy/cn*acc, vz=azv;
+      const vn=Math.hypot(vx,vy,vz)||1, L3=Q.span*0.20;
+      const qA=P({x:p3.x+vx/vn*L3, y:p3.y+vy/vn*L3, z:p3.z+vz/vn*L3});
+      arrow(g,pp.x,pp.y,qA.x,qA.y,CLR.k1,2.4);
+      txt(g,'X',qA.x+8,qA.y+4,{color:'#1c5cab',size:13,bold:true});
+    }
     /* проєкція на площину xy — те саме коло, яке видно згори */
     const cxy=P({x:0,y:0,z:0});
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]); g.beginPath();
@@ -1868,8 +1899,8 @@ const M3={
       {color:CLR.mut,size:10,align:'right'});
     txtN(g,'r = '+fmt(this.rc(),3)+' м',cxy.x-14,cxy.y+Q.span*0.34*Q.sc+14,
       {color:CLR.sec,size:10.5,bold:true,align:'right'});
-    if(kz>1.05) txtN(g,'вісь B стиснено ×'+fmt(kz,0)+' — інакше спіраль '+
-      'не вміщується в кадр',12,H-26,{color:CLR.mut,size:10.5});
+    if(kz>1.05) txt(g,'вісь B стиснено — інакше спіраль не вміщується в кадр',
+      12,H-42,{color:CLR.mut,size:10.5});
     const par=this.conf==='par';
     capN(g,par?'спіраль зі щораз більшим кроком':'коло плюс рівномірний дрейф',12,20,{color:par?CLR.k2:CLR.k1,size:12.5,bold:true});
     capN(g,par?'поперек B — коло сталого радіуса, уздовж B — рівноприскорений розгін'
