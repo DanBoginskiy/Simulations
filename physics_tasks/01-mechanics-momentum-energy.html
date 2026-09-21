@@ -1142,11 +1142,11 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-46;
     const sc=fitScale(bb.w*0.56,H,54,56,2.2*this.RMAX,2.2*this.RMAX,0,0);
-    return {sc,C,cx:bb.w*0.26,cy:46+(H-26)/2,gy:46+H-14,
-      dx:bb.w*0.62,dy:46+H*0.42,dr:Math.min(H*0.30,88),
-      /* крісло пілота — окремим кадром праворуч: на самій петлі фігурка була б
-         завбільшки з точку, а саме на ній і видно, звідки береться перевантаження */
-      px0:bb.w*0.85,py0:46+H*0.46,pr:Math.min(H*0.34,96)};
+    /* Кадр пілота — велике вікно праворуч: у ньому і крісло з фігуркою, і
+       сам прилад перевантаження. На петлі фігурка була б завбільшки з точку,
+       а саме в кріслі й видно, звідки перевантаження береться. */
+    return {sc,C,cx:bb.w*0.22,cy:46+(H-26)/2,gy:46+H-14,
+      px0:bb.w*0.70,py0:46+H*0.50,pr:Math.min(H*0.46,230)};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1226,8 +1226,6 @@ const M1={
     /* числа — у кадрі пілота праворуч; на петлі вони лягали на диск і на R */
     arrow(g,px,py,px,py+this.m*G*kN,CLR.sec,2);
     dot(g,px,py,4,CLR.k2);
-    /* прилад перевантаження — стрілка на шкалі, як у кабіні */
-    this.dial(g,Q.dx,Q.dy,Q.dr,N/(this.m*G));
     this.pilot(g,Q,ph,N);
     capN(g,'мертва петля зі сталою швидкістю',12,20,{color:CLR.k1,size:12.5,bold:true});
     capN(g,'вага пілота міняється по колу, маса — ні',12,36,{color:CLR.mut,size:10.5});
@@ -1242,33 +1240,41 @@ const M1={
   pilot(g,Q,ph,N){
     const cx=Q.px0, cy=Q.py0, r=Q.pr;
     g.fillStyle='#fff'; g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.roundRect(cx-r,cy-r,2*r,2*r,10); g.fill(); g.stroke();
-    txt(g,'що відчуває пілот',cx,cy-r+14,{color:CLR.sec,size:11,bold:true,align:'center'});
-    /* напрям «до центра петлі» в цій точці — туди ж дивиться спинка крісла */
+    g.beginPath(); g.roundRect(cx-r,cy-r,2*r,2*r,12); g.fill(); g.stroke();
+    txt(g,'що відчуває пілот',cx,cy-r+18,{color:CLR.sec,size:12,bold:true,align:'center'});
+    /* «Низ» для пілота — туди, куди тисне крісло, тобто до центра петлі.
+       Кадр повертається разом із літаком, тож видно, як він розходиться з
+       «низом» для землі. */
     const nx=-Math.sin(ph), ny=-Math.cos(ph);
-    g.save(); g.translate(cx,cy+6); g.rotate(Math.atan2(-nx,ny));
-    const k=r*0.30;
-    /* крісло: спинка знизу (з боку, куди тисне N), сидіння — праворуч */
-    g.fillStyle='rgba(42,120,214,.12)'; g.strokeStyle=CLR.k1; g.lineWidth=2;
-    g.beginPath(); g.roundRect(-k*0.9,k*0.15,k*1.8,k*0.42,4); g.fill(); g.stroke();
-    g.beginPath(); g.roundRect(-k*0.9,-k*1.0,k*0.42,k*1.2,4); g.fill(); g.stroke();
-    /* пілот: голова, тулуб, ноги */
-    g.strokeStyle=CLR.ink; g.lineWidth=2.4; g.lineCap='round';
-    g.beginPath(); g.moveTo(-k*0.42,-k*0.5); g.lineTo(k*0.35,-k*0.5); g.stroke();
-    g.beginPath(); g.moveTo(k*0.35,-k*0.5); g.lineTo(k*0.75,k*0.1); g.stroke();
-    dot(g,-k*0.64,-k*0.5,k*0.24,'#fff',CLR.ink);
+    const sx=cx, sy=cy-r*0.18;
+    g.save(); g.translate(sx,sy); g.rotate(Math.atan2(-nx,ny));
+    const k=r*0.40;
+    /* крісло: спинка за спиною, сидіння під пілотом */
+    g.fillStyle='rgba(42,120,214,.14)'; g.strokeStyle=CLR.k1; g.lineWidth=2.4;
+    g.beginPath(); g.roundRect(-k*0.55,k*0.30,k*1.35,k*0.26,4); g.fill(); g.stroke();
+    g.beginPath(); g.roundRect(-k*0.80,-k*0.85,k*0.26,k*1.18,4); g.fill(); g.stroke();
+    /* пілот сидить: тулуб уздовж спинки, стегна вздовж сидіння, гомілки вниз */
+    g.strokeStyle=CLR.ink; g.lineWidth=k*0.16; g.lineCap='round'; g.lineJoin='round';
+    g.beginPath();
+    g.moveTo(-k*0.48,-k*0.62);       /* плечі */
+    g.lineTo(-k*0.44,k*0.18);        /* спина до таза */
+    g.lineTo(k*0.42,k*0.22);         /* стегна вздовж сидіння */
+    g.lineTo(k*0.52,k*0.72);         /* гомілки вниз */
+    g.stroke();
+    /* руки на штурвалі */
+    g.lineWidth=k*0.11;
+    g.beginPath(); g.moveTo(-k*0.46,-k*0.46); g.lineTo(k*0.20,-k*0.16); g.stroke();
+    dot(g,-k*0.52,-k*0.86,k*0.24,'#fff',CLR.ink);   /* голова */
     g.restore();
-    /* сили: N — до центра петлі, mg — завжди вниз екрана */
-    /* Довжина mg стала — вона і є мірилом: N довша рівно в стільки разів, у
-       скільки пілот важчий за себе в спокої. Стеля не дає стрілці вийти за кадр. */
-    const kk=Math.min(r*0.26/(this.m*G), r*0.72/Math.max(1,N));
-    arrow(g,cx,cy+6,cx+nx*N*kk,cy+ny*N*kk,CLR.k3,3);
-    txtN(g,'N = '+fmt(N,0)+' Н',cx+nx*N*kk+(nx<0?-6:6),cy+ny*N*kk+(ny<0?-6:14),
-      {color:'#0d7a55',size:11,bold:true,align:nx<0?'right':'left'});
-    arrow(g,cx,cy+6,cx,cy+6+this.m*G*kk,CLR.sec,2.2);
-    txt(g,'mg',cx+8,cy+6+this.m*G*kk+2,{color:CLR.sec,size:10.5,bold:true});
-    txtN(g,'вага пілота = N = '+fmt(N/(this.m*G),2)+' mg',cx,cy+r-8,
-      {color:CLR.ink,size:11,bold:true,align:'center',max:2*r-12});
+    /* сили: mg — завжди вниз екрана, N — до центра петлі */
+    const kk=Math.min(r*0.22/(this.m*G), r*0.60/Math.max(1,N));
+    arrow(g,sx,sy,sx+nx*N*kk,sy+ny*N*kk,CLR.k3,3.2);
+    txt(g,'N',sx+nx*N*kk+(nx<0?-8:8),sy+ny*N*kk+(ny<0?-8:16),
+      {color:'#0d7a55',size:12.5,bold:true,align:nx<0?'right':'left'});
+    arrow(g,sx,sy,sx,sy+this.m*G*kk,CLR.sec,2.4);
+    txt(g,'mg',sx+9,sy+this.m*G*kk+2,{color:CLR.sec,size:11.5,bold:true});
+    /* прилад перевантаження — тут же, під кріслом: це те саме N, лише шкалою */
+    this.dial(g,cx,cy+r*0.46,Math.min(r*0.26,58),N/(this.m*G));
   },
   /* стрілочний покажчик перевантаження: 0…6 g */
   dial(g,cx,cy,r,n){
@@ -1346,7 +1352,7 @@ const M1={
 const M2={
   mode:'free', v0:10, al:60, be:45, tb:0.25,
   t:0, playing:true, waitT:0, showAns:true,
-  VMIN:8, VMAX:12, ALMIN:45, ALMAX:75, BEMIN:20, BEMAX:50,
+  VMIN:8, VMAX:11, ALMIN:45, ALMAX:70, BEMIN:20, BEMAX:45,
   hh:{x:null}, hv:{x:null}, tiph:null, tipv:null,
   TASK:{v0:10, al:60, be:45, tb:0.25},
   vx(){return this.v0*Math.cos(this.al*DEG);},
@@ -1398,13 +1404,12 @@ const M2={
     Object.assign(this,keep);
     return this._fr={X,Y};
   },
-  /* Осколок при великому β летить утричі-вчетверо далі за саму гранату, і
-     кадр під найгірший випадок зробив би гранату крапкою. Тому межа — не
-     більша за 2,8 дальності найдальшого кидка: звичайні розльоти вміщаються
-     цілком, а рідкісний крайній випадок і далі показує вказівник на краю. */
+  /* Кадр береться рівно під найдальший і найвищий осколок, який узагалі
+     можливий у межах ручок — жодних стель. Діапазони натомість звужено до
+     того, що потрібне задачі: осколок тепер не вилітає за сцену ніколи. */
   RGmax(){return this.VMAX*this.VMAX*Math.sin(2*this.ALMIN*DEG)/G;},
-  frameX(){return Math.min(this.frameScan().X,this.RGmax()*2.2);},
-  frameY(){return Math.min(this.frameScan().Y*1.08,this.RGmax()*0.62);},
+  frameX(){return this.frameScan().X*1.04;},
+  frameY(){return this.frameScan().Y*1.10;},
   setTask(){const T=this.TASK; this.v0=T.v0; this.al=T.al; this.be=T.be; this.tb=T.tb;},
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
@@ -1921,6 +1926,19 @@ const M4={
      формула α через збереження енергії там уже не працює. Тому рух
      зупиняємо на 90°, а не пускаємо брус крізь стелю. */
   alCap(){return Math.min(90,this.alMax());},
+  /* ---- межа відхилення ------------------------------------------------------
+     Відхилення тримаємо не більшим за 30°: далі маятник іде туди, де мале
+     наближення вже не працює, а картинка перестає читатися. Задає це
+     відношення мас — воно й обмежене знизу так, щоб α(η) ≤ 30°. */
+  ALCAP:30,
+  uMax(){return Math.sqrt(2*G*this.l*(1-Math.cos(this.ALCAP*DEG)));},
+  etaMin(){return Math.max(this.ETMIN,Math.ceil(this.v/this.uMax()-1));},
+  syncEta(){
+    const lo=this.etaMin();
+    this.GG[0][2]=lo;
+    if(this.GG[0][3]<lo*1.2) this.GG[0][3]=Math.round(lo*1.2);
+    if(this.eta<lo) this.eta=lo;
+  },
   overTop(){return this.alMax()>90.0001;},
   heat(){return this.eta/(this.eta+1);},
   E0(){return this.mB*this.v*this.v/2;},
@@ -1991,7 +2009,7 @@ const M4={
     } else if(this.t>=8){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
     this.render();
   },
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
+  render(){this.syncEta(); this.scene(); this.table(); this.charts(); this.gdraw();},
   gdraw(){
     const b=cvx('m4scene'); if(!b) return;
     const C=this.gcol(b);
@@ -2061,8 +2079,10 @@ const M4={
       {color:'#1c5cab',size:10.5,bold:true,align:'right'});
     /* куля до удару */
     if(this.phase==='fly'){
-      /* куля летить на рівні грані бруса й зупиняється рівно об неї */
-      const px=Math.min(Q.px-HW-9,Q.px-140+(this.bx+1)*130), py=Q.py+L;
+      /* Куля летить на рівні грані бруса й доходить до неї рівно тієї миті,
+         коли починаються коливання: раніше вона встигала прилетіти й стояла
+         на місці, поки дораховувався політ — це й читалося як пауза. */
+      const px=Q.px-140+(this.bx+1)*(140-HW-9), py=Q.py+L;
       g.fillStyle=CLR.ink;
       g.beginPath(); g.ellipse(px,py,9,4.5,0,0,7); g.fill();
       arrow(g,Q.px-140,Q.py+L+26,Q.px-140+this.v*Q.kv,Q.py+L+26,CLR.ink,2.5);

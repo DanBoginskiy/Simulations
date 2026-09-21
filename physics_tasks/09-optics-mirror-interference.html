@@ -1373,20 +1373,22 @@ const M2={
     /* карта фронтів від двох щілин: гіперболи підсилення видно як світлі смуги */
     const cx=w/2, y0=Q.yTop, hM=Q.hMap;
     const dpx=Math.max(10,this.d*46);
-    const s1={x:cx-dpx/2,y:y0+hM-8}, s2={x:cx+dpx/2,y:y0+hM-8};
-    g.save(); g.beginPath(); g.rect(Q.sx,y0,Q.sw,hM-4); g.clip();
+    /* Щілини вгорі, екран унизу, а між ними — фронти: світло йде від щілин
+       ДО екрана, тож і карта фронтів лежить по той самий бік, що й екран. */
+    const s1={x:cx-dpx/2,y:y0+16}, s2={x:cx+dpx/2,y:y0+16};
+    g.save(); g.beginPath(); g.rect(Q.sx,y0+16,Q.sw,hM-20); g.clip();
     const lamPx=Math.max(9,this.lam*0.035);
     for(let i=0;i<26;i++){
       const r=i*lamPx;
       for(const s of [s1,s2]){
         g.strokeStyle=s===s1?'rgba(42,120,214,.30)':'rgba(235,104,52,.30)';
         g.lineWidth=1.1;
-        g.beginPath(); g.arc(s.x,s.y,r,Math.PI,2*Math.PI); g.stroke();
+        g.beginPath(); g.arc(s.x,s.y,r,0,Math.PI); g.stroke();
       }
     }
     g.restore();
     g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.strokeRect(Q.sx+.5,y0+.5,Q.sw-1,hM-5);
+    g.strokeRect(Q.sx+.5,y0+16.5,Q.sw-1,hM-21);
     /* ---- сама перепона з двома щілинами -------------------------------------
        Раніше це була тонка смужка з двома прорізами в чотири пікселі: щілин
        фактично не було видно, а саме вони тут і є джерелами. Тепер це
@@ -1394,18 +1396,18 @@ const M2={
        отвори, а поруч — їхній крупний план із розміром d. */
     const BH=13, aw=Math.max(3,Math.min(9,dpx*0.16));
     g.fillStyle='#cfccc4'; g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.rect(Q.sx,s1.y,Q.sw,BH); g.fill(); g.stroke();
+    g.beginPath(); g.rect(Q.sx,s1.y-BH,Q.sw,BH); g.fill(); g.stroke();
     g.strokeStyle='rgba(11,11,11,.22)'; g.lineWidth=1;
     for(let hx=Q.sx+4;hx<Q.sx+Q.sw-4;hx+=9){
-      g.beginPath(); g.moveTo(hx,s1.y+BH-1); g.lineTo(hx+5,s1.y+1); g.stroke();
+      g.beginPath(); g.moveTo(hx,s1.y-1); g.lineTo(hx+5,s1.y-BH+1); g.stroke();
     }
     for(const sxc of [s1.x,s2.x]){
-      g.clearRect(sxc-aw/2,s1.y-1,aw,BH+2);
+      g.clearRect(sxc-aw/2,s1.y-BH-1,aw,BH+2);
       g.strokeStyle=CLR.ink; g.lineWidth=2;
-      g.beginPath(); g.moveTo(sxc-aw/2,s1.y); g.lineTo(sxc-aw/2,s1.y+BH);
-      g.moveTo(sxc+aw/2,s1.y); g.lineTo(sxc+aw/2,s1.y+BH); g.stroke();
+      g.beginPath(); g.moveTo(sxc-aw/2,s1.y-BH); g.lineTo(sxc-aw/2,s1.y);
+      g.moveTo(sxc+aw/2,s1.y-BH); g.lineTo(sxc+aw/2,s1.y); g.stroke();
     }
-    txtN(g,'d = '+fmt(this.d,2)+' мм',cx,s1.y-6,{color:CLR.ink,size:10.5,bold:true,align:'center'});
+    txt(g,'d',cx,s1.y-BH-6,{color:CLR.ink,size:11,bold:true,align:'center'});
     /* екран зі смугами */
     const ys=Q.yScr;
     for(let px=0;px<Q.sw;px++){
@@ -1602,7 +1604,10 @@ const M3={
        першого. Вони перетинаються майже на самій плівці — саме тому смуги
        рівної товщини видно НА плівці, а не десь у просторі. Кут клина в
        кресленні перебільшено: справжній — соті частки градуса. */
-    const zx=Q.zx, zy=Q.zy, T=48, Wz=196, GAM=0.16;   /* GAM — кут клина, рад */
+    /* Товщина клина на кресленні йде за обраною товщиною плівки, а кут
+       нахилу нижньої межі — за нею ж: товща плівка, крутіший клин. */
+    const zx=Q.zx, zy=Q.zy, fr=clamp(this.d/this.DMAX,0.04,1);
+    const T=14+66*fr, Wz=196, GAM=0.06+0.18*fr;
     const yBot=xx=>zy+T+(xx-zx)*Math.tan(GAM);
     g.fillStyle='rgba(42,120,214,.10)';
     g.beginPath(); g.moveTo(zx,zy); g.lineTo(zx+Wz,zy);
