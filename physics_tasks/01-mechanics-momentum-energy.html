@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,14 +104,15 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/389; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
-#m4scene{width:100%; aspect-ratio:990/415; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m4scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -161,7 +162,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -198,7 +199,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -219,13 +220,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <p class="caption">Пілот у петлі не важчає й не легшає — змінюється тільки те, з якою силою
   крісло тисне на нього. Внизу до доцентрового прискорення додається тяжіння, угорі — віднімається.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Літак виконує «мертву петлю» зі сталою швидкістю по коловій траєкторії радіуса <b>R</b>. Визначити швидкість <b>X</b> літака, якщо максимальна вага пілота в <b>η</b> разів перевищує мінімальну.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
-          <span class="lbl" id="m1t"></span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
@@ -237,45 +237,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <div class="legend sm"><span><span class="chip cC"></span>n(φ)</span><span><span class="chip cI"></span>зараз</span><span><span class="chip cB"></span>відрив від крісла</span></div>
             <canvas id="m1cn"></canvas>
           </div>
-          <div class="chartbox" id="m1cew">
-            <h4>відношення <var>N</var><sub>max</sub>/<var>N</var><sub>min</sub> від швидкості</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>η(v)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m1ce"></canvas>
-          </div>
+          
         </div>
       </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 2.16</h3>
-        <p class="cond">Літак виконує «мертву петлю», рухаючись зі сталою швидкістю у вертикальній
-        площині по коловій траєкторії радіуса <b>R = 1 км</b>. Визначити швидкість <b>v</b> літака,
-        якщо в ньому максимальна вага пілота в <b>η = 3</b> рази перевищує мінімальну.</p>
-        <div class="kv"><span><var>R</var> — радіус петлі</span><b id="m1vR"></b></div>
-        <div class="kv"><span><var>v</var> — швидкість літака<span class="badge">стала по всьому колу</span></span><b id="m1vv"></b></div>
-        <div class="kv"><span><var>m</var> — маса пілота</span><b id="m1vm"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m1ans">показати відповідь<small>швидкість при η = 3</small></button>
-        <div class="ansbox" id="m1ansBox" hidden>
-          <div class="kv"><span>відношення <var>η</var> зараз</span><b id="m1rEta"></b></div>
-          <div class="kv"><span>швидкість, за якої <var>η</var> = 3</span><b id="m1rV3"></b></div>
-          <div class="formulas" id="m1fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Сили в крайніх точках</h3>
-        <div class="kv"><span>доцентрове <var>v</var>²/<var>R</var></span><b id="m1kAc"></b></div>
-        <div class="kv"><span>унизу <var>N</var> = <var>m</var>(<var>v</var>²/<var>R</var> + <var>g</var>)</span><b id="m1kNb"></b></div>
-        <div class="kv"><span>угорі <var>N</var> = <var>m</var>(<var>v</var>²/<var>R</var> − <var>g</var>)</span><b id="m1kNt"></b></div>
-        <div class="kv"><span>перевантаження внизу / угорі</span><b id="m1kN"></b></div>
-        <div class="kv"><span>найменша швидкість √(<var>gR</var>)</span><b id="m1kVmin"></b></div>
-        <div class="kv"><span>стан пілота вгорі</span><b id="m1kSt"></b></div>
-        <div class="formulas">маса пілота не змінюється ніде — змінюється лише сила з боку крісла</div>
-      </div>
-    </div>
-  </div>
+    
 </section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
@@ -284,68 +249,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   рухається далі тією самою параболою, ніби нічого не сталося. Це видно лише тоді,
   коли поруч летить «привид» нерозірваної гранати.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Граната, кинута під кутом <b>α</b> до горизонту зі швидкістю <b>v₀</b>, розривається на два однакові осколки: один відлітає вертикально вгору, другий — під кутом <b>β</b> до горизонту. Визначити швидкість <b>X</b> відльоту другого осколка.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
-          <span class="lbl" id="m2t"></span>
         </div>
         <canvas id="m2scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Що робить вибух</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2chw">
-            <h4>висота над землею, м</h4>
-            <div class="legend sm"><span><span class="chip cI"></span>якби не розірвалася</span><span><span class="chip cA"></span>осколок 1</span><span><span class="chip cB"></span>осколок 2</span></div>
-            <canvas id="m2ch"></canvas>
-          </div>
-          <div class="chartbox" id="m2cvw">
-            <h4>швидкість другого осколка від кута β, м/с</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>v₂ = 2v₀cos α / cos β</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m2cv"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 3.2</h3>
-        <p class="cond">Граната, кинута під кутом <b>α = 60°</b> до горизонту зі швидкістю
-        <b>v₀ = 10 м/с</b>, розривається на два однакові осколки так, що один відлітає
-        <b>вертикально вгору</b>, а другий — під кутом <b>β = 45°</b> до горизонту.
-        Визначити швидкість <b>v₂</b> відльоту другого осколка.</p>
-        <div class="kv"><span><var>v</var><sub>0</sub> — початкова швидкість гранати</span><b id="m2vv"></b></div>
-        <div class="kv"><span><var>α</var> — кут кидка до горизонту</span><b id="m2val"></b></div>
-        <div class="kv"><span><var>β</var> — кут другого осколка до горизонту</span><b id="m2vbe"></b></div>
-        <div class="kv"><span><var>t</var><sub>р</sub> — мить розриву</span><b id="m2vtb"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>швидкість другого осколка</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>швидкість другого осколка <var>v</var><sub>2</sub></span><b id="m2rV2"></b></div>
-          <div class="kv"><span>швидкість першого осколка <var>v</var><sub>1</sub></span><b id="m2rV1"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Закон збереження імпульсу</h3>
-        <div class="kv"><span>швидкість гранати в мить розриву</span><b id="m2kVb"></b></div>
-        <div class="kv"><span>горизонтальна складова<span class="badge">не змінюється вибухом</span></span><b id="m2kPx"></b></div>
-        <div class="kv"><span>вертикальна складова</span><b id="m2kPy"></b></div>
-        <div class="kv"><span>перший осколок летить</span><b id="m2kDir"></b></div>
-        <div class="kv"><span>уявний снаряд<span class="badge">незбурена парабола</span></span><b id="m2kCm"></b></div>
-        <div class="kv"><span>осколок 1 — відстань від початку СВ</span><b id="m2kD1"></b></div>
-        <div class="kv"><span>осколок 2 — відстань від початку СВ</span><b id="m2kD2"></b></div>
-        <div class="kv"><span>місця падіння осколків<span class="badge">від початку СВ</span></span><b id="m2kXh"></b></div>
-        <div class="kv"><span>нев'язка <var>p</var> після вибуху<span class="badge">має бути 0</span></span><b id="m2kRes"></b></div>
-        <div class="formulas">осколки однакові, тож уявний снаряд летить рівно посередині між ними</div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 3 ================= -->
@@ -354,63 +268,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   Сила опору стала, тож рівними порціями спадає <b>енергія</b>, а не швидкість:
   дві шкали поруч розходяться з першої ж дошки.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Куля перпендикулярно вдаряє в стос міцно закріплених однакових дощок. Визначити, в якій за ліком дошці <b>X</b> вона застрягне, якщо в першій втрачає частку <b>η</b> швидкості. Силу опору вважати незалежною від швидкості кулі.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
-          <span class="lbl" id="m3t"></span>
         </div>
         <canvas id="m3scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Швидкість і енергія по дошках</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3cvw">
-            <h4>частка початкової величини після <var>n</var>-ї дошки</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>швидкість v/v₀</span><span><span class="chip cI"></span>енергія E/E₀ — рівні сходинки</span></div>
-            <canvas id="m3cv"></canvas>
-          </div>
-          <div class="chartbox" id="m3cnw">
-            <h4>у якій дошці застрягне куля, від <var>η</var></h4>
-            <div class="legend sm"><span><span class="chip cC"></span>1/(2η − η²)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m3cn"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 4.16</h3>
-        <p class="cond">Куля перпендикулярно вдаряє в стос міцно закріплених одна за одною однакових
-        дощок. Визначити, в якій за ліком дошці застрягне куля, якщо в першій вона втрачає
-        <b>η = 10 %</b> швидкості. Силу опору вважати незалежною від швидкості кулі.</p>
-        <div class="kv"><span><var>η</var> — втрата швидкості в першій дошці</span><b id="m3vet"></b></div>
-        <div class="kv"><span><var>v</var><sub>0</sub> — початкова швидкість кулі</span><b id="m3vv"></b></div>
-        <div class="kv"><span><var>m</var> — маса кулі</span><b id="m3vm"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m3ans">показати відповідь<small>номер дошки</small></button>
-        <div class="ansbox" id="m3ansBox" hidden>
-          <div class="kv"><span>дощок пробито повністю</span><b id="m3rN"></b></div>
-          <div class="kv"><span>застрягне в дошці</span><b id="m3rStuck"></b></div>
-          <div class="formulas" id="m3fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Що спадає рівними порціями</h3>
-        <div class="kv"><span>енергія на одну дошку<span class="badge">однакова для всіх</span></span><b id="m3kDe"></b></div>
-        <div class="kv"><span>початкова енергія <var>E</var><sub>0</sub></span><b id="m3kE0"></b></div>
-        <div class="kv"><span>швидкість після 1-ї дошки</span><b id="m3kV1"></b></div>
-        <div class="kv"><span>енергія після 1-ї дошки</span><b id="m3kE1"></b></div>
-        <div class="kv"><span>швидкість зараз</span><b id="m3kV"></b></div>
-        <div class="kv"><span>енергія зараз</span><b id="m3kE"></b></div>
-        <div class="formulas">рівні порції енергії дають дедалі більші порції швидкості — тому дощок менше, ніж здається</div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 4 ================= -->
@@ -419,63 +287,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   йде в тепло. Стовпчик енергії обвалюється на очах: саме тому в задачах на удар
   закон збереження енергії застосовувати не можна.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Куля, що летить горизонтально зі швидкістю <b>v</b>, влучає й застряє в брусі, підвішеному за краї на двох нитках довжиною <b>l</b>; маса бруса в <b>η</b> разів більша. Знайти кут <b>X</b> від вертикалі, на який відкинеться брус.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m4play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m4re" title="заново">↺</button>
-          <span class="lbl" id="m4t"></span>
         </div>
         <canvas id="m4scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Куди дівається енергія</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4caw">
-            <h4>кут відхилення від швидкості кулі, °</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>α(v)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m4ca"></canvas>
-          </div>
-          <div class="chartbox" id="m4cew">
-            <h4>частка енергії, що пішла в тепло, %</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>η/(η+1)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m4ce"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 4.120</h3>
-        <p class="cond">Куля, що летить горизонтально зі швидкістю <b>v = 800 м/с</b>, влучає й застряє
-        в підвішеному на міцній мотузці довжиною <b>l = 1,6 м</b> брусі в <b>η = 200</b> разів більшої
-        маси. Знайти, на який кут <b>α</b> від вертикалі відкинеться брус.</p>
-        <div class="kv"><span><var>v</var> — швидкість кулі</span><b id="m4vv"></b></div>
-        <div class="kv"><span><var>η</var> — у скільки разів брус важчий</span><b id="m4vet"></b></div>
-        <div class="kv"><span><var>l</var> — довжина мотузки</span><b id="m4vl"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m4ans">показати відповідь<small>кут відхилення</small></button>
-        <div class="ansbox" id="m4ansBox" hidden>
-          <div class="kv"><span>швидкість системи після удару <var>u</var></span><b id="m4rU"></b></div>
-          <div class="kv"><span>кут відхилення <var>α</var></span><b id="m4rAl"></b></div>
-          <div class="formulas" id="m4fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Імпульс і енергія на ударі</h3>
-        <div class="kv"><span>імпульс до удару <var>mv</var><span class="badge">зберігається</span></span><b id="m4kP"></b></div>
-        <div class="kv"><span>енергія кулі до удару</span><b id="m4kE0"></b></div>
-        <div class="kv"><span>енергія системи після удару</span><b id="m4kE1"></b></div>
-        <div class="kv"><span>пішло в тепло</span><b id="m4kQ"></b></div>
-        <div class="kv"><span>висота підйому бруса</span><b id="m4kH"></b></div>
-        <div class="kv"><span>період коливань 2π√(<var>l</var>/<var>g</var>)</span><b id="m4kT"></b></div>
-        <div class="formulas">що важчий брус, то більша частка енергії лишається в ньому у вигляді тепла</div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <footer>Допоміжний матеріал з механіки · динаміка руху по колу · закон збереження імпульсу · робота та енергія</footer>
@@ -497,7 +319,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -698,7 +530,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -727,13 +559,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -861,21 +704,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1201,10 +1055,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,

@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,15 +104,16 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/371; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/442; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:990/470; min-height:min(210px,56vw)}
-#m4scene{width:100%; aspect-ratio:990/486; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m4scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -162,7 +163,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -199,7 +200,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -211,8 +212,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Похилий стрижень</button>
   <button data-m="m2">2 · Зустрічні частинки</button>
-  <button data-m="m3">3 · Час життя й пробіг</button>
-  <button data-m="m4">4 · Драбина в сараї</button>
+  <button data-m="m4">3 · Драбина в сараї</button>
 </nav>
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
@@ -220,63 +220,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   Похилий стрижень ламає уявлення «тіло просто стискається»: коротшає лише поздовжня
   складова, тому стрижень іще й повертається.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Стрижень власною довжиною <b>l₀</b>, спрямований під кутом <b>θ₀</b> до напрямку руху, спершу нерухомий, а потім розганяється до швидкості <b>v</b>. Визначити його довжину <b>X</b> і кут у цій самій системі відліку після розгону.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m1pp" title="пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
-          <span class="lbl" id="m1t"></span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Що робить швидкість зі стрижнем</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m1caw">
-            <h4>кути стрижня від швидкості, °</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>власний кут θ₀</span><span><span class="chip cB"></span>кут у лабораторії θ</span></div>
-            <canvas id="m1ca"></canvas>
-          </div>
-          <div class="chartbox" id="m1clw">
-            <h4>довжини стрижня від швидкості, см</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>власна довжина l₀</span><span><span class="chip cB"></span>довжина в лабораторії l</span></div>
-            <canvas id="m1cl"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.1</h3>
-        <p class="cond">Рухомий стрижень довжиною <b>l = 100 см</b>, який спрямовано під
-        кутом <b>θ = 45°</b> до напрямку руху, має швидкість <b>v = c/2</b>.
-        Визначити його <b>власну довжину</b> та <b>кут у власній системі відліку</b>.</p>
-        <div class="kv"><span>довжина в лабораторії <var>l</var></span><b id="m1vl"></b></div>
-        <div class="kv"><span>кут у лабораторії <var>θ</var></span><b id="m1vth"></b></div>
-        <div class="kv"><span>швидкість <var>β</var> = <var>v</var>/<var>c</var></span><b id="m1vb"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m1ans">показати відповідь<small>власна довжина і власний кут</small></button>
-        <div class="ansbox" id="m1ansBox" hidden>
-          <div class="kv"><span>власна довжина <var>l₀</var></span><b id="m1rl"></b></div>
-          <div class="kv"><span>власний кут <var>θ₀</var></span><b id="m1rth"></b></div>
-          <div class="formulas" id="m1fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Складові стрижня</h3>
-        <div class="kv"><span>лоренц-фактор <var>γ</var></span><b id="m1kg"></b></div>
-        <div class="kv"><span>поздовжня складова у власній СВ</span><b id="m1kx0"></b></div>
-        <div class="kv"><span>поздовжня складова в лабораторії<span class="badge">коротша в γ разів</span></span><b id="m1kx"></b></div>
-        <div class="kv"><span>поперечна складова<span class="badge">не змінюється</span></span><b id="m1ky"></b></div>
-        <div class="kv"><span>крок шпал у лабораторії</span><b id="m1ks"></b></div>
-        <div class="kv"><span>крок шпал у СВ стрижня</span><b id="m1ks0"></b></div>
-        <p class="formulas" id="m1fx2"></p>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
@@ -285,134 +239,21 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   відліку» — вона спокійно перевищує <var>c</var> — і «швидкість однієї частинки відносно
   іншої», яка ніколи <var>c</var> не досягає.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Дві частинки рухаються назустріч одна одній зі швидкостями <b>v₁</b> і <b>v₂</b>. Визначити швидкість зближення <b>X</b> у лабораторній системі відліку та швидкість однієї частинки відносно іншої.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m2pp" title="пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
-          <span class="lbl" id="m2t"></span>
         </div>
         <canvas id="m2scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Класична сума проти релятивістської</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2csw">
-            <h4>швидкість у частках <var>c</var> залежно від <var>β₂</var></h4>
-            <div class="legend sm"><span><span class="chip cS"></span>класична сума β₁+β₂</span><span><span class="chip cI"></span>відносна швидкість</span><span><span class="chip cB"></span>межа c</span></div>
-            <canvas id="m2cs"></canvas>
-          </div>
-          <div class="chartbox" id="m2cew">
-            <h4>наскільки класична формула завищує, %</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>похибка</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m2ce"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.3</h3>
-        <p class="cond">Дві частинки рухаються назустріч одна одній зі швидкостями
-        <b>v₁ = 0,50 c</b> і <b>v₂ = 0,75 c</b>. Визначити <b>швидкість зближення</b>
-        в лабораторній системі відліку та <b>швидкість однієї частинки відносно іншої</b>.</p>
-        <div class="kv"><span>швидкість першої <var>β₁</var></span><b id="m2vb1"></b></div>
-        <div class="kv"><span>швидкість другої <var>β₂</var></span><b id="m2vb2"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>дві різні швидкості</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>зближення в лабораторії</span><b id="m2ra"></b></div>
-          <div class="kv"><span>відносна швидкість</span><b id="m2rr"></b></div>
-          <div class="kv"><span>те саме в м/с</span><b id="m2rms"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Що це означає</h3>
-        <div class="kv"><span>відстань між частинками</span><b id="m2kd"></b></div>
-        <div class="kv"><span>до зустрічі в лабораторії</span><b id="m2kt"></b></div>
-        <div class="kv"><span>зближення перевищує <var>c</var>?</span><b id="m2kex"></b></div>
-        <div class="kv"><span>відносна швидкість &lt; <var>c</var>?<span class="badge">завжди</span></span><b id="m2klt"></b></div>
-        <div class="kv"><span>лоренц-фактор відносного руху</span><b id="m2kg"></b></div>
-        <div class="kv"><span>похибка класичної формули</span><b id="m2ker"></b></div>
-        <p class="formulas" id="m2fx2"></p>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 3 ================= -->
-<section class="module" id="m3">
-  <p class="caption">Два пояснення того самого факту: у системі відліку лабораторії
-  «час частинки сповільнився», у системі відліку самої частинки «трек скоротився».
-  Лічильники в обох колонках показують те саме число — і це головний аргумент
-  за реальність СТВ.</p>
 
-  <div class="pgrid">
-    <div class="scene">
-      <div class="panel">
-        <div class="toolbar">
-          <div class="seg" id="m3sc">
-            <button data-v="lab" class="active" style="--c:var(--k1)">частинка в лабораторії</button>
-            <button data-v="sky" style="--c:var(--k3)">мюон з атмосфери</button>
-          </div>
-          <button class="ibtn" id="m3pp" title="пауза">⏸</button>
-          <button class="ibtn" id="m3re" title="заново">↺</button>
-          <span class="lbl" id="m3t"></span>
-        </div>
-        <canvas id="m3scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Скільки частинок доживає</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3cnw">
-            <h4>частка живих частинок уздовж треку, %</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>з урахуванням СТВ</span><span><span class="chip cS"></span>якби часу не розтягувало</span></div>
-            <canvas id="m3cn"></canvas>
-          </div>
-          <div class="chartbox" id="m3clw">
-            <h4>середній пробіг від лоренц-фактора, м</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>пробіг <var>l</var></span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m3cl"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.2</h3>
-        <p class="cond">Визначити довжину вільного пробігу <b>l</b> нестабільної частинки
-        із часом життя <b>Δt = 20 нс</b>, якщо її власний час життя <b>Δt₀</b>
-        є вдвічі менший.</p>
-        <div class="kv"><span>власний час життя <var>Δt₀</var></span><b id="m3vt0"></b></div>
-        <div class="kv"><span>лоренц-фактор <var>γ</var> = <var>Δt</var>/<var>Δt₀</var></span><b id="m3vg"></b></div>
-        <div class="kv"><span>довжина треку до детектора</span><b id="m3vL"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m3ans">показати відповідь<small>довжина вільного пробігу</small></button>
-        <div class="ansbox" id="m3ansBox" hidden>
-          <div class="kv"><span>вільний пробіг <var>l</var></span><b id="m3rl"></b></div>
-          <div class="kv"><span>швидкість <var>β</var></span><b id="m3rb"></b></div>
-          <div class="formulas" id="m3fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Дві мови — одне число</h3>
-        <div class="kv"><span>час життя в лабораторії <var>Δt</var></span><b id="m3kt"></b></div>
-        <div class="kv"><span>трек у СВ частинки<span class="badge">коротший у γ</span></span><b id="m3kL0"></b></div>
-        <div class="kv"><span>долетіло · мова лабораторії</span><b id="m3kn1"></b></div>
-        <div class="kv"><span>долетіло · мова частинки</span><b id="m3kn2"></b></div>
-        <div class="kv"><span>долетіло б без СТВ</span><b id="m3kn0"></b></div>
-        <div class="kv"><span>живих на сцені зараз</span><b id="m3kal"></b></div>
-        <p class="formulas" id="m3fx2"></p>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ================= МОДУЛЬ 4 ================= -->
 <section class="module" id="m4">
@@ -421,8 +262,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   іще коротший, і вона не вміщується ніколи. Обидва спостерігачі мають рацію: зачинити
   <b>одночасно</b> — це твердження про одну систему відліку, а не про світ.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Драбина власною довжиною <b>L₀</b> влітає у сарай власною довжиною <b>D₀</b> &lt; <b>L₀</b> зі швидкістю <b>β</b>. Обидві брами зачиняються одночасно за годинником сарая — рівно тоді, коли драбина всередині. Питання не «чи вміститься», а чи є суперечність.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m4prev" title="крок назад">⏮</button>
@@ -434,62 +275,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <button data-v="0.3" class="active" style="--c:var(--k2)">×⅓</button>
             <button data-v="0" style="--c:var(--k3)">покадрово</button>
           </div>
-          <span class="lbl" id="m4t"></span>
         </div>
         <canvas id="m4scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Де межа й де розходяться годинники</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m4clw">
-            <h4>довжина драбини в СВ сарая проти довжини сарая, м</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>драбина <var>L</var><sub>0</sub>/γ</span><span><span class="chip cA"></span>сарай <var>D</var><sub>0</sub></span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m4cl"></canvas>
-          </div>
-          <div class="chartbox" id="m4ctw">
-            <h4>у СВ драбини: розрив між зачиненнями проти тривалості, нс</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>розрив Δ<var>t</var>′</span><span><span class="chip cC"></span>як довго зачинено</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m4ct"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова</h3>
-        <p class="cond">Драбина власною довжиною <b>L₀</b> влітає у сарай власною довжиною
-        <b>D₀ &lt; L₀</b> зі швидкістю <b>β = v/c</b>. Обидві брами зачиняються
-        <b>одночасно за годинником сарая</b> — рівно тоді, коли драбина всередині.
-        Питання не «чи вміститься», а <b>чи є суперечність</b>.</p>
-        <div class="kv"><span><var>L</var><sub>0</sub> — власна довжина драбини</span><b id="m4vL"></b></div>
-        <div class="kv"><span><var>D</var><sub>0</sub> — власна довжина сарая</span><b id="m4vD"></b></div>
-        <div class="kv"><span>швидкість <var>β</var> = <var>v</var>/<var>c</var></span><b id="m4vb"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Що бачить кожен</h3>
-        <div class="kv"><span>лоренц-фактор <var>γ</var></span><b id="m4kg"></b></div>
-        <div class="kv"><span>драбина в СВ сарая <var>L</var><sub>0</sub>/γ</span><b id="m4kLc"></b></div>
-        <div class="kv"><span>сарай у СВ драбини <var>D</var><sub>0</sub>/γ</span><b id="m4kDc"></b></div>
-        <div class="kv"><span>вміщується в СВ сарая<span class="badge" id="m4bfit" hidden>так</span></span><b id="m4kFit"></b></div>
-        <div class="kv"><span>найменша <var>β</var>, за якої вміщується</span><b id="m4kBmin"></b></div>
-        <div class="kv"><span>обидві брами зачинені (СВ сарая)</span><b id="m4kTin"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Чому суперечності немає</h3>
-        <div class="kv"><span>розрив одночасності Δ<var>t</var>′ = γβ<var>D</var><sub>0</sub>/<var>c</var></span><b id="m4kDt"></b></div>
-        <div class="kv"><span>як довго брама зачинена (СВ драбини)</span><b id="m4kWin"></b></div>
-        <div class="kv"><span>проміжок між зачиненнями</span><b id="m4kGap"></b></div>
-        <div class="kv"><span>чи бували зачинені разом<span class="badge">у СВ драбини</span></span><b id="m4kBoth"></b></div>
-        <p class="formulas" id="m4fx"></p>
-      </div>
-      <div class="panel">
-        <h3>Пояснення</h3>
-        <p class="formulas" id="m4why1"></p>
-        <p class="formulas" id="m4why2"></p>
-        <p class="formulas" id="m4why3"></p>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <footer>Допоміжний матеріал із сучасної фізики · СТВ · скорочення довжин · додавання швидкостей · розтяг часу · відносність одночасності</footer>
@@ -509,7 +299,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -710,7 +510,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -739,13 +539,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -873,21 +684,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1213,10 +1035,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
@@ -1304,20 +1124,23 @@ const M1={
     $('m1pp').title=!this.started?'пуск':'пауза';},
   gcol(b){return gcolOf(b,this.mode==='free'?this.GG.length:0);},
   /* сталий кадр §10: обидві панелі однакові, масштаб — з LMAX */
+  /* Одна система відліку — лабораторна. Стрижень спершу лежить у ній
+     нерухомо, тож ані скорочення, ані повороту немає; кнопка «пуск» розганяє
+     його, і далі та сама картина міняється на очах. Другу панель прибрано:
+     вона показувала не інше явище, а те саме з іншого боку. */
   geo(b){return frozen(this,b,bb=>{
-    const C=gcolOf(bb,1), H=C.gtop-46, half=bb.w/2;
-    /* §10: кадр береться з верхніх меж діапазонів: найдовша
-       поздовжня складова — це γ(β_max)·l_max ≈ 1,9·l_max */
-    const sc=Math.min((half-Math.min(60,half*0.42))/(this.LMAX*1.9),(H-Math.min(100,H*0.42))/(this.LMAX*1.2));
-    return {C,H,half,sc, y0:46+H-72, ox:[40,half+40]};
+    const C=gcolOf(bb,1), H=C.gtop-46;
+    const sc=Math.min((bb.w-Math.min(180,bb.w*0.30))/(this.LMAX*1.9),
+                      (H-Math.min(110,H*0.42))/(this.LMAX*1.3));
+    return {C,H,sc, y0:46+H-64, ox:bb.w*0.12};
   });},
   grips(){
     if(this.mode!=='free') return [];
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.geo(b), out=gaugeGrips(gcolOf(b,1),this.GG,this);
-    /* вістря стрижня в лабораторній панелі задає довжину й кут одразу;
-       його точка враховує знос сцени, інакше ручка тікає з-під пальця */
-    const ox=Q.ox[1]+this.drift*Q.sc, oy=Q.y0;
+    /* вістря стрижня задає довжину й кут одразу; точка враховує знос сцени,
+       інакше ручка тікає з-під пальця */
+    const ox=Q.ox+this.drift*Q.sc, oy=Q.y0;
     out.push({id:'tip', x:ox+Q.sc*this.lx(), y:oy-Q.sc*this.ly(), r:11,
       color:CLR.ink, hint:'кінець стрижня: довжина і кут у лабораторії',
       move:(px,py)=>{
@@ -1347,7 +1170,7 @@ const M1={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: l = 100 см, θ = 45°, v = c/2',C.w/2,C.gtop+30,
+      txt(b.g,'числа з умови задачі',C.w/2,C.gtop+30,
         {color:CLR.mut,size:10.5,align:'center'});
     }
   },
@@ -1381,62 +1204,44 @@ const M1={
   },
   scene(){
     const b=cvx('m1scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, ga=this.gam();
+    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
     g.clearRect(0,0,w,H);
-    /* межа панелей */
-    g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.moveTo(Q.half+.5,30); g.lineTo(Q.half+.5,H-6); g.stroke();
-
-    const panels=[
-      {i:0, title:'СВ стрижня (власна)', col:CLR.k2,
-       obs:'спостерігач летить разом зі стрижнем',
-       note:'стрижень нерухомий, шпали летять назад і стиснуті',
-       lx:this.l0x(), ly:this.ly(), step:this.SLEEP/ga, shift:-this.drift/ga,
-       lab:'l₀ = '+fmt(this.l0(),1)+' см · θ₀ = '+fmt(this.th0(),1)+'°'},
-      {i:1, title:'СВ землі (лабораторна)', col:CLR.k1,
-       obs:'спостерігач стоїть на землі',
-       note:'шпали нерухомі, стрижень летить праворуч і стиснутий',
-       lx:this.lx(), ly:this.ly(), step:this.SLEEP, shift:0,
-       lab:'l = '+fmt(this.l,1)+' см · θ = '+fmt(this.th,1)+'°'}
-    ];
-    for(const P of panels){
-      const x0=P.i*Q.half, yb=Q.y0, ox=x0+40+(P.i?this.drift*Q.sc:0);
-      txt(g,P.title,x0+14,24,{color:P.col,size:12.5,bold:true});
-      txt(g,P.obs,x0+14,40,{color:CLR.sec,size:10.5});
-      txt(g,P.note,x0+14,54,{color:CLR.mut,size:10.5});
-      /* земля з орієнтирами */
-      this.sleepers(g,x0+10,x0+Q.half-10,yb,Math.max(8,Q.sc*P.step),
-        P.shift*Q.sc,CLR.axis);
-      const bx=ox, by=yb;
-      /* складові */
-      const px=Q.sc*P.lx, py=Q.sc*P.ly;
-      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
-      g.beginPath(); g.moveTo(bx,by); g.lineTo(bx+px,by);
-      g.lineTo(bx+px,by-py); g.stroke(); g.setLineDash([]);
-      arrow(g,bx,by+18,bx+px,by+18,CLR.k1,2);
-      txtN(g,fmt(P.lx,1)+' см',bx+px/2,by+34,{color:CLR.k1,size:10.5,bold:true,align:'center'});
-      arrow(g,bx+px+16,by,bx+px+16,by-py,CLR.k3,2);
-      txtN(g,fmt(P.ly,1)+' см',bx+px+22,by-py/2,{color:CLR.k3,size:10.5,bold:true});
-      /* драбина */
-      this.ladder(g,bx,by,px,-py,P.i?CLR.ink:CLR.k2,13);
-      dot(g,bx,by,4,CLR.ink);
-      txt(g,P.lab,x0+14,74,{color:P.i?CLR.k1:CLR.k2,size:11.5,bold:true});
-      /* кут */
-      const R=Math.min(40,Math.max(18,px*0.5));
-      arc(g,bx,by,R,-Math.atan2(py,Math.max(1e-6,px)),0,P.i?CLR.k1:CLR.k2,1.5);
-      txtN(g,fmt(P.i?this.th:this.th0(),1)+'°',bx+R+6,by-8,
-        {color:P.i?CLR.k1:CLR.k2,size:11,bold:true});
-      txtN(g,'крок шпал '+fmt(P.step,1)+' см',x0+14,yb+26,{color:CLR.mut,size:10});
-      /* розрахунок швидкості в кожній СВ */
-      const g1=this.gam(), fy=yb+52;
-      if(P.i)
-        fxBlock(g,x0+14,fy,'β = '+fmt(this.be,2)+' · γ = 1/√(1 − β²)',
-          '1/√(1 − '+fmt(this.be*this.be,3)+') = '+fmt(g1,3),
-          'v = βc = '+sci(this.be*CLIGHT,3)+' м/с',CLR.k1);
-      else
-        fxBlock(g,x0+14,fy,'β = √(1 − (lₓ/l₀ₓ)²)',
-          '√(1 − ('+fmt(this.lx(),1)+'/'+fmt(this.l0x(),1)+')²) = '+fmt(this.be,3),
-          'поперечна складова однакова, тож β дає лише поздовжня',CLR.k2);
+    const yb=Q.y0, bx=Q.ox+this.drift*Q.sc;
+    capN(g,this.started?'стрижень розігнано':'стрижень у спокої',12,20,
+      {color:this.started?CLR.k1:CLR.sec,size:12.5,bold:true});
+    capN(g,this.started
+      ? 'коротшає лише поздовжня складова — тому стрижень іще й повертається'
+      : 'натисніть пуск: поки він стоїть, скорочення немає',12,36,
+      {color:CLR.mut,size:10.5});
+    /* земля з орієнтирами */
+    this.sleepers(g,10,w-10,yb,Math.max(8,Q.sc*this.SLEEP),0,CLR.axis);
+    /* складові: поздовжня коротшає, поперечна — ні */
+    const px=Q.sc*this.lx(), py=Q.sc*this.ly();
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(bx,yb); g.lineTo(bx+px,yb);
+    g.lineTo(bx+px,yb-py); g.stroke(); g.setLineDash([]);
+    /* привид власної довжини — те, чим стрижень був у спокої */
+    if(this.started){
+      const p0=Q.sc*this.l0x();
+      g.strokeStyle=CLR.mut; g.lineWidth=1.5; g.setLineDash([5,4]);
+      g.beginPath(); g.moveTo(bx,yb); g.lineTo(bx+p0,yb-py); g.stroke(); g.setLineDash([]);
+      txt(g,'був у спокої',bx+p0+8,yb-py-6,{color:CLR.mut,size:10.5,bold:true});
+    }
+    arrow(g,bx,yb+18,bx+px,yb+18,CLR.k1,2.2);
+    txt(g,'lₓ',bx+px/2,yb+34,{color:CLR.k1,size:11,bold:true,align:'center'});
+    arrow(g,bx+px+16,yb,bx+px+16,yb-py,CLR.k3,2.2);
+    txt(g,'l_y',bx+px+22,yb-py/2,{color:CLR.k3,size:11,bold:true});
+    /* сам стрижень */
+    this.ladder(g,bx,yb,px,-py,CLR.ink,13);
+    dot(g,bx,yb,4,CLR.ink);
+    const R=Math.min(48,Math.max(20,px*0.5));
+    arc(g,bx,yb,R,-Math.atan2(py,Math.max(1e-6,px)),0,CLR.k1,1.6);
+    txt(g,'θ',bx+R+8,yb-8,{color:CLR.k1,size:11.5,bold:true});
+    /* вектор швидкості — ним і показано, наскільки розігнано */
+    if(this.started){
+      const vl=Math.max(14,this.be/this.BMAX*Math.min(180,w*0.16));
+      arrow(g,bx,yb-py-34,bx+vl,yb-py-34,CLR.k2,3);
+      txt(g,'v',bx+vl+8,yb-py-30,{color:CLR.k2,size:12,bold:true});
     }
     for(const hh of this.grips()) if(hh.id==='tip') drawGrip(g,hh,this);
   },
@@ -1766,243 +1571,7 @@ function segSet(id,v){
 }
 
 /* ===================== МОДУЛЬ 3 · час життя і пробіг ===================== */
-const M3={
-  mode:'free', sc:'lab', gam:2, tau:10, L:12, N:60,
-  showAns:true, playing:true, t:0, CYCLE:7,
-  RNG:{lab:{g:[1.05,20,0.05],tau:[2,40,1],L:[1,30,0.5],max:30},
-       sky:{g:[1.05,20,0.05],tau:[500,4000,50],L:[2000,20000,500],max:20000}},
-  hn:{x:null}, hl:{x:null}, tipn:null, tipl:null,
-  R(){return this.RNG[this.sc];},
-  GGof(){
-    const R=this.R(), sky=this.sc==='sky';
-    return [['gam','лоренц-фактор γ',R.g[0],R.g[1],R.g[2],CLR.k2,null,'m3vg',2,''],
-            ['tau',sky?'власний час, нс':'власний час Δt₀, нс',
-              R.tau[0],R.tau[1],R.tau[2],CLR.k3,null,'m3vt0',0,'нс'],
-            ['L',sky?'висота, м':'трек, м',R.L[0],R.L[1],R.L[2],CLR.k1,null,'m3vL',0,'м']];
-  },
-  beta(){return Math.sqrt(Math.max(0,1-1/(this.gam*this.gam)));},
-  /* середній пробіг у лабораторній СВ */
-  path(g){const gg=g||this.gam, be=Math.sqrt(Math.max(0,1-1/(gg*gg)));
-    return gg*be*CLIGHT*this.tau*1e-9;},
-  alive(x){const l=this.path(); return l>1e-12?Math.exp(-x/l):0;},
-  aliveNoSR(x){const p=this.path()/this.gam;
-    return p>1e-12?Math.exp(-x/p):0;},
-  /* детерміновані відстані розпаду: точні квантилі показникового розподілу */
-  decayAt(i){return -this.path()*Math.log((i+0.5)/this.N);},
-  setTask(){this.sc='lab'; this.gam=2; this.tau=10; this.L=12; this.t=0;
-    segSet('m3sc','lab');},
-  setMode(m){this.mode=m; if(m==='task') this.setTask(); this.t=0;
-    this.showAns=m!=='task'; this.syncAns();},
-  setSc(v){
-    if(v===this.sc) return;
-    this.sc=v; this._froz=null; this.t=0;
-    if(v==='sky'){
-      if(this.mode==='task'){this.mode='free'; segSet('m3mode','free');
-        this.showAns=true; this.syncAns();}
-      this.gam=10; this.tau=2197; this.L=15000;
-    } else { this.gam=2; this.tau=10; this.L=12; }
-  },
-  syncAns(){const task=this.mode==='task';
-    $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
-  init(){
-    seg('m3sc',v=>this.setSc(v));
-    grip('m3scene',this,()=>this.grips());
-    $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m3re').onclick=()=>{this.t=0;};
-    $('m3pp').onclick=()=>{this.playing=!this.playing;
-      $('m3pp').textContent=this.playing?'⏸':'▶';};
-    this.tipn=makeTip('m3cnw'); this.tipl=makeTip('m3clw');
-    hover('m3cn',this.hn); hover('m3cl',this.hl);
-    this.hn.xlab='шлях'; this.hn.xunit=' м'; this.hn.xdec=0;
-    this.hl.xlab='γ'; this.hl.xunit=''; this.hl.xdec=1;
-    this.setTask(); this.syncAns();
-  },
-  grips(){
-    if(this.mode!=='free') return [];
-    const b=cvx('m3scene'); if(!b) return [];
-    const L=this.GGof();
-    return gaugeGrips(gcolOf(b,L.length),L,this);
-  },
-  geo(b){return frozen(this,b,bb=>{
-    const C=gcolOf(bb,3), H=C.gtop-46;
-    return {C,H, x0:44, tw:bb.w-108, yA:46+H*0.20, yB:46+H*0.72};
-  });},
-  tick(dt){
-    if(this.playing) this.t+=dt;
-    if(this.t>this.CYCLE) this.t=0;
-    this.render();
-  },
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m3scene'); if(!b) return;
-    const L=this.GGof(), C=gcolOf(b,L.length);
-    if(this.mode==='free'){
-      gaugeCol(b.g,C,L,this);
-      for(const hh of gaugeGrips(C,L,this)) drawGrip(b.g,hh,this);
-    } else {
-      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
-      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
-      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: Δt₀ = 10 нс, Δt = 20 нс ⇒ γ = 2',C.w/2,C.gtop+30,
-        {color:CLR.mut,size:10.5,align:'center'});
-    }
-  },
-  scene(){
-    const b=cvx('m3scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
-    const MAX=this.R().max, sc=Q.tw/MAX, sky=this.sc==='sky';
-    const p=Math.min(1,this.t/(this.CYCLE*0.86));
-    const x=p*this.L;                            /* пройдений шлях у лаб. СВ, м */
-    const be=this.beta(), ga=this.gam;
-    g.clearRect(0,0,w,H);
-    const unit=v=>sky?fmt(v/1000,1)+' км':fmt(v,1)+' м';
-    /* ---------- панель А: СВ лабораторії (Землі) ---------- */
-    const yA=Q.yA;
-    txt(g,sky?'СВ Землі — «час мюона розтягнувся»':'СВ лабораторії — «час частинки розтягнувся»',
-      Q.x0-30,24,{color:CLR.k1,size:12.5,bold:true});
-    txtN(g,'годинник частинки йде в γ = '+fmt(ga,2)+' разів повільніше, тому вона встигає далі',
-      Q.x0-30,40,{color:CLR.sec,size:10.5});
-    this.track(g,Q.x0,yA,Q.tw,sc,MAX,0,sky,unit);
-    /* детектор */
-    const xd=Q.x0+this.L*sc;
-    g.strokeStyle=CLR.k1; g.lineWidth=3;
-    g.beginPath(); g.moveTo(xd,yA-26); g.lineTo(xd,yA+26); g.stroke();
-    txt(g,sky?'рівень моря':'детектор',xd+6,yA-30,{color:CLR.k1,size:10.5,bold:true});
-    /* частинки */
-    let live=0;
-    for(let i=0;i<this.N;i++){
-      const d=this.decayAt(i), row=(i%6-2.5)*7;
-      if(d>x){live++; dot(g,Q.x0+x*sc,yA+row,3,CLR.ink);}
-      else if(d*sc<Q.tw){
-        const px=Q.x0+d*sc;
-        g.strokeStyle=CLR.mut; g.lineWidth=1; g.globalAlpha=0.5;
-        for(let k=0;k<4;k++){const a=k*Math.PI/4;
-          g.beginPath(); g.moveTo(px-4*Math.cos(a),yA+row-4*Math.sin(a));
-          g.lineTo(px+4*Math.cos(a),yA+row+4*Math.sin(a)); g.stroke();}
-        g.globalAlpha=1;
-      }
-    }
-    txtN(g,'живих '+live+' з '+this.N+' · '+fmt(100*live/this.N,1)+' %',
-      Q.x0+Q.tw,yA-44,{color:CLR.k1,size:12,bold:true,align:'right'});
-    txt(g,'пройдено '+unit(x)+' · середній пробіг l = '+unit(this.path()),
-      Q.x0,yA+52,{color:CLR.mut,size:10.5});
-    /* ---------- панель Б: СВ частинки ---------- */
-    const yB=Q.yB;
-    g.strokeStyle=CLR.grid; g.lineWidth=1;
-    g.beginPath(); g.moveTo(10,yB-64.5); g.lineTo(w-10,yB-64.5); g.stroke();
-    txt(g,sky?'СВ мюона — «атмосфера скоротилася»':'СВ частинки — «трек скоротився»',
-      Q.x0-30,yB-52,{color:CLR.k2,size:12.5,bold:true});
-    txtN(g,'частинка живе свої '+fmt(this.tau,0)+' нс, але трек коротший у γ разів',
-      Q.x0-30,yB-36,{color:CLR.sec,size:10.5});
-    this.track(g,Q.x0,yB,Q.tw,sc*ga>0?sc:sc,MAX,0,sky,unit,ga,-x/ga*sc*ga);
-    /* частинка стоїть на місці, трек летить */
-    const xp=Q.x0+18;
-    for(let i=0;i<this.N;i++){
-      const d=this.decayAt(i), row=(i%6-2.5)*7;
-      if(d>x) dot(g,xp,yB+row,3,CLR.ink);
-    }
-    /* скорочений трек як смуга, що зменшується */
-    const rest=Math.max(0,(this.L-x))/ga;
-    g.strokeStyle=CLR.k2; g.lineWidth=3;
-    g.beginPath(); g.moveTo(xp+10,yB+34); g.lineTo(xp+10+rest*sc*ga/ga*1,yB+34); g.stroke();
-    const xe=xp+10+rest*sc;
-    g.strokeStyle=CLR.k2; g.lineWidth=3;
-    g.beginPath(); g.moveTo(xe,yB+22); g.lineTo(xe,yB+46); g.stroke();
-    txt(g,'лишилося '+unit(rest*ga)+' у СВ Землі = '+unit(rest)+' у СВ частинки',
-      xp+14,yB+58,{color:CLR.k2,size:10.5});
-    txtN(g,'живих '+live+' з '+this.N+' · '+fmt(100*live/this.N,1)+' %',
-      Q.x0+Q.tw,yB-52,{color:CLR.k2,size:12,bold:true,align:'right'});
-    txtN(g,'власний годинник: '+fmt(this.path()>0?(x/(be*CLIGHT))/ga*1e9:0,1)+' нс з '+
-      fmt(this.tau,0)+' нс',xp+14,yB-16,{color:CLR.mut,size:10.5});
-    for(const hh of this.grips()) if(!hh.bare) drawGrip(g,hh,this);
-  },
-  /* трек з орієнтирами; ga>1 стискає крок позначок, shift зсуває їх */
-  track(g,x0,y,tw,sc,MAX,_z,sky,unit,ga,shift){
-    const G=ga||1, S=shift||0;
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(x0,y+22.5); g.lineTo(x0+tw,y+22.5); g.stroke();
-    const raw=niceStep(MAX/8), step=raw*sc/G;
-    for(let k=0;k*step<=tw+1;k++){
-      const px=x0+k*step+((S%step)+step)%step;
-      if(px>x0+tw) continue;
-      g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.moveTo(px+.5,y+22); g.lineTo(px+.5,y+31); g.stroke();
-      if(k%2===0&&G===1) txt(g,unit(k*raw),px,y+42,{color:CLR.mut,size:9,align:'center'});
-    }
-    if(sky){
-      for(let k=0;k<5;k++){
-        const px=x0+tw*(0.08+k*0.17)+((S*0.3)%40);
-        g.fillStyle='#dfe6ee';
-        g.beginPath(); g.arc(px,y-38,9,0,7); g.arc(px+11,y-40,12,0,7);
-        g.arc(px+23,y-37,8,0,7); g.fill();
-      }
-      g.fillStyle='#cfc7b6';
-      g.beginPath(); g.moveTo(x0+tw-70,y+22); g.lineTo(x0+tw-40,y-16);
-      g.lineTo(x0+tw-10,y+22); g.closePath(); g.fill();
-    }
-    if(G>1) txt(g,'крок позначок стиснуто в γ разів',x0,y+42,{color:CLR.mut,size:9});
-    fxBlock(g,x0,y+64,'β = √(1 − 1/γ²)',
-      '√(1 − 1/'+fmt(this.gam*this.gam,2)+') = '+fmt(this.beta(),4),
-      'v = '+sci(this.beta()*CLIGHT,3)+' м/с · пробіг γβcΔt₀ = '+
-      fmt(this.path(),1)+' м',CLR.k2);
-  },
-  table(){
-    const sky=this.sc==='sky', be=this.beta(), l=this.path();
-    const unit=v=>sky?fmt(v/1000,2)+' км':fmt(v,2)+' м';
-    const tu=v=>sky?fmt(v/1000,3)+' мкс':fmt(v,1)+' нс';
-    $('m3t').textContent=(sky?'мюон':'частинка')+' · γ = '+fmt(this.gam,2);
-    $('m3vt0').textContent=tu(this.tau);
-    $('m3vg').textContent=fmt(this.gam,2);
-    $('m3vL').textContent=unit(this.L);
-    $('m3rl').textContent=unit(l);
-    $('m3rb').textContent=fmt(be,4)+' c';
-    $('m3kt').textContent=tu(this.gam*this.tau);
-    $('m3kL0').textContent=unit(this.L/this.gam);
-    const n1=100*this.alive(this.L), n0=100*this.aliveNoSR(this.L);
-    $('m3kn1').textContent=fmt(n1,n1<1?4:2)+' %';
-    $('m3kn2').textContent=fmt(n1,n1<1?4:2)+' %';
-    $('m3kn0').textContent=n0<1e-4?sci(n0,2)+' %':fmt(n0,4)+' %';
-    let live=0; for(let i=0;i<this.N;i++) if(this.decayAt(i)>Math.min(1,this.t/(this.CYCLE*0.86))*this.L) live++;
-    $('m3kal').textContent=live+' з '+this.N;
-    $('m3fx').innerHTML=
-      'γ = Δ<i>t</i>/Δ<i>t</i>₀ = '+fmt(this.gam,2)+', β = √(1 − 1/γ²) = <b>'+
-      fmt(be,4)+'</b><br><i>l</i> = β<i>c</i>Δ<i>t</i> = γβ<i>c</i>Δ<i>t</i>₀ = <b>'+
-      unit(l)+'</b><br>обидва записи дають те саме число — це і є рівноправність двох СВ';
-    $('m3fx2').innerHTML='у СВ Землі частка живих на шляху <i>x</i> дорівнює '+
-      'e<sup>−x/l</sup>; у СВ частинки — e<sup>−(x/γ)/(β<i>c</i>Δ<i>t</i>₀)</sup>. '+
-      'Дроби в показниках однакові, тож і числа збігаються';
-  },
-  charts(){
-    const bn=cvx('m3cn');
-    if(bn){
-      const MAX=this.R().max, ts=[],y1=[],y0=[];
-      for(let i=0;i<=120;i++){
-        const x=MAX*i/120; ts.push(x);
-        y1.push(100*this.alive(x)); y0.push(100*this.aliveNoSR(x));
-      }
-      const r=drawChart(bn,{tMax:MAX,yMin:0,yMax:105,yLab:'%',
-        xLab:this.sc==='sky'?'шлях, м':'шлях, м',yDec:0,hover:this.hn.x,
-        series:[{ts,ys:y1,color:CLR.k2,label:'з СТВ'},
-                {ts,ys:y0,color:CLR.sec,label:'без СТВ'},
-                {ts:[this.L,this.L],ys:[0,105],color:CLR.ink,label:'детектор',dash:[4,3]}]});
-      showTip(this.tipn,r,' %',this.hn,[['з урахуванням СТВ',CLR.k2],
-        ['якби часу не розтягувало',CLR.sec],['детектор',CLR.ink]],2);
-    }
-    const bl=cvx('m3cl');
-    if(bl){
-      const R=this.R(), ts=[],ys=[];
-      for(let i=0;i<=100;i++){
-        const gg=R.g[0]+(R.g[1]-R.g[0])*i/100; ts.push(gg); ys.push(this.path(gg));
-      }
-      const top=this.path(R.g[1])*1.08;
-      const r=drawChart(bl,{tMax:R.g[1],yMin:0,yMax:top,yLab:'м',xLab:'лоренц-фактор γ',
-        yDec:0,hover:this.hl.x,
-        series:[{ts,ys,color:CLR.k3,label:'l'},
-                {ts:[this.gam,this.gam],ys:[0,top],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipl,r,' м',this.hl,[['середній пробіг',CLR.k3],['зараз',CLR.ink]],0);
-    }
-  }
-};
+
 
 
 /* ===================== МОДУЛЬ 4 · драбина в сараї =====================
@@ -2312,7 +1881,7 @@ const M4={
 };
 
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2,m3:M3,m4:M4};
+const MODULES={m1:M1,m2:M2,m4:M4};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;

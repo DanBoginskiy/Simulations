@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,13 +104,14 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/452; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/389; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -160,7 +161,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -197,7 +198,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -208,8 +209,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Напівпроникна мембрана</button>
-  <button data-m="m2">2 · Редактор процесу</button>
-  <button data-m="m3">3 · Поршень і гиря</button>
+  <button data-m="m3">2 · Поршень і гиря</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -218,8 +218,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   Мембрана пропускає лише водень, і кожен газ поводиться так, ніби другого немає:
   саме це й називають законом Дальтона.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">В одну половину відкачаного циліндра, розділеного жорсткою напівпроникною мембраною, швидко впускають суміш однакових кількостей водню (<b>M₁</b>) і гелію (<b>M₂</b>) з тиском <b>P₀</b>. Визначити тиски <b>X₁</b> і <b>X₂</b> після припинення дифузії, якщо мембрана пропускає тільки водень, <b>T</b> = const.</p>
+
       <div class="panel">
         <div class="toolbar">
           <div class="seg" id="m1mem">
@@ -228,7 +228,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           </div>
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
-          <span class="lbl" id="m1t"></span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
@@ -247,109 +246,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           </div>
         </div>
       </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.10</h3>
-        <p class="cond">В одну половину відкачаного циліндра, розділеного жорсткою напівпроникною
-        мембраною, швидко впускають суміш однакових кількостей водню (<b>M₁ = 2 г/моль</b>) і гелію
-        (<b>M₂ = 4 г/моль</b>) з тиском <b>P₀ = 100 кПа</b>. Визначити тиски <b>P₁</b> і <b>P₂</b>
-        після припинення дифузії, якщо мембрана пропускає тільки водень, <b>T = const</b>.</p>
-        <div class="kv"><span><var>P</var><sub>0</sub> — початковий тиск суміші зліва</span><b id="m1vp0"></b></div>
-        <div class="kv"><span>молекул кожного сорту</span><b id="m1vn"></b></div>
-        <div class="kv"><span>мембрана</span><b id="m1vmem"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m1ans">показати відповідь<small>тиски після дифузії</small></button>
-        <div class="ansbox" id="m1ansBox" hidden>
-          <div class="kv"><span>ліва половина <var>P</var><sub>1</sub></span><b id="m1rP1"></b></div>
-          <div class="kv"><span>права половина <var>P</var><sub>2</sub></span><b id="m1rP2"></b></div>
-          <div class="formulas" id="m1fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Кожен газ окремо</h3>
-        <div class="kv"><span><span class="chip cA"></span>водень ліворуч / праворуч</span><b id="m1kH"></b></div>
-        <div class="kv"><span><span class="chip cC"></span>гелій ліворуч<span class="badge">не проходить</span></span><b id="m1kHe"></b></div>
-        <div class="kv"><span>парціальний тиск водню<span class="badge">однаковий по обидва боки</span></span><b id="m1kPh"></b></div>
-        <div class="kv"><span>парціальний тиск гелію</span><b id="m1kPhe"></b></div>
-        <div class="kv"><span>тиск ліворуч зараз</span><b id="m1kP1"></b></div>
-        <div class="kv"><span>тиск праворуч зараз</span><b id="m1kP2"></b></div>
-        <div class="formulas">водень удвічі легший, тому й удвічі швидший — рівновага настає швидше</div>
-      </div>
-    </div>
-  </div>
+    
 </section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
-<section class="module" id="m2">
-  <p class="caption">Діаграму читають як картинку, доки не побачать поршень, що рухається разом
-  із точкою стану. Задайте закон <var>P</var> ~ <var>T</var><sup>k</sup> — і три діаграми
-  та циліндр змінюються одночасно.</p>
 
-  <div class="pgrid">
-    <div class="scene">
-      <div class="panel">
-        <div class="toolbar">
-          <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
-          <button class="ibtn" id="m2re" title="заново">↺</button>
-          <span class="lbl" id="m2t"></span>
-        </div>
-        <canvas id="m2scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Три діаграми того самого процесу</h3>
-        <div class="chartrow3">
-          <div class="chartbox" id="m2cpvw">
-            <h4><var>P</var>–<var>V</var></h4>
-            <div class="legend sm"><span><span class="chip cB"></span>процес</span><span><span class="chip cI"></span>стан</span></div>
-            <canvas id="m2cpv"></canvas>
-          </div>
-          <div class="chartbox" id="m2cptw">
-            <h4><var>P</var>–<var>T</var></h4>
-            <div class="legend sm"><span><span class="chip cA"></span>P = αT<sup>k</sup></span><span><span class="chip cI"></span>стан</span></div>
-            <canvas id="m2cpt"></canvas>
-          </div>
-          <div class="chartbox" id="m2cvtw">
-            <h4><var>V</var>–<var>T</var></h4>
-            <div class="legend sm"><span><span class="chip cC"></span>процес</span><span><span class="chip cI"></span>стан</span></div>
-            <canvas id="m2cvt"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.24</h3>
-        <p class="cond">Із заданою кількістю газу <b>ν</b> проводять процес, у якому тиск змінюється
-        з температурою як <b>P = α√T</b>, де α — задана стала. Визначити залежність об'єму газу
-        від тиску <b>V(P)</b> та показати її на графіку.</p>
-        <div class="kv"><span><var>k</var> — показник у <var>P</var> ~ <var>T</var><sup>k</sup><span class="badge" id="m2bk" hidden>умова: k = ½</span></span><b id="m2vk"></b></div>
-        <div class="kv"><span><var>ν</var> — кількість речовини</span><b id="m2vnu"></b></div>
-        <div class="kv"><span>стан зараз: <var>T</var></span><b id="m2vT"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>вигляд V(P)</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>залежність <var>V</var>(<var>P</var>)</span><b id="m2rVP"></b></div>
-          <div class="kv"><span>вигляд у координатах <var>V</var>–<var>P</var></span><b id="m2rShape"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Стан газу зараз</h3>
-        <div class="kv"><span>тиск <var>P</var></span><b id="m2kP"></b></div>
-        <div class="kv"><span>об'єм <var>V</var></span><b id="m2kV"></b></div>
-        <div class="kv"><span>температура <var>T</var></span><b id="m2kT"></b></div>
-        <div class="kv"><span>перевірка <var>PV</var>/<var>T</var> = <var>νR</var><span class="badge">стала</span></span><b id="m2kPVT"></b></div>
-        <div class="kv"><span>що відбувається з об'ємом</span><b id="m2kWhat"></b></div>
-        <div class="formulas" id="m2fx2"></div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ================= МОДУЛЬ 3 ================= -->
 <section class="module" id="m3">
@@ -357,68 +258,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   але тиск уже інший, і на діаграмі <var>P</var>–<var>V</var> це видно як ламану,
   що не замикається.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Повітря у відкритому вертикальному циліндрі під рухомим поршнем нагрівають від <b>t₁</b> до <b>t₂</b>. Атмосферний тиск <b>P</b>, площа основи <b>S</b>. Визначити відстань <b>X</b>, на яку переміститься поршень, якщо спочатку він був на <b>l</b> від основи, і масу <b>m</b>, яку треба покласти на поршень, аби повернути його назад при незмінній температурі.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
-          <span class="lbl" id="m3t"></span>
         </div>
         <canvas id="m3scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Два етапи на одній діаграмі</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3cpvw">
-            <h4>ламана <var>P</var>–<var>V</var>: ізобара, потім ізотерма</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>нагрівання</span><span><span class="chip cC"></span>стиснення гирею</span><span><span class="chip cI"></span>стан</span></div>
-            <canvas id="m3cpv"></canvas>
-          </div>
-          <div class="chartbox" id="m3cmw">
-            <h4>потрібна маса гирі від температури нагріву, кг</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>m(t₂)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m3cm"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.29</h3>
-        <p class="cond">Повітря у відкритому вертикальному циліндрі під рухомим поршнем нагрівають
-        від <b>t₁ = 7 °C</b> до <b>t₂ = 63 °C</b>. Атмосферний тиск <b>P = 760 мм рт.ст.</b>,
-        площа основи <b>S = 100 см²</b>. 1. На яку відстань <b>h</b> переміститься поршень, якщо
-        спочатку він був на <b>l = 30 см</b> від основи. 2. Яку масу <b>m</b> покласти на поршень,
-        аби повернути його в початкове положення при незмінній температурі.</p>
-        <div class="kv"><span><var>l</var> — початкова висота стовпа повітря</span><b id="m3vl"></b></div>
-        <div class="kv"><span><var>t</var><sub>2</sub> — до якої температури нагріли</span><b id="m3vt2"></b></div>
-        <div class="kv"><span><var>S</var> — площа поршня</span><b id="m3vS"></b></div>
-        <div class="kv"><span><var>m</var> — маса покладеної гирі<span class="badge">задаєте ви</span></span><b id="m3vm"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m3ans">показати відповідь<small>переміщення та маса гирі</small></button>
-        <div class="ansbox" id="m3ansBox" hidden>
-          <div class="kv"><span>переміщення поршня <var>h</var></span><b id="m3rH"></b></div>
-          <div class="kv"><span>маса гирі <var>m</var></span><b id="m3rM"></b></div>
-          <div class="formulas" id="m3fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Етапи процесу</h3>
-        <div class="kv"><span>етап 1: ізобара<span class="badge">P = const</span></span><b id="m3kS1"></b></div>
-        <div class="kv"><span>висота після нагрівання</span><b id="m3kL2"></b></div>
-        <div class="kv"><span>етап 2: ізотерма<span class="badge">T = const</span></span><b id="m3kS2"></b></div>
-        <div class="kv"><span>потрібний тиск</span><b id="m3kP2"></b></div>
-        <div class="kv"><span>надлишок над атмосферним</span><b id="m3kDP"></b></div>
-        <div class="kv"><span>тиск від вашої гирі</span><b id="m3kPa"></b></div>
-        <div class="kv"><span>висота стовпа з нею</span><b id="m3kLe"></b></div>
-        <div class="kv"><span>стан повернувся?</span><b id="m3kBack"></b></div>
-        <div class="formulas" id="m3fx2"></div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <footer>Допоміжний матеріал з молекулярної фізики · тиск і закон Дальтона · рівняння стану · ізопроцеси</footer>
@@ -438,7 +288,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -639,7 +499,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -668,13 +528,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -802,21 +673,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1142,10 +1024,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
@@ -1415,189 +1295,7 @@ const M1={
 
 /* ===================== МОДУЛЬ 2 · редактор процесу P ~ T^k ===================== */
 const R_GAS=8.314;
-const M2={
-  mode:'free', k:0.5, nu:1, u:0.35,
-  t:0, playing:true, showAns:true,
-  T1:250, T2:520,
-  hpv:{x:null}, hpt:{x:null}, hvt:{x:null}, tippv:null, tippt:null, tipvt:null,
-  GG:[['k','показник k',-1.5,2,0.05,CLR.k2,null,'m2vk',2,''],
-      ['nu','ν, моль',0.5,2,0.05,CLR.k1,null,'m2vnu',2,'']],
-  /* α добираємо так, щоб при T = 350 К тиск був 100 кПа — інакше числа «пливуть» */
-  al(){return 1e5/Math.pow(350,this.k);},
-  Tof(u){return this.T1+(this.T2-this.T1)*u;},
-  Pof(u){return this.al()*Math.pow(this.Tof(u),this.k);},
-  Vof(u){return this.nu*R_GAS*this.Tof(u)/this.Pof(u);},
-  setTask(){this.k=0.5; this.nu=1;},
-  reset(){this.t=0; this.u=0.35; this.playing=true; this.updBtn();},
-  updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
-  setMode(m){this.mode=m; if(m==='task') this.setTask();
-    this.showAns=m!=='task'; this.syncAns(); this.reset();},
-  syncAns(){const task=this.mode==='task';
-    $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;
-    $('m2bk').hidden=Math.abs(this.k-0.5)>1e-9;},
-  init(){
-    grip('m2scene',this,()=>this.grips());
-    $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m2play').onclick=()=>{this.playing=!this.playing; this.updBtn();};
-    $('m2re').onclick=()=>this.reset();
-    this.tippv=makeTip('m2cpvw'); this.tippt=makeTip('m2cptw'); this.tipvt=makeTip('m2cvtw');
-    hover('m2cpv',this.hpv); hover('m2cpt',this.hpt); hover('m2cvt',this.hvt);
-    this.setTask(); this.syncAns(); this.reset();
-  },
-  gcol(b){return gcolOf(b,this.GG.length);},
-  Vmax(){return 2*R_GAS*this.T2/(this.al()*Math.pow(this.T1,this.k));},
-  geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52;
-    return {C,H,cx:bb.w*0.24,cy:58,cw:Math.min(150,bb.w*0.19),ch:H-46,
-      tx:bb.w*0.56,ty:60,tw:bb.w*0.36,th:H-56};
-  });},
-  grips(){
-    if(this.mode!=='free') return [];
-    const b=cvx('m2scene'); if(!b) return [];
-    const Q=this.geo(b);
-    const yT=Q.cy+Q.ch-this.u*Q.ch;
-    return [
-      /* стан ведуть уздовж процесу — поршнем */
-      {id:'u', x:Q.cx, y:yT, r:11, bare:true, color:CLR.ink, hint:'вести процес',
-       move:(px,py)=>{this.u=clamp((Q.cy+Q.ch-py)/Q.ch,0,1);}}
-    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
-  },
-  tick(dt){
-    if(this._grab==null&&this.playing){
-      this.t+=dt;
-      this.u=0.5+0.5*Math.sin(this.t*0.55);
-    }
-    this.render();
-  },
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m2scene'); if(!b) return;
-    const C=this.gcol(b);
-    if(this.mode==='free'){
-      gaugeCol(b.g,C,this.GG,this);
-      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
-    } else {
-      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
-      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
-      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: P = α√T, тобто k = ½',C.w/2,C.gtop+30,
-        {color:CLR.mut,size:10.5,align:'center'});
-    }
-    $('m2vk').textContent=fmt(this.k,2);
-    $('m2vnu').textContent=fmt(this.nu,2)+' моль';
-  },
-  scene(){
-    const b=cvx('m2scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
-    const V=this.Vof(this.u), P=this.Pof(this.u), T=this.Tof(this.u);
-    const Vm=this.Vmax();
-    g.clearRect(0,0,w,H);
-    /* циліндр із поршнем: висота стовпа газу пропорційна об'єму */
-    const fill=Math.max(0.04,Math.min(1,V/Vm));
-    const yT=Q.cy+Q.ch-fill*Q.ch;
-    g.fillStyle='rgba(42,120,214,.10)';
-    g.fillRect(Q.cx-Q.cw/2,yT,Q.cw,Q.cy+Q.ch-yT);
-    g.strokeStyle=CLR.axis; g.lineWidth=2;
-    g.beginPath(); g.moveTo(Q.cx-Q.cw/2,Q.cy-6); g.lineTo(Q.cx-Q.cw/2,Q.cy+Q.ch);
-    g.lineTo(Q.cx+Q.cw/2,Q.cy+Q.ch); g.lineTo(Q.cx+Q.cw/2,Q.cy-6); g.stroke();
-    g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.roundRect(Q.cx-Q.cw/2-3,yT-11,Q.cw+6,11,2); g.fill(); g.stroke();
-    g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.moveTo(Q.cx,yT-11); g.lineTo(Q.cx,Q.cy-8); g.stroke();
-    /* молекули всередині — щоб газ був газом, а не заливкою */
-    for(let i=0;i<26;i++){
-      const px=Q.cx-Q.cw/2+8+((i*37)%(Q.cw-16));
-      const py=yT+8+((i*53+Math.floor(this.t*40))%Math.max(10,Q.cy+Q.ch-yT-14));
-      dot(g,px,py,2,'rgba(42,120,214,.55)');
-    }
-    txtN(g,'V = '+fmt(V*1000,2)+' л',Q.cx,Q.cy+Q.ch+18,
-      {color:'#1c5cab',size:11.5,bold:true,align:'center'});
-    txt(g,'газ під поршнем',Q.cx,Q.cy+Q.ch+34,{color:CLR.sec,size:11,bold:true,align:'center'});
-    /* термометр показує температуру стану — прилад, а не число */
-    const tx=Q.cx+Q.cw/2+44;
-    therm(g,tx,Q.cy+Q.ch,Q.ch,(T-this.T1)/(this.T2-this.T1),CLR.k2,'T');
-    txtN(g,fmt(T,0)+' К',tx,Q.cy-10,{color:'#b8431a',size:11.5,bold:true,align:'center'});
-    /* смуга тиску праворуч від термометра */
-    const px0=tx+52;
-    const Pm=this.al()*Math.pow(this.T2,Math.max(this.k,0))*1.05+1e3;
-    slideTrack(g,px0,Q.cy+Q.ch,Q.ch,P/Pm,CLR.k1,true);
-    txtN(g,fmt(P/1000,0)+' кПа',px0,Q.cy-10,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
-    txt(g,'тиск',px0,Q.cy+Q.ch+22,{color:'#1c5cab',size:10.5,align:'center'});
-    /* закон процесу великим планом — це і є те, що редагують */
-    const law=Math.abs(this.k-0.5)<1e-9?'P = α√T'
-      :Math.abs(this.k-1)<1e-9?'P = αT'
-      :Math.abs(this.k+1)<1e-9?'P = α/T   (PV² = const)'
-      :Math.abs(this.k)<1e-9?'P = α   (ізобара)'
-      :'P = α·T^'+fmt(this.k,2);
-    txt(g,law,Q.tx,Q.ty+10,{color:CLR.k2,size:17,bold:true});
-    txt(g,'звідси T = (P/α)^(1/k), а V = νRT/P',Q.tx,Q.ty+32,{color:CLR.mut,size:11});
-    /* показник степеня V(P): V ~ P^(1/k − 1) */
-    const e=1/this.k-1;
-    txtN(g,'V(P) ~ P^'+fmt(e,2),Q.tx,Q.ty+62,{color:CLR.ink,size:15,bold:true});
-    txt(g,Math.abs(e-1)<1e-9?'пряма через початок координат'
-      :Math.abs(e)<1e-9?'об\'єм не залежить від тиску'
-      :Math.abs(e+1)<1e-9?'гіпербола: PV = const'
-      :(e>0?'об\'єм росте з тиском':'об\'єм спадає з тиском'),
-      Q.tx,Q.ty+82,{color:CLR.sec,size:11.5,bold:true});
-    txtN(g,'ν R = '+fmt(this.nu*R_GAS,2)+' Дж/К — стала цього процесу',
-      Q.tx,Q.ty+108,{color:CLR.mut,size:10.5});
-    capN(g,'редактор процесу',12,20,{color:CLR.k2,size:12.5,bold:true});
-    capN(g,'поршень, термометр і три діаграми показують один і той самий стан',12,36,{color:CLR.mut,size:10.5});
-    for(const hh of this.grips()) if(hh.id==='u') drawGrip(g,hh,this);
-  },
-  table(){
-    const V=this.Vof(this.u), P=this.Pof(this.u), T=this.Tof(this.u), e=1/this.k-1;
-    $('m2t').textContent='стан: T = '+fmt(T,0)+' К';
-    $('m2vT').textContent=fmt(T,0)+' К';
-    $('m2rVP').textContent='V ~ P^'+fmt(e,2);
-    $('m2rShape').textContent=Math.abs(e-1)<1e-9?'пряма через нуль'
-      :(Math.abs(e+1)<1e-9?'гіпербола':'степенева крива');
-    $('m2kP').textContent=fmt(P/1000,1)+' кПа';
-    $('m2kV').textContent=fmt(V*1000,2)+' л';
-    $('m2kT').textContent=fmt(T,0)+' К';
-    $('m2kPVT').textContent=fmt(P*V/T,3)+' Дж/К';
-    $('m2kWhat').textContent=e>0.01?'росте разом із тиском':(e<-0.01?'спадає з тиском':'не змінюється');
-    $('m2fx').innerHTML=
-      '<i>P</i> = α<i>T</i><sup>k</sup> → <i>T</i> = (<i>P</i>/α)<sup>1/k</sup>, '+
-      '<i>V</i> = <i>νRT</i>/<i>P</i> = <i>νR</i>(<i>P</i>/α)<sup>1/k</sup>/<i>P</i><br>'+
-      'при <i>k</i> = ½: <b>V = νRP/α²</b> — пряма через початок координат';
-    $('m2fx2').innerHTML='добуток <i>PV</i>/<i>T</i> не змінюється вздовж усього процесу — '+
-      'це й є рівняння стану';
-  },
-  charts(){
-    const N=60, Vs=[],Ps=[],Ts=[];
-    for(let i=0;i<=N;i++){const u=i/N; Vs.push(this.Vof(u)*1000); Ps.push(this.Pof(u)/1000); Ts.push(this.Tof(u));}
-    const V=this.Vof(this.u)*1000, P=this.Pof(this.u)/1000, T=this.Tof(this.u);
-    const Vm=Math.max(...Vs)*1.12, Pm=Math.max(...Ps)*1.12;
-    const bpv=cvx('m2cpv');
-    if(bpv){
-      const r=drawChart(bpv,{tMax:Vm,yMin:0,yMax:Pm,yLab:'P, кПа',xLab:'V, л',
-        xDec:1,yDec:0,hover:this.hpv.x,
-        series:[{ts:Vs,ys:Ps,color:CLR.k2,label:'процес'},
-                {ts:[V,V],ys:[0,P],color:CLR.ink,label:'стан',dash:[4,3]}]});
-      this.hpv.xlab='V'; this.hpv.xunit='л'; this.hpv.xdec=2;
-      showTip(this.tippv,r,'кПа',this.hpv,[['P',CLR.k2],['стан',CLR.ink]],1);
-    }
-    const bpt=cvx('m2cpt');
-    if(bpt){
-      const r=drawChart(bpt,{tMax:this.T2,yMin:0,yMax:Pm,yLab:'P, кПа',xLab:'T, К',
-        xStep:100,yDec:0,hover:this.hpt.x,
-        series:[{ts:Ts,ys:Ps,color:CLR.k1,label:'P(T)'},
-                {ts:[T,T],ys:[0,P],color:CLR.ink,label:'стан',dash:[4,3]}]});
-      this.hpt.xlab='T'; this.hpt.xunit='К'; this.hpt.xdec=0;
-      showTip(this.tippt,r,'кПа',this.hpt,[['P',CLR.k1],['стан',CLR.ink]],1);
-    }
-    const bvt=cvx('m2cvt');
-    if(bvt){
-      const r=drawChart(bvt,{tMax:this.T2,yMin:0,yMax:Vm,yLab:'V, л',xLab:'T, К',
-        xStep:100,yDec:1,hover:this.hvt.x,
-        series:[{ts:Ts,ys:Vs,color:CLR.k3,label:'V(T)'},
-                {ts:[T,T],ys:[0,V],color:CLR.ink,label:'стан',dash:[4,3]}]});
-      this.hvt.xlab='T'; this.hvt.xunit='К'; this.hvt.xdec=0;
-      showTip(this.tipvt,r,'л',this.hvt,[['V',CLR.k3],['стан',CLR.ink]],2);
-    }
-  }
-};
+
 
 /* ===================== МОДУЛЬ 3 · поршень і гиря ===================== */
 const MMHG=101325/760;                 /* один міліметр ртутного стовпа, Па */
@@ -1814,7 +1512,7 @@ const M3={
 };
 
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2,m3:M3};
+const MODULES={m1:M1,m3:M3};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;

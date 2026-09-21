@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,13 +104,14 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/452; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/452; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -160,7 +161,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -197,7 +198,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -218,13 +219,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   коливання. Ключове — амплітуду міряють від <b>нової</b> рівноваги, яка після удару
   опустилася нижче.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Визначити період <b>X</b> та амплітуду <b>A</b> коливань пластини масою <b>M</b> на вертикальній пружині жорсткістю <b>k</b> після падіння на неї шматка пластиліну масою <b>m</b> з висоти <b>h</b>.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
-          <span class="lbl" id="m1t"></span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
@@ -236,45 +236,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <div class="legend sm"><span><span class="chip cB"></span>x(t)</span><span><span class="chip cA"></span>нова рівновага</span></div>
             <canvas id="m1cx"></canvas>
           </div>
-          <div class="chartbox" id="m1cew">
-            <h4>механічна енергія системи, Дж</h4>
-            <div class="legend sm"><span><span class="chip cI"></span>енергія</span><span><span class="chip cC"></span>провал на ударі</span></div>
-            <canvas id="m1ce"></canvas>
-          </div>
+          
         </div>
       </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.7</h3>
-        <p class="cond">Визначити період <b>T</b> та амплітуду <b>A</b> коливань пластини масою
-        <b>M = 1,5 кг</b> на вертикальній пружині жорсткістю <b>k = 250 Н/м</b> після падіння
-        на неї шматка пластиліну масою <b>m = 0,5 кг</b> з висоти <b>h = 20 см</b>.</p>
-        <div class="kv"><span><var>m</var> — маса пластиліну</span><b id="m1vm"></b></div>
-        <div class="kv"><span><var>h</var> — висота падіння</span><b id="m1vh"></b></div>
-        <div class="kv"><span><var>k</var> — жорсткість пружини</span><b id="m1vk"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m1ans">показати відповідь<small>період і амплітуда</small></button>
-        <div class="ansbox" id="m1ansBox" hidden>
-          <div class="kv"><span>період <var>T</var></span><b id="m1rT"></b></div>
-          <div class="kv"><span>амплітуда <var>A</var></span><b id="m1rA"></b></div>
-          <div class="formulas" id="m1fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Три стадії процесу</h3>
-        <div class="kv"><span>швидкість пластиліну перед ударом</span><b id="m1kV"></b></div>
-        <div class="kv"><span>швидкість системи після удару <var>u</var></span><b id="m1kU"></b></div>
-        <div class="kv"><span>зсув рівноваги <var>mg</var>/<var>k</var></span><b id="m1kX0"></b></div>
-        <div class="kv"><span>частка енергії, втрачена на ударі</span><b id="m1kLoss"></b></div>
-        <div class="kv"><span>якби міряли від старої рівноваги</span><b id="m1kWrong"></b></div>
-        <div class="kv"><span>положення зараз</span><b id="m1kX"></b></div>
-        <div class="formulas" id="m1fx2"></div>
-      </div>
-    </div>
-  </div>
+    
 </section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
@@ -283,64 +248,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   Амплітуда поштовху показує, як точна сила відходить від прямої, а <var>x</var>(<var>t</var>)
   перестає бути синусоїдою.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Відкачаний до тиску <b>P</b> горизонтальний циліндр перерізом <b>S</b> поділено рухомим поршнем масою <b>m</b> на дві однакові частини довжиною <b>l</b>. Визначити період <b>X</b> коливань поршня після незначного поштовху.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
-          <span class="lbl" id="m2t"></span>
         </div>
         <canvas id="m2scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Де закінчується гармонічність</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2cfw">
-            <h4>повертальна сила від зміщення, Н</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>точна</span><span><span class="chip cA"></span>лінеаризація</span></div>
-            <canvas id="m2cf"></canvas>
-          </div>
-          <div class="chartbox" id="m2cxw">
-            <h4>зміщення поршня від часу, см</h4>
-            <div class="legend sm"><span><span class="chip cI"></span>точний рух</span><span><span class="chip cA"></span>синусоїда того самого періоду</span></div>
-            <canvas id="m2cx"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.6</h3>
-        <p class="cond">Відкачаний до тиску <b>P = 5 кПа</b> горизонтальний циліндр поперечним
-        перерізом <b>S = 50 см²</b> поділено рухомим поршнем масою <b>m = 2 кг</b> на дві однакові
-        частини довжиною <b>l = 1 м</b> кожна. Нехтуючи товщиною поршня, визначити період <b>T</b>
-        коливань поршня внаслідок незначного поштовху.</p>
-        <div class="kv"><span><var>P</var> — початковий тиск у половинах</span><b id="m2vp"></b></div>
-        <div class="kv"><span><var>m</var> — маса поршня</span><b id="m2vm"></b></div>
-        <div class="kv"><span>амплітуда<span class="badge">задається поршнем</span></span><b id="m2va"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>період малих коливань</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>період <var>T</var></span><b id="m2rT"></b></div>
-          <div class="kv"><span>жорсткість газової пружини</span><b id="m2rK"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Точна сила проти лінійної</h3>
-        <div class="kv"><span>тиск ліворуч зараз</span><b id="m2kPl"></b></div>
-        <div class="kv"><span>тиск праворуч зараз</span><b id="m2kPr"></b></div>
-        <div class="kv"><span>точна повертальна сила</span><b id="m2kF"></b></div>
-        <div class="kv"><span>лінійне наближення</span><b id="m2kFl"></b></div>
-        <div class="kv"><span>розбіжність</span><b id="m2kDiff"></b></div>
-        <div class="kv"><span>рух</span><b id="m2kSt"></b></div>
-        <div class="formulas" id="m2fx2"></div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 3 ================= -->
@@ -349,13 +267,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   Обидві межі очевидні: стінка на амплітуді нічого не міняє,
   стінка в положенні рівноваги вдвічі скорочує період.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Горизонтальний пружинний маятник коливається з амплітудою <b>A</b> і періодом <b>T₀</b>. Визначити відстань <b>X</b> від положення рівноваги, на якій треба поставити вертикальну пружну стінку, аби період повторення зіткнень із нею складав <b>T</b>.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m3play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m3re" title="заново">↺</button>
-          <span class="lbl" id="m3t"></span>
         </div>
         <canvas id="m3scene"></canvas>
       </div>
@@ -367,46 +284,10 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <div class="legend sm"><span><span class="chip cI"></span>з відбиттями</span><span><span class="chip cA"></span>вільна синусоїда</span><span><span class="chip cB"></span>стінка</span></div>
             <canvas id="m3cx"></canvas>
           </div>
-          <div class="chartbox" id="m3ctw">
-            <h4>період від положення стінки, частка T₀</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>1 − arccos(L/A)/π</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m3ct"></canvas>
-          </div>
+          
         </div>
       </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 1.20</h3>
-        <p class="cond">Горизонтальний пружинний маятник здійснює гармонічні коливання з амплітудою
-        <b>A</b> і періодом <b>T₀</b>. Визначити, на якій відстані <b>L</b> від рівноважного положення
-        слід поставити вертикальну пружну стінку, аби період повторення зіткнень із нею
-        складав <b>T</b>.</p>
-        <div class="kv"><span><var>A</var> — амплітуда вільних коливань</span><b id="m3va"></b></div>
-        <div class="kv"><span><var>T</var><sub>0</sub> — період без стінки</span><b id="m3vt0"></b></div>
-        <div class="kv"><span><var>L</var> — де стоїть стінка</span><b id="m3vl"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m3ans">показати відповідь<small>період зіткнень</small></button>
-        <div class="ansbox" id="m3ansBox" hidden>
-          <div class="kv"><span>період зі стінкою <var>T</var></span><b id="m3rT"></b></div>
-          <div class="kv"><span>відношення <var>T</var>/<var>T</var><sub>0</sub></span><b id="m3rR"></b></div>
-          <div class="formulas" id="m3fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Межові випадки</h3>
-        <div class="kv"><span><var>L</var> = <var>A</var>: стінка не заважає</span><b>T = T₀</b></div>
-        <div class="kv"><span><var>L</var> = 0: стінка в рівновазі</span><b>T = T₀/2</b></div>
-        <div class="kv"><span>час від стінки до дальньої точки</span><b id="m3kHalf"></b></div>
-        <div class="kv"><span>швидкість удару об стінку</span><b id="m3kVw"></b></div>
-        <div class="kv"><span>ударів за секунду</span><b id="m3kFreq"></b></div>
-        <div class="kv"><span>вирізана частка синусоїди</span><b id="m3kCut"></b></div>
-        <div class="formulas" id="m3fx2"></div>
-      </div>
-    </div>
-  </div>
+    
 </section>
 
 <footer>Допоміжний матеріал з коливань · динаміка та енергія коливань · межі гармонічного наближення</footer>
@@ -427,7 +308,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -628,7 +519,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -657,13 +548,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -791,21 +693,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1131,10 +1044,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,

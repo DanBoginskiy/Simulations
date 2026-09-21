@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,13 +104,14 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/414; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/442; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -160,7 +161,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -197,7 +198,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -216,13 +217,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <p class="caption">Абсолютна вологість за ніч не змінюється — змінюється лише крива насичення.
   Щойно вона опускається нижче за пару, що вже є в повітрі, надлишок випадає росою.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Увечері температура повітря була <b>t₁</b> при відносній вологості <b>φ₁</b>, а під ранок знизилася до <b>t₂</b>. Визначити масу роси <b>X</b>, що випала з кожного кубометра повітря.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m2play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="заново">↺</button>
-          <span class="lbl" id="m2t"></span>
         </div>
         <canvas id="m2scene"></canvas>
       </div>
@@ -241,38 +241,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           </div>
         </div>
       </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 3.4</h3>
-        <p class="cond">Увечері температура повітря була <b>t₁ = 20 °C</b> при відносній вологості
-        <b>φ₁ = 70 %</b>, а під ранок знизилася до <b>t₂ = 10 °C</b>. Визначити масу роси <b>m</b>,
-        що випала з кожного кубометра повітря.</p>
-        <div class="kv"><span><var>t</var><sub>1</sub> — увечері</span><b id="m2vt1"></b></div>
-        <div class="kv"><span><var>φ</var><sub>1</sub> — відносна вологість увечері</span><b id="m2vf1"></b></div>
-        <div class="kv"><span><var>t</var><sub>2</sub> — під ранок</span><b id="m2vt2"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>маса роси з кубометра</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>точка роси</span><b id="m2rTd"></b></div>
-          <div class="kv"><span>маса роси <var>m</var></span><b id="m2rM"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Стан повітря зараз</h3>
-        <div class="kv"><span>температура</span><b id="m2kT"></b></div>
-        <div class="kv"><span>абсолютна вологість<span class="badge">не змінюється до роси</span></span><b id="m2kAbs"></b></div>
-        <div class="kv"><span>густина насиченої пари</span><b id="m2kSat"></b></div>
-        <div class="kv"><span>відносна вологість</span><b id="m2kPhi"></b></div>
-        <div class="kv"><span>випало роси</span><b id="m2kDew"></b></div>
-        <div class="kv"><span>стан</span><b id="m2kSt"></b></div>
-        <div class="formulas">роси не буде, якщо охолодження не дійде до точки роси</div>
-      </div>
-    </div>
-  </div>
+    
 </section>
 
 <!-- ================= МОДУЛЬ 3 ================= -->
@@ -281,8 +250,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   формальним символом. Висота підйому обернено пропорційна діаметру, тому в тонкій трубці
   вода піднімається найвище.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">При вертикальному зануренні капілярної трубки діаметром <b>d</b> у посудину з водою (поверхневий натяг <b>σ</b>) вода піднялася на висоту <b>h</b> над рівнем у посудині. Визначити радіус кривини <b>X</b> меніска.</p>
+
       <div class="panel">
         <div class="toolbar">
           <div class="seg" id="m3liq">
@@ -291,58 +260,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
             <button data-v="hg" style="--c:var(--k3)">ртуть</button>
           </div>
           <button class="ibtn" id="m3re" title="заново">↺</button>
-          <span class="lbl" id="m3t"></span>
         </div>
         <canvas id="m3scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Висота підйому й кривина меніска</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3chw">
-            <h4>висота підйому від діаметра трубки, см</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>h = 4σcos θ/(ρgd)</span><span><span class="chip cI"></span>обрана трубка</span></div>
-            <canvas id="m3ch"></canvas>
-          </div>
-          <div class="chartbox" id="m3caw">
-            <h4>висота від поверхневого натягу, см</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>h(σ) — через кут за Юнгом</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m3ca"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 3.11</h3>
-        <p class="cond">При вертикальному зануренні капілярної трубки діаметром <b>d = 0,5 мм</b>
-        у посудину з водою (поверхневий натяг <b>σ = 74 мН/м</b>) вода піднялася на висоту
-        <b>h = 2,5 см</b> над рівнем у посудині. Визначити радіус кривини <b>R</b> меніска.</p>
-        <div class="kv"><span><var>d</var> — діаметр трубки<span class="badge">задаєте ви</span></span><b id="m3vd2"></b></div>
-        <div class="kv"><span><var>σ</var> — поверхневий натяг<span class="badge">задаєте ви</span></span><b id="m3vsig2"></b></div>
-        <div class="kv"><span><var>ρ</var> — густина<span class="badge">задаєте ви</span></span><b id="m3vrho2"></b></div>
-        <div class="kv"><span><var>θ</var> — крайовий кут<span class="badge">наслідок σ, не ручка</span></span><b id="m3vth"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m3ans">показати відповідь<small>радіус кривини меніска</small></button>
-        <div class="ansbox" id="m3ansBox" hidden>
-          <div class="kv"><span>висота підйому <var>h</var></span><b id="m3rH"></b></div>
-          <div class="kv"><span>радіус кривини <var>R</var></span><b id="m3rR"></b></div>
-          <div class="formulas" id="m3fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Що задає меніск</h3>
-        <div class="kv"><span>рідина</span><b id="m3kLiq"></b></div>
-        <div class="kv"><span>густина <var>ρ</var></span><b id="m3kRho"></b></div>
-        <div class="kv"><span>радіус трубки <var>r</var> = <var>d</var>/2</span><b id="m3kr"></b></div>
-        <div class="kv"><span><var>R</var> = <var>r</var>/cos <var>θ</var><span class="badge">R ≥ r завжди</span></span><b id="m3kR"></b></div>
-        <div class="kv"><span>тиск під меніском 2<var>σ</var>/<var>R</var></span><b id="m3kdP"></b></div>
-        <div class="kv"><span>рідина в трубці</span><b id="m3kSt"></b></div>
-        <div class="formulas" id="m3fx2"></div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <footer>Допоміжний матеріал з молекулярної фізики · тепловий баланс · вологість повітря · поверхневі явища</footer>
@@ -363,7 +285,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -564,7 +496,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -593,13 +525,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -727,21 +670,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1067,10 +1021,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
@@ -1204,28 +1156,32 @@ const M2={
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
     const T=this.Tnow(), dew=this.dewNow(), td=this.dewPoint();
     g.clearRect(0,0,w,H);
-    /* нічна сцена: трава й шибка, на яких осідає роса */
+    /* Нічна сцена: шибка, на якій осідає роса. Трава була зайвою деталлю —
+       пара конденсується на будь-якій холодній поверхні, і скло показує це
+       чистіше: видно й самі краплі, і те, як вони стікають. */
     const sy=Q.sy, sh=Q.sh, sx=Q.sx, sw=Q.sw;
-    g.fillStyle='#eef2f7'; g.fillRect(sx,sy,sw,sh*0.62);
-    g.fillStyle=CLR.ground; g.fillRect(sx,sy+sh*0.62,sw,sh*0.38);
+    g.fillStyle='#eef2f7'; g.fillRect(sx,sy,sw,sh);
     g.strokeStyle=CLR.axis; g.lineWidth=1.5;
     g.strokeRect(sx+.5,sy+.5,sw-1,sh-1);
-    g.beginPath(); g.moveTo(sx,sy+sh*0.62+.5); g.lineTo(sx+sw,sy+sh*0.62+.5); g.stroke();
-    /* травинки */
-    for(let i=0;i<16;i++){
-      const bx=sx+12+i*(sw-24)/15;
-      g.strokeStyle='#9fb98d'; g.lineWidth=2;
-      g.beginPath(); g.moveTo(bx,sy+sh*0.62);
-      g.quadraticCurveTo(bx+((i%2)?7:-7),sy+sh*0.62-26,bx+((i%2)?12:-12),sy+sh*0.62-44);
-      g.stroke();
-    }
-    /* краплі роси — їх тим більше, що більша випала маса */
-    const nd=Math.round(Math.min(34,dew*6));
+    /* рама шибки: горизонтальний і вертикальний імпости */
+    g.strokeStyle='#b9b7ae'; g.lineWidth=7;
+    g.beginPath(); g.moveTo(sx+sw/2,sy); g.lineTo(sx+sw/2,sy+sh);
+    g.moveTo(sx,sy+sh*0.52); g.lineTo(sx+sw,sy+sh*0.52); g.stroke();
+    g.strokeStyle='rgba(255,255,255,.8)'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(sx+sw/2-2,sy); g.lineTo(sx+sw/2-2,sy+sh); g.stroke();
+    /* краплі роси на склі — їх тим більше, що більша випала маса */
+    const nd=Math.round(Math.min(46,dew*8));
     for(let i=0;i<nd;i++){
-      const bx=sx+16+((i*61)%(sw-32)), by=sy+sh*0.62-8-((i*37)%40);
-      dot(g,bx,by,2.6+((i*13)%3)*0.5,'rgba(42,120,214,.62)');
+      const bx=sx+14+((i*61)%(sw-28)), by=sy+16+((i*37)%(sh-32));
+      const r=2.4+((i*13)%3)*0.6;
+      dot(g,bx,by,r,'rgba(42,120,214,.55)');
+      /* найбільші вже стікають доріжкою */
+      if(r>3.2){
+        g.strokeStyle='rgba(42,120,214,.30)'; g.lineWidth=1.4;
+        g.beginPath(); g.moveTo(bx,by); g.lineTo(bx,Math.min(sy+sh-4,by+16)); g.stroke();
+      }
     }
-    txt(g,'нічне охолодження',sx+10,sy+20,{color:CLR.sec,size:11.5,bold:true});
+    txt(g,'скло вночі остигає',sx+10,sy+20,{color:CLR.sec,size:11.5,bold:true});
     txtN(g,fmt(T,1)+' °C',sx+sw-10,sy+20,{color:'#b8431a',size:13,bold:true,align:'right'});
     if(dew>0.01) pillN(g,'роси: '+fmt(dew,2)+' г/м³',sx+sw/2,sy+sh-14,
       {color:'#1c5cab',size:12,bold:true});
@@ -1441,7 +1397,9 @@ const M3={
     g.beginPath(); g.moveTo(26,vy-26); g.lineTo(26,H-30); g.lineTo(vw,H-30);
     g.lineTo(vw,vy-26); g.stroke();
     g.strokeStyle=CLR.sec; g.lineWidth=1.5; g.setLineDash([6,4]);
-    g.beginPath(); g.moveTo(26,vy+.5); g.lineTo(w-14,vy+.5); g.stroke(); g.setLineDash([]);
+    /* Лінія рівня — це рівень РІДИНИ В ПОСУДИНІ, тож вона й закінчується
+       там, де закінчується посудина, а не тягнеться через увесь кадр. */
+    g.beginPath(); g.moveTo(26,vy+.5); g.lineTo(vw,vy+.5); g.stroke(); g.setLineDash([]);
     /* Підпис рівня — усередині посудини ліворуч, а не праворуч від неї:
        там він налазив на виноску висоти обраної трубки. */
     txt(g,'рівень у посудині',32,vy+14,{color:CLR.mut,size:10});

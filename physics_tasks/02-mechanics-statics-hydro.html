@@ -87,7 +87,7 @@ table.read tr:last-child td{border-bottom:none}
 .chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
 .chartbox{position:relative}
 .chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
-.chartbox canvas{width:100%; height:186px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
 .tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
   border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
   font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
@@ -104,12 +104,13 @@ table.read tr:last-child td{border-bottom:none}
 .c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
 
 /* ============ сітки й полотна цієї теми ============ */
-#m1scene{width:100%; aspect-ratio:990/424; min-height:min(210px,56vw)}
-#m2scene{width:100%; aspect-ratio:990/488; min-height:min(210px,56vw)}
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
-.cond{color:var(--sec); font-size:13px; border-left:2px solid var(--axis);
-  padding:2px 0 2px 10px; margin-bottom:10px}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
 .cond b{color:var(--ink); font-weight:600}
 
 .fswrap{position:relative}
@@ -159,7 +160,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .tabs button{padding:7px 9px 9px; font-size:12.5px}
   .panel{padding:11px 12px}
   .side .panel{padding:10px 12px}
-  .chartbox canvas{height:clamp(132px,24vh,186px)}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
   .toolbar{gap:9px}
   .coords{gap:11px; font-size:12.5px}
   table.read{font-size:12.5px}
@@ -196,7 +197,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    за екран — тут вона стискається під те, що є. */
 @media (max-height:560px) and (orientation:landscape) and (max-width:900px){
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
-  .chartbox canvas{height:clamp(120px,42vh,186px)}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 </style>
 </head>
@@ -216,8 +217,8 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   виходить за межу опори. Що вище центр ваги — то раніше це стається; конус стійкіший
   за циліндр саме тому, що його центр ваги нижчий.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">Суцільні циліндр і конус із відношенням висоти до діаметра основи <b>k</b> стоять на шорсткій дошці, котру поступово піднімають за край. При якому найбільшому куті нахилу <b>X</b> кожне з тіл ще не перекинеться?</p>
+
       <div class="panel">
         <div class="toolbar">
           <div class="seg" id="m1body">
@@ -227,57 +228,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
           </div>
           <button class="ibtn" id="m1play" title="пуск / пауза">⏸</button>
           <button class="ibtn" id="m1re" title="заново">↺</button>
-          <span class="lbl" id="m1t"></span>
         </div>
         <canvas id="m1scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Коли яке тіло перекинеться</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m1ckw">
-            <h4>критичний кут від відношення <var>h</var>/<var>d</var>, °</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>циліндр і брусок</span><span><span class="chip cB"></span>конус</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m1ck"></canvas>
-          </div>
-          <div class="chartbox" id="m1cmw">
-            <h4>перекидання чи ковзання, від коефіцієнта тертя, °</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>ковзання: tg φ = μ</span><span><span class="chip cA"></span>перекидання</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m1cm"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 5.70</h3>
-        <p class="cond">Суцільні циліндр і конус із відношенням висоти до діаметра основи
-        рівним <b>2</b> стоять на шорсткій горизонтальній дошці, котру поступово піднімають
-        за край. При якому найбільшому куті нахилу <b>φ</b> дошки до горизонту кожне з тіл
-        ще не перекинеться?</p>
-        <div class="kv"><span><var>h</var>/<var>d</var> — висота до діаметра основи</span><b id="m1vk"></b></div>
-        <div class="kv"><span><var>μ</var> — коефіцієнт тертя об дошку</span><b id="m1vmu"></b></div>
-        <div class="kv"><span>центр ваги над основою<span class="badge">залежить лише від форми</span></span><b id="m1vcg"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m1ans">показати відповідь<small>критичні кути обох тіл</small></button>
-        <div class="ansbox" id="m1ansBox" hidden>
-          <div class="kv"><span>циліндр, <var>h</var>/<var>d</var> = 2</span><b id="m1rCyl"></b></div>
-          <div class="kv"><span>конус, <var>h</var>/<var>d</var> = 2</span><b id="m1rCone"></b></div>
-          <div class="formulas" id="m1fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Що відбувається зараз</h3>
-        <div class="kv"><span>кут нахилу дошки <var>φ</var></span><b id="m1kPhi"></b></div>
-        <div class="kv"><span>кут перекидання tg <var>φ</var> = (<var>d</var>/2)/<var>y</var><sub>цм</sub></span><b id="m1kTip"></b></div>
-        <div class="kv"><span>кут ковзання tg <var>φ</var> = <var>μ</var></span><b id="m1kSl"></b></div>
-        <div class="kv"><span>що станеться раніше</span><b id="m1kWhat"></b></div>
-        <div class="kv"><span>прямовисна з центра ваги</span><b id="m1kLine"></b></div>
-        <div class="formulas" id="m1fx2"></div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
@@ -286,63 +241,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   вода теж виштовхує ту частину циліндра, яку накрила. Сила Архімеда рахується
   окремо для кожного шару.</p>
 
-  <div class="pgrid">
-    <div class="scene">
+      <p class="cond">У посудину зі ртуттю (густина <b>ρ<sub>р</sub></b>), в якій плаває широкий суцільний сталевий (<b>ρ<sub>ст</sub></b>) циліндр висотою <b>h</b>, наливають воду (<b>ρ<sub>в</sub></b>) до рівня верхньої основи циліндра. Визначити товщину шару води <b>X</b>.</p>
+
       <div class="panel">
         <div class="toolbar">
           <button class="ibtn" id="m2play" title="наливати / пауза">⏸</button>
           <button class="ibtn" id="m2re" title="злити воду">↺</button>
-          <span class="lbl" id="m2t"></span>
         </div>
         <canvas id="m2scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Як доливання води змінює стан</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2chw">
-            <h4>глибина занурення в ртуть, см</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>h_р(h′)</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m2ch"></canvas>
-          </div>
-          <div class="chartbox" id="m2cpw">
-            <h4>тиск від глибини під поверхнею води, кПа</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>P(глибина) — злам на межі рідин</span></div>
-            <canvas id="m2cp"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel">
-        <h3>Умова задачі 6.9</h3>
-        <p class="cond">У посудину зі ртуттю (<b>ρ_р = 13,6 г/см³</b>), в якій плаває широкий суцільний
-        сталевий (<b>ρ_ст = 7,8 г/см³</b>) циліндр висотою <b>h = 5 см</b>, наливають воду
-        (<b>ρ_в = 1 г/см³</b>) до рівня верхньої основи циліндра. Визначити товщину шару води <b>h′</b>.</p>
-        <div class="kv"><span><var>h</var> — висота циліндра</span><b id="m2vh"></b></div>
-        <div class="kv"><span><var>ρ</var><sub>ст</sub> — густина циліндра</span><b id="m2vrho"></b></div>
-        <div class="kv"><span>налито води</span><b id="m2vlev"></b></div>
-      </div>
-      <div class="panel">
-        <h3>Відповідь</h3>
-        <button class="btn" id="m2ans">показати відповідь<small>товщина шару води</small></button>
-        <div class="ansbox" id="m2ansBox" hidden>
-          <div class="kv"><span>глибина в ртуті <var>h</var><sub>р</sub></span><b id="m2rHg"></b></div>
-          <div class="kv"><span>товщина шару води <var>h</var>′</span><b id="m2rW"></b></div>
-          <div class="formulas" id="m2fx"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>Рівновага в двох рідинах</h3>
-        <div class="kv"><span>до доливання води</span><b id="m2kHg0"></b></div>
-        <div class="kv"><span>занурено в ртуть зараз</span><b id="m2kHg"></b></div>
-        <div class="kv"><span>занурено у воду зараз</span><b id="m2kW"></b></div>
-        <div class="kv"><span>циліндр піднявся на</span><b id="m2kUp"></b></div>
-        <div class="kv"><span>виштовхує ртуть<span class="badge">разом дають вагу</span></span><b id="m2kFhg"></b></div>
-        <div class="kv"><span>виштовхує вода</span><b id="m2kFw"></b></div>
-        <div class="formulas" id="m2fx2"></div>
-      </div>
-    </div>
-  </div>
+      
+    
 </section>
 
 <footer>Допоміжний матеріал з механіки · статика · стійкість тіл · гідростатика</footer>
@@ -362,7 +271,17 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
@@ -563,7 +482,7 @@ function seg(id,cb){
 }
 function slider(id,unit,dec,cb){
   const i=$(id),o=$(id+'o');
-  const show=()=>{o.textContent=fmt(+i.value,dec)+(unit?(unit==='°'?'':' ')+unit:'');};
+  const show=()=>{o.textContent='';};
   i.addEventListener('input',()=>{show(); cb(+i.value);});
   show();
   return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
@@ -592,13 +511,24 @@ function txt(g,s,x,y,o={}){
    тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
 const NUMW=560;
 let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const head=String(s).split('=')[0];
+  if(head===String(s)) return '';
+  const t=head.trim();
+  return /[0-9]/.test(t)?'':t;
+}
 function txtN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) txt(g,L,x,y,o);
 }
 function pillN(g,s,x,y,o={}){
-  if(CVCH||CVW>=NUMW) return pill(g,s,x,y,o);
-  NUMS.push([o.name||'',s,o.color||CLR.ink]);
+  const L=letterOf(s,o);
+  if(L) pill(g,L,x,y,o);
 }
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
@@ -726,21 +656,32 @@ function drawChart(box,opt){
   const st=niceStep((yMax-yMin)/4.5);
   for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
     g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
-    txt(g,fmt(Math.abs(y)<1e-9?0:y,yd),L-6*TK,Y(y)+3*TK,{color:CLR.mut,size:10,align:'right',max:L-8*TK});
+
   }
   const xs=opt.xStep||niceStep(tSpan/5);
   for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-B*10/26,{color:CLR.mut,size:10,align:'center'});
+
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
   }
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
-  txt(g,opt.yLab,2,T*0.75,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,T*0.75,{color:CLR.mut,size:10.5,align:'right'});
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1066,10 +1007,8 @@ function gaugeCol(g,C0,list,st){
     const p=gpos(C,i);
     slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
     txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
-    txt(g,fmt(m[2],m[8]),p.x,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(m[3],m[8]),p.x+C.W,p.y+22,{color:CLR.mut,size:9,align:'center'});
-    txt(g,fmt(st[m[0]],m[8])+(m[9]?' '+m[9]:''),p.x+C.W+16,p.y+4,
-      {color:CLR.ink,size:12,bold:true});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
   });
 }
 /* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
