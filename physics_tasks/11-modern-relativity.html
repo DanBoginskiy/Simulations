@@ -1263,17 +1263,24 @@ const gamOf=b=>1/Math.sqrt(1-b*b);
 
 /* ===================== МОДУЛЬ 1 · похилий стрижень ===================== */
 const M1={
-  mode:'free', be:0.50, l:100, th:45, showAns:true, playing:true, t:0, drift:0,
+  mode:'free', be:0.50, l:100, th:45, showAns:true, playing:false, t:0, drift:0,
+  /* Спершу стрижень стоїть: жодного скорочення немає, і саме з цього стану
+     має початися дослід. Кнопка «пуск» розганяє його до β — і аж тоді
+     з'являються і скорочення, і поворот. Зміна β на ходу перераховує все
+     одразу: швидкість і є тим, що задають. */
+  started:false,
+  beff(){return this.started?this.be:0;},
   LMAX:120, BMAX:0.85, SLEEP:40,               /* крок шпал у лабораторії, см */
   ha:{x:null}, hl:{x:null}, tipa:null, tipl:null,
   GG:[['be','швидкість β',0,0.85,0.01,CLR.k2,null,'m1vb',2,'c']],
-  gam(){return gamOf(this.be);},
+  gam(){return gamOf(this.beff());},
   lx(){return this.l*Math.cos(this.th*DEG);},   /* поздовжня складова в лабораторії */
   ly(){return this.l*Math.sin(this.th*DEG);},   /* поперечна — однакова в обох СВ */
   l0x(){return this.gam()*this.lx();},
   l0(){return Math.hypot(this.l0x(),this.ly());},
   th0(){return Math.atan2(this.ly(),this.l0x())/DEG;},
-  setTask(){this.be=0.50; this.l=100; this.th=45; this.t=0; this.drift=0;},
+  setTask(){this.be=0.50; this.l=100; this.th=45; this.t=0; this.drift=0;
+    this.started=false; this.playing=false; this.updBtn();},
   setMode(m){this.mode=m; if(m==='task') this.setTask(); this.t=0;
     this.showAns=m!=='task'; this.syncAns();},
   syncAns(){const task=this.mode==='task';
@@ -1281,15 +1288,20 @@ const M1={
   init(){
     grip('m1scene',this,()=>this.grips());
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m1re').onclick=()=>{this.t=0; this.drift=0;};
-    $('m1pp').onclick=()=>{this.playing=!this.playing;
-      $('m1pp').textContent=this.playing?'⏸':'▶';};
+    $('m1re').onclick=()=>{this.t=0; this.drift=0; this.started=false;
+      this.playing=false; this.updBtn();};
+    $('m1pp').onclick=()=>{
+      if(!this.started){this.started=true; this.playing=true;}
+      else this.playing=!this.playing;
+      this.updBtn();};
     this.tipa=makeTip('m1caw'); this.tipl=makeTip('m1clw');
     hover('m1ca',this.ha); hover('m1cl',this.hl);
     this.ha.xlab='β'; this.ha.xunit='c'; this.ha.xdec=2;
     this.hl.xlab='β'; this.hl.xunit='c'; this.hl.xdec=2;
-    this.setTask(); this.syncAns();
+    this.setTask(); this.syncAns(); this.updBtn();
   },
+  updBtn(){$('m1pp').textContent=!this.started?'▶':(this.playing?'⏸':'▶');
+    $('m1pp').title=!this.started?'пуск':'пауза';},
   gcol(b){return gcolOf(b,this.mode==='free'?this.GG.length:0);},
   /* сталий кадр §10: обидві панелі однакові, масштаб — з LMAX */
   geo(b){return frozen(this,b,bb=>{
@@ -1319,7 +1331,7 @@ const M1={
   tick(dt){
     if(this.playing&&this._grab==null){
       this.t+=dt;
-      this.drift+=dt*this.be*70;
+      this.drift+=dt*this.beff()*70;
       if(this.drift>this.LMAX*0.9) this.drift=0;
     }
     this.render();
@@ -1430,7 +1442,9 @@ const M1={
   },
   table(){
     const ga=this.gam();
-    $('m1t').textContent='β = '+fmt(this.be,2)+' c · γ = '+fmt(ga,3);
+    $('m1t').textContent=this.started
+      ? 'β = '+fmt(this.be,2)+' c · γ = '+fmt(ga,3)
+      : 'стрижень стоїть — натисніть ▶, щоб розігнати';
     $('m1vl').textContent=fmt(this.l,1)+' см';
     $('m1vth').textContent=fmt(this.th,1)+'°';
     $('m1vb').textContent=fmt(this.be,2)+' c';

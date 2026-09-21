@@ -237,7 +237,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="chartrow">
           <div class="chartbox" id="m1cnw">
             <h4>кількість ліній від номера рівня</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>N = n(n−1)/2</span><span><span class="chip cI"></span>зараз</span></div>
+            <div class="legend sm"><span><span class="chip cB"></span>N = n(n−1)/2 — стрибками</span><span><span class="chip cI"></span>зараз</span></div>
             <canvas id="m1cn"></canvas>
           </div>
           <div class="chartbox" id="m1cew">
@@ -1370,8 +1370,16 @@ const M1={
   charts(){
     const bn=cvx('m1cn');
     if(bn){
+      /* N = n(n−1)/2 визначене лише в цілих n, і росте воно стрибками: з
+         четвертого рівня на п'ятий кількість ліній одразу підскакує з 6 до 10.
+         Плавна крива через ці точки брехала б — між ними нічого немає, тому
+         малюємо сходинки. */
       const ts=[],ys=[];
-      for(let k=1;k<=this.NMAX;k++){ts.push(k); ys.push(k*(k-1)/2);}
+      for(let k=1;k<=this.NMAX;k++){
+        const N=k*(k-1)/2;
+        ts.push(k); ys.push(N);
+        ts.push(Math.min(this.NMAX,k+0.985)); ys.push(N);
+      }
       const r=drawChart(bn,{tMax:this.NMAX,yMin:0,yMax:this.NMAX*(this.NMAX-1)/2*1.1,
         yLab:'ліній',xLab:'номер рівня n',xStep:1,yDec:0,hover:this.hn.x,
         series:[{ts,ys,color:CLR.k2,label:'N'},

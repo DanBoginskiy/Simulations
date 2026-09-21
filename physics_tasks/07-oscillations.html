@@ -1282,9 +1282,18 @@ const M1={
     g.clearRect(0,0,w,H);
     /* опора внизу й пружина */
     const yPlate=SY(x), yBase=SY(-this.AMAX()*1.5-0.02);
-    g.fillStyle=CLR.ground; g.fillRect(cx-90,yBase,180,10);
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(cx-90,yBase+.5); g.lineTo(cx+90,yBase+.5); g.stroke();
+    /* Опора, до якої кріпиться пружина: не смужка під нею, а станина на всю
+       ширину кадру зі штриховкою й п'ятою, у яку входить нижній виток. Без
+       цього пружина читалася так, ніби вона висить у повітрі. */
+    g.fillStyle=CLR.ground; g.fillRect(0,yBase,w,H-yBase);
+    g.strokeStyle=CLR.axis; g.lineWidth=1.8;
+    g.beginPath(); g.moveTo(0,yBase+.5); g.lineTo(w,yBase+.5); g.stroke();
+    g.strokeStyle=CLR.mut; g.lineWidth=1;
+    for(let hx=-40;hx<w+40;hx+=13){
+      g.beginPath(); g.moveTo(hx,H); g.lineTo(hx+14,yBase+2); g.stroke();
+    }
+    g.fillStyle='#e9e8e2'; g.strokeStyle=CLR.axis; g.lineWidth=1.6;
+    g.beginPath(); g.roundRect(cx-30,yBase-9,60,10,3); g.fill(); g.stroke();
     g.strokeStyle=CLR.k3; g.lineWidth=2.2; g.beginPath();
     const nT=9, span=yBase-yPlate;
     g.moveTo(cx,yPlate);
@@ -1292,7 +1301,7 @@ const M1={
       const f=i/(nT*2), yy=yPlate+span*f;
       g.lineTo(cx+(i%2?20:-20)*(i===0||i===nT*2?0:1),yy);
     }
-    g.lineTo(cx,yBase); g.stroke();
+    g.lineTo(cx,yBase-8); g.stroke();
     /* пластина */
     g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-46,yPlate-9,92,12,3); g.fill(); g.stroke();
@@ -1515,6 +1524,18 @@ const M2={
     for(const dy of [-5,0,5]){
       g.beginPath(); g.moveTo(px-2.5,cy+dy); g.lineTo(px+2.5,cy+dy); g.stroke();
     }
+    /* ---- чому поршень узагалі рухається -------------------------------------
+       На кожну грань поршня газ тисне своїм тиском. Поки поршень посередині,
+       обидва тиски однакові й сили гасяться. Щойно він зсунувся, стиснутий бік
+       тисне сильніше — різниця цих двох сил і є повертальною. Малюємо саме
+       їх: дві стрілки в грані поршня, назустріч одна одній. */
+    const S=this.S||1;
+    const FL=pl*S, FR=pr*S;
+    const kP=Math.min(46,ch*0.34)/Math.max(1e-9,this.PMAX*1.5*S);
+    arrow(g,px-7-FL*kP,cy-ch*0.22,px-7,cy-ch*0.22,CLR.k1,2.4);
+    arrow(g,px+7+FR*kP,cy+ch*0.22,px+7,cy+ch*0.22,CLR.k2,2.4);
+    txt(g,'p₁S',px-9-FL*kP,cy-ch*0.22-7,{color:'#1c5cab',size:10,bold:true,align:'right'});
+    txt(g,'p₂S',px+9+FR*kP,cy+ch*0.22-7,{color:'#b8431a',size:10,bold:true});
     for(const hh of this.grips()) if(hh.id==='x') drawGrip(g,hh,this);
     /* повертальна сила: точна й лінійна поруч */
     const F=this.F(x), Fl=this.Flin(x);
@@ -1634,7 +1655,9 @@ const M3={
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-52;
     const sc=fitScale(bb.w,H,200,150,2.6*this.AMAX,0.2,0,0);
-    return {C,H,sc,cx:bb.w*0.46,cy:52+H*0.52};
+    return {C,H,sc,cx:bb.w*0.36,cy:52+H*0.52,
+      /* обертове коло-аналог праворуч: та сама фаза, але як кут */
+      rx:bb.w*0.80,ry:52+H*0.50,rr:Math.min(H*0.32,96)};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1731,7 +1754,44 @@ const M3={
       :(this.L<1e-6?'стінка в рівновазі — період удвічі менший':'стінка вирізає частину коливання'),12,20,{color:at?CLR.k1:CLR.k2,size:12.5,bold:true});
     capN(g,'удар пружний: вантаж відскакує з тією самою швидкістю',12,36,
       {color:CLR.mut,size:10.5});
+    this.wheel(g,Q);
     for(const hh of this.grips()) if(hh.id==='L') drawGrip(g,hh,this);
+  },
+  /* ---- обертальний аналог -------------------------------------------------
+     Гармонічне коливання — це проєкція рівномірного руху по колу: x = A cos φ,
+     φ = ω₀t. Стінка на відстані L відрізає від кола дугу — ту, куди тіло вже
+     не заходить. Частка кола, що лишилася, і є часткою періоду: саме тому
+     T = T₀·(1 − arccos(L/A)/π), і це видно оком, а не лише у формулі. */
+  wheel(g,Q){
+    const cx=Q.rx, cy=Q.ry, R=Q.rr;
+    const cut=Math.acos(clamp(this.L/this.A,-1,1));   /* половина вирізаної дуги */
+    g.strokeStyle=CLR.grid; g.lineWidth=1.5;
+    g.beginPath(); g.arc(cx,cy,R,0,7); g.stroke();
+    /* вирізана дуга — праворуч від стінки */
+    g.strokeStyle=CLR.k2; g.lineWidth=5; g.globalAlpha=0.28;
+    g.beginPath(); g.arc(cx,cy,R,-cut,cut); g.stroke(); g.globalAlpha=1;
+    /* та, що лишилася */
+    g.strokeStyle=CLR.k3; g.lineWidth=3.5;
+    g.beginPath(); g.arc(cx,cy,R,cut,2*Math.PI-cut); g.stroke();
+    /* стінка як вертикальна хорда x = L */
+    const wx=cx+this.L/this.A*R;
+    g.strokeStyle=CLR.k2; g.lineWidth=2.5;
+    g.beginPath(); g.moveTo(wx,cy-R-10); g.lineTo(wx,cy+R+10); g.stroke();
+    txt(g,'стінка',wx+6,cy-R-14,{color:'#b8431a',size:10.5,bold:true});
+    /* поточна фаза */
+    const ph=Math.acos(clamp(this.x(this.t)/this.A,-1,1));
+    const px=cx+R*Math.cos(ph), py=cy-R*Math.sin(ph);
+    g.strokeStyle=CLR.ink; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(px,py); g.stroke();
+    dot(g,px,py,5,CLR.ink,'#fff');
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(px,py); g.lineTo(px,cy+R+18); g.stroke(); g.setLineDash([]);
+    dot(g,px,cy+R+18,4,CLR.k1);
+    txt(g,'x = A·cos φ',px,cy+R+34,{color:'#1c5cab',size:10,bold:true,align:'center'});
+    txt(g,'φ = ω₀t',cx+R*0.5*Math.cos(ph/2),cy-R*0.5*Math.sin(ph/2)-6,
+      {color:CLR.sec,size:10,bold:true,align:'center'});
+    txtN(g,'лишилося '+fmt(this.ratio()*100,1)+' % кола',cx,cy-R-24,
+      {color:'#0d7a55',size:11,bold:true,align:'center'});
   },
   table(){
     const T=this.T(), r=this.ratio();

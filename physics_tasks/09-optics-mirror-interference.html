@@ -1472,10 +1472,24 @@ const M2={
     g.restore();
     g.strokeStyle=CLR.axis; g.lineWidth=1;
     g.strokeRect(Q.sx+.5,y0+.5,Q.sw-1,hM-5);
-    /* самі щілини */
-    g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.rect(Q.sx,s1.y,Q.sw,9); g.fill(); g.stroke();
-    g.clearRect(s1.x-2,s1.y,4,9); g.clearRect(s2.x-2,s2.y,4,9);
+    /* ---- сама перепона з двома щілинами -------------------------------------
+       Раніше це була тонка смужка з двома прорізами в чотири пікселі: щілин
+       фактично не було видно, а саме вони тут і є джерелами. Тепер це
+       непрозора заслінка з товщиною й фаскою, крізь яку справді прорізано два
+       отвори, а поруч — їхній крупний план із розміром d. */
+    const BH=13, aw=Math.max(3,Math.min(9,dpx*0.16));
+    g.fillStyle='#cfccc4'; g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.rect(Q.sx,s1.y,Q.sw,BH); g.fill(); g.stroke();
+    g.strokeStyle='rgba(11,11,11,.22)'; g.lineWidth=1;
+    for(let hx=Q.sx+4;hx<Q.sx+Q.sw-4;hx+=9){
+      g.beginPath(); g.moveTo(hx,s1.y+BH-1); g.lineTo(hx+5,s1.y+1); g.stroke();
+    }
+    for(const sxc of [s1.x,s2.x]){
+      g.clearRect(sxc-aw/2,s1.y-1,aw,BH+2);
+      g.strokeStyle=CLR.ink; g.lineWidth=2;
+      g.beginPath(); g.moveTo(sxc-aw/2,s1.y); g.lineTo(sxc-aw/2,s1.y+BH);
+      g.moveTo(sxc+aw/2,s1.y); g.lineTo(sxc+aw/2,s1.y+BH); g.stroke();
+    }
     txtN(g,'d = '+fmt(this.d,2)+' мм',cx,s1.y-6,{color:CLR.ink,size:10.5,bold:true,align:'center'});
     /* екран зі смугами */
     const ys=Q.yScr;
@@ -1666,34 +1680,82 @@ const M3={
     const py=Q.fy+this.d/this.DMAX*Q.fh;
     g.strokeStyle=CLR.ink; g.lineWidth=2;
     g.beginPath(); g.moveTo(Q.fx-2,py); g.lineTo(Q.fx+Q.fw+2,py); g.stroke();
-    /* хід променів у плівці крупним планом */
-    const zx=Q.zx, zy=Q.zy, T=54, Wz=190;
+    /* ---- хід променів у КЛИНОПОДІБНІЙ плівці --------------------------------
+       У плівці зі сталою товщиною обидва відбиті промені паралельні й сходяться
+       тільки в нескінченності — смуги локалізовані там. Тут плівка клин: нижня
+       межа нахилена, тож промінь 2 після відбиття йде вже не паралельно до
+       першого. Вони перетинаються майже на самій плівці — саме тому смуги
+       рівної товщини видно НА плівці, а не десь у просторі. Кут клина в
+       кресленні перебільшено: справжній — соті частки градуса. */
+    const zx=Q.zx, zy=Q.zy, T=48, Wz=196, GAM=0.16;   /* GAM — кут клина, рад */
+    const yBot=xx=>zy+T+(xx-zx)*Math.tan(GAM);
     g.fillStyle='rgba(42,120,214,.10)';
-    g.fillRect(zx,zy,Wz,T);
+    g.beginPath(); g.moveTo(zx,zy); g.lineTo(zx+Wz,zy);
+    g.lineTo(zx+Wz,yBot(zx+Wz)); g.lineTo(zx,yBot(zx)); g.closePath(); g.fill();
     g.strokeStyle=CLR.k1; g.lineWidth=2;
-    g.beginPath(); g.moveTo(zx,zy+.5); g.lineTo(zx+Wz,zy+.5);
-    g.moveTo(zx,zy+T+.5); g.lineTo(zx+Wz,zy+T+.5); g.stroke();
-    const a=this.al*DEG, dx=Math.tan(a)*46;
-    arrow(g,zx+40-dx,zy-46,zx+40,zy,CLR.k2,2.2);
-    arrow(g,zx+40,zy,zx+40+dx,zy-46,CLR.k2,2.2);
-    txt(g,'1',zx+40+dx+6,zy-46,{color:'#b8431a',size:11,bold:true});
-    const ar=Math.asin(Math.sin(a)/this.n), dxr=Math.tan(ar)*T;
+    g.beginPath(); g.moveTo(zx,zy+.5); g.lineTo(zx+Wz,zy+.5); g.stroke();
+    g.beginPath(); g.moveTo(zx,yBot(zx)); g.lineTo(zx+Wz,yBot(zx+Wz)); g.stroke();
+    const a=this.al*DEG, dx=Math.tan(a)*44;
+    const xA=zx+52, yA=zy;
+    /* падаючий промінь і промінь 1 — відбитий від верхньої межі */
+    arrow(g,xA-dx,yA-44,xA,yA,CLR.k2,2.2);
+    arrow(g,xA,yA,xA+dx,yA-44,CLR.k2,2.2);
+    txt(g,'1',xA+dx+6,yA-46,{color:'#b8431a',size:11,bold:true});
+    /* промінь 2: заломлення, відбиття від НАХИЛЕНОЇ межі, вихід */
+    const ar=Math.asin(Math.sin(a)/this.n);
+    const tB=(yBot(xA)-yA)/(Math.cos(ar)/Math.max(1e-6,Math.sin(ar))*Math.sin(ar)/Math.cos(ar)||1);
+    /* точку B шукаємо перетином променя з похилою межею */
+    let xB=xA, yB=yA;
+    {
+      const ux=Math.sin(ar), uy=Math.cos(ar), tg=Math.tan(GAM);
+      const k=(zy+T-yA+(xA-zx)*tg)/(uy-ux*tg);
+      xB=xA+ux*k; yB=yA+uy*k;
+    }
     g.strokeStyle=CLR.k2; g.lineWidth=1.6;
-    g.beginPath(); g.moveTo(zx+40,zy); g.lineTo(zx+40+dxr,zy+T);
-    g.lineTo(zx+40+2*dxr,zy); g.stroke();
-    arrow(g,zx+40+2*dxr,zy,zx+40+2*dxr+dx,zy-46,CLR.k2,2.2);
-    txt(g,'2',zx+40+2*dxr+dx+6,zy-46,{color:'#b8431a',size:11,bold:true});
-    arc(g,zx+40,zy,26,-Math.PI/2,-Math.PI/2+a,CLR.k3,1.4);
-    txtN(g,'α = '+fmt(this.al,0)+'°',zx+40+30,zy-26,{color:'#0d7a55',size:10.5,bold:true});
+    g.beginPath(); g.moveTo(xA,yA); g.lineTo(xB,yB); g.stroke();
+    /* відбиття від похилої межі: напрям дзеркалиться відносно її нормалі */
+    const ux=Math.sin(ar), uy=Math.cos(ar);
+    const nx=Math.sin(-GAM), ny=-Math.cos(-GAM);          /* нормаль до похилої межі */
+    const dt=2*(ux*nx+uy*ny);
+    const rx=ux-dt*nx, ry=uy-dt*ny;
+    const kC=(yA-yB)/Math.min(-1e-6,ry);
+    const xC=xB+rx*kC, yC=yA;
+    g.beginPath(); g.moveTo(xB,yB); g.lineTo(xC,yC); g.stroke();
+    /* вихід під іншим кутом — саме через клин */
+    const aOut=a+2*GAM;
+    const dxo=Math.tan(aOut)*44;
+    arrow(g,xC,yC,xC+dxo,yC-44,CLR.k2,2.2);
+    txt(g,'2',xC+dxo+6,yC-46,{color:'#b8431a',size:11,bold:true});
+    /* де саме вони перетинаються */
+    {
+      const p1={x:xA,y:yA,dx:dx,dy:-44}, p2={x:xC,y:yC,dx:dxo,dy:-44};
+      const det=p1.dx*(-p2.dy)-(-p2.dx)*p1.dy;
+      if(Math.abs(det)>1e-6){
+        const t1=((p2.x-p1.x)*(-p2.dy)-(-p2.dx)*(p2.y-p1.y))/det;
+        const ix=p1.x+p1.dx*t1, iy=p1.y+p1.dy*t1;
+        if(iy<yA&&iy>zy-90&&ix>zx-40&&ix<zx+Wz+80){
+          g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+          g.beginPath(); g.moveTo(xA+dx,yA-44); g.lineTo(ix,iy);
+          g.moveTo(xC+dxo,yC-44); g.lineTo(ix,iy); g.stroke(); g.setLineDash([]);
+          dot(g,ix,iy,4,CLR.k3,'#fff');
+          txt(g,'промені сходяться — смуги на самій плівці',ix+8,iy-6,
+            {color:'#0d7a55',size:10,bold:true,max:zx+Wz+80-ix});
+        }
+      }
+    }
+    arc(g,xA,yA,24,-Math.PI/2,-Math.PI/2+a,CLR.k3,1.4);
+    txtN(g,'α = '+fmt(this.al,0)+'°',xA+28,yA-24,{color:'#0d7a55',size:10.5,bold:true});
+    txt(g,'клин: нижня межа нахилена — промені 1 і 2 вже не паралельні',
+      zx,zy-58,{color:CLR.mut,size:10});
     txtN(g,'d = '+fmt(this.d,3)+' мкм',zx+Wz+8,zy+T/2+4,{color:CLR.ink,size:11,bold:true});
-    txt(g,'втрата λ/2 на верхній межі',zx,zy+T+20,{color:CLR.mut,size:10.5});
+    txt(g,'втрата λ/2 на верхній межі',zx,yBot(zx+Wz)+16,{color:CLR.mut,size:10.5});
     /* смужка кольору цієї товщини */
     const c=this.colorAt(this.d);
     g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';
-    g.beginPath(); g.roundRect(zx,zy+T+34,Wz,30,5); g.fill();
+    g.beginPath(); g.roundRect(zx,yBot(zx+Wz)+26,Wz,30,5); g.fill();
     g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.roundRect(zx+.5,zy+T+34.5,Wz-1,29,4.5); g.stroke();
-    txt(g,'колір плівки в цій точці',zx,zy+T+80,{color:CLR.sec,size:10.5,bold:true});
+    g.beginPath(); g.roundRect(zx+.5,yBot(zx+Wz)+26.5,Wz-1,29,4.5); g.stroke();
+    txt(g,'колір плівки в цій точці',zx,yBot(zx+Wz)+72,{color:CLR.sec,size:10.5,bold:true});
     const thin=this.d<0.06;
     capN(g,thin?'плівка тонша за довжину хвилі — вона чорна'
               :'товщина задає, які кольори підсилюються',12,20,{color:thin?CLR.ink:CLR.k2,size:12.5,bold:true});

@@ -1435,6 +1435,13 @@ const M2={
     };
     front('x1',CLR.k1);
     front('x2',CLR.k2);
+    /* ---- чому взагалі виникає ефект ------------------------------------------
+       Звук іде повітрям з тією самою швидкістю в обидва боки — її задає
+       середовище. Але джерело між двома спалахами встигає проїхати v·T, тож
+       попереду сусідні фронти зближуються на цю відстань, а позаду
+       розходяться. Довжина хвилі й стає (c ∓ v)/ν — а частота, яку чує
+       приймач, змінюється саме через неї. */
+    this.why(g,Q,SX,cy,w);
     /* Як швидко йде сам сигнал. Промінь від центру найстарішого фронту до
        його краю — це і є пройдений звуком шлях: обидва фронти ростуть у
        повітрі з тією самою швидкістю, бо її задає середовище, а не джерело.
@@ -1487,6 +1494,28 @@ const M2={
     txtN(g,'показ уповільнено в '+fmt(1/this.K(),0)+' разів — і звук, і авто однаково, '+
       'тож відношення швидкостей і вся картина фронтів точні',
       12,H-10,{color:CLR.mut,size:10.5});
+  },
+  /* довжини хвилі попереду й позаду сирени, виміряні просто між фронтами */
+  why(g,Q,SX,cy,w){
+    const T=1/this.n10;
+    const lamF=(this.VSHOW-this.v1*this.K())*T;
+    const lamB=(this.VSHOW+this.v1*this.K())*T;
+    const x=this.x1, yF=cy-Math.min(70,Q.sc*this.D*0.11), yB=yF-22;
+    const bar=(x0,len,col,tc,lab,yy)=>{
+      let a0=SX(x0), a1=SX(x0+len);
+      if(Math.abs(a1-a0)<12) return;
+      /* лінійка не має вилізти за край кадру — зсуваємо її цілком */
+      const d=a1-a0;
+      if(a0<10){a0=10; a1=a0+d;}
+      if(a1>w-10){a1=w-10; a0=a1-d;}
+      g.strokeStyle=col; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(a0,cy); g.lineTo(a0,yy);
+      g.moveTo(a1,cy); g.lineTo(a1,yy); g.stroke(); g.setLineDash([]);
+      arrow(g,a0,yy,a1,yy,col,1.6); arrow(g,a1,yy,a0,yy,col,1.6);
+      pillN(g,lab,(a0+a1)/2,yy-6,{color:tc,size:10.5,bold:true});
+    };
+    bar(x+lamF*0.5,lamF,CLR.k1,'#1c5cab','(c − v)/ν',yF);
+    bar(x-lamB*1.5,lamB,CLR.k2,'#b8431a','(c + v)/ν',yB);
   },
   table(){
     const nI=this.nI(), nII=this.nII();

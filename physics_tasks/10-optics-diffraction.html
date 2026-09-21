@@ -230,13 +230,13 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <h3>Межі порядків</h3>
         <div class="chartrow">
           <div class="chartbox" id="m1caw">
-            <h4>кути початку й кінця кожного спектра, °</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>фіолетовий край</span><span><span class="chip cB"></span>червоний край</span></div>
+            <h4>розподіл інтенсивності на екрані, частки I₀</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>монохроматичне світло</span></div>
             <canvas id="m1ca"></canvas>
           </div>
           <div class="chartbox" id="m1cnw">
-            <h4>скільки повних спектрів від густоти ґратки</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>N = ціла частина d/λ_max</span><span><span class="chip cI"></span>зараз</span></div>
+            <h4>той самий розподіл за кутом, частки I₀</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>I(θ)</span><span><span class="chip cI"></span>порядки</span></div>
             <canvas id="m1cn"></canvas>
           </div>
         </div>
@@ -1129,10 +1129,12 @@ function wlName(l){
 
 /* ===================== МОДУЛЬ 1 · перекриття порядків ===================== */
 const M1={
-  mode:'free', nmm:500, showAns:true,       /* штрихів на міліметр */
-  L1:390, L2:750, NMIN:150, NMAX:900,
+  mode:'free', nmm:500, lam:550, showAns:true,   /* штрихів на мм, λ монохроматичного */
+  L1:390, L2:750, NMIN:150, NMAX:900, NSL:40,    /* NSL — скільки штрихів освітлено */
+  LSCR:0.40,                                     /* відстань до плоского екрана, м */
   ha:{x:null}, hn:{x:null}, tipa:null, tipn:null,
-  GG:[['nmm','штрихів на мм',150,900,10,CLR.k1,null,'m1vn',0,'']],
+  GG:[['nmm','штрихів на мм',150,900,10,CLR.k1,null,'m1vn',0,''],
+      ['lam','λ монохроматичного, нм',390,750,5,CLR.k3,null,'m1vlam',0,'нм']],
   d(){return 1e6/this.nmm;},                  /* період у нм */
   ang(m,lam){const s=m*lam/this.d(); return s<=1?Math.asin(s):null;},
   full(){return Math.floor(this.d()/this.L2);},
@@ -1150,7 +1152,23 @@ const M1={
     return out;
   },
   lastOrder(){return Math.floor(this.d()/this.L1);},
-  setTask(){this.nmm=500;},
+  /* ---- розподіл інтенсивності ------------------------------------------
+     Ґратка з N освітлених штрихів дає I(θ) = [sin(Nπδ)/(N·sin πδ)]², де
+     δ = d·sinθ/λ. Головні максимуми стоять там, де δ ціле — це й є порядки;
+     що більше штрихів, то вужчі смуги. Саме цю криву й бачить око на екрані. */
+  I(a){
+    const dlt=this.d()*Math.sin(a)/this.lam, N=this.NSL;
+    const den=Math.sin(Math.PI*dlt);
+    if(Math.abs(den)<1e-7) return 1;
+    const r=Math.sin(N*Math.PI*dlt)/(N*den);
+    return r*r;
+  },
+  /* плоский екран: координата точки, у яку прийшов промінь під кутом a */
+  xOf(a){return this.LSCR*Math.tan(a);},
+  /* Півширина екрана: далі 62° спектр розтягується так, що кадр заповнює
+     порожнеча, а всі порядки збиваються в центр. */
+  XM(){return this.LSCR*Math.tan(62*DEG);},
+  setTask(){this.nmm=500; this.lam=550;},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns();},
   syncAns(){const task=this.mode==='task';
@@ -1167,9 +1185,14 @@ const M1={
     this.setTask(); this.syncAns();
   },
   gcol(b){return gcolOf(b,this.GG.length);},
+  /* Екран плоский: точка приходу x = L·tg θ. Масштаб береться з півширини
+     екрана (кут 78°) — верхньої межі діапазону, а не з поточного стану (§10). */
   geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52, gy=C.gtop-80;
-    return {C,H,gx:bb.w*0.5,gy,R:Math.max(24,Math.min(bb.w*0.42,gy-Math.min(72,gy*0.42)))};
+    const C=this.gcol(bb), H=C.gtop-52;
+    const gy=64, sy=C.gtop-58;
+    const kx=(bb.w*0.46)/this.XM();
+    return {C,H,gx:bb.w*0.5,gy,sy,kx,
+      SX:x=>bb.w*0.5+x*kx};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1196,123 +1219,89 @@ const M1={
   scene(){
     const b=cvx('m1scene'); if(!b) return;
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
-    const gx=Q.gx, gy=Q.gy, R=Q.R;
+    const gx=Q.gx, gy=Q.gy, sy=Q.sy, SX=Q.SX, XM=this.XM();
     g.clearRect(0,0,w,H);
-    /* дуга екрана */
-    g.strokeStyle=CLR.grid; g.lineWidth=1.5;
-    g.beginPath(); g.arc(gx,gy,R,Math.PI,2*Math.PI); g.stroke();
-    /* кутова шкала — всередині дуги, щоб не заважати спектрам */
-    for(let a=0;a<=80;a+=20){
-      const ar=a*DEG;
-      for(const sgn of (a?[-1,1]:[1])){
-        const ux=Math.sin(ar)*sgn, uy=-Math.cos(ar);
-        g.strokeStyle=CLR.grid; g.lineWidth=1;
-        g.beginPath(); g.moveTo(gx+ux*(R-8),gy+uy*(R-8));
-        g.lineTo(gx+ux*R,gy+uy*R); g.stroke();
-        txtN(g,fmt(a,0)+'°',gx+ux*(R-22),gy+uy*(R-22)+3,
-          {color:CLR.mut,size:9.5,align:'center'});
-      }
+    /* ---- ґратка вгорі ------------------------------------------------------ */
+    g.fillStyle='#cfccc4'; g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.rect(gx-120,gy-9,240,11); g.fill(); g.stroke();
+    g.strokeStyle='rgba(11,11,11,.45)'; g.lineWidth=1;
+    for(let k=-118;k<118;k+=5){
+      g.beginPath(); g.moveTo(gx+k,gy-9); g.lineTo(gx+k,gy+2); g.stroke();
     }
-    /* спектри всіх порядків */
-    for(let m=1;m<=6;m++){
-      const a1=this.ang(m,this.L1), a2=this.ang(m,this.L2);
-      if(a1===null) break;
-      const aEnd=a2===null?Math.PI/2:a2;
-      for(const sgn of [-1,1]){
-        for(let i=0;i<=80;i++){
-          const l=this.L1+(this.L2-this.L1)*i/80, a=this.ang(m,l);
-          if(a===null) continue;
-          const c=wlRGB(l);
-          g.strokeStyle='rgb('+c[0]+','+c[1]+','+c[2]+')'; g.lineWidth=3.5;
-          g.beginPath();
-          g.arc(gx,gy,R,-Math.PI/2+sgn*a-0.007,-Math.PI/2+sgn*a+0.007);
-          g.stroke();
-        }
-      }
-      /* підпис порядку та промені — лише праворуч */
-      const am=(a1+aEnd)/2;
-      txt(g,'m = '+m,gx+Math.sin(am)*(R+17),gy-Math.cos(am)*(R+17)+4,
-        {color:CLR.sec,size:11,bold:true,align:'center'});
-      for(const [a,col] of [[a1,CLR.k3],[aEnd,CLR.k2]]){
-        g.strokeStyle=col; g.lineWidth=1; g.globalAlpha=0.40;
-        g.beginPath(); g.moveTo(gx,gy);
-        g.lineTo(gx+Math.sin(a)*R,gy-Math.cos(a)*R); g.stroke(); g.globalAlpha=1;
-      }
+    txtN(g,fmt(this.nmm,0)+' штрихів/мм',gx,gy-15,{color:CLR.ink,size:11,bold:true,align:'center'});
+    for(const dxi of [-60,0,60]) arrow(g,gx+dxi,gy-44,gx+dxi,gy-12,CLR.k1,1.8);
+    txt(g,'світло падає',gx+128,gy-24,{color:CLR.mut,size:10});
+    /* ---- плоский екран унизу ---------------------------------------------- */
+    g.fillStyle='#e9e8e2'; g.strokeStyle=CLR.axis; g.lineWidth=1.6;
+    g.beginPath(); g.rect(SX(-XM),sy,SX(XM)-SX(-XM),15); g.fill(); g.stroke();
+    const stp=niceStep(XM/4);
+    for(let x=-Math.floor(XM/stp)*stp;x<=XM+1e-9;x+=stp){
+      const px=SX(x);
+      g.strokeStyle=CLR.mut; g.lineWidth=1;
+      g.beginPath(); g.moveTo(px,sy+15); g.lineTo(px,sy+21); g.stroke();
+      txtN(g,fmt(Math.abs(x)<1e-9?0:x*100,0),px,sy+33,{color:CLR.mut,size:9.5,align:'center'});
     }
-    /* ---- перекриття: розклад по радіусу ---------------------------------
-       Раніше воно було одним блідим пунктиром збоку й лише для пари 2–3:
-       видно, що «десь там накладається», але не видно ні які порядки, ні
-       який проміжок кутів вони ділять. Тепер на дузі лишається те, що
-       справді лягає на екран, а всередині кожен порядок іде власним
-       кільцем. Порядки, що займають один кут, вишиковуються по радіусу —
-       і накладання читається як стовпчик, а не як здогад. */
+    txt(g,'екран, см',SX(XM)+6,sy+33,{color:CLR.mut,size:10});
+    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
+    g.beginPath(); g.moveTo(gx-215,gy+2); g.lineTo(gx-215,sy); g.stroke(); g.setLineDash([]);
+    arrow(g,gx-215,gy+2,gx-215,sy,CLR.mut,1.4);
+    arrow(g,gx-215,sy,gx-215,gy+2,CLR.mut,1.4);
+    txtN(g,'L = '+fmt(this.LSCR*100,0)+' см',gx-221,(gy+sy)/2,
+      {color:CLR.mut,size:10.5,align:'right'});
+    /* ---- спектри білого світла на екрані ---------------------------------- */
     const ords=this.orders();
-    const dr=Math.max(9,Math.min(18,R*0.055));
-    const nb=Math.max(1,Math.min(ords.length,Math.floor(R*0.55/dr)));
-    const rOf=i=>R-22-i*dr;
-    for(let i=0;i<nb;i++){
-      const o=ords[i], r=rOf(i);
+    for(const o of ords){
       for(const sgn of [-1,1]){
-        for(let k=0;k<=64;k++){
-          const l=this.L1+(this.L2-this.L1)*k/64, a=this.ang(o.m,l);
+        for(let k=0;k<=400;k++){
+          const l=this.L1+(this.L2-this.L1)*k/400, a=this.ang(o.m,l);
           if(a===null) continue;
+          const x=sgn*this.xOf(a);
+          if(Math.abs(x)>XM) continue;
           const c=wlRGB(l);
-          g.strokeStyle='rgb('+c[0]+','+c[1]+','+c[2]+')'; g.lineWidth=dr*0.52;
-          g.beginPath();
-          g.arc(gx,gy,r,-Math.PI/2+sgn*a-0.010,-Math.PI/2+sgn*a+0.010);
-          g.stroke();
+          g.strokeStyle='rgb('+c[0]+','+c[1]+','+c[2]+')'; g.lineWidth=3;
+          g.beginPath(); g.moveTo(SX(x),sy); g.lineTo(SX(x),sy+15); g.stroke();
         }
       }
-      txt(g,'m'+o.m,gx-Math.sin(o.a1)*r-7,gy-Math.cos(o.a1)*r+3.5,
-        {color:CLR.mut,size:9.5,bold:true,align:'right'});
+      const aM=(o.a1+Math.min(o.a2,62*DEG))/2, xM=this.xOf(aM);
+      if(Math.abs(xM)<=XM*0.97)
+        for(const sgn of [-1,1])
+          txt(g,'m = '+o.m,SX(sgn*xM),sy+46,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     }
-    /* спільний проміжок кутів двох сусідніх порядків — клин від їхніх кілець
-       до дуги екрана: саме ці кути на екрані забруднені двома спектрами */
-    let ovFrom=null, ovMid=null, ovPair='';
-    for(let i=0;i+1<nb;i++){
-      const a=ords[i], bb=ords[i+1];
-      if(!(bb.a1<a.a2)) continue;
-      const s0=bb.a1, s1=Math.min(a.a2,bb.a2);
+    /* ---- перекриття сусідніх порядків ------------------------------------- */
+    let ovPair='';
+    for(let i=0;i+1<ords.length;i++){
+      const A=ords[i], B=ords[i+1];
+      if(!(B.a1<A.a2)) continue;
+      const s0=B.a1, s1=Math.min(A.a2,B.a2);
       if(s1<=s0) continue;
-      if(ovFrom===null){ovFrom=bb.m; ovMid=(s0+s1)/2; ovPair=a.m+' і '+bb.m;}
+      if(!ovPair) ovPair=A.m+' і '+B.m;
       for(const sgn of [-1,1]){
-        const ccw=sgn<0;
-        g.fillStyle='rgba(235,104,52,.15)';
-        g.beginPath();
-        g.arc(gx,gy,R+9,-Math.PI/2+sgn*s0,-Math.PI/2+sgn*s1,ccw);
-        g.arc(gx,gy,rOf(i+1)-dr*0.45,-Math.PI/2+sgn*s1,-Math.PI/2+sgn*s0,!ccw);
-        g.closePath(); g.fill();
+        const x0=sgn*this.xOf(s0), x1=sgn*this.xOf(s1);
+        const a0=SX(clamp(Math.min(x0,x1),-XM,XM)), a1=SX(clamp(Math.max(x0,x1),-XM,XM));
+        if(a1-a0<1.5) continue;
+        g.fillStyle='rgba(235,104,52,.20)';
+        g.fillRect(a0,sy-6,a1-a0,27);
       }
     }
-    if(ovFrom!==null)
-      pill(g,'перекриття '+ovPair,gx-Math.sin(ovMid)*(R+40),
-        gy-Math.cos(ovMid)*(R+40),{color:'#b8431a',size:11,bold:true});
-    /* ґратка й падаюче світло */
-    g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.roundRect(gx-46,gy-6,92,12,2); g.fill(); g.stroke();
-    for(let i=0;i<14;i++){
-      const x=gx-42+i*84/13;
-      g.strokeStyle='rgba(11,11,11,.30)'; g.lineWidth=1;
-      g.beginPath(); g.moveTo(x,gy-6); g.lineTo(x,gy+6); g.stroke();
+    /* ---- обрана монохроматична лінія: промені й максимуми ------------------ */
+    const cl=wlRGB(this.lam), lcol='rgb('+cl[0]+','+cl[1]+','+cl[2]+')';
+    for(let m=0;m<=8;m++){
+      const a=this.ang(m,this.lam);
+      if(a===null) break;
+      for(const sgn of (m?[-1,1]:[1])){
+        const x=sgn*this.xOf(a);
+        if(Math.abs(x)>XM) continue;
+        g.strokeStyle=lcol; g.lineWidth=1.4; g.globalAlpha=0.75;
+        g.beginPath(); g.moveTo(gx,gy+2); g.lineTo(SX(x),sy); g.stroke(); g.globalAlpha=1;
+        g.strokeStyle=CLR.ink; g.lineWidth=2;
+        g.beginPath(); g.moveTo(SX(x),sy-9); g.lineTo(SX(x),sy+18); g.stroke();
+        if(m) txtN(g,fmt(x*100,1),SX(x),sy-14,{color:CLR.ink,size:9.5,align:'center'});
+      }
     }
-    arrow(g,gx,gy+50,gx,gy+10,CLR.sec,2.5);
-    txt(g,'біле світло 390…750 нм',gx,gy+66,
-      {color:CLR.sec,size:11,bold:true,align:'center'});
-    txtN(g,'ґратка · d = '+fmt(this.d(),0)+' нм',gx+58,gy+4,
-      {color:CLR.k1,size:10.5,bold:true});
-    /* шапка й легенда країв */
-    capN(g,'повних спектрів по один бік: '+this.full(),12,20,
-      {color:CLR.k1,size:12.5,bold:true});
-    capN(g,'кільця всередині — ті самі порядки за радіусом: де вони один над '+
-      'одним, там спектри й накладаються',12,36,{color:CLR.mut,size:10.5,max:w-24});
-    capN(g,'перший порядок чистий завжди; накладання — з '+this.overlapFrom()+
-      '-го, тому спектрометри працюють у першому',
-      12,52,{color:'#b8431a',size:10.5,max:w-24});
-    const lx=w-14;
-    g.fillStyle=CLR.k3; g.fillRect(lx-118,15,9,9);
-    txt(g,'фіолетовий край 390 нм',lx,23,{color:CLR.mut,size:10,align:'right'});
-    g.fillStyle=CLR.k2; g.fillRect(lx-118,30,9,9);
-    txt(g,'червоний край 750 нм',lx,38,{color:CLR.mut,size:10,align:'right'});
+    txtN(g,'λ = '+fmt(this.lam,0)+' нм',gx+130,gy+16,{color:CLR.ink,size:11,bold:true});
+    capN(g,'плоский екран: x = L·tg θ',12,20,{color:CLR.ink,size:12.5,bold:true});
+    capN(g,ovPair?('спектри '+ovPair+' порядків уже налазять один на одний')
+      :'спектри всіх порядків іще розділені',12,36,{color:CLR.mut,size:10.5});
   },
   table(){
     const a1=this.ang(1,this.L2), a2=this.ang(2,this.L1);
@@ -1337,31 +1326,39 @@ const M1={
       'ще немає';
   },
   charts(){
+    /* Два зрізи того самого: розподіл по екрану в сантиметрах і він же за
+       кутом. На екрані максимуми розходяться нерівномірно (бо x = L·tg θ),
+       а за кутом — рівномірно за sin θ; саме тому спектр на плоскому екрані
+       розтягнутий до країв. */
+    const XM=this.XM(), N=420;
     const ba=cvx('m1ca');
     if(ba){
-      const ts=[],v=[],r=[];
-      for(let m=1;m<=6;m++){
-        const a1=this.ang(m,this.L1), a2=this.ang(m,this.L2);
-        ts.push(m); v.push(a1===null?90:a1/DEG); r.push(a2===null?90:a2/DEG);
+      const ts=[],ys=[];
+      for(let i=0;i<=N;i++){
+        const x=-XM+2*XM*i/N, a=Math.atan(x/this.LSCR);
+        ts.push(x*100); ys.push(this.I(a));
       }
-      const rr=drawChart(ba,{tMax:6,yMin:0,yMax:95,yLab:'°',xLab:'порядок m',xStep:1,
-        yDec:0,hover:this.ha.x,
-        series:[{ts,ys:v,color:CLR.k3,label:'390 нм'},
-                {ts,ys:r,color:CLR.k2,label:'750 нм'}]});
-      showTip(this.tipa,rr,'°',this.ha,[['фіолетовий',CLR.k3],['червоний',CLR.k2]],1);
+      const rr=drawChart(ba,{tMin:-XM*100,tMax:XM*100,yMin:0,yMax:1.08,
+        yLab:'I/I₀',xLab:'x, см',yDec:2,hover:this.ha.x,
+        series:[{ts,ys,color:CLR.k3,label:'I(x)'}]});
+      showTip(this.tipa,rr,'',this.ha,[['I/I₀',CLR.k3]],3);
     }
     const bn=cvx('m1cn');
     if(bn){
-      const ts=[],ys=[];
-      for(let i=0;i<=80;i++){
-        const n=this.NMIN+(this.NMAX-this.NMIN)*i/80; ts.push(n);
-        ys.push(Math.floor(1e6/n/this.L2));
+      const AM=62, ts=[],ys=[];
+      for(let i=0;i<=N;i++){
+        const ad=-AM+2*AM*i/N;
+        ts.push(ad); ys.push(this.I(ad*DEG));
       }
-      const rr=drawChart(bn,{tMax:this.NMAX,yMin:0,yMax:12,yLab:'спектрів',
-        xLab:'штрихів/мм',xStep:200,yDec:0,hover:this.hn.x,
-        series:[{ts,ys,color:CLR.k1,label:'N'},
-                {ts:[this.nmm,this.nmm],ys:[0,this.full()],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipn,rr,'',this.hn,[['повних спектрів',CLR.k1],['зараз',CLR.ink]],0);
+      const ser=[{ts,ys,color:CLR.k3,label:'I(θ)'}];
+      for(let m=1;m<=8;m++){
+        const a=this.ang(m,this.lam);
+        if(a===null) break;
+        ser.push({ts:[a/DEG,a/DEG],ys:[0,1],color:CLR.ink,label:m===1?'порядки':'',dash:[3,3]});
+      }
+      const rr=drawChart(bn,{tMin:-AM,tMax:AM,yMin:0,yMax:1.08,yLab:'I/I₀',
+        xLab:'θ, °',xStep:20,yDec:2,hover:this.hn.x,series:ser});
+      showTip(this.tipn,rr,'',this.hn,[['I/I₀',CLR.k3]],3);
     }
   }
 };
