@@ -491,6 +491,15 @@ function slider(id,unit,dec,cb){
    o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
    предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
 function txt(g,s,x,y,o={}){
+  /* На кресленні немає чисел: рядок із цифрами лишає по собі тільки назву
+     величини («у ртуті 2,77 см» → «у ртуті», «v = 12,3 м/с» → «v»), а голе
+     число не малюється взагалі. o.raw вимикає це для написів, які самі є
+     позначками (номери порядків, підписи серій на графіку). */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return 0;
+    s=L;
+  }
   let sz=(o.size||11)*TK;
   const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
   g.fillStyle=o.color||CLR.ink;
@@ -517,19 +526,13 @@ let NUMS=[];
    Якщо в рядку літери немає — позначка просто не малюється. */
 function letterOf(s,o){
   if(o&&o.name) return o.name;
-  const head=String(s).split('=')[0];
-  if(head===String(s)) return '';
-  const t=head.trim();
-  return /[0-9]/.test(t)?'':t;
+  const str=String(s), i=str.indexOf('=');
+  let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
+  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  return (head&&!/[0-9]/.test(head))?head:'';
 }
-function txtN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) txt(g,L,x,y,o);
-}
-function pillN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) pill(g,L,x,y,o);
-}
+function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
+function pillN(g,s,x,y,o={}){pill(g,s,x,y,o);}
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
    переїжджають у DOM, рядком над полотном, де їх ще й можна виділити. */
@@ -721,9 +724,9 @@ function drawChart(box,opt){
        підпису стає сама межа, а не кінець кривої десь за кадром. */
     const ex=Math.min(e.x,L+pw);
     const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
-    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room});
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room,raw:true});
     else txt(g,e.label,ex-7*TK,ly,
-      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3)});
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3),raw:true});
   }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
     const t=t0+(opt.hover-L)/pw*tSpan;
@@ -1404,8 +1407,24 @@ const M2={
       txt(g,'без води',cx0-6,SY(this.h-hg0)+12,
         {color:CLR.mut,size:10,bold:true,align:'right'});
       arrow(g,Q.cx,SY(this.h-hg0),Q.cx,SY(this.h-hg),CLR.k3,2);
-      pillN(g,'спливло на '+fmt(hg0-hg,2)+' см',Q.cx,SY(this.h-hg0)-14,
-        {color:'#0d7a55',size:11,bold:true});
+      txt(g,'Δ',Q.cx+8,(SY(this.h-hg0)+SY(this.h-hg))/2+4,
+        {color:'#0d7a55',size:12,bold:true});
+      /* ---- підйом розписано глибинами занурення в ртуть ---------------------
+         Без води ртуть мусить тримати всю вагу, і циліндр тоне на h_р₀.
+         Долита вода забирає на себе частину виштовхування, ртуті лишається
+         менше — і занурення стає h_р. Різниця цих двох глибин і є підйомом. */
+      const xd=cx0-30;
+      const dimAt=(x,ya,yb,col,tc,lab)=>{
+        arrow(g,x,ya,x,yb,col,1.4); arrow(g,x,yb,x,ya,col,1.4);
+        g.strokeStyle=col; g.lineWidth=1; g.setLineDash([3,3]);
+        g.beginPath(); g.moveTo(x,ya+.5); g.lineTo(cx0+cw,ya+.5);
+        g.moveTo(x,yb+.5); g.lineTo(cx0+cw,yb+.5); g.stroke(); g.setLineDash([]);
+        txt(g,lab,x-6,(ya+yb)/2+4,{color:tc,size:10.5,bold:true,align:'right'});
+      };
+      dimAt(xd,SY(0),SY(-hg0),CLR.mut,CLR.mut,'h_р₀');
+      dimAt(xd+22,SY(0),SY(-hg),CLR.k2,'#b8431a','h_р');
+      txt(g,'Δ = h_р₀ − h_р',Q.cx,SY(this.h-hg0)-16,
+        {color:'#0d7a55',size:11,bold:true,align:'center'});
     }
     g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.rect(cx0,SY(this.h-hg),cw,this.h*sc); g.fill(); g.stroke();

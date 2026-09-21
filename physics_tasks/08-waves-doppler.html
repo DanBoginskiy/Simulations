@@ -505,6 +505,15 @@ function slider(id,unit,dec,cb){
    o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
    предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
 function txt(g,s,x,y,o={}){
+  /* На кресленні немає чисел: рядок із цифрами лишає по собі тільки назву
+     величини («у ртуті 2,77 см» → «у ртуті», «v = 12,3 м/с» → «v»), а голе
+     число не малюється взагалі. o.raw вимикає це для написів, які самі є
+     позначками (номери порядків, підписи серій на графіку). */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return 0;
+    s=L;
+  }
   let sz=(o.size||11)*TK;
   const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
   g.fillStyle=o.color||CLR.ink;
@@ -531,19 +540,13 @@ let NUMS=[];
    Якщо в рядку літери немає — позначка просто не малюється. */
 function letterOf(s,o){
   if(o&&o.name) return o.name;
-  const head=String(s).split('=')[0];
-  if(head===String(s)) return '';
-  const t=head.trim();
-  return /[0-9]/.test(t)?'':t;
+  const str=String(s), i=str.indexOf('=');
+  let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
+  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  return (head&&!/[0-9]/.test(head))?head:'';
 }
-function txtN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) txt(g,L,x,y,o);
-}
-function pillN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) pill(g,L,x,y,o);
-}
+function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
+function pillN(g,s,x,y,o={}){pill(g,s,x,y,o);}
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
    переїжджають у DOM, рядком над полотном, де їх ще й можна виділити. */
@@ -735,9 +738,9 @@ function drawChart(box,opt){
        підпису стає сама межа, а не кінець кривої десь за кадром. */
     const ex=Math.min(e.x,L+pw);
     const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
-    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room});
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room,raw:true});
     else txt(g,e.label,ex-7*TK,ly,
-      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3)});
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3),raw:true});
   }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
     const t=t0+(opt.hover-L)/pw*tSpan;
@@ -1468,6 +1471,28 @@ const M2={
     };
     bar(x+lamF*0.5,lamF,CLR.k1,'#1c5cab','(c − v)/ν',yF);
     bar(x-lamB*1.5,lamB,CLR.k2,'#b8431a','(c + v)/ν',yB);
+    /* ---- звідки це береться ------------------------------------------------
+       Позначаємо на дорозі самі точки, де сирена була в мить кожного спалаху.
+       Між ними рівно v·T — саме на цю відстань джерело встигає проїхати за
+       період. Попереду вона віднімається від довжини хвилі, позаду
+       додається; іншої причини в ефекту немає. */
+    const yE=cy+16;
+    let prev=null;
+    for(let k=0;k<6;k++){
+      const xe=this.x1-k*this.v1*this.K()*T;
+      const px=SX(xe);
+      if(px<8||px>w-8){prev=null; continue;}
+      dot(g,px,yE,3,CLR.k1);
+      if(prev!==null&&Math.abs(px-prev)>14){
+        arrow(g,prev,yE+12,px,yE+12,CLR.mut,1.2);
+        arrow(g,px,yE+12,prev,yE+12,CLR.mut,1.2);
+        if(k===1) txt(g,'v·T — стільки джерело проїхало за період',
+          (px+prev)/2,yE+26,{color:CLR.mut,size:10,align:'center'});
+      }
+      prev=px;
+    }
+    txt(g,'точки, де сирена була в мить спалаху',SX(this.x1)+10,yE-4,
+      {color:CLR.sec,size:10.5,bold:true});
   },
   table(){
     const nI=this.nI(), nII=this.nII();

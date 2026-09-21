@@ -542,6 +542,15 @@ function slider(id,unit,dec,cb){
    o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
    предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
 function txt(g,s,x,y,o={}){
+  /* На кресленні немає чисел: рядок із цифрами лишає по собі тільки назву
+     величини («у ртуті 2,77 см» → «у ртуті», «v = 12,3 м/с» → «v»), а голе
+     число не малюється взагалі. o.raw вимикає це для написів, які самі є
+     позначками (номери порядків, підписи серій на графіку). */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return 0;
+    s=L;
+  }
   let sz=(o.size||11)*TK;
   const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
   g.fillStyle=o.color||CLR.ink;
@@ -568,19 +577,13 @@ let NUMS=[];
    Якщо в рядку літери немає — позначка просто не малюється. */
 function letterOf(s,o){
   if(o&&o.name) return o.name;
-  const head=String(s).split('=')[0];
-  if(head===String(s)) return '';
-  const t=head.trim();
-  return /[0-9]/.test(t)?'':t;
+  const str=String(s), i=str.indexOf('=');
+  let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
+  head=head.replace(/[·:,;\u2014\u2013\-=(\s]+$/,'').trim();
+  return (head&&!/[0-9]/.test(head))?head:'';
 }
-function txtN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) txt(g,L,x,y,o);
-}
-function pillN(g,s,x,y,o={}){
-  const L=letterOf(s,o);
-  if(L) pill(g,L,x,y,o);
-}
+function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
+function pillN(g,s,x,y,o={}){pill(g,s,x,y,o);}
 /* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
    верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
    переїжджають у DOM, рядком над полотном, де їх ще й можна виділити. */
@@ -772,9 +775,9 @@ function drawChart(box,opt){
        підпису стає сама межа, а не кінець кривої десь за кадром. */
     const ex=Math.min(e.x,L+pw);
     const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
-    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room});
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room,raw:true});
     else txt(g,e.label,ex-7*TK,ly,
-      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3)});
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3),raw:true});
   }
   if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
     const t=t0+(opt.hover-L)/pw*tSpan;
