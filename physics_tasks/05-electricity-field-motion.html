@@ -206,52 +206,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <body>
 <div class="wrap">
 <header>
-  <h1>Поле, рух зарядів і струм<small>задачі 1.9 · 1.10 · 1.28 компенсаційного курсу</small></h1>
+  <h1>Поле, рух зарядів і струм<small>задачі 1.10 · 1.28 компенсаційного курсу</small></h1>
 </header>
 <nav class="tabs" id="tabs">
-  <button data-m="m1" class="active">1 · Дві заряджені пластини</button>
-  <button data-m="m2">2 · Кільце із зарядом</button>
-  <button data-m="m3">3 · Електрон у смузі поля</button>
+  <button data-m="m2" class="active">1 · Кільце із зарядом</button>
+  <button data-m="m3">2 · Електрон у смузі поля</button>
 </nav>
 
-<!-- ================= МОДУЛЬ 1 ================= -->
-<section class="module active" id="m1">
-  <p class="caption">Поле — це похідна потенціалу, а потенціал — площа під полем.
-  Тому там, де <var>E</var><sub>x</sub> стрибає, <var>φ</var> ламається,
-  а там, де поля немає, потенціал — горизонталь.</p>
-
-      <p class="cond">Дві паралельні пластини з поверхневою густиною заряду <b>σ₁</b> і <b>σ₂</b> закріплено перпендикулярно до осі OX на відстані <b>d</b>. Уважаючи поле однорідним, визначити залежність від координати: проєкції <b>E<sub>x</sub></b> і потенціалу <b>X</b>, поклавши нуль потенціалу посередині між пластинами.</p>
-
-      <div class="panel">
-        <div class="toolbar">
-          <div class="seg" id="m1case">
-            <button data-v="c1" class="active" style="--c:var(--k1)">σ₁ = σ, σ₂ = 2σ</button>
-            <button data-v="c2" style="--c:var(--k2)">σ₁ = σ, σ₂ = −σ</button>
-          </div>
-          <button class="ibtn" id="m1re" title="заново">↺</button>
-        </div>
-        <canvas id="m1scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Поле й потенціал уздовж осі</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m1cew">
-            <h4>проєкція напруженості <var>E</var><sub>x</sub>(<var>x</var>), В/м</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>східчаста: у кожній зоні стала</span></div>
-            <canvas id="m1ce"></canvas>
-          </div>
-          <div class="chartbox" id="m1cfw">
-            <h4>потенціал <var>φ</var>(<var>x</var>), В</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>кусково-лінійний: нахил = −E_x</span></div>
-            <canvas id="m1cf"></canvas>
-          </div>
-        </div>
-      </div>
-    
-</section>
 
 <!-- ================= МОДУЛЬ 2 ================= -->
-<section class="module" id="m2">
+<section class="module active" id="m2">
   <p class="caption">У центрі кільця поля немає взагалі, а найбільше воно не на кільці й не далеко,
   а на відстані <var>R</var>/√2. Видно, чому: поперечні складові внесків гасять одна одну,
   лишається тільки те, що вздовж осі.</p>
@@ -1119,180 +1083,6 @@ function drawGrip(g,h,st){
 const EPS0=8.8541878128e-12, KE=1/(4*Math.PI*EPS0);
 const QE=1.602176634e-19, ME=9.1093837015e-31;
 
-/* ===================== МОДУЛЬ 1 · дві заряджені пластини ===================== */
-const M1={
-  mode:'free', cse:'c1', s1:1, s2:2, d:5, showAns:true,
-  SMIN:-3, SMAX:3, DMIN:2, DMAX:9,      /* σ у одиницях σ = 10⁻⁸ Кл/м², d у см */
-  SI:1e-8,
-  he:{x:null}, hf:{x:null}, tipe:null, tipf:null,
-  GG:[['s1','σ₁, ×10⁻⁸',-3,3,0.25,CLR.k1,null,'m1vs1',2,''],
-      ['s2','σ₂, ×10⁻⁸',-3,3,0.25,CLR.k2,null,'m1vs2',2,'']],
-  k(){return this.SI/(2*EPS0);},        /* поле однієї площини на одиницю σ */
-  /* три зони: ліворуч, між пластинами, праворуч */
-  Ez(){return [-(this.s1+this.s2)*this.k(), (this.s1-this.s2)*this.k(), (this.s1+this.s2)*this.k()];},
-  Ex(x){const E=this.Ez(); return x<0?E[0]:(x<this.d/100?E[1]:E[2]);},
-  phi(x){
-    const E=this.Ez(), d=this.d/100;
-    if(x<0) return -E[0]*x;
-    if(x<d) return -E[1]*x;
-    return -E[1]*d-E[2]*(x-d);
-  },
-  setTask(){this.s1=1; this.s2=this.cse==='c1'?2:-1; this.d=5;},
-  reset(){this.setTask();},
-  setMode(m){this.mode=m; if(m==='task') this.setTask();
-    this.showAns=m!=='task'; this.syncAns();},
-  syncAns(){const task=this.mode==='task';
-    $('m1ans').hidden=!task||this.showAns; $('m1ansBox').hidden=task&&!this.showAns;
-    $('m1bcap').hidden=Math.abs(this.s1+this.s2)>1e-9;},
-  init(){
-    seg('m1case',v=>{this.cse=v; if(this.mode==='task') this.setTask();});
-    grip('m1scene',this,()=>this.grips());
-    $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m1re').onclick=()=>this.setTask();
-    this.tipe=makeTip('m1cew'); this.tipf=makeTip('m1cfw');
-    hover('m1ce',this.he); hover('m1cf',this.hf);
-    this.he.xlab='x'; this.he.xunit='см'; this.he.xdec=1;
-    this.hf.xlab='x'; this.hf.xunit='см'; this.hf.xdec=1;
-    this.setTask(); this.syncAns();
-  },
-  gcol(b){return gcolOf(b,this.GG.length);},
-  geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52;
-    const XW=this.DMAX*3;               /* видима смуга по x, см */
-    const sc=(bb.w-Math.min(90,bb.w*0.42))/XW;
-    return {C,H,sc,ox:bb.w/2-this.DMAX*0.5*sc,cy:52+H*0.46,
-      SX:x=>bb.w/2-this.DMAX*0.5*sc+x*sc};
-  });},
-  grips(){
-    if(this.mode!=='free') return [];
-    const b=cvx('m1scene'); if(!b) return [];
-    const Q=this.geo(b);
-    return [
-      /* відстань між пластинами задають самою другою пластиною */
-      {id:'d', x:Q.SX(this.d), y:Q.cy, r:11, bare:true, color:CLR.k2, hint:'відстань між пластинами',
-       move:px=>{this.d=clamp(snap((px-Q.SX(0))/Q.sc,0.5),this.DMIN,this.DMAX);}}
-    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
-  },
-  tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m1scene'); if(!b) return;
-    const C=this.gcol(b);
-    if(this.mode==='free'){
-      gaugeCol(b.g,C,this.GG,this);
-      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
-    } else {
-      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
-      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
-      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: '+(this.cse==='c1'?'σ₁ = σ, σ₂ = 2σ':'σ₁ = σ, σ₂ = −σ'),
-        C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
-    }
-    $('m1vs1').textContent=fmt(this.s1,2)+'σ';
-    $('m1vs2').textContent=fmt(this.s2,2)+'σ';
-  },
-  scene(){
-    const b=cvx('m1scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, SX=Q.SX, cy=Q.cy;
-    const E=this.Ez(), hh=Math.min(120,(H-100)/2);
-    g.clearRect(0,0,w,H);
-    /* три зони поля, кожна зі своїми силовими лініями */
-    const zones=[[-this.DMAX*1.4,0,E[0]],[0,this.d,E[1]],[this.d,this.d+this.DMAX*1.4,E[2]]];
-    const Emax=2*this.SMAX*this.k();
-    for(const [a,c,ez] of zones){
-      const x0=Math.max(6,SX(a)), x1=Math.min(w-6,SX(c));
-      if(x1-x0<6) continue;
-      const n=Math.max(2,Math.round((x1-x0)/34));
-      for(let i=0;i<=n;i++){
-        const y=cy-hh+ i*2*hh/n;
-        if(Math.abs(ez)<1) continue;
-        const len=Math.min((x1-x0)*0.7,Math.abs(ez)/Emax*120+10);
-        const xm=(x0+x1)/2;
-        arrow(g,xm-Math.sign(ez)*len/2,y,xm+Math.sign(ez)*len/2,y,
-          ez>0?CLR.k1:CLR.k2,1.8);
-      }
-      pillN(g,fmt(ez,0)+' В/м',(x0+x1)/2,cy+hh+22,
-        {color:CLR.ink,size:11,bold:true,name:'Eₓ'});
-    }
-    /* самі пластини */
-    const plate=(x,s,lab,col,tc)=>{
-      const px=SX(x);
-      g.strokeStyle=col; g.lineWidth=4;
-      g.beginPath(); g.moveTo(px,cy-hh-16); g.lineTo(px,cy+hh+6); g.stroke();
-      for(let i=0;i<9;i++){
-        const y=cy-hh-10+i*(2*hh+8)/8;
-        txt(g,s>0?'+':(s<0?'−':'0'),px+(s>=0?7:7),y+4,{color:tc,size:11,bold:true});
-      }
-      txt(g,lab,px,cy-hh-24,{color:tc,size:11.5,bold:true,align:'center'});
-    };
-    plate(0,this.s1,'σ₁ = '+fmt(this.s1,2)+'σ',CLR.k1,'#1c5cab');
-    plate(this.d,this.s2,'σ₂ = '+fmt(this.s2,2)+'σ',CLR.k2,'#b8431a');
-    /* вісь x із поділками */
-    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
-    g.beginPath(); g.moveTo(10,cy+hh+40.5); g.lineTo(w-10,cy+hh+40.5); g.stroke();
-    for(let x=-this.DMAX;x<=this.DMAX*2;x+=2){
-      const px=SX(x); if(px<12||px>w-12) continue;
-      g.strokeStyle=CLR.mut; g.lineWidth=1.2;
-      g.beginPath(); g.moveTo(px+.5,cy+hh+40); g.lineTo(px+.5,cy+hh+46); g.stroke();
-      txtN(g,fmt(x,0),px,cy+hh+58,{color:CLR.mut,size:9.5,align:'center'});
-    }
-    txt(g,'x, см',w-14,cy+hh+58,{color:CLR.mut,size:10,align:'right'});
-    const cap=Math.abs(this.s1+this.s2)<1e-9;
-    capN(g,cap?'поле лише між пластинами — це конденсатор':'поле є в усіх трьох зонах',12,20,{color:cap?CLR.k2:CLR.k1,size:12.5,bold:true});
-    capN(g,'кожна площина дає своє стале поле; складаємо їх у кожній зоні окремо',
-      12,36,{color:CLR.mut,size:10.5});
-    for(const hh2 of this.grips()) if(hh2.id==='d') drawGrip(g,hh2,this);
-  },
-  table(){
-    const E=this.Ez(), d=this.d/100;
-    $('m1t').textContent='d = '+fmt(this.d,1)+' см';
-    $('m1vd').textContent=fmt(this.d,1)+' см';
-    $('m1rL').textContent=fmt(E[0],0)+' В/м';
-    $('m1rM').textContent=fmt(E[1],0)+' В/м';
-    $('m1rR').textContent=fmt(E[2],0)+' В/м';
-    $('m1kE1').textContent=fmt(this.s1*this.k(),0)+' В/м';
-    $('m1kE2').textContent=fmt(this.s2*this.k(),0)+' В/м';
-    $('m1kPhd').textContent=fmt(this.phi(d),1)+' В';
-    $('m1kU').textContent=fmt(Math.abs(this.phi(d)),1)+' В';
-    $('m1kOut').textContent=fmt(E[2],0)+' В/м';
-    $('m1fx').innerHTML=
-      '<i>E</i><sub>x</sub> = ±(σ₁ ± σ₂)/(2<i>ε</i><sub>0</sub>); одна площина дає '+
-      fmt(this.k(),0)+' В/м на σ<br>зліва <b>'+fmt(E[0],0)+'</b>, між <b>'+fmt(E[1],0)+
-      '</b>, справа <b>'+fmt(E[2],0)+' В/м</b> &nbsp;·&nbsp; <i>φ</i>(<i>d</i>) = −<i>E</i><i>d</i> = <b>'+
-      fmt(this.phi(d),1)+' В</b>';
-  },
-  charts(){
-    /* Вісь відлічуємо від середини між пластинами, і саме там кладемо нуль
-       потенціалу: картина стає симетричною, а нуль перестає бути довільно
-       посадженим на ліву пластину. Рівень φ вибирається вільно — фізичний
-       зміст має лише різниця, тож зручно взяти нуль там, де центр. */
-    const d=this.d/100, C=d/2, phiC=this.phi(C);
-    const X=[],Ey=[],Fy=[];
-    const half=(this.DMAX+this.DMAX/2)/100;
-    for(let i=0;i<=200;i++){
-      const u=-half+2*half*i/200, x=C+u;   /* u — від середини, м */
-      X.push(u*100);
-      Ey.push(this.Ex(x+1e-9)); Fy.push(this.phi(x)-phiC);
-    }
-    const Em=2*this.SMAX*this.k()*1.15, HX=half*100;
-    const be=cvx('m1ce');
-    if(be){
-      const r=drawChart(be,{tMin:-HX,tMax:HX,yMin:-Em,yMax:Em,yLab:'В/м',
-        xLab:'x від середини, см',xStep:2,yDec:0,hover:this.he.x,
-        series:[{ts:X,ys:Ey,color:CLR.k1,label:'E_x'}]});
-      showTip(this.tipe,r,'В/м',this.he,[['E_x',CLR.k1]],0);
-    }
-    const bf=cvx('m1cf');
-    if(bf){
-      const lim=Em*d*1.1+10;
-      const r=drawChart(bf,{tMin:-HX,tMax:HX,yMin:-lim,yMax:lim,yLab:'В',
-        xLab:'x від середини, см',xStep:2,yDec:0,hover:this.hf.x,
-        series:[{ts:X,ys:Fy,color:CLR.k2,label:'X = φ'},
-                {ts:[0,0],ys:[-lim,lim],color:CLR.grid,label:'',dash:[3,3]}]});
-      showTip(this.tipf,r,'В',this.hf,[['φ',CLR.k2]],1);
-    }
-  }
-};
 
 /* ===================== МОДУЛЬ 2 · кільце із зарядом ===================== */
 const M2={
@@ -1781,8 +1571,8 @@ const M3={
 };
 
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2,m3:M3};
-let ACT='m1';
+const MODULES={m2:M2,m3:M3};
+let ACT='m2';
 function activate(id){
   if(!MODULES[id]) return;
   ACT=id;

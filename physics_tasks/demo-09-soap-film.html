@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мильна плівка · демонстрація</title>
+<style>
+:root{
+  --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{background:var(--paper); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:min(1560px,96vw); margin:0 auto; padding:18px clamp(12px,2vw,26px) 40px}
+header{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:6px}
+h1{font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:21px; letter-spacing:.2px}
+h1 small{color:var(--sec); font-weight:400; font-size:14px; margin-left:10px}
+.tabs{display:flex; gap:6px; margin:12px 0 16px; border-bottom:1px solid var(--grid); padding-bottom:0; flex-wrap:wrap}
+.tabs button{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:8px 14px 10px; font:600 14px/1 system-ui,sans-serif; color:var(--sec); cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--ink); border-bottom-color:var(--ink)}
+.module{display:none}
+.module.active{display:block}
+.caption{color:var(--sec); font-size:13.5px; margin:0 2px 12px}
+.panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.panel h3{font:600 13px/1 system-ui,sans-serif; color:var(--sec); text-transform:none; margin-bottom:10px}
+canvas{display:block}
+/* segmented control */
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff}
+.seg button{appearance:none; border:none; background:none; padding:6px 12px; cursor:pointer;
+  font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.active{color:var(--ink); background:color-mix(in srgb, var(--c,#888) 14%, #fff);
+  box-shadow:inset 0 -2px 0 var(--c,#888)}
+/* icon buttons */
+.ibtn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  width:34px; height:30px; cursor:pointer; font-size:13px; color:var(--ink)}
+.ibtn:hover{border-color:var(--axis)}
+.btn{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+  padding:6px 11px; cursor:pointer; font:600 12.5px/1 system-ui,sans-serif; color:var(--ink)}
+.btn:hover{border-color:var(--axis)}
+.btn small{display:block; font-weight:400; color:var(--mut); margin-top:3px}
+/* sliders */
+.sl{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; margin:9px 0}
+.sl>span{font-size:13px; color:var(--sec); grid-column:1/3}
+.sl input[type=range]{width:100%; accent-color:var(--ink)}
+.sl output{font-size:13px; font-variant-numeric:tabular-nums; color:var(--ink); min-width:74px; text-align:right}
+.grp[hidden]{display:none}
+/* key-value readouts */
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:5px 0; border-bottom:1px dashed var(--grid); font-size:13px}
+.kv:last-child{border-bottom:none}
+/* display:flex перебиває приховування атрибутом hidden — повертаємо його */
+.kv[hidden]{display:none}
+.kv span{color:var(--sec)}
+.kv b{font-variant-numeric:tabular-nums; font-weight:600; text-align:right;
+  /* Довге словесне значення з nowrap роздувало бічну колонку й давало
+     горизонтальну прокрутку всієї сторінки. Переносимо по пробілах. */
+  white-space:normal; overflow-wrap:anywhere}
+.badge{display:inline-block; font-size:10.5px; font-weight:600; color:var(--sec);
+  border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
+.badge[hidden]{display:none}
+.chip{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.cA{background:var(--k1)} .cB{background:var(--k2)} .cC{background:var(--k3)} .cI{background:var(--ink)}
+.formulas{font-size:12.5px; color:var(--mut); margin-top:8px; font-style:italic}
+.formulas i{font-family:Georgia,serif}
+.formulas b{color:var(--ink); font-style:normal}
+var{font-family:Georgia,serif; font-style:italic}
+/* toolbars, tables, charts — спільні для всіх модулів */
+.toolbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.toolbar .lbl{font-size:12.5px; color:var(--mut)}
+.toolbar .lbl b{font-variant-numeric:tabular-nums}
+table.read{width:100%; border-collapse:collapse; font-size:13.5px}
+table.read th{font:600 11.5px/1 system-ui,sans-serif; color:var(--mut); text-align:right; padding:4px 8px; border-bottom:1px solid var(--grid)}
+table.read th:first-child{text-align:left}
+table.read td{padding:5px 8px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px dashed var(--grid)}
+table.read td:first-child{text-align:left; white-space:nowrap}
+table.read td.f{color:var(--mut); font-size:12.5px; text-align:left}
+table.read td.f var{color:var(--sec)}
+table.read tr:last-child td{border-bottom:none}
+.legend{display:flex; gap:18px; font-size:12.5px; color:var(--sec); margin-bottom:8px; flex-wrap:wrap}
+.legend.sm{gap:12px; font-size:11.5px; margin-bottom:5px}
+.chartrow{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.chartrow3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+.chartbox{position:relative}
+.chartbox h4{font:600 12px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.chartbox canvas{width:100%; height:clamp(240px,36vh,420px)}
+.tip{position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid var(--line);
+  border-radius:8px; box-shadow:0 2px 10px rgba(11,11,11,.08); padding:7px 10px; font-size:12px; z-index:5;
+  font-variant-numeric:tabular-nums; max-width:calc(100% - 8px)}
+.tip .th{color:var(--mut); margin-bottom:3px}
+.tip div{line-height:1.5}
+.pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
+.pgrid .scene canvas{width:100%; touch-action:none}
+.side .panel{padding:12px 14px}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
+.coords{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:13.5px}
+.coords .cc{font-variant-numeric:tabular-nums; white-space:nowrap}
+.coords .cc b{font-weight:600}
+.c1{color:#1c5cab} .c2{color:#b8431a} .c3{color:#0d7a55}
+
+/* ============ сітки й полотна цієї теми ============ */
+#m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
+.ansbox{margin-top:10px}
+.ansbox[hidden]{display:none}
+.cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
+  background:var(--card); border-radius:0 8px 8px 0;
+  padding:11px 14px 11px 13px; margin:0 0 12px}
+.cond b{color:var(--ink); font-weight:600}
+
+.fswrap{position:relative}
+.fswrap>.toolbar,.fswrap>h3{padding-right:38px}
+.fsb{position:absolute; top:10px; right:10px; z-index:6; appearance:none; cursor:pointer;
+  border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:26px;
+  font:13px/1 system-ui,sans-serif; color:var(--sec)}
+.fsb:hover{border-color:var(--axis); color:var(--ink)}
+.panel:fullscreen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:-webkit-full-screen{width:100vw; height:100vh; margin:0; border-radius:0; overflow:hidden;
+  background:var(--paper); padding:14px 18px}
+.panel:fullscreen canvas,.panel:-webkit-full-screen canvas,.panel.fsfake canvas{
+  min-height:0!important; max-height:none!important; aspect-ratio:auto!important}
+.panel.fsfake{position:fixed; inset:0; z-index:60; width:100vw; height:100vh; margin:0;
+  border-radius:0; overflow:hidden; background:var(--paper); padding:14px 18px}
+@supports (height:100dvh){.panel.fsfake{height:100dvh}}
+.rothint{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:61;
+  background:rgba(11,11,11,.86); color:#fff; border-radius:999px; padding:9px 16px;
+  font:600 13px/1 system-ui,sans-serif; pointer-events:none}
+@media (orientation:landscape){.rothint{display:none}}
+/* Числа, знятi з вузького креслення, — рядком одразу під ним. */
+.numrow{display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:8px; padding-top:8px;
+  border-top:1px solid var(--grid); font-size:12.5px; font-variant-numeric:tabular-nums}
+.numrow i{color:var(--mut); font-style:normal}
+.numrow b{font-weight:600}
+.caprow{margin:0 0 8px; font-size:12.5px; line-height:1.42}
+.caprow span{display:block}
+.caprow span.b{font-weight:600}
+footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
+/* ============ адаптив: сторінка перебудовується під дисплей ============ */
+@media (max-width:1360px){
+  .pgrid{grid-template-columns:1fr 264px}
+}
+@media (max-width:1100px){
+  .chartrow,.chartrow3,.pgrid,.duo{grid-template-columns:1fr}
+  /* Елемент ґрид-колонки за замовчуванням не вужчає за свій вміст. */
+  .chartrow>*,.chartrow3>*,.pgrid>*,.duo>*{min-width:0}
+  /* Коли колонки злилися, сцена за пропорцією виросла б на цілий екран. */
+  .scene canvas,.pgrid .scene canvas{max-height:78vh}
+}
+@media (max-width:760px){
+  .wrap{max-width:100vw; padding:14px 11px 30px}
+  h1{font-size:19px}
+  h1 small{display:block; margin:5px 0 0; font-size:12.5px}
+  .tabs{gap:2px; margin:10px 0 13px}
+  .tabs button{padding:7px 9px 9px; font-size:12.5px}
+  .panel{padding:11px 12px}
+  .side .panel{padding:10px 12px}
+  .chartbox canvas{height:clamp(200px,30vh,320px)}
+  .toolbar{gap:9px}
+  .coords{gap:11px; font-size:12.5px}
+  table.read{font-size:12.5px}
+  table.read th,table.read td{padding:4px 5px}
+  /* Назви вкладок довгі: переносом вони з'їдають кілька рядків до початку
+     креслення. Смуга лишається в один рядок і гортається пальцем. */
+  .tabs{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{white-space:nowrap; min-height:40px}
+  .ibtn{width:40px; height:36px}
+  .fsb{width:40px; height:36px; font-size:16px}
+  .btn{padding:9px 12px}
+  .seg button{padding:9px 12px; min-height:40px}
+  .sl input[type=range]{height:34px}
+  table.read{table-layout:fixed}
+  table.read th,table.read td{overflow-wrap:anywhere}
+  table.read td:first-child{white-space:normal}
+  /* Бічні панелі згортаються: під сценою мають одразу йти графіки. */
+  .side .panel>h3{cursor:pointer; user-select:none; min-height:40px;
+    display:flex; align-items:center; justify-content:space-between}
+  .side .panel>h3::after{content:'\2212'; color:var(--mut); font-weight:400; font-size:15px}
+  .side .panel.fold>h3::after{content:'+'}
+  .side .panel.fold>*:not(h3){display:none}
+}
+@media (max-width:480px){
+  html,body{font-size:14px}
+  .caption{font-size:12.5px}
+  .sl output{min-width:62px; font-size:12px}
+  .kv{font-size:12px}
+  .legend,.legend.sm{gap:10px; font-size:11.5px}
+}
+/* Висота сцени йде за висотою вікна. У альбомній орієнтації телефона
+   вертикального місця обмаль, і сцена, розрахована на 466+ px, вилазить
+   за екран — тут вона стискається під те, що є. */
+@media (max-height:560px) and (orientation:landscape) and (max-width:900px){
+  .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
+  .chartbox canvas{height:clamp(160px,46vh,320px)}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Мильна плівка<small>демонстрація · задача 2.5 компенсаційного курсу</small></h1>
+</header>
+
+
+
+<!-- ================= МОДУЛЬ 3 ================= -->
+<section class="module active" id="m3">
+  <p class="caption">Мильна плівка стікає, товщина росте донизу — і кожна смуга кольору
+  відповідає своїй товщині. Угорі, де плівка тонша за довжину хвилі, вона <b>чорна</b>:
+  це і є прямий доказ втрати півхвилі при відбитті.</p>
+
+      <p class="cond">Прозору мильну плівку з показником заломлення <b>n</b> опромінюють білим світлом під кутом <b>α</b>. Визначити товщину <b>X</b> плівки, якщо світло з довжиною хвилі <b>λ₁</b> від неї повністю відбивається, а з <b>λ₂</b> — не відбивається взагалі.</p>
+
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m3re" title="заново">↺</button>
+        </div>
+        <canvas id="m3scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Спектр відбиття для обраної товщини</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m3crw">
+            <h4>коефіцієнт відбиття за довжиною хвилі</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>R(λ)</span><span><span class="chip cA"></span>640 нм</span><span><span class="chip cC"></span>400 нм</span></div>
+            <canvas id="m3cr"></canvas>
+          </div>
+          <div class="chartbox" id="m3cdw">
+            <h4>відбиття двох ліній від товщини плівки</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>червона 640 нм</span><span><span class="chip cC"></span>фіолетова 400 нм</span><span><span class="chip cI"></span>обрана товщина</span></div>
+            <canvas id="m3cd"></canvas>
+          </div>
+        </div>
+      </div>
+    
+</section>
+
+<footer>Допоміжний матеріал з оптики · формула дзеркала · інтерференція світла</footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Ролі кольорів у цьому файлі (брендбук §2.1/§18). Призначені один раз
+   і не міняються між вкладками:
+
+     --k1  предмет і те, що задано: мураха, перша щілина, показник n
+     --k2  наслідок і те, що змінюється: зображення, смуги, колір плівки
+     --k3  геометрія приладу: дзеркало, фокус, кут падіння, друга лінія
+     --ink результат: шукана величина, обрана точка
+     --sec пройдена траєкторія, штрих [2,3]
+   ===================================================================== */
+
+/* ===================== спільні утиліти ===================== */
+/* ---- $ повертає заглушку, а не null -------------------------------------
+   Бічні панелі з числами прибрано, тож частина елементів, у які модулі
+   писали значення, більше не існує. Заглушка приймає ці записи мовчки:
+   модуль лишається цілим, а кадр не обривається на першому ж зверненні. */
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+function $(id){return document.getElementById(id)||NULLEL;}
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+  grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
+  water:'#e2edfa',drop:'#86b6ef'};
+const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
+const DEG=Math.PI/180;
+const G=9.8;
+
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sci(n,d=3){
+  if(!isFinite(n)||n===0) return fmt(0,d);
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  return fmt(n/Math.pow(10,e),d)+'·10'+String(e).split('').map(c=>SUP[c]||c).join('');
+}
+/* час доби в годинній мірі: 14 г 32 хв 07 с */
+function hms24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*3600);
+  if(tot>=86400) tot-=86400;
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return h+' г '+String(m).padStart(2,'0')+' хв '+String(s).padStart(2,'0')+' с';
+}
+function hm24(hours){
+  let tot=Math.round((((hours%24)+24)%24)*60);
+  if(tot>=1440) tot-=1440;
+  return Math.floor(tot/60)+' г '+String(tot%60).padStart(2,'0')+' хв';
+}
+/* тривалість: 2 год 02 хв 00 с або 47 хв 12 с */
+function durHM(min){
+  const tot=Math.round(Math.abs(min)*60);
+  const h=Math.floor(tot/3600),m=Math.floor(tot%3600/60),s=tot%60;
+  return (h?h+' год '+String(m).padStart(2,'0')+' хв ':m+' хв ')+String(s).padStart(2,'0')+' с';
+}
+
+const CV={};
+/* Кегль підписів рахується від ширини полотна, а не сталою в пікселях: напис
+   на 11 px, доречний на широкому кадрі, на телефоні накриває півсцени. TK —
+   множник поточного полотна, який txt(), pill(), slideTrack() і поля графіка
+   чіпляють до будь-якого розміру. TKREF — ширина, з якої місця вже вдосталь,
+   тож на десктопі TK рівно 1 і жоден кадр не змінюється. */
+const TKSCENE=560, TKCHART=300, TKMIN=0.55;
+let TK=1, CVW=1e4, CVCH=false;
+const tkOf=(w,ref)=>Math.max(TKMIN,Math.min(1,w/ref));
+function cvx(id){
+  if(CV[id]){TK=CV[id].tk; CVW=CV[id].w; CVCH=CV[id].ch; return CV[id];}
+  const c=$(id); const r=c.getBoundingClientRect();
+  if(r.width<2||r.height<2) return null;
+  const d=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*d); c.height=Math.round(r.height*d);
+  const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+  const ch=!!c.closest('.chartbox');
+  TK=tkOf(r.width,ch?TKCHART:TKSCENE); CVW=r.width; CVCH=ch;
+  return CV[id]={g,w:r.width,h:r.height,el:c,tk:TK,ch};
+}
+/* Кадр застаріває не лише від вікна: полотно міняє розмір і коли розгортається
+   панель відповіді, і коли перемикається вкладка, і коли телефон повертають,
+   і коли вікно переносять на монітор з іншим DPR. Ловимо все — інакше сцена
+   лишається намальованою під учорашній розмір і тягнеться інтерполяцією. */
+function dropCV(){for(const k in CV) delete CV[k]; for(const k in CHFIT) delete CHFIT[k];}
+addEventListener('resize',dropCV);
+addEventListener('orientationchange',dropCV);
+if(window.visualViewport) visualViewport.addEventListener('resize',dropCV);
+/* Зміна devicePixelRatio події resize не дає — її ловить одноразова
+   підписка на медіазапит, яка щоразу переоформлюється на новий DPR. */
+(function dpr(){
+  if(!window.matchMedia) return;
+  const mq=matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)');
+  const on=()=>{dropCV(); dpr();};
+  if(mq.addEventListener) mq.addEventListener('change',on,{once:true});
+  else if(mq.addListener) mq.addListener(on);
+})();
+/* ResizeObserver — єдиний, хто бачить зміну самого об'єкта, а не вікна:
+   полотно змінює розмір і без жодної події вікна. Скидаємо тільки той кадр,
+   що справді змінився; рамки графіків — усі, вони прив'язані до кегля. */
+if(window.ResizeObserver){
+  const RO=new ResizeObserver(es=>{
+    for(const e of es) if(e.target.id) delete CV[e.target.id];
+    for(const k in CHFIT) delete CHFIT[k];
+  });
+  const watch=()=>document.querySelectorAll('canvas[id]').forEach(c=>RO.observe(c));
+  addEventListener('DOMContentLoaded',watch);
+  watch();
+}
+
+/* ---- жест належить тому, хто вміє його прийняти -------------------------
+   Полотно з ручками мусить забирати дотик собі, інакше палець замість ручки
+   тягне сторінку. Полотно без ручок — навпаки: воно не має заважати
+   прокручувати. Графіки лишають вертикальну прокрутку сторінці, а горизонтальні
+   рухи беруть собі — саме ними ведуть перехрестя. */
+const DRAGCV=new Set();
+function touchRoles(){
+  for(const c of document.querySelectorAll('canvas[id]')){
+    c.style.touchAction=DRAGCV.has(c.id)?'none':'pan-y';
+  }
+}
+/* ---- підказка «поверніть телефон» --------------------------------------- */
+function rotHint(){
+  if(document.querySelector('.rothint')) return;
+  const d=document.createElement('div'); d.className='rothint';
+  d.textContent='поверніть телефон — сцені стане просторіше';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),4000);
+}
+/* ---- бічні панелі згортаються на вузькому екрані ------------------------- */
+function foldPanels(){
+  const narrow=innerWidth<=760;
+  for(const side of document.querySelectorAll('.side')){
+    const ps=[...side.querySelectorAll(':scope > .panel')];
+    ps.forEach((p,i)=>{
+      const h=p.querySelector(':scope > h3'); if(!h) return;
+      if(!h.dataset.fold){
+        h.dataset.fold='1';
+        h.addEventListener('click',()=>{if(innerWidth<=760) p.classList.toggle('fold');});
+      }
+      if(narrow){if(!p.dataset.init){p.dataset.init='1'; if(i>0) p.classList.add('fold');}}
+      else p.classList.remove('fold');
+    });
+  }
+}
+addEventListener('resize',foldPanels);
+/* Розкриття сцени на весь екран. Розмір полотна задає тільки CSS, тож у
+   повноекранному режимі висоту доводиться проставляти явно: полотна ділять
+   між собою те, що лишилося від решти вмісту панелі. Кеш CV після цього
+   скидається — наступний кадр перемалює сцену вже в новому розмірі. */
+let FSP=null;
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement||
+  document.querySelector('.panel.fsfake');}
+function fsFit(){
+  const el=fsEl();
+  if(FSP&&FSP!==el){FSP.querySelectorAll('canvas').forEach(c=>{c.style.height='';}); FSP=null;}
+  if(el){
+    FSP=el;
+    const cans=[...el.querySelectorAll('canvas')];
+    if(cans.length){
+      cans.forEach(c=>{c.style.height='0px';});
+      let rest=0;
+      for(const ch of el.children){
+        if(ch.classList.contains('fsb')) continue;
+        const m=getComputedStyle(ch);
+        rest+=ch.getBoundingClientRect().height+
+          (parseFloat(m.marginTop)||0)+(parseFloat(m.marginBottom)||0);
+      }
+      const cs=getComputedStyle(el);
+      const rows=new Set(cans.map(c=>Math.round(c.getBoundingClientRect().top))).size||1;
+      const avail=el.clientHeight-(parseFloat(cs.paddingTop)||0)-
+        (parseFloat(cs.paddingBottom)||0)-rest-14*(rows-1);
+      let hh=Math.max(160,avail/rows);
+      cans.forEach(c=>{c.style.height=hh+'px';});
+      const over=el.scrollHeight-el.clientHeight;
+      if(over>1){hh=Math.max(160,hh-over/rows); cans.forEach(c=>{c.style.height=hh+'px';});}
+    }
+  }
+  for(const k in CV) delete CV[k];
+  for(const k in CHFIT) delete CHFIT[k];
+}
+window.addEventListener('resize',fsFit);
+document.addEventListener('fullscreenchange',fsFit);
+document.addEventListener('webkitfullscreenchange',fsFit);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=document.querySelector('.panel.fsfake');
+    if(p){p.classList.remove('fsfake'); fsFit();}}
+});
+/* Кнопку дістає панель кожної сцени — ті полотна, що їх малюють модулі
+   (графіки лишаються в своїх панелях без кнопки). */
+(function(){
+  const RE=/^m[1-9](scene|orb|earth|globe|sky|sph)$/, seen=new Set();
+  for(const c of document.querySelectorAll('canvas')){
+    if(!RE.test(c.id)) continue;
+    const p=c.closest('.panel'); if(!p||seen.has(p)) continue; seen.add(p);
+    p.classList.add('fswrap');
+    const b=document.createElement('button');
+    b.type='button'; b.className='fsb'; b.title='на весь екран'; b.textContent='\u2922';
+    b.addEventListener('click',()=>{
+      if(fsEl()===p){
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else {p.classList.remove('fsfake'); fsFit();}
+        return;
+      }
+      const req=p.requestFullscreen||p.webkitRequestFullscreen;
+      if(req) Promise.resolve(req.call(p)).catch(()=>{p.classList.add('fsfake'); fsFit();});
+      else {p.classList.add('fsfake'); fsFit();}
+      /* Де можна — просимо альбомну самі (Android); де не можна (iOS) —
+         просто показуємо підказку, яка зникне, щойно телефон повернуть. */
+      try{screen.orientation&&screen.orientation.lock&&
+        Promise.resolve(screen.orientation.lock('landscape')).catch(()=>{});}catch(e){}
+      if(innerWidth<=760&&innerWidth<innerHeight) rotHint();
+    });
+    p.appendChild(b);
+  }
+})();
+
+function seg(id,cb){
+  const el=$(id);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    el.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    cb(b.dataset.v);
+  });
+}
+function slider(id,unit,dec,cb){
+  const i=$(id),o=$(id+'o');
+  const show=()=>{o.textContent='';};
+  i.addEventListener('input',()=>{show(); cb(+i.value);});
+  show();
+  return {el:i,set(v){i.value=v; show(); cb(+i.value);}};
+}
+/* Будь-який кегль проходить через TK — множник поточного полотна. Додатково
+   o.max (пікселі) стискає рядок, коли він мусить уміститись усередині
+   предмета, що змінює розмір: підпис у кабіні, на бруску, в посудині. */
+function txt(g,s,x,y,o={}){
+  /* На кресленні немає чисел: рядок із цифрами лишає по собі тільки назву
+     величини («у ртуті 2,77 см» → «у ртуті», «v = 12,3 м/с» → «v»), а голе
+     число не малюється взагалі. o.raw вимикає це для написів, які самі є
+     позначками (номери порядків, підписи серій на графіку). */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return 0;
+    s=L;
+  }
+  let sz=(o.size||11)*TK;
+  const F=k=>(o.bold?'600 ':'')+k+'px system-ui,sans-serif';
+  g.fillStyle=o.color||CLR.ink;
+  g.font=F(sz);
+  if(o.max>0){
+    const wd=g.measureText(s).width;
+    if(wd>o.max){sz=Math.max(sz*0.55,sz*o.max/wd); g.font=F(sz);}
+  }
+  g.textAlign=o.align||'left'; g.textBaseline=o.base||'alphabetic';
+  g.fillText(s,x,y);
+  return sz;
+}
+/* ---- числа зі сцени ------------------------------------------------------
+   Число на кресленні читається лише тоді, коли кресленню є де дихати. Щойно
+   кадр вужчає, воно не зникає, а переїжджає в кутовий блок: сцена лишається
+   картинкою, де зміну величини показують самі вектори, а числа лишаються
+   числами й більше не накладаються на об'єкти. Поріг — ширина самого полотна,
+   тож планшет у портреті поводиться як планшет, а не як збільшений телефон. */
+const NUMW=560;
+let NUMS=[];
+/* ---- числова позначка -----------------------------------------------------
+   На кресленні лишається сама величина, а не її значення: «v = 12,3 м/с»
+   стає «v». Наскільки вона змінилася, показує довжина вектора, а не цифра.
+   Якщо в рядку літери немає — позначка просто не малюється. */
+function letterOf(s,o){
+  if(o&&o.name) return o.name;
+  const str=String(s), i=str.indexOf('=');
+  let head=i>0?str.slice(0,i):str.split(/[0-9]/)[0];
+  head=head.replace(/[·:,;\u2014\u2013\u2212\-=+(\s]+$/,'').trim();
+  return (head&&!/[0-9]/.test(head))?head:'';
+}
+function txtN(g,s,x,y,o={}){txt(g,s,x,y,o);}
+function pillN(g,s,x,y,o={}){pill(g,s,x,y,o);}
+/* Заголовок сцени й пояснення під ним на широкому кадрі стоять у лівому
+   верхньому куті полотна. На вузькому вони накривають саме креслення — і теж
+   переїжджають у DOM, рядком над полотном, де їх ще й можна виділити. */
+let CAPS=[];
+function capN(g,s,x,y,o={}){
+  if(CVCH||CVW>=NUMW) return txt(g,s,x,y,o);
+  CAPS.push([s,o.color||CLR.ink,!!o.bold]);
+}
+/* Числа лягають рядком одразу під кресленням, у тій самій панелі. На полотні
+   для них місця немає — сцена на телефоні заповнена вщерть, і будь-яка плашка
+   неминуче накрила б об'єкт; окремий рядок не накриває нічого, його можна
+   виділити, і він не коштує читання полотна щокадру. */
+let NUMLAST='';
+function showNums(mid){
+  const RESC=/^m[1-9](scene|orb|earth|globe|sky|sph)$/;
+  let c=null;
+  for(const q of document.querySelectorAll('#'+mid+' canvas')) if(RESC.test(q.id)){c=q; break;}
+  if(!c) return;
+  const host=c.closest('.panel')||c.parentElement;
+  let row=host.querySelector(':scope > .numrow');
+  const rows=NUMS.slice(0,6);
+  const html=rows.map(r=>'<span>'+(r[0]?'<i>'+r[0]+'</i> ':'')+
+    '<b style="color:'+r[2]+'">'+r[1]+'</b></span>').join('');
+  let cap=host.querySelector(':scope > .caprow');
+  const chtml=CAPS.map(c=>'<span'+(c[2]?' class="b"':'')+
+    ' style="color:'+c[1]+'">'+c[0]+'</span>').join('');
+  if(!CAPS.length){ if(cap) cap.remove(); }
+  else{
+    if(!cap){cap=document.createElement('div'); cap.className='caprow';
+      let an=c; while(an.parentElement&&an.parentElement!==host) an=an.parentElement;
+      host.insertBefore(cap,an);}
+    if(cap.innerHTML!==chtml) cap.innerHTML=chtml;
+  }
+  if(!rows.length){ if(row) row.remove(); NUMLAST=''; return; }
+  if(!row){row=document.createElement('div'); row.className='numrow'; host.appendChild(row); NUMLAST='';}
+  if(html!==NUMLAST){row.innerHTML=html; NUMLAST=html;}
+}
+
+function arrow(g,x1,y1,x2,y2,color,w=2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6.5+w*1.2;
+  if(Math.hypot(x2-x1,y2-y1)<1.5) return;
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.lineCap='round';
+  g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2-Math.cos(a)*L*0.6,y2-Math.sin(a)*L*0.6); g.stroke();
+  g.beginPath(); g.moveTo(x2,y2);
+  g.lineTo(x2-L*Math.cos(a-0.44),y2-L*Math.sin(a-0.44));
+  g.lineTo(x2-L*Math.cos(a+0.44),y2-L*Math.sin(a+0.44));
+  g.closePath(); g.fill();
+}
+function pill(g,s,x,y,o={}){
+  /* Плашку малюємо лише тоді, коли всередині щось лишиться: після зняття
+     чисел частина підписів порожніє, і без цієї перевірки на кресленні
+     висіли б порожні білі овали. */
+  if(!o.raw&&/[0-9]/.test(String(s))){
+    const L=letterOf(s,o);
+    if(!L) return;
+    s=L; o={...o,raw:true};
+  }
+  g.font=(o.bold?'600 ':'')+(o.size||11.5)*TK+'px system-ui,sans-serif';
+  const wd=g.measureText(s).width+14*TK;
+  g.fillStyle=o.bg||'rgba(252,252,251,.92)';
+  g.beginPath(); g.roundRect(x-wd/2,y-13*TK,wd,19*TK,9*TK); g.fill();
+  txt(g,s,x,y+1,{...o,align:'center'});
+}
+function dot(g,x,y,r,fill,ring){
+  /* На вузькому кадрі похідний радіус може вийти від'ємним — Canvas на це
+     кидає виняток і кадр обривається на півдорозі. Нуль просто нічого не малює. */
+  r=Math.max(0,r);
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.fillStyle=fill; g.fill();
+  if(ring){g.strokeStyle=ring; g.lineWidth=2; g.stroke();}
+}
+function niceStep(raw){
+  if(!(raw>0)) return 1;
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+/* дуга кута навколо точки (x,y): від a1 до a2 в екранних радіанах */
+function arc(g,x,y,r,a1,a2,color,w=1.2){
+  if(!(r>0)) return;
+  g.strokeStyle=color; g.lineWidth=w;
+  g.beginPath(); g.arc(x,y,r,a1,a2,a2<a1); g.stroke();
+}
+/* простий лінійний графік із перехрестям-підказкою */
+const CHFIT={};                 /* запам'ятані рамки графіків */
+function drawChart(box,opt){
+  const {g,w,h}=box;
+  const L=44*TK,R=54*TK,T=12*TK,B=26*TK,pw=w-L-R,ph=h-T-B;
+  if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
+  /* ---- масштаб графіка не «дихає» ---------------------------------------
+     Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
+     тоді, коли крива справді вийшла за межі осей, і назад ніколи не
+     стискається — інакше та сама крива щокадру стрибала б угору-вниз.
+     Якщо модуль перемкнули на іншу величину (розмах відрізняється в рази),
+     рамку беруть заново — один раз. Пам'ять у кожного полотна власна. */
+  let yMin=opt.yMin, yMax=opt.yMax;
+  /* opt.yFix — рамка задана навмисно (наприклад, за шириною щілини), і
+     підганяти її під криву не можна: крива тут із асимптотою, вона мусить
+     іти за кадр, а не тягти кадр за собою. */
+  if(!opt.yFix){
+    const ckey=(box.el&&box.el.id)||opt.yLab||'';
+    const want=yMax-yMin, f=CHFIT[ckey];
+    if(ckey&&want>0){
+      /* Замовлену рамку звіряємо із ЗАМОВЛЕНОЮ, а не з уже розтягнутою.
+         Інакше власний розтяг вибиває цю ж перевірку: кадр розширився під
+         криву більш ніж учетверо → наступного кадру «замовлення не збігається»
+         → рамку беруть заново → і так щокадру, туди-сюди. Саме це блимання
+         видно у фільтрі Віна, щойно довжина переростає ~7 мм і Δy біля краю
+         пучка йде на сотні міліметрів. */
+      const req=f&&f.req>0?f.req:want;
+      if(f&&want<=req*4&&want*4>=req){
+        yMin=f.lo; yMax=f.hi;
+        let lo=Infinity,hi=-Infinity;
+        for(const s of (opt.series||[])) if(s&&s.ys)
+          for(const v of s.ys) if(isFinite(v)){if(v<lo)lo=v; if(v>hi)hi=v;}
+        const pad=(yMax-yMin)*0.04;
+        if(isFinite(lo)&&lo<yMin) yMin=lo-pad;
+        if(isFinite(hi)&&hi>yMax) yMax=hi+pad;
+      }
+      CHFIT[ckey]={lo:yMin,hi:yMax,span:yMax-yMin,req:want};
+    }
+  }
+  /* Вікно по осі x може починатися не з нуля: є графіки, де вся суть в'яжеться
+     у вузькій смузі аргументу, і показувати її від початку координат означає
+     стиснути криву в вертикальну риску. Без tMin усе як було. */
+  const t0=opt.tMin||0, tSpan=Math.max(1e-12,opt.tMax-t0);
+  const X=t=>L+(t-t0)/tSpan*pw;
+  const Y=y=>T+(1-(y-yMin)/(yMax-yMin))*ph;
+  g.clearRect(0,0,w,h);
+  g.lineWidth=1;
+  const yd=opt.yDec||0;
+  const st=niceStep((yMax-yMin)/4.5);
+  for(let y=Math.ceil(yMin/st)*st;y<=yMax+1e-9;y+=st){
+    g.strokeStyle=CLR.grid; g.beginPath(); g.moveTo(L,Y(y)+.5); g.lineTo(L+pw,Y(y)+.5); g.stroke();
+
+  }
+  const xs=opt.xStep||niceStep(tSpan/5);
+  for(let t=Math.ceil(t0/xs-1e-9)*xs;t<=opt.tMax+1e-9;t+=xs){
+    g.strokeStyle=Math.abs(t)<1e-9?CLR.axis:CLR.grid;
+    g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
+
+  }
+  if(yMin<0&&yMax>0){
+    g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
+  }
+  /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
+     наїжджають то на верхню поділку, то на прямий підпис серії */
+  /* Осі без числових поділок: сітка лишається як міра «більше-менше», а
+     замість шкали на кінці кожної осі стоїть сама величина — те, що на
+     графіку відкладено. Числа живуть в обчисленнях, а не на екрані. */
+  g.strokeStyle=CLR.axis; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L+pw+10,T+ph); g.stroke();
+  g.beginPath(); g.moveTo(L,T+ph); g.lineTo(L,T-10); g.stroke();
+  g.fillStyle=CLR.axis;
+  g.beginPath(); g.moveTo(L+pw+16,T+ph); g.lineTo(L+pw+8,T+ph-4);
+  g.lineTo(L+pw+8,T+ph+4); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(L,T-16); g.lineTo(L-4,T-8); g.lineTo(L+4,T-8); g.closePath(); g.fill();
+  txt(g,(opt.yLab||'').split(',')[0],L+7,T-6,{color:CLR.sec,size:11.5,bold:true});
+  txt(g,(opt.xLab||'t').split(',')[0],L+pw+14,T+ph+16,
+    {color:CLR.sec,size:11.5,bold:true,align:'right'});
+  const ends=[];
+  for(const s of opt.series){
+    if(!s.ts||s.ts.length<2) continue;
+    /* Криву ріжемо рамкою осей. Ряд, що йде далеко за межі кадру (Δy на краю
+       пучка — десятки міліметрів там, де кадр міряється одиницями), інакше
+       малюється поверх підписів осей і поза полем графіка. */
+    g.save();
+    g.beginPath(); g.rect(L,T,pw,ph); g.clip();
+    g.strokeStyle=s.color; g.lineWidth=2; g.lineJoin='round'; g.setLineDash(s.dash||[]);
+    g.beginPath();
+    for(let i=0;i<s.ts.length;i++){const px=X(s.ts[i]),py=Y(s.ys[i]); i?g.lineTo(px,py):g.moveTo(px,py);}
+    g.stroke(); g.setLineDash([]);
+    g.restore();
+    /* Якір прямого підпису — остання точка, що ЩЕ в кадрі, а не остання
+       взагалі. Крива, яка пішла за нижню межу, тягла підпис у правий нижній
+       кут, і той сідав просто на вісь, читаючись як її назва. Якщо в кадрі
+       немає жодної точки ряду, немає й підпису — підписувати нічого. */
+    const inFrame=i=>s.ts[i]>=t0-1e-9&&s.ts[i]<=opt.tMax+1e-9&&
+      s.ys[i]>=yMin&&s.ys[i]<=yMax;
+    let k=s.ts.length-1;
+    while(k>0&&!inFrame(k)) k--;
+    if(!inFrame(k)) continue;
+    const lx=X(s.ts[k]),ly=Y(s.ys[k]);
+    dot(g,lx,ly,3,s.color);
+    ends.push({x:lx,y:ly,label:s.label});
+  }
+  /* прямі підписи серій розводимо по вертикалі — інакше при близьких
+     значеннях вони лягають один на одного і жоден не читається */
+  ends.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<ends.length;i++)
+    if(ends[i].y-ends[i-1].y<13*TK) ends[i].y=ends[i-1].y+13*TK;
+  /* Підпис серії стає праворуч від кінця кривої, а коли там уже немає місця —
+     перекидається ліворуч від неї: інакше на вузькому графіку він виїжджає
+     за праву межу полотна й обрізається. */
+  for(const e of ends){
+    /* Крива може вийти за праву межу осей (ряд довший за tMax) — тоді якорем
+       підпису стає сама межа, а не кінець кривої десь за кадром. */
+    const ex=Math.min(e.x,L+pw);
+    const ly=Math.min(T+ph-2,Math.max(T+9*TK,e.y+4*TK)), room=w-3-(ex+7*TK);
+    if(room>=16) txt(g,e.label,ex+7*TK,ly,{color:CLR.ink,size:11,bold:true,max:room,raw:true});
+    else txt(g,e.label,ex-7*TK,ly,
+      {color:CLR.ink,size:11,bold:true,align:'right',max:Math.max(16,ex-7*TK-3),raw:true});
+  }
+  if(opt.hover!=null&&opt.hover>=L&&opt.hover<=L+pw&&opt.series[0].ts.length>1){
+    const t=t0+(opt.hover-L)/pw*tSpan;
+    const s0=opt.series[0];
+    const tc=Math.min(t,s0.ts[s0.ts.length-1]);
+    const hx=X(tc);
+    g.strokeStyle=CLR.axis; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(hx+.5,T); g.lineTo(hx+.5,T+ph); g.stroke(); g.setLineDash([]);
+    const vals=[];
+    for(const s of opt.series){
+      let i=s.ts.length-1;
+      while(i>0&&s.ts[i]>tc) i--;
+      const v=s.ys[Math.min(i+(s.ts[i]<tc?1:0),s.ys.length-1)];
+      dot(g,hx,Y(v),3.5,'#fff',s.color); vals.push(v);
+    }
+    return {t:tc,vals,px:hx};
+  }
+  return null;
+}
+function makeTip(wrapId){
+  const w=$(wrapId); const d=document.createElement('div');
+  d.className='tip'; w.appendChild(d); return d;
+}
+/* Перехрестя ставить і курсор, і палець: на сенсорі pointermove без
+   натиснутої кнопки не приходить, тож саме pointerdown робить підказку
+   доступною на телефоні та планшеті. */
+function hover(canvasId,state){
+  const c=$(canvasId);
+  const at=e=>{const r=c.getBoundingClientRect();
+    state.x=e.clientX-r.left; state.cy=e.clientY-r.top;};
+  c.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons) at(e);});
+  c.addEventListener('pointerdown',e=>{at(e); if(e.pointerType!=='mouse') e.preventDefault();});
+  c.addEventListener('pointerleave',()=>{state.x=null;});
+  addEventListener('pointerdown',e=>{if(!c.contains(e.target)) state.x=null;},true);
+}
+/* показати підказку графіка; names = [[підпис,колір],…] */
+function showTip(el,r,unit,st,names,dec){
+  if(!r){el.style.display='none'; return;}
+  el.innerHTML='<div class="th">'+(st.xlab||'t')+' = '+fmt(r.t,st.xdec==null?1:st.xdec)+' '+(st.xunit||'с')+'</div>'+
+    r.vals.map((v,i)=>'<div><span class="chip" style="background:'+names[i][1]+'"></span>'+
+      names[i][0]+' — '+fmt(v,dec==null?1:dec)+' '+unit+'</div>').join('');
+  el.style.display='block';
+  const bw=el.offsetWidth;
+  el.style.left=Math.max(2,Math.min(r.px+14,el.parentElement.clientWidth-bw-4))+'px';
+  el.style.top=Math.max(20,(st.cy||60)-10)+'px';
+}
+/* ---------- пряме керування на сцені ---------- */
+const clamp=(v,lo,hi)=>v<lo?lo:(v>hi?hi:v);
+const snap=(v,st)=>Math.round(v/st)*st;
+/* Реєстр ручок — гачок для оснастки: харнес бере звідси список і синтетично
+   тягне кожну ручку в крайні положення кадру. Без реєстру перевірка осліпла б
+   тієї ж миті, коли керування переїхало з повзунків на полотно. */
+const GRIPS=[];
+/* Масштаб сцени рахується з фактичного розмаху (§10). Але щойно ми тягнемо
+   величину, від якої той розмах залежить, виникає контур: палець рухає
+   величину → росте розмах → падає sc → ручка тікає з-під пальця. Тому на час
+   жесту кадр заморожується: geo() віддає знімок, зроблений на pointerdown,
+   і світ не перемасштабовується посеред руху. Після відпускання масштаб
+   перепідбирається один раз. Правило §10 не порушене — воно просто не
+   застосовується 60 разів за секунду посеред жесту. */
+function frozen(st,b,calc){
+  const f=st._froz;
+  if(f&&f.w===b.w&&f.h===b.h) return f.G;
+  const G=calc(b);
+  if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
+  return G;
+}
+/* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
+   їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
+   `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
+   нічого не відбувається. Запобіжник: якщо вміст усе-таки виліз за розрахункову межу
+   (похідна величина, крайова комбінація), масштаб один раз зменшується під нього. */
+function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
+  const X=Math.max(maxX,nowX||0), Y=Math.max(maxY,nowY||0);
+  /* Поля лишають місце під підписи, а підписи тепер стискаються разом із
+     полотном — отже, стискаються й поля. Без цього на вузькому екрані поле
+     з'їдало всю ширину, різниця йшла в мінус і сцена виверталась навиворіт. */
+  const pw=Math.min(padW*TK,w*0.62), ph=Math.min(padH*TK,h*0.62);
+  /* Нижньої межі в самого масштабу немає: у сценах, де вісь міряється
+     метрами тисячами (радіус петлі), sc законно менший за одиницю. Від
+     від'ємного значення рятує вже той факт, що поле не більше за 0,62 кадру. */
+  return Math.min((w-pw)/Math.max(1e-6,X),(h-ph)/Math.max(1e-6,Y));
+}
+/* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
+   (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
+   у фізику через geo(), захоплену в замиканні. Хелпер не знає жодної фізики.
+   listFn() мусить бути чистою: її кличе і scene() (щоб намалювати ручки),
+   і цей хелпер (щоб влучити) — одна геометрія, один код, жодного дублювання. */
+function grip(id,st,listFn){
+  const c=$(id);
+  GRIPS.push({id,st,listFn}); DRAGCV.add(id);
+  const pos=e=>{const r=c.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
+  const pick=(px,py)=>{
+    let best=null,bd=1e9;
+    for(const h of listFn()){
+      const d=Math.hypot(px-h.x,py-h.y);
+      if(d<=h.r+6&&d<bd){bd=d; best=h;}
+    }
+    /* у ручку діаметром 16 px влучити важко. Якщо схибили — приймаємо дотик
+       у межах доріжки шкали: ручка стрибає під палець. Ручки на самій сцені
+       зони hit не мають, тож їх це не зачіпає. */
+    if(!best) for(const h of listFn()) if(h.hit&&h.hit(px,py)){best=h; break;}
+    return best;
+  };
+  c.addEventListener('pointerdown',e=>{
+    const p=pos(e), h=pick(p[0],p[1]);
+    if(!h) return;
+    st._grab=h.id; st._over=h.id; st._froz=null;
+    if(c.setPointerCapture) c.setPointerCapture(e.pointerId);
+    /* Знімок кадру треба зробити ДО першої зміни величини. listFn() кличе
+       geo(), а той, побачивши _grab, кладе кадр у _froz. Без цього рядка
+       заморожувався б кадр, порахований уже за новим значенням, — і сцени,
+       де жест скидає час розгортки, стрибали б на першому ж дотику. */
+    listFn();
+    h.move(p[0],p[1]);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('pointermove',e=>{
+    const p=pos(e);
+    if(st._grab!=null){
+      for(const h of listFn()) if(h.id===st._grab){h.move(p[0],p[1]); break;}
+      c.style.cursor='grabbing';
+    } else {
+      const h=pick(p[0],p[1]);
+      st._over=h?h.id:null;
+      c.style.cursor=h?'grab':'';
+    }
+  });
+  const off=()=>{st._grab=null; st._froz=null; c.style.cursor=st._over?'grab':'';};
+  c.addEventListener('pointerup',off);
+  c.addEventListener('pointercancel',off);
+  c.addEventListener('pointerleave',()=>{st._over=null; if(st._grab==null) c.style.cursor='';});
+  /* Клавіатура. 298 повзунків були доступні з клавіатури, полотно саме по собі —
+     ні; без цього переїзд на сцену був би системною регресією доступності (§14).
+     Tab всередині полотна перебирає ручки, стрілки зсувають на 4 px, Shift — на 16. */
+  c.tabIndex=0;
+  c.addEventListener('keydown',e=>{
+    const L=listFn(); if(!L.length) return;
+    const k=e.key;
+    if(k==='Tab'){
+      const i=L.findIndex(h=>h.id===st._over);
+      st._over=L[(i+(e.shiftKey?-1:1)+L.length+1)%L.length].id;
+      if(e.preventDefault) e.preventDefault();
+      return;
+    }
+    const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(!d) return;
+    const h=L.filter(x=>x.id===st._over)[0]||L[0];
+    st._over=h.id;
+    const s=e.shiftKey?16:4;
+    h.move(h.x+d[0]*s,h.y+d[1]*s);
+    if(e.preventDefault) e.preventDefault();
+  });
+  c.addEventListener('blur',()=>{if(st._grab==null) st._over=null;});
+}
+/* Полиця зразків. Властивість речовини — коефіцієнт тертя, проникність,
+   питомий опір — не має розміру, який можна потягнути: її обирають клацанням
+   по підписаному зразку. M = {x0, y, dx}; list = [[назва, значення, підпис?], …].
+   Полиця живе на сцені поруч із тілом, а не в бічній колонці — щоб вибір
+   речовини лишався частиною креслення. */
+/* Полиця з карток на вузькому кадрі не вміщалася й вилазила за край: крок
+   стискається рівно настільки, щоб уся полиця лишилася в кадрі, а підписи
+   всередині карток доганяє o.max. Ручки беруть ту саму геометрію. */
+function shelfFit(M,n){
+  const room=CVW-M.x0-6, need=n*M.dx;
+  return (need>room&&room>40)?{...M,dx:room/n}:M;
+}
+function shelf(g,M,list,cur,lab){
+  M=shelfFit(M,list.length);
+  if(lab) txt(g,lab,M.x0-8,M.y+4,{color:CLR.mut,size:10,align:'right',max:M.x0-10});
+  list.forEach((m,i)=>{
+    const x=M.x0+i*M.dx, on=Math.abs(cur-m[1])<1e-9;
+    g.fillStyle=on?'rgba(27,175,122,.16)':'#fff';
+    g.strokeStyle=on?CLR.k3:CLR.axis; g.lineWidth=on?2:1;
+    g.beginPath(); g.roundRect(x+3,M.y-13,M.dx-6,26,6); g.fill(); g.stroke();
+    txt(g,m[0],x+M.dx/2,M.y-1,{color:on?CLR.ink:CLR.sec,size:10.5,bold:on,align:'center',max:M.dx-9});
+    txt(g,m[2]==null?fmt(m[1],2):m[2],x+M.dx/2,M.y+11,{color:CLR.mut,size:9.5,align:'center',max:M.dx-9});
+  });
+}
+/* Смуга керування під кресленням. Це не повзунки з бічної колонки: смуга
+   лежить у тому самому кадрі, під самою сценою, тягнеться пальцем і
+   перебирається з клавіатури нарівні з рештою ручок. Її беруть тоді, коли
+   величина не має власного розміру в кресленні (частота, кількість витків,
+   коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
+   Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
+function gpos(C,i){
+  return {x:C.x[i%C.cols], y:C.y0+Math.floor(i/C.cols)*C.dy};
+}
+/* Розкладка смуги. Скільки полотна вона з'їдає — рахується з кількості шкал,
+   а не з наперед узятих 90 px: при п'яти рядах смуга лізла на сцену, а нижче
+   межі чистки сцени не чистив ніхто, тож ручка лишала за собою всі свої
+   попередні положення. Тепер сцена малює вище gtop, смуга — нижче, і кожна
+   чистить рівно свою частину. На вузькому екрані дві колонки не влазять —
+   смуга стає одноколонковою. */
+/* Полотно лише для вимірювання тексту: gaugeGrips() малює не сам, а мусить
+   знати ширину підпису так само, як gaugeCol(), інакше доріжка й ручка
+   роз'їдуться. Один контекст на сторінку, нічого не малює. */
+const MEAS=document.createElement('canvas').getContext('2d');
+function labWidth(s,size,bold){
+  MEAS.font=(bold?'600 ':'')+size+'px system-ui,sans-serif';
+  return MEAS.measureText(s).width;
+}
+/* Ліва поличка під підписи повзунків. Була стала — 110 px, — і довгий підпис
+   («поверхневий натяг σ, мН/м», «маса пластиліну, кг») просто звисав за лівий
+   край кадру. Тепер доріжка з'їжджає праворуч рівно на стільки, скільки
+   бракує, і рівно на стільки ж коротшає: її правий кінець і підпис значення
+   лишаються на місці. */
+function gfit(C,list){
+  let need=0;
+  for(const m of list) need=Math.max(need,labWidth(m[1],11*TK,true));
+  /* Зсовуємось не більше, ніж дозволяє сама доріжка: її правий кінець і
+     підпис значення мусять лишитися на місці, інакше замість підпису за
+     лівий край поїде число за правий. Далі підпис стискається кеглем. */
+  const d=Math.min(Math.ceil(need)+22-C.x[0],Math.max(0,C.W-60));
+  if(d<=0) return C;
+  return {...C, x:C.x.map(v=>v+d), W:Math.max(60,C.W-d)};
+}
+function gcolOf(b,n){
+  const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
+  const gtop=b.h-(n?rows*38+22:0);
+  const W=two?b.w*0.5-210:Math.max(120,b.w-230);
+  return {W, x:two?[110,b.w*0.5+110]:[110,110], cols, dy:38, rows, gtop,
+    w:b.w, h:b.h, y0:gtop+26};
+}
+/* Повзунок-жолоб. Тонка лінія з крапкою радіуса 8 px була незручна: у неї
+   важко влучити й неможливо вести значення пальцем. Тепер це широкий жолоб
+   із великим повзунком, підписаними межами й значенням поруч; уся доріжка —
+   зона захоплення, тож повзунок стрибає під палець. */
+function slideTrack(g,x,y,W,f,col,vertical){
+  /* Жолоб міряється тим самим TK, що й підписи: інакше на телефоні
+     дванадцятипіксельна смуга лишається завширшки з половину сцени. */
+  const F=Math.max(0,Math.min(1,f));
+  const TH=12*TK, hT=TH/2, R=10*TK, mn=Math.min(TH,W);
+  g.fillStyle='#eceae3';
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT,y-W,TH,W,hT); else g.roundRect(x,y-hT,W,TH,hT);
+  g.fill();
+  g.strokeStyle=CLR.axis; g.lineWidth=1;
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT+.5,y-W+.5,TH-1,W-1,hT-.5);
+  else g.roundRect(x+.5,y-hT+.5,W-1,TH-1,hT-.5);
+  g.stroke();
+  g.fillStyle=col; g.globalAlpha=0.34;
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT,y-Math.max(mn,F*W),TH,Math.max(mn,F*W),hT);
+  else g.roundRect(x,y-hT,Math.max(mn,F*W),TH,hT);
+  g.fill(); g.globalAlpha=1;
+  for(let q=0;q<=4;q++){
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.beginPath();
+    if(vertical){const ty=y-q*W/4; g.moveTo(x+hT+3*TK,ty+.5); g.lineTo(x+hT+6*TK,ty+.5);}
+    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+hT+3*TK); g.lineTo(tx+.5,y+hT+6*TK);}
+    g.stroke();
+  }
+  const hx=vertical?x:x+F*W, hy=vertical?y-F*W:y;
+  g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=3;
+  g.beginPath(); g.arc(hx,hy,R,0,7); g.fill(); g.stroke();
+  g.fillStyle=col;
+  g.beginPath(); g.arc(hx,hy,R*0.35,0,7); g.fill();
+  return {hx,hy};
+}
+function gaugeGrips(C0,list,st){
+  const C=gfit(C0,list);
+  return list.map((m,i)=>{
+    const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
+    return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
+      hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      move:(px,py)=>{
+        st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+        if(m[6]) m[6].call(st);
+      }};
+  });
+}
+function gaugeCol(g,C0,list,st){
+  g.clearRect(0,C0.gtop,C0.w,C0.h-C0.gtop);
+  if(!list.length) return;
+  const C=gfit(C0,list);
+  g.strokeStyle=CLR.grid; g.lineWidth=1;
+  g.beginPath(); g.moveTo(8,C.gtop+8.5);
+  g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.gtop+8.5); g.stroke();
+  list.forEach((m,i)=>{
+    const p=gpos(C,i);
+    slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
+    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
+  });
+}
+/* Термометр — фізичний прилад, а не повзунок: стовпчик росте від колби вгору,
+   і саме за його верхівку задають температуру. Повертає екранну висоту
+   верхівки, щоб туди сіла ручка. frac ∈ [0,1]. */
+function therm(g,x,yb,H,frac,col,lab){
+  g.strokeStyle=CLR.axis; g.lineWidth=1.8;
+  g.beginPath(); g.roundRect(x-7,yb-H-6,14,H+6,7); g.stroke();
+  const fh=Math.max(0,Math.min(1,frac))*H;
+  g.fillStyle=col; g.globalAlpha=0.5;
+  g.beginPath(); g.roundRect(x-4,yb-fh,8,fh,4); g.fill(); g.globalAlpha=1;
+  dot(g,x,yb+6,9,col);
+  if(lab) txt(g,lab,x,yb+30,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+  return yb-fh;
+}
+/* pre — префікс id: у сцені може бути дві полиці (речовина тіла й речовина
+   опори), і без префікса їхні ручки мали б однакові імена */
+function shelfGrips(M,list,set,pre){
+  M=shelfFit(M,list.length);
+  return list.map((m,i)=>({id:(pre||'sh')+i, x:M.x0+i*M.dx+M.dx/2, y:M.y, r:M.dx/2-2,
+    /* mode: ручка перемикає режим, а не змінює величину — масштабу дозволено від неї
+       залежати, і перевірка сталого масштабу такі ручки пропускає (§10) */
+    bare:true, mode:true, color:CLR.k3, hint:m[0], move:()=>set(m[1])}));
+}
+/* Сталий словник ручки: спокій / наведення / захоплення. Підпис з'являється
+   лише при наведенні — у спокої креслення лишається чистим (брендбук §1). */
+function drawGrip(g,h,st){
+  const on=st._over===h.id, gr=st._grab===h.id;
+  /* bare — ручкою є сам об'єкт сцени (заряд, тіло): свого кружка вона не малює,
+     інакше накрила б те, за що тягнуть */
+  const hr=Math.max(4,h.r);
+  if(!h.bare) dot(g,h.x,h.y,hr,h.color,'#fff');
+  if(on||gr){
+    g.strokeStyle=gr?CLR.ink:CLR.sec; g.lineWidth=gr?2:1.2;
+    g.beginPath(); g.arc(h.x,h.y,hr+4,0,7); g.stroke();
+    if(h.hint) pill(g,h.hint,h.x,h.y-h.r-12,{color:CLR.ink,size:11,bold:true});
+  }
+}
+
+
+
+/* Наближене переведення довжини хвилі у видимий колір — потрібне і в досліді
+   Юнга з білим світлом, і в мильній плівці. */
+function wlRGB(l){
+  let r=0,g2=0,b=0;
+  if(l>=380&&l<440){r=-(l-440)/60; b=1;}
+  else if(l<490){g2=(l-440)/50; b=1;}
+  else if(l<510){g2=1; b=-(l-510)/20;}
+  else if(l<580){r=(l-510)/70; g2=1;}
+  else if(l<645){r=1; g2=-(l-645)/65;}
+  else if(l<=780){r=1;}
+  let f=1;
+  if(l<420) f=0.3+0.7*(l-380)/40;
+  else if(l>700) f=0.3+0.7*(780-l)/80;
+  const c=x=>Math.round(255*Math.pow(Math.max(0,Math.min(1,x*f)),0.8));
+  return [c(r),c(g2),c(b)];
+}
+function wlName(l){
+  return l<430?'фіолетовий':l<490?'синій':l<510?'блакитний':l<565?'зелений'
+    :l<590?'жовтий':l<630?'помаранчевий':'червоний';
+}
+
+
+
+/* ===================== МОДУЛЬ 3 · мильна плівка ===================== */
+const M3={
+  mode:'free', n:1.33, al:30, d:0.6491, showAns:true,
+  NMIN:1.2, NMAX:1.6, ALMIN:0, ALMAX:70, DMIN:0.02, DMAX:1.6,
+  hr:{x:null}, hd:{x:null}, tipr:null, tipd:null,
+  GG:[['n','показник n',1.2,1.6,0.01,CLR.k1,null,'m3vn',2,''],
+      ['al','кут падіння α',0,70,1,CLR.k3,null,'m3val',0,'°']],
+  q(){return Math.sqrt(this.n*this.n-Math.pow(Math.sin(this.al*DEG),2));},
+  /* коефіцієнт відбиття з урахуванням втрати півхвилі на верхній межі */
+  R(d,lam){
+    const dl=2*d*this.q()*1000;          /* різниця ходу в нм (d у мкм) */
+    return Math.pow(Math.sin(Math.PI*dl/lam),2);
+  },
+  /* товщина, за якої 640 нм у максимумі, а 400 нм у мінімумі */
+  dTask(){
+    for(let k=0;k<14;k++){
+      const Q=(k+0.5)*0.64, m=Q/0.40;
+      if(Math.abs(m-Math.round(m))<1e-9&&Math.round(m)>=1) return Q/(2*this.q());
+    }
+    return 0.65;
+  },
+  colorAt(d){
+    let r=0,g2=0,b=0;
+    for(let l=400;l<=700;l+=10){
+      const R=this.R(d,l), c=wlRGB(l);
+      r+=R*c[0]; g2+=R*c[1]; b+=R*c[2];
+    }
+    const n=31, k=2.6;
+    return [Math.min(255,r/n*k),Math.min(255,g2/n*k),Math.min(255,b/n*k)];
+  },
+  setTask(){this.n=1.33; this.al=30; this.d=this.dTask();},
+  setMode(m){this.mode=m; if(m==='task') this.setTask();
+    this.showAns=m!=='task'; this.syncAns();},
+  syncAns(){const task=this.mode==='task';
+    $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
+  init(){
+    grip('m3scene',this,()=>this.grips());
+    $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m3re').onclick=()=>this.setTask();
+    this.tipr=makeTip('m3crw'); this.tipd=makeTip('m3cdw');
+    hover('m3cr',this.hr); hover('m3cd',this.hd);
+    this.hr.xlab='λ'; this.hr.xunit='нм'; this.hr.xdec=0;
+    this.hd.xlab='d'; this.hd.xunit='мкм'; this.hd.xdec=3;
+    this.setTask(); this.syncAns();
+  },
+  gcol(b){return gcolOf(b,this.GG.length);},
+  geo(b){return frozen(this,b,bb=>{
+    const C=this.gcol(bb), H=C.gtop-52;
+    return {C,H,fx:bb.w*0.16,fw:Math.min(190,bb.w*0.22),fy:62,fh:H-96,
+      zx:bb.w*0.62,zy:52+H*0.42};
+  });},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m3scene'); if(!b) return [];
+    const Q=this.geo(b);
+    return [
+      /* точку спостереження возять по плівці — товщина росте донизу */
+      {id:'d', x:Q.fx+Q.fw/2, y:Q.fy+this.d/this.DMAX*Q.fh, r:11, color:CLR.ink,
+       hint:'де дивимося на плівку',
+       move:(px,py)=>{this.d=clamp(snap((py-Q.fy)/Q.fh*this.DMAX,0.005),this.DMIN,this.DMAX);}}
+    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
+  },
+  tick(){this.render();},
+  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
+  gdraw(){
+    const b=cvx('m3scene'); if(!b) return;
+    const C=this.gcol(b);
+    if(this.mode==='free'){
+      gaugeCol(b.g,C,this.GG,this);
+      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
+    } else {
+      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
+      txt(b.g,'умова задачі: n = 1,33, α = 30°, біле світло',
+        C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
+    }
+    $('m3vn').textContent=fmt(this.n,2);
+    $('m3val').textContent=fmt(this.al,0)+'°';
+  },
+  scene(){
+    const b=cvx('m3scene'); if(!b) return;
+    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
+    g.clearRect(0,0,w,H);
+    /* плівка в рамці: товщина росте донизу, колір рахуємо для кожного рядка */
+    for(let py=0;py<Q.fh;py++){
+      const d=py/Q.fh*this.DMAX, c=this.colorAt(d);
+      g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';
+      g.fillRect(Q.fx,Q.fy+py,Q.fw,1);
+    }
+    g.strokeStyle=CLR.axis; g.lineWidth=2;
+    g.strokeRect(Q.fx+.5,Q.fy+.5,Q.fw-1,Q.fh-1);
+    txt(g,'плівка стікає: товщина росте донизу',Q.fx,Q.fy-10,{color:CLR.sec,size:11,bold:true});
+    txt(g,'угорі плівка тонша за λ — чорна смуга',Q.fx,Q.fy+Q.fh+18,
+      {color:CLR.mut,size:10.5});
+    /* шкала товщини */
+    for(let dd=0;dd<=this.DMAX;dd+=0.4){
+      const py=Q.fy+dd/this.DMAX*Q.fh;
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.moveTo(Q.fx-6,py+.5); g.lineTo(Q.fx,py+.5); g.stroke();
+      txtN(g,fmt(dd,1),Q.fx-9,py+4,{color:CLR.mut,size:9.5,align:'right'});
+    }
+    txt(g,'d, мкм',Q.fx-9,Q.fy-8,{color:CLR.mut,size:10,align:'right'});
+    /* обрана точка */
+    const py=Q.fy+this.d/this.DMAX*Q.fh;
+    g.strokeStyle=CLR.ink; g.lineWidth=2;
+    g.beginPath(); g.moveTo(Q.fx-2,py); g.lineTo(Q.fx+Q.fw+2,py); g.stroke();
+    /* ---- хід променів у КЛИНОПОДІБНІЙ плівці --------------------------------
+       У плівці зі сталою товщиною обидва відбиті промені паралельні й сходяться
+       тільки в нескінченності — смуги локалізовані там. Тут плівка клин: нижня
+       межа нахилена, тож промінь 2 після відбиття йде вже не паралельно до
+       першого. Вони перетинаються майже на самій плівці — саме тому смуги
+       рівної товщини видно НА плівці, а не десь у просторі. Кут клина в
+       кресленні перебільшено: справжній — соті частки градуса. */
+    /* Товщина клина на кресленні йде за обраною товщиною плівки, а кут
+       нахилу нижньої межі — за нею ж: товща плівка, крутіший клин. */
+    const zx=Q.zx, zy=Q.zy, fr=clamp(this.d/this.DMAX,0.04,1);
+    const T=14+66*fr, Wz=196, GAM=0.06+0.18*fr;
+    const yBot=xx=>zy+T+(xx-zx)*Math.tan(GAM);
+    g.fillStyle='rgba(42,120,214,.10)';
+    g.beginPath(); g.moveTo(zx,zy); g.lineTo(zx+Wz,zy);
+    g.lineTo(zx+Wz,yBot(zx+Wz)); g.lineTo(zx,yBot(zx)); g.closePath(); g.fill();
+    g.strokeStyle=CLR.k1; g.lineWidth=2;
+    g.beginPath(); g.moveTo(zx,zy+.5); g.lineTo(zx+Wz,zy+.5); g.stroke();
+    g.beginPath(); g.moveTo(zx,yBot(zx)); g.lineTo(zx+Wz,yBot(zx+Wz)); g.stroke();
+    const a=this.al*DEG, dx=Math.tan(a)*44;
+    const xA=zx+52, yA=zy;
+    /* падаючий промінь і промінь 1 — відбитий від верхньої межі */
+    arrow(g,xA-dx,yA-44,xA,yA,CLR.k2,2.2);
+    arrow(g,xA,yA,xA+dx,yA-44,CLR.k2,2.2);
+    txt(g,'1',xA+dx+6,yA-46,{color:'#b8431a',size:11,bold:true});
+    /* промінь 2: заломлення, відбиття від НАХИЛЕНОЇ межі, вихід */
+    const ar=Math.asin(Math.sin(a)/this.n);
+    const tB=(yBot(xA)-yA)/(Math.cos(ar)/Math.max(1e-6,Math.sin(ar))*Math.sin(ar)/Math.cos(ar)||1);
+    /* точку B шукаємо перетином променя з похилою межею */
+    let xB=xA, yB=yA;
+    {
+      const ux=Math.sin(ar), uy=Math.cos(ar), tg=Math.tan(GAM);
+      const k=(zy+T-yA+(xA-zx)*tg)/(uy-ux*tg);
+      xB=xA+ux*k; yB=yA+uy*k;
+    }
+    g.strokeStyle=CLR.k2; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(xA,yA); g.lineTo(xB,yB); g.stroke();
+    /* відбиття від похилої межі: напрям дзеркалиться відносно її нормалі */
+    const ux=Math.sin(ar), uy=Math.cos(ar);
+    const nx=Math.sin(-GAM), ny=-Math.cos(-GAM);          /* нормаль до похилої межі */
+    const dt=2*(ux*nx+uy*ny);
+    const rx=ux-dt*nx, ry=uy-dt*ny;
+    const kC=(yA-yB)/Math.min(-1e-6,ry);
+    const xC=xB+rx*kC, yC=yA;
+    g.beginPath(); g.moveTo(xB,yB); g.lineTo(xC,yC); g.stroke();
+    /* вихід під іншим кутом — саме через клин */
+    const aOut=a+2*GAM;
+    const dxo=Math.tan(aOut)*44;
+    arrow(g,xC,yC,xC+dxo,yC-44,CLR.k2,2.2);
+    txt(g,'2',xC+dxo+6,yC-46,{color:'#b8431a',size:11,bold:true});
+    /* де саме вони перетинаються */
+    {
+      const p1={x:xA,y:yA,dx:dx,dy:-44}, p2={x:xC,y:yC,dx:dxo,dy:-44};
+      const det=p1.dx*(-p2.dy)-(-p2.dx)*p1.dy;
+      if(Math.abs(det)>1e-6){
+        const t1=((p2.x-p1.x)*(-p2.dy)-(-p2.dx)*(p2.y-p1.y))/det;
+        const ix=p1.x+p1.dx*t1, iy=p1.y+p1.dy*t1;
+        if(iy<yA&&iy>zy-90&&ix>zx-40&&ix<zx+Wz+80){
+          g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+          g.beginPath(); g.moveTo(xA+dx,yA-44); g.lineTo(ix,iy);
+          g.moveTo(xC+dxo,yC-44); g.lineTo(ix,iy); g.stroke(); g.setLineDash([]);
+          dot(g,ix,iy,4,CLR.k3,'#fff');
+          txt(g,'промені сходяться — смуги на самій плівці',ix+8,iy-6,
+            {color:'#0d7a55',size:10,bold:true,max:zx+Wz+80-ix});
+        }
+      }
+    }
+    arc(g,xA,yA,24,-Math.PI/2,-Math.PI/2+a,CLR.k3,1.4);
+    txtN(g,'α = '+fmt(this.al,0)+'°',xA+28,yA-24,{color:'#0d7a55',size:10.5,bold:true});
+    txt(g,'клин: нижня межа нахилена — промені вже не паралельні',
+      zx,zy-58,{color:CLR.mut,size:10});
+    /* товщина плівки — шукана величина */
+    txtN(g,'d = '+fmt(this.d,3)+' мкм',zx+Wz+8,zy+T/2+4,
+      {color:CLR.ink,size:13,bold:true,name:'X'});
+    txt(g,'втрата λ/2 на верхній межі',zx,yBot(zx+Wz)+16,
+      {color:CLR.mut,size:10.5,raw:true});
+    /* смужка кольору цієї товщини */
+    const c=this.colorAt(this.d);
+    g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';
+    g.beginPath(); g.roundRect(zx,yBot(zx+Wz)+26,Wz,30,5); g.fill();
+    g.strokeStyle=CLR.axis; g.lineWidth=1;
+    g.beginPath(); g.roundRect(zx+.5,yBot(zx+Wz)+26.5,Wz-1,29,4.5); g.stroke();
+    txt(g,'колір плівки в цій точці',zx,yBot(zx+Wz)+72,{color:CLR.sec,size:10.5,bold:true});
+    const thin=this.d<0.06;
+    capN(g,thin?'плівка тонша за довжину хвилі — вона чорна'
+              :'товщина задає, які кольори підсилюються',12,20,{color:thin?CLR.ink:CLR.k2,size:12.5,bold:true});
+    capN(g,'2d√(n² − sin²α) — оптична різниця ходу двох відбитих променів',12,36,{color:CLR.mut,size:10.5});
+    for(const hh of this.grips()) if(hh.id==='d') drawGrip(g,hh,this);
+  },
+  table(){
+    const q=this.q(), dl=2*this.d*q;
+    $('m3t').textContent='d = '+fmt(this.d,3)+' мкм';
+    $('m3vd').textContent=fmt(this.d,3)+' мкм';
+    $('m3rQ').textContent=fmt(2*this.dTask()*q,3)+' мкм';
+    $('m3rD').textContent=fmt(this.dTask(),4)+' мкм';
+    $('m3kQ').textContent=fmt(q,4);
+    $('m3kDelta').textContent=fmt(dl,3)+' мкм';
+    $('m3kR1').textContent=fmt(this.R(this.d,640)*100,0)+' %';
+    $('m3kR2').textContent=fmt(this.R(this.d,400)*100,0)+' %';
+    const c=this.colorAt(this.d);
+    $('m3kCol').textContent=this.d<0.06?'чорна':
+      (c[0]>c[1]&&c[0]>c[2]?'червонувата':(c[1]>c[2]?'зеленувата':'синювата'));
+    $('m3fx').innerHTML=
+      'максимум для 0,64 мкм: 2<i>d</i>√(<i>n</i>²−sin²α) = (<i>k</i>+½)λ₁<br>'+
+      'мінімум для 0,40 мкм: те саме = <i>m</i>λ₂ &nbsp;→&nbsp; <i>k</i> = 2, <i>m</i> = 4, '+
+      'різниця ходу <b>1,600 мкм</b><br><i>d</i> = 1,600 / (2·'+fmt(q,4)+') = <b>'+
+      fmt(this.dTask(),4)+' мкм</b>';
+    $('m3fx2').innerHTML='без втрати півхвилі чорної смуги вгорі не було б — '+
+      'саме вона й доводить, що вона є';
+  },
+  charts(){
+    const br=cvx('m3cr');
+    if(br){
+      const ts=[],ys=[];
+      for(let i=0;i<=90;i++){const l=400+300*i/90; ts.push(l); ys.push(this.R(this.d,l));}
+      const r=drawChart(br,{tMax:700,yMin:0,yMax:1.08,yLab:'R',xLab:'λ, нм',xStep:50,
+        yDec:1,hover:this.hr.x,
+        series:[{ts,ys,color:CLR.k2,label:'R(λ)'},
+                {ts:[640,640],ys:[0,this.R(this.d,640)],color:CLR.k1,label:'640',dash:[4,3]},
+                {ts:[400,400],ys:[0,this.R(this.d,400)],color:CLR.k3,label:'400',dash:[4,3]}]});
+      showTip(this.tipr,r,'',this.hr,[['R',CLR.k2],['640 нм',CLR.k1],['400 нм',CLR.k3]],2);
+    }
+    const bd=cvx('m3cd');
+    if(bd){
+      const ts=[],r1=[],r2=[];
+      for(let i=0;i<=120;i++){
+        const d=this.DMAX*i/120; ts.push(d);
+        r1.push(this.R(d,640)); r2.push(this.R(d,400));
+      }
+      const r=drawChart(bd,{tMax:this.DMAX,yMin:0,yMax:1.08,yLab:'R',xLab:'d, мкм',
+        xStep:0.2,xDec:1,yDec:1,hover:this.hd.x,
+        series:[{ts,ys:r1,color:CLR.k2,label:'640 нм'},
+                {ts,ys:r2,color:CLR.k3,label:'400 нм'},
+                {ts:[this.d,this.d],ys:[0,1],color:CLR.ink,label:'d',dash:[4,3]}]});
+      showTip(this.tipd,r,'',this.hd,[['640 нм',CLR.k2],['400 нм',CLR.k3],['обрана',CLR.ink]],2);
+    }
+  }
+};
+
+/* ===================== завантаження ===================== */
+const MODULES={m3:M3};
+let ACT='m3';
+function activate(id){
+  if(!MODULES[id]) return;
+  ACT=id;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.m===id));
+  document.querySelectorAll('.module').forEach(s=>s.classList.toggle('active',s.id===id));
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) activate(b.dataset.m);
+});
+
+for(const m of Object.values(MODULES)) m.init();
+foldPanels();
+touchRoles();
+(function(){const hs=location.hash.replace('#',''); if(MODULES[hs]) activate(hs);})();
+let LAST=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
+  NUMS=[]; CAPS=[];
+  MODULES[ACT].tick(dt);
+  showNums(ACT);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

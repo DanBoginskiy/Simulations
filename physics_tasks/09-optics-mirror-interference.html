@@ -200,17 +200,69 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
   .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
+
+
+/* ===================== задача: умова, підказки, відповідь ================
+   Умова згорнута за замовчуванням: спершу студент дивиться на сцену й
+   намагається сам зрозуміти, про що задача. Розгорнути її можна будь-коли
+   одним дотиком — це підказка нульового рівня, а не покарання. */
+details.condbox{margin:0 0 12px}
+details.condbox>summary{list-style:none; cursor:pointer; display:inline-flex;
+  align-items:center; gap:7px; font:600 12.5px/1 system-ui,sans-serif; color:var(--sec);
+  border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 13px;
+  min-height:34px; box-sizing:border-box}
+details.condbox>summary::-webkit-details-marker{display:none}
+details.condbox>summary::before{content:'▸'; color:var(--mut); font-size:11px}
+details.condbox[open]>summary::before{content:'▾'}
+details.condbox>summary:hover{border-color:var(--axis)}
+details.condbox .cond{margin:10px 0 0}
+.taskbox{display:flex; flex-direction:column; gap:11px}
+.taskbox h3{margin-bottom:0}
+.hintrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.hintrow .btn{min-height:34px}
+.hintrow .btn[disabled]{opacity:.4; cursor:default}
+.hintrow .btn.on{border-color:var(--k3); color:var(--k3)}
+.hint{border-left:3px solid var(--k3); background:#fff; border-radius:0 8px 8px 0;
+  padding:10px 14px; font-size:13.5px; color:var(--ink); line-height:1.55}
+.hint .lv{display:block; font:600 10.5px/1 system-ui,sans-serif; color:var(--mut);
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px}
+.hint.lv3{border-left-color:var(--k2)}
+.hint b{font-weight:600}
+.hint i{color:var(--sec); font-style:italic}
+.symrow{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.symrow .slab{font:12px/1 system-ui,sans-serif; color:var(--mut); margin-right:2px}
+.symrow button{appearance:none; border:1px solid var(--line); background:#fff;
+  border-radius:7px; padding:5px 10px; min-height:30px; cursor:pointer;
+  font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--ink)}
+.symrow button:hover{border-color:var(--k1); color:var(--k1)}
+.ansrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.ansrow .alab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec)}
+.ansin{flex:1 1 260px; min-width:0; border:1px solid var(--line); border-radius:8px;
+  padding:10px 12px; background:#fff; color:var(--ink);
+  font:14px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ansin:focus{outline:none; border-color:var(--k1)}
+.ansin::placeholder{color:var(--axis)}
+.verdict{font-size:13px; line-height:1.55; margin:0; padding:9px 13px; border-radius:8px;
+  border-left:3px solid var(--axis); background:#fff; color:var(--sec)}
+.verdict.ok{border-left-color:var(--k3); color:#0d7a55; font-weight:600}
+.verdict.no{border-left-color:var(--k2); color:#b8431a}
+.verdict.err{border-left-color:var(--axis); color:var(--sec)}
+.verdict:empty{display:none}
+.taskhelp{font-size:12px; color:var(--mut); margin:0; line-height:1.5}
+@media (max-width:480px){
+  .ansin{flex-basis:100%}
+  .hintrow .btn{flex:1 1 auto}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>Дзеркало й інтерференція<small>задачі 2.18 · 2.1 · 2.5 компенсаційного курсу</small></h1>
+  <h1>Дзеркало й інтерференція<small>задачі 2.18 · 2.1 компенсаційного курсу</small></h1>
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Мураха біля дзеркала</button>
   <button data-m="m2">2 · Дослід Юнга</button>
-  <button data-m="m3">3 · Мильна плівка</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -259,7 +311,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="chartrow">
           <div class="chartbox" id="m2ciw">
             <h4>інтенсивність на екрані, у частках <var>I</var><sub>0</sub></h4>
-            <div class="legend sm"><span><span class="chip cB"></span>I(x) = 4I₀cos²(πdx/λl)</span></div>
+            <div class="legend sm"><span><span class="chip cB"></span>I(x) — інтенсивність уздовж екрана</span></div>
             <canvas id="m2ci"></canvas>
           </div>
           
@@ -268,37 +320,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     
 </section>
 
-<!-- ================= МОДУЛЬ 3 ================= -->
-<section class="module" id="m3">
-  <p class="caption">Мильна плівка стікає, товщина росте донизу — і кожна смуга кольору
-  відповідає своїй товщині. Угорі, де плівка тонша за довжину хвилі, вона <b>чорна</b>:
-  це і є прямий доказ втрати півхвилі при відбитті.</p>
-
-      <p class="cond">Прозору мильну плівку з показником заломлення <b>n</b> опромінюють білим світлом під кутом <b>α</b>. Визначити товщину <b>X</b> плівки, якщо світло з довжиною хвилі <b>λ₁</b> від неї повністю відбивається, а з <b>λ₂</b> — не відбивається взагалі.</p>
-
-      <div class="panel">
-        <div class="toolbar">
-          <button class="ibtn" id="m3re" title="заново">↺</button>
-        </div>
-        <canvas id="m3scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Спектр відбиття для обраної товщини</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m3crw">
-            <h4>коефіцієнт відбиття за довжиною хвилі</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>R(λ)</span><span><span class="chip cA"></span>640 нм</span><span><span class="chip cC"></span>400 нм</span></div>
-            <canvas id="m3cr"></canvas>
-          </div>
-          <div class="chartbox" id="m3cdw">
-            <h4>відбиття двох ліній від товщини плівки</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>червона 640 нм</span><span><span class="chip cC"></span>фіолетова 400 нм</span><span><span class="chip cI"></span>обрана товщина</span></div>
-            <canvas id="m3cd"></canvas>
-          </div>
-        </div>
-      </div>
-    
-</section>
 
 <footer>Допоміжний матеріал з оптики · формула дзеркала · інтерференція світла</footer>
 </div>
@@ -1263,8 +1284,10 @@ const M1={
     capN(g,near?'мураха біля фокуса — зображення летить'
       :(conv?'опукле дзеркало: зображення завжди менше й повільніше'
             :'увігнуте дзеркало: біля фокуса швидкість зростає необмежено'),12,20,{color:near?CLR.k2:(conv?CLR.k1:CLR.k2),size:12.5,bold:true});
-    capN(g,'v′ = Γ²v — збільшення входить у швидкість у квадраті',12,36,
-      {color:CLR.mut,size:10.5});
+    /* Формула зв'язку швидкостей — це вже відповідь, тож вона живе
+       в підказці, а не на сцені. */
+    capN(g,'швидкість зображення міряють тим самим секундоміром, що й швидкість мурахи',
+      12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='d') drawGrip(g,hh,this);
   },
   table(){
@@ -1465,7 +1488,7 @@ const M2={
       {color:'#b8431a',size:12,bold:true,name:'X'});
     capN(g,white?'біле світло: центральний максимум білий, решта — райдужні'
                :'монохроматичне світло: смуги однакової ширини',12,20,{color:white?CLR.k2:CLR.k1,size:12.5,bold:true});
-    capN(g,'звужуємо щілини — смуги ширшають: Δx = λl/d',12,36,{color:CLR.mut,size:10.5});
+    capN(g,'звужуємо щілини — смуги ширшають: залежність обернена',12,36,{color:CLR.mut,size:10.5});
   },
   table(){
     const dx=this.dx();
@@ -1511,253 +1534,9 @@ const M2={
   }
 };
 
-/* ===================== МОДУЛЬ 3 · мильна плівка ===================== */
-const M3={
-  mode:'free', n:1.33, al:30, d:0.6491, showAns:true,
-  NMIN:1.2, NMAX:1.6, ALMIN:0, ALMAX:70, DMIN:0.02, DMAX:1.6,
-  hr:{x:null}, hd:{x:null}, tipr:null, tipd:null,
-  GG:[['n','показник n',1.2,1.6,0.01,CLR.k1,null,'m3vn',2,''],
-      ['al','кут падіння α',0,70,1,CLR.k3,null,'m3val',0,'°']],
-  q(){return Math.sqrt(this.n*this.n-Math.pow(Math.sin(this.al*DEG),2));},
-  /* коефіцієнт відбиття з урахуванням втрати півхвилі на верхній межі */
-  R(d,lam){
-    const dl=2*d*this.q()*1000;          /* різниця ходу в нм (d у мкм) */
-    return Math.pow(Math.sin(Math.PI*dl/lam),2);
-  },
-  /* товщина, за якої 640 нм у максимумі, а 400 нм у мінімумі */
-  dTask(){
-    for(let k=0;k<14;k++){
-      const Q=(k+0.5)*0.64, m=Q/0.40;
-      if(Math.abs(m-Math.round(m))<1e-9&&Math.round(m)>=1) return Q/(2*this.q());
-    }
-    return 0.65;
-  },
-  colorAt(d){
-    let r=0,g2=0,b=0;
-    for(let l=400;l<=700;l+=10){
-      const R=this.R(d,l), c=wlRGB(l);
-      r+=R*c[0]; g2+=R*c[1]; b+=R*c[2];
-    }
-    const n=31, k=2.6;
-    return [Math.min(255,r/n*k),Math.min(255,g2/n*k),Math.min(255,b/n*k)];
-  },
-  setTask(){this.n=1.33; this.al=30; this.d=this.dTask();},
-  setMode(m){this.mode=m; if(m==='task') this.setTask();
-    this.showAns=m!=='task'; this.syncAns();},
-  syncAns(){const task=this.mode==='task';
-    $('m3ans').hidden=!task||this.showAns; $('m3ansBox').hidden=task&&!this.showAns;},
-  init(){
-    grip('m3scene',this,()=>this.grips());
-    $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m3re').onclick=()=>this.setTask();
-    this.tipr=makeTip('m3crw'); this.tipd=makeTip('m3cdw');
-    hover('m3cr',this.hr); hover('m3cd',this.hd);
-    this.hr.xlab='λ'; this.hr.xunit='нм'; this.hr.xdec=0;
-    this.hd.xlab='d'; this.hd.xunit='мкм'; this.hd.xdec=3;
-    this.setTask(); this.syncAns();
-  },
-  gcol(b){return gcolOf(b,this.GG.length);},
-  geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52;
-    return {C,H,fx:bb.w*0.16,fw:Math.min(190,bb.w*0.22),fy:62,fh:H-96,
-      zx:bb.w*0.62,zy:52+H*0.42};
-  });},
-  grips(){
-    if(this.mode!=='free') return [];
-    const b=cvx('m3scene'); if(!b) return [];
-    const Q=this.geo(b);
-    return [
-      /* точку спостереження возять по плівці — товщина росте донизу */
-      {id:'d', x:Q.fx+Q.fw/2, y:Q.fy+this.d/this.DMAX*Q.fh, r:11, color:CLR.ink,
-       hint:'де дивимося на плівку',
-       move:(px,py)=>{this.d=clamp(snap((py-Q.fy)/Q.fh*this.DMAX,0.005),this.DMIN,this.DMAX);}}
-    ].concat(gaugeGrips(this.gcol(b),this.GG,this));
-  },
-  tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m3scene'); if(!b) return;
-    const C=this.gcol(b);
-    if(this.mode==='free'){
-      gaugeCol(b.g,C,this.GG,this);
-      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
-    } else {
-      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
-      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
-      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: n = 1,33, α = 30°, біле світло',
-        C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
-    }
-    $('m3vn').textContent=fmt(this.n,2);
-    $('m3val').textContent=fmt(this.al,0)+'°';
-  },
-  scene(){
-    const b=cvx('m3scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
-    g.clearRect(0,0,w,H);
-    /* плівка в рамці: товщина росте донизу, колір рахуємо для кожного рядка */
-    for(let py=0;py<Q.fh;py++){
-      const d=py/Q.fh*this.DMAX, c=this.colorAt(d);
-      g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';
-      g.fillRect(Q.fx,Q.fy+py,Q.fw,1);
-    }
-    g.strokeStyle=CLR.axis; g.lineWidth=2;
-    g.strokeRect(Q.fx+.5,Q.fy+.5,Q.fw-1,Q.fh-1);
-    txt(g,'плівка стікає: товщина росте донизу',Q.fx,Q.fy-10,{color:CLR.sec,size:11,bold:true});
-    txt(g,'угорі плівка тонша за λ — чорна смуга',Q.fx,Q.fy+Q.fh+18,
-      {color:CLR.mut,size:10.5});
-    /* шкала товщини */
-    for(let dd=0;dd<=this.DMAX;dd+=0.4){
-      const py=Q.fy+dd/this.DMAX*Q.fh;
-      g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.moveTo(Q.fx-6,py+.5); g.lineTo(Q.fx,py+.5); g.stroke();
-      txtN(g,fmt(dd,1),Q.fx-9,py+4,{color:CLR.mut,size:9.5,align:'right'});
-    }
-    txt(g,'d, мкм',Q.fx-9,Q.fy-8,{color:CLR.mut,size:10,align:'right'});
-    /* обрана точка */
-    const py=Q.fy+this.d/this.DMAX*Q.fh;
-    g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.beginPath(); g.moveTo(Q.fx-2,py); g.lineTo(Q.fx+Q.fw+2,py); g.stroke();
-    /* ---- хід променів у КЛИНОПОДІБНІЙ плівці --------------------------------
-       У плівці зі сталою товщиною обидва відбиті промені паралельні й сходяться
-       тільки в нескінченності — смуги локалізовані там. Тут плівка клин: нижня
-       межа нахилена, тож промінь 2 після відбиття йде вже не паралельно до
-       першого. Вони перетинаються майже на самій плівці — саме тому смуги
-       рівної товщини видно НА плівці, а не десь у просторі. Кут клина в
-       кресленні перебільшено: справжній — соті частки градуса. */
-    /* Товщина клина на кресленні йде за обраною товщиною плівки, а кут
-       нахилу нижньої межі — за нею ж: товща плівка, крутіший клин. */
-    const zx=Q.zx, zy=Q.zy, fr=clamp(this.d/this.DMAX,0.04,1);
-    const T=14+66*fr, Wz=196, GAM=0.06+0.18*fr;
-    const yBot=xx=>zy+T+(xx-zx)*Math.tan(GAM);
-    g.fillStyle='rgba(42,120,214,.10)';
-    g.beginPath(); g.moveTo(zx,zy); g.lineTo(zx+Wz,zy);
-    g.lineTo(zx+Wz,yBot(zx+Wz)); g.lineTo(zx,yBot(zx)); g.closePath(); g.fill();
-    g.strokeStyle=CLR.k1; g.lineWidth=2;
-    g.beginPath(); g.moveTo(zx,zy+.5); g.lineTo(zx+Wz,zy+.5); g.stroke();
-    g.beginPath(); g.moveTo(zx,yBot(zx)); g.lineTo(zx+Wz,yBot(zx+Wz)); g.stroke();
-    const a=this.al*DEG, dx=Math.tan(a)*44;
-    const xA=zx+52, yA=zy;
-    /* падаючий промінь і промінь 1 — відбитий від верхньої межі */
-    arrow(g,xA-dx,yA-44,xA,yA,CLR.k2,2.2);
-    arrow(g,xA,yA,xA+dx,yA-44,CLR.k2,2.2);
-    txt(g,'1',xA+dx+6,yA-46,{color:'#b8431a',size:11,bold:true});
-    /* промінь 2: заломлення, відбиття від НАХИЛЕНОЇ межі, вихід */
-    const ar=Math.asin(Math.sin(a)/this.n);
-    const tB=(yBot(xA)-yA)/(Math.cos(ar)/Math.max(1e-6,Math.sin(ar))*Math.sin(ar)/Math.cos(ar)||1);
-    /* точку B шукаємо перетином променя з похилою межею */
-    let xB=xA, yB=yA;
-    {
-      const ux=Math.sin(ar), uy=Math.cos(ar), tg=Math.tan(GAM);
-      const k=(zy+T-yA+(xA-zx)*tg)/(uy-ux*tg);
-      xB=xA+ux*k; yB=yA+uy*k;
-    }
-    g.strokeStyle=CLR.k2; g.lineWidth=1.6;
-    g.beginPath(); g.moveTo(xA,yA); g.lineTo(xB,yB); g.stroke();
-    /* відбиття від похилої межі: напрям дзеркалиться відносно її нормалі */
-    const ux=Math.sin(ar), uy=Math.cos(ar);
-    const nx=Math.sin(-GAM), ny=-Math.cos(-GAM);          /* нормаль до похилої межі */
-    const dt=2*(ux*nx+uy*ny);
-    const rx=ux-dt*nx, ry=uy-dt*ny;
-    const kC=(yA-yB)/Math.min(-1e-6,ry);
-    const xC=xB+rx*kC, yC=yA;
-    g.beginPath(); g.moveTo(xB,yB); g.lineTo(xC,yC); g.stroke();
-    /* вихід під іншим кутом — саме через клин */
-    const aOut=a+2*GAM;
-    const dxo=Math.tan(aOut)*44;
-    arrow(g,xC,yC,xC+dxo,yC-44,CLR.k2,2.2);
-    txt(g,'2',xC+dxo+6,yC-46,{color:'#b8431a',size:11,bold:true});
-    /* де саме вони перетинаються */
-    {
-      const p1={x:xA,y:yA,dx:dx,dy:-44}, p2={x:xC,y:yC,dx:dxo,dy:-44};
-      const det=p1.dx*(-p2.dy)-(-p2.dx)*p1.dy;
-      if(Math.abs(det)>1e-6){
-        const t1=((p2.x-p1.x)*(-p2.dy)-(-p2.dx)*(p2.y-p1.y))/det;
-        const ix=p1.x+p1.dx*t1, iy=p1.y+p1.dy*t1;
-        if(iy<yA&&iy>zy-90&&ix>zx-40&&ix<zx+Wz+80){
-          g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
-          g.beginPath(); g.moveTo(xA+dx,yA-44); g.lineTo(ix,iy);
-          g.moveTo(xC+dxo,yC-44); g.lineTo(ix,iy); g.stroke(); g.setLineDash([]);
-          dot(g,ix,iy,4,CLR.k3,'#fff');
-          txt(g,'промені сходяться — смуги на самій плівці',ix+8,iy-6,
-            {color:'#0d7a55',size:10,bold:true,max:zx+Wz+80-ix});
-        }
-      }
-    }
-    arc(g,xA,yA,24,-Math.PI/2,-Math.PI/2+a,CLR.k3,1.4);
-    txtN(g,'α = '+fmt(this.al,0)+'°',xA+28,yA-24,{color:'#0d7a55',size:10.5,bold:true});
-    txt(g,'клин: нижня межа нахилена — промені вже не паралельні',
-      zx,zy-58,{color:CLR.mut,size:10});
-    /* товщина плівки — шукана величина */
-    txtN(g,'d = '+fmt(this.d,3)+' мкм',zx+Wz+8,zy+T/2+4,
-      {color:CLR.ink,size:13,bold:true,name:'X'});
-    txt(g,'втрата λ/2 на верхній межі',zx,yBot(zx+Wz)+16,
-      {color:CLR.mut,size:10.5,raw:true});
-    /* смужка кольору цієї товщини */
-    const c=this.colorAt(this.d);
-    g.fillStyle='rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')';
-    g.beginPath(); g.roundRect(zx,yBot(zx+Wz)+26,Wz,30,5); g.fill();
-    g.strokeStyle=CLR.axis; g.lineWidth=1;
-    g.beginPath(); g.roundRect(zx+.5,yBot(zx+Wz)+26.5,Wz-1,29,4.5); g.stroke();
-    txt(g,'колір плівки в цій точці',zx,yBot(zx+Wz)+72,{color:CLR.sec,size:10.5,bold:true});
-    const thin=this.d<0.06;
-    capN(g,thin?'плівка тонша за довжину хвилі — вона чорна'
-              :'товщина задає, які кольори підсилюються',12,20,{color:thin?CLR.ink:CLR.k2,size:12.5,bold:true});
-    capN(g,'2d√(n² − sin²α) — оптична різниця ходу двох відбитих променів',12,36,{color:CLR.mut,size:10.5});
-    for(const hh of this.grips()) if(hh.id==='d') drawGrip(g,hh,this);
-  },
-  table(){
-    const q=this.q(), dl=2*this.d*q;
-    $('m3t').textContent='d = '+fmt(this.d,3)+' мкм';
-    $('m3vd').textContent=fmt(this.d,3)+' мкм';
-    $('m3rQ').textContent=fmt(2*this.dTask()*q,3)+' мкм';
-    $('m3rD').textContent=fmt(this.dTask(),4)+' мкм';
-    $('m3kQ').textContent=fmt(q,4);
-    $('m3kDelta').textContent=fmt(dl,3)+' мкм';
-    $('m3kR1').textContent=fmt(this.R(this.d,640)*100,0)+' %';
-    $('m3kR2').textContent=fmt(this.R(this.d,400)*100,0)+' %';
-    const c=this.colorAt(this.d);
-    $('m3kCol').textContent=this.d<0.06?'чорна':
-      (c[0]>c[1]&&c[0]>c[2]?'червонувата':(c[1]>c[2]?'зеленувата':'синювата'));
-    $('m3fx').innerHTML=
-      'максимум для 0,64 мкм: 2<i>d</i>√(<i>n</i>²−sin²α) = (<i>k</i>+½)λ₁<br>'+
-      'мінімум для 0,40 мкм: те саме = <i>m</i>λ₂ &nbsp;→&nbsp; <i>k</i> = 2, <i>m</i> = 4, '+
-      'різниця ходу <b>1,600 мкм</b><br><i>d</i> = 1,600 / (2·'+fmt(q,4)+') = <b>'+
-      fmt(this.dTask(),4)+' мкм</b>';
-    $('m3fx2').innerHTML='без втрати півхвилі чорної смуги вгорі не було б — '+
-      'саме вона й доводить, що вона є';
-  },
-  charts(){
-    const br=cvx('m3cr');
-    if(br){
-      const ts=[],ys=[];
-      for(let i=0;i<=90;i++){const l=400+300*i/90; ts.push(l); ys.push(this.R(this.d,l));}
-      const r=drawChart(br,{tMax:700,yMin:0,yMax:1.08,yLab:'R',xLab:'λ, нм',xStep:50,
-        yDec:1,hover:this.hr.x,
-        series:[{ts,ys,color:CLR.k2,label:'R(λ)'},
-                {ts:[640,640],ys:[0,this.R(this.d,640)],color:CLR.k1,label:'640',dash:[4,3]},
-                {ts:[400,400],ys:[0,this.R(this.d,400)],color:CLR.k3,label:'400',dash:[4,3]}]});
-      showTip(this.tipr,r,'',this.hr,[['R',CLR.k2],['640 нм',CLR.k1],['400 нм',CLR.k3]],2);
-    }
-    const bd=cvx('m3cd');
-    if(bd){
-      const ts=[],r1=[],r2=[];
-      for(let i=0;i<=120;i++){
-        const d=this.DMAX*i/120; ts.push(d);
-        r1.push(this.R(d,640)); r2.push(this.R(d,400));
-      }
-      const r=drawChart(bd,{tMax:this.DMAX,yMin:0,yMax:1.08,yLab:'R',xLab:'d, мкм',
-        xStep:0.2,xDec:1,yDec:1,hover:this.hd.x,
-        series:[{ts,ys:r1,color:CLR.k2,label:'640 нм'},
-                {ts,ys:r2,color:CLR.k3,label:'400 нм'},
-                {ts:[this.d,this.d],ys:[0,1],color:CLR.ink,label:'d',dash:[4,3]}]});
-      showTip(this.tipd,r,'',this.hd,[['640 нм',CLR.k2],['400 нм',CLR.k3],['обрана',CLR.ink]],2);
-    }
-  }
-};
 
 /* ===================== завантаження ===================== */
-const MODULES={m1:M1,m2:M2,m3:M3};
+const MODULES={m1:M1,m2:M2};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;
@@ -1768,9 +1547,409 @@ function activate(id){
 $('tabs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(b) activate(b.dataset.m);
 });
+
+
+/* ======================================================================
+   ЗАДАЧА: схована умова, три підказки, поле відповіді й перевірка
+   ----------------------------------------------------------------------
+   Відповідь студент пише формулою, а не числом, — і той самий вираз можна
+   записати десятком способів: λl/d, l·λ/d, λ·(l/d). Порівнювати рядки тут
+   марно. Тому формула розбирається в дерево й перевіряється підстановкою
+   випадкових чисел: збіг із еталоном на дюжині незалежних наборів означає
+   тотожність виразів, а не щасливий збіг на одному прикладі.
+   ====================================================================== */
+
+const TASKS={};                        /* кожен файл наповнює своїми модулями */
+
+/* ---- функції, які можна писати у відповіді ---------------------------
+   Навмисно короткий список: що більше імен, то більший ризик, що назва
+   функції з'їсть символ задачі (наприклад lg проковтнуло б l·g). */
+const FUNS={
+  sqrt:Math.sqrt, '√':Math.sqrt, abs:Math.abs,
+  sin:Math.sin, cos:Math.cos, tg:Math.tan, tan:Math.tan,
+  ctg:x=>1/Math.tan(x), cot:x=>1/Math.tan(x),
+  arcsin:Math.asin, asin:Math.asin, arccos:Math.acos, acos:Math.acos,
+  arctg:Math.atan, arctan:Math.atan, atan:Math.atan,
+  floor:Math.floor, ceil:Math.ceil, round:Math.round
+};
+/* функції, чий аргумент мусить бути безрозмірним */
+const PUREFUN={sin:1,cos:1,tg:1,tan:1,ctg:1,cot:1,exp:1};
+/* функції, чий результат безрозмірний за будь-якого безрозмірного входу */
+const ANGFUN={arcsin:1,asin:1,arccos:1,acos:1,arctg:1,arctan:1,atan:1};
+
+/* ---- розбір ----------------------------------------------------------
+   Токенізатор ріже рядок не «по літерах», а по НАЙДОВШОМУ відомому імені
+   з таблиці символів задачі. Саме це дозволяє писати λl/d без зірочки:
+   рядок розпадається на λ, l, /, d, бо всі три імені оголошені. */
+function tkz(src,syms){
+  const names=Object.keys(syms).concat(Object.keys(FUNS)).sort((a,b)=>b.length-a.length);
+  const S=String(src).replace(/\s+/g,'').replace(/[−–—]/g,'-');
+  const out=[]; let i=0;
+  while(i<S.length){
+    const c=S[i];
+    if(/[0-9]/.test(c)||(c==='.'&&/[0-9]/.test(S[i+1]||''))){
+      let j=i; while(j<S.length&&/[0-9.,]/.test(S[j])) j++;
+      const num=parseFloat(S.slice(i,j).replace(',','.'));
+      if(!isFinite(num)) throw {k:'syntax',at:S.slice(i,j)};
+      out.push({t:'num',v:num}); i=j; continue;
+    }
+    if('+-*/^(),'.indexOf(c)>=0){out.push({t:'op',v:c}); i++; continue;}
+    if('·×∙'.indexOf(c)>=0){out.push({t:'op',v:'*'}); i++; continue;}
+    if(c==='÷'){out.push({t:'op',v:'/'}); i++; continue;}
+    if(c==='['){out.push({t:'op',v:'('}); i++; continue;}
+    if(c===']'){out.push({t:'op',v:')'}); i++; continue;}
+    if('²³⁴'.indexOf(c)>=0){
+      out.push({t:'op',v:'^'}); out.push({t:'num',v:{'²':2,'³':3,'⁴':4}[c]}); i++; continue;}
+    if(c==='π'){out.push({t:'sym',v:'π'}); i++; continue;}
+    let hit=null;
+    for(const n of names) if(S.startsWith(n,i)){hit=n; break;}
+    if(hit){
+      out.push({t:(FUNS[hit]&&!syms[hit])?'fun':'sym',v:hit});
+      i+=hit.length; continue;
+    }
+    throw {k:'unknown',at:S.slice(i,i+8)};
+  }
+  return out;
+}
+
+/* Рекурсивний спуск. Неявне множення дозволене всюди, де за атомом одразу
+   стоїть інший атом: 2gl, λl, 2π√(...) читаються так, як їх пишуть на папері. */
+function parseExpr(tk,syms){
+  let p=0;
+  const peek=()=>tk[p], eat=v=>{
+    if(!tk[p]||tk[p].t!=='op'||tk[p].v!==v) throw {k:'syntax',at:v};
+    p++;
+  };
+  const startsAtom=t=>t&&(t.t==='num'||t.t==='sym'||t.t==='fun'||(t.t==='op'&&t.v==='('));
+  function atom(){
+    const t=peek();
+    if(!t) throw {k:'syntax',at:'кінець виразу'};
+    if(t.t==='num'){p++; return {n:'num',v:t.v};}
+    if(t.t==='sym'){p++; return {n:'sym',v:t.v};}
+    if(t.t==='fun'){
+      p++; eat('('); const a=expr(); eat(')');
+      return {n:'fun',f:t.v,a};
+    }
+    if(t.t==='op'&&t.v==='('){p++; const a=expr(); eat(')'); return a;}
+    throw {k:'syntax',at:t.v};
+  }
+  function power(){
+    const b=atom();
+    if(peek()&&peek().t==='op'&&peek().v==='^'){p++; return {n:'pow',a:b,b:unary()};}
+    return b;
+  }
+  function unary(){
+    const t=peek();
+    if(t&&t.t==='op'&&(t.v==='-'||t.v==='+')){p++; const a=unary();
+      return t.v==='-'?{n:'neg',a}:a;}
+    return power();
+  }
+  function term(){
+    let a=unary();
+    for(;;){
+      const t=peek();
+      if(t&&t.t==='op'&&(t.v==='*'||t.v==='/')){p++; a={n:t.v,a,b:unary()};}
+      else if(startsAtom(t)) a={n:'*',a,b:unary()};      /* неявне множення */
+      else return a;
+    }
+  }
+  function expr(){
+    let a=term();
+    for(;;){
+      const t=peek();
+      if(t&&t.t==='op'&&(t.v==='+'||t.v==='-')){p++; a={n:t.v,a,b:term()};}
+      else return a;
+    }
+  }
+  const r=expr();
+  if(p<tk.length) throw {k:'syntax',at:String(tk[p].v)};
+  return r;
+}
+function parseFormula(src,syms){return parseExpr(tkz(src,syms),syms);}
+
+/* ---- обчислення числом ------------------------------------------------ */
+function evalNode(nd,env){
+  switch(nd.n){
+    case 'num': return nd.v;
+    case 'sym': return nd.v==='π'?Math.PI:env[nd.v];
+    case 'neg': return -evalNode(nd.a,env);
+    case '+': return evalNode(nd.a,env)+evalNode(nd.b,env);
+    case '-': return evalNode(nd.a,env)-evalNode(nd.b,env);
+    case '*': return evalNode(nd.a,env)*evalNode(nd.b,env);
+    case '/': return evalNode(nd.a,env)/evalNode(nd.b,env);
+    case 'pow': return Math.pow(evalNode(nd.a,env),evalNode(nd.b,env));
+    case 'fun': return FUNS[nd.f](evalNode(nd.a,env));
+  }
+  return NaN;
+}
+
+/* ---- обчислення розмірністю ------------------------------------------
+   Той самий вираз проганяємо ще раз, але замість чисел підставляємо
+   розмірності. Це не вирішує, правильна відповідь чи ні, — це дає
+   зрозумілу причину, коли вона неправильна: «вийшли метри, а треба
+   секунди» набагато кориснішe за просте «не сходиться». */
+const DBASE=['M','L','T','I','K','N','J'];
+const dZero=()=>[0,0,0,0,0,0,0];
+const dEq=(a,b)=>a.every((x,i)=>Math.abs(x-b[i])<1e-9);
+const dPure=a=>a.every(x=>Math.abs(x)<1e-9);
+function dStr(a){
+  const up=[],dn=[];
+  a.forEach((x,i)=>{
+    if(Math.abs(x)<1e-9) return;
+    const e=Math.abs(x), s=DBASE[i]+(Math.abs(e-1)<1e-9?'':'^'+(+e.toFixed(3)));
+    (x>0?up:dn).push(s);
+  });
+  if(!up.length&&!dn.length) return 'безрозмірна';
+  return (up.join('·')||'1')+(dn.length?'/'+(dn.length>1?'('+dn.join('·')+')':dn[0]):'');
+}
+function dimOf(str){
+  if(!str||str==='1') return dZero();
+  const syms={}; DBASE.forEach(b=>{syms[b]=1;});
+  const nd=parseFormula(str,syms);
+  const env={}; DBASE.forEach((b,i)=>{const v=dZero(); v[i]=1; env[b]=v;});
+  return dimEval(nd,env);
+}
+function dimEval(nd,env){
+  const add=(a,b,s)=>a.map((x,i)=>x+s*b[i]);
+  switch(nd.n){
+    case 'num': return dZero();
+    case 'sym': return nd.v==='π'?dZero():(env[nd.v]||dZero());
+    case 'neg': return dimEval(nd.a,env);
+    case '+': case '-': {
+      const a=dimEval(nd.a,env), b=dimEval(nd.b,env);
+      if(!dEq(a,b)) throw {k:'dimsum',a:dStr(a),b:dStr(b)};
+      return a;
+    }
+    case '*': return add(dimEval(nd.a,env),dimEval(nd.b,env),1);
+    case '/': return add(dimEval(nd.a,env),dimEval(nd.b,env),-1);
+    case 'pow': {
+      const a=dimEval(nd.a,env);
+      if(dPure(a)) return dZero();          /* безрозмірна основа — показник вільний */
+      const e=evalNode(nd.b,{});
+      if(!isFinite(e)) throw {k:'dimpow'};
+      return a.map(x=>x*e);
+    }
+    case 'fun': {
+      const a=dimEval(nd.a,env);
+      if(nd.f==='sqrt'||nd.f==='√') return a.map(x=>x/2);
+      if(nd.f==='abs') return a;
+      if(!dPure(a)&&(PUREFUN[nd.f]||ANGFUN[nd.f])) throw {k:'dimarg',f:nd.f,a:dStr(a)};
+      return dZero();
+    }
+  }
+  return dZero();
+}
+
+/* ---- перевірка відповіді --------------------------------------------- */
+const TOL=1e-9, NTRY=12;
+function checkFormula(T,src){
+  const syms={};
+  for(const v of T.vars) for(const n of [v.s].concat(v.alias||[])) syms[n]=v;
+  for(const k in (T.consts||{})) syms[k]=T.consts[k];
+  syms['π']={};
+  let nd;
+  try{ nd=parseFormula(src,syms); }
+  catch(e){
+    if(e.k==='unknown') return {s:'err',
+      m:'Не знаю позначення «'+e.at+'». Дозволені символи наведено кнопками вище; '+
+        'множення можна писати як * або · (або не писати зовсім).'};
+    return {s:'err',m:'Вираз не читається біля «'+(e.at||'?')+'» — перевірте дужки й знаки.'};
+  }
+  /* Розмірність вирішує сама, і то першою. Числова перевірка сліпа там, де
+     величини дуже малі: при λ ≈ 5·10⁻⁷ sin(λ) чисельно не відрізнити від λ,
+     і хибний вираз проліз би. Але sin від довжини хвилі — це взагалі не
+     формула, і саме розмірність це ловить. */
+  let dmsg='';
+  if(T.dim){
+    let bad=null;
+    try{
+      const env={}; for(const v of T.vars)
+        for(const n of [v.s].concat(v.alias||[])) env[n]=dimOf(v.dim);
+      for(const k in (T.consts||{})) env[k]=dimOf(T.consts[k].dim);
+      const got=dimEval(nd,env), want=dimOf(T.dim);
+      if(!dEq(got,want)) bad='Розмірність не та: вийшло '+dStr(got)+', а треба '+dStr(want)+'.';
+    }catch(e){
+      if(e.k==='dimsum') bad='Ви додаєте величини різної розмірності: '+e.a+' і '+e.b+'.';
+      else if(e.k==='dimarg') bad='Аргумент '+e.f+' має бути безрозмірним, а він '+e.a+'.';
+      else if(e.k==='dimpow') bad='Показник степеня має бути числом.';
+      else throw e;
+    }
+    if(bad) return {s:'no',m:bad};
+  }
+  /* власне перевірка: дюжина випадкових наборів значень */
+  let bad=0, nan=0;
+  for(let k=0;k<NTRY;k++){
+    let env=null, ref=NaN, tries=0;
+    while(tries++<40){
+      env={};
+      for(const v of T.vars){
+        const x=v.int?Math.round(v.lo+(v.hi-v.lo)*Math.random())
+                     :v.lo+(v.hi-v.lo)*Math.random();
+        for(const n of [v.s].concat(v.alias||[])) env[n]=x;
+      }
+      for(const c in (T.consts||{})) env[c]=T.consts[c].v;
+      ref=T.ref(env);
+      if(isFinite(ref)) break;
+    }
+    if(!isFinite(ref)) continue;
+    let got;
+    try{ got=evalNode(nd,env); }catch(e){ got=NaN; }
+    if(!isFinite(got)){nan++; continue;}
+    if(Math.abs(got-ref)>TOL*Math.max(Math.abs(got),Math.abs(ref))+1e-12) bad++;
+  }
+  if(nan>=NTRY-1) return {s:'no',
+    m:'Вираз не дає числа на допустимих значеннях — імовірно, корінь із від’ємного '+
+      'або ділення на нуль.'+dmsg};
+  if(bad===0) return {s:'ok',m:'Правильно. Вираз збігається з еталоном на всіх пробних наборах значень.'};
+  return {s:'no',m:'Не сходиться: на пробних значеннях ваш вираз дає інше число.'+dmsg};
+}
+
+/* ---- побудова інтерфейсу --------------------------------------------- */
+const LS='tasks.'+location.pathname.split('/').pop();
+function taskState(){
+  try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; }
+}
+function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(e){} }
+
+function buildTasks(){
+  const st=taskState();
+  for(const mid in TASKS){
+    const T=TASKS[mid];
+    const sec=document.getElementById(mid); if(!sec) continue;
+    /* умову ховаємо в <details> просто на місці */
+    const cond=sec.querySelector('p.cond');
+    if(cond&&!cond.closest('details')){
+      const d=document.createElement('details');
+      d.className='condbox';
+      const sm=document.createElement('summary');
+      sm.textContent='Умова задачі';
+      d.appendChild(sm);
+      cond.parentNode.insertBefore(d,cond);
+      d.appendChild(cond);
+      d.open=!!(st[mid]&&st[mid].cond);
+      d.addEventListener('toggle',()=>{
+        const s=taskState(); s[mid]=s[mid]||{}; s[mid].cond=d.open; taskSave(s);
+      });
+    }
+    /* панель задачі — одразу під сценою */
+    const sceneCv=sec.querySelector('canvas[id$="scene"]');
+    const after=sceneCv?sceneCv.closest('.panel'):sec.lastElementChild;
+    if(!after) continue;
+    const box=document.createElement('div');
+    box.className='panel taskbox';
+    box.innerHTML=
+      '<h3>Ваша відповідь</h3>'+
+      '<div class="hintrow">'+
+        '<button class="btn" data-h="0">Підказка 1</button>'+
+        '<button class="btn" data-h="1">Підказка 2</button>'+
+        '<button class="btn" data-h="2">Розв’язок</button>'+
+      '</div>'+
+      '<div class="hints"></div>'+
+      '<div class="symrow"><span class="slab">символи:</span></div>'+
+      '<div class="ansrow">'+
+        '<span class="alab">'+(T.what||'X')+' =</span>'+
+        '<input class="ansin" type="text" spellcheck="false" autocapitalize="off" '+
+          'autocomplete="off" placeholder="'+(T.ph||'напр.  2*a*sqrt(b)/c')+'">'+
+        '<button class="btn chk">Перевірити</button>'+
+      '</div>'+
+      '<p class="verdict"></p>'+
+      '<p class="taskhelp">Пишіть звичайним рядком: * · / ^ ( ), sqrt( ), sin cos tg, '+
+        'arcsin arccos arctg, π. Зірочку між символами можна не ставити.</p>';
+    after.parentNode.insertBefore(box,after.nextSibling);
+
+    const symrow=box.querySelector('.symrow');
+    const inp=box.querySelector('.ansin');
+    for(const v of T.vars.concat(Object.keys(T.consts||{}).map(k=>({s:k,t:T.consts[k].t})))){
+      const b=document.createElement('button');
+      b.type='button'; b.textContent=v.s; b.title=v.t||'';
+      b.addEventListener('click',()=>{
+        const a=inp.selectionStart, z=inp.selectionEnd, s=inp.value;
+        inp.value=s.slice(0,a)+v.s+s.slice(z);
+        inp.focus(); inp.selectionStart=inp.selectionEnd=a+v.s.length;
+      });
+      symrow.appendChild(b);
+    }
+
+    const hints=box.querySelector('.hints');
+    const hbtn=[].slice.call(box.querySelectorAll('.hintrow .btn'));
+    const shown=(st[mid]&&st[mid].h)||0;
+    function openHint(i){
+      for(let k=hints.children.length;k<=i;k++){
+        const d=document.createElement('div');
+        d.className='hint'+(k===2?' lv3':'');
+        d.innerHTML='<span class="lv">'+(k===2?'розв’язок':'підказка '+(k+1))+
+          '</span>'+T.hints[k];
+        hints.appendChild(d);
+      }
+      hbtn.forEach((b,k)=>{
+        b.disabled=k>hints.children.length;         /* наступну — лише по черзі */
+        b.classList.toggle('on',k<hints.children.length);
+      });
+      const s=taskState(); s[mid]=s[mid]||{}; s[mid].h=hints.children.length; taskSave(s);
+    }
+    hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
+    hbtn.forEach((b,k)=>{b.disabled=k>0;});
+    if(shown) openHint(shown-1);
+
+    const verd=box.querySelector('.verdict');
+    const run=()=>{
+      const src=inp.value.trim();
+      if(!src){verd.className='verdict err'; verd.textContent='Порожньо — напишіть формулу.'; return;}
+      const r=checkFormula(T,src);
+      verd.className='verdict '+r.s; verd.textContent=r.m;
+      if(r.s==='ok'){const s=taskState(); s[mid]=s[mid]||{}; s[mid].ok=1; taskSave(s);}
+    };
+    box.querySelector('.chk').addEventListener('click',run);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); run();}});
+    if(st[mid]&&st[mid].ok){verd.className='verdict ok'; verd.textContent='Цю задачу ви вже розв’язали.';}
+  }
+}
+
+/* ---- задачі цього файла ---------------------------------------------- */
+TASKS.m1={
+  what:'швидкість X', dim:'L/T',
+  vars:[{s:'v',dim:'L/T',lo:0.5,hi:5,t:'швидкість мурахи, мм/с'},
+        {s:'F',dim:'L',lo:10,hi:30,t:'фокусна відстань, см'},
+        {s:'d',dim:'L',lo:40,hi:100,t:'відстань від мурахи до дзеркала, см'}],
+  ref:e=>e.v*e.F*e.F/Math.pow(e.d-e.F,2),
+  hints:[
+    'Зображення рухається <b>не з тією самою</b> швидкістю, що предмет. Потягніть мураху '+
+    'по осі й подивіться на два спідометри: коли мураха підходить до дзеркала, зображення '+
+    'то прискорюється, то гальмує, хоч сама мураха повзе рівномірно.',
+    'Положення зображення дає формула дзеркала 1/<i>f</i> + 1/<i>d</i> = 1/<i>F</i>. '+
+    'Швидкість зображення — це <b>похідна</b> цього положення по положенню предмета, '+
+    'помножена на швидкість предмета: <i>v</i>′ = |d<i>f</i>/d<i>d</i>|·<i>v</i>.',
+    'З 1/<i>f</i> = 1/<i>F</i> − 1/<i>d</i> маємо <i>f</i> = <i>dF</i>/(<i>d</i> − <i>F</i>). '+
+    'Похідна: d<i>f</i>/d<i>d</i> = −<i>F</i>²/(<i>d</i> − <i>F</i>)². Лінійне збільшення '+
+    '<i>Γ</i> = <i>F</i>/(<i>d</i> − <i>F</i>), тож |d<i>f</i>/d<i>d</i>| = <i>Γ</i>². '+
+    'Отже <b>X = v·F²/(d − F)²</b> = <i>Γ</i>²<i>v</i>: збільшення входить у швидкість '+
+    '<b>у квадраті</b>.'
+  ]
+};
+TASKS.m2={
+  what:'ширина X', dim:'L',
+  vars:[{s:'λ',alias:['lambda','lam'],dim:'L',lo:4e-7,hi:7e-7,t:'довжина хвилі, м'},
+        {s:'l',dim:'L',lo:0.5,hi:4,t:'відстань до екрана, м'},
+        {s:'d',dim:'L',lo:1e-4,hi:2e-3,t:'відстань між щілинами, м'}],
+  ref:e=>e['λ']*e.l/e.d,
+  hints:[
+    'На екрані чергуються світлі й темні смуги. Світла смуга стоїть там, де хвилі від '+
+    'двох щілин приходять <b>у фазі</b>, тобто де різниця ходу дорівнює цілому числу '+
+    'довжин хвиль. Посуньте повзунок «між щілинами» й подивіться, у який бік їдуть смуги.',
+    'Екран далеко: <i>l</i> ≫ <i>d</i> і <i>l</i> ≫ <i>x</i>. Тоді різниця ходу для точки '+
+    'на відстані <i>x</i> від центра дорівнює приблизно <i>dx</i>/<i>l</i>. Умова '+
+    'максимуму: <i>dx</i>/<i>l</i> = <i>kλ</i>, де <i>k</i> — ціле.',
+    'З <i>dx</i>/<i>l</i> = <i>kλ</i> маємо координату <i>k</i>-го максимуму '+
+    '<i>x<sub>k</sub></i> = <i>kλl</i>/<i>d</i>. Ширина смуги — відстань між сусідніми '+
+    'максимумами: <i>X</i> = <i>x</i><sub><i>k</i>+1</sub> − <i>x<sub>k</sub></i> = '+
+    '<b>λl/d</b>. Звідси й обернена залежність: <b>щілини ближче — смуги ширші</b>.'
+  ]
+};
+
 for(const m of Object.values(MODULES)) m.init();
 foldPanels();
 touchRoles();
+buildTasks();
 (function(){const hs=location.hash.replace('#',''); if(MODULES[hs]) activate(hs);})();
 let LAST=performance.now();
 function loop(now){

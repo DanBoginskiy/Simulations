@@ -206,12 +206,11 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 <body>
 <div class="wrap">
 <header>
-  <h1>Дифракція на ґратці<small>задачі 2.6 · 2.7 компенсаційного курсу</small></h1>
+  <h1>Дифракція на ґратці<small>задача 2.6 компенсаційного курсу · ешелета</small></h1>
 </header>
 <nav class="tabs" id="tabs">
   <button data-m="m1" class="active">1 · Перекриття порядків</button>
-  <button data-m="m2">2 · Від двох щілин до N</button>
-  <button data-m="m3">3 · Ешелета</button>
+  <button data-m="m3">2 · Ешелета</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -246,37 +245,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
     
 </section>
 
-<!-- ================= МОДУЛЬ 2 ================= -->
-<section class="module" id="m2">
-  <p class="caption">Навіщо ґратці багато штрихів? Повзунок кількості щілин показує:
-  положення максимумів не змінюється, а самі вони на очах загострюються —
-  це і є роздільна здатність.</p>
-
-      <p class="cond">Дифракційну ґратку зі сталою <b>d</b> по нормалі опромінюють монохроматичним світлом. Визначити його довжину хвилі <b>X</b>, якщо кут між напрямами на головні максимуми порядків <b>m₁</b> і <b>m₂</b> складає <b>Θ</b>.</p>
-
-      <div class="panel">
-        <div class="toolbar">
-          <button class="ibtn" id="m2re" title="заново">↺</button>
-        </div>
-        <canvas id="m2scene"></canvas>
-      </div>
-      <div class="panel">
-        <h3>Профіль інтенсивності</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m2ciw">
-            <h4>інтенсивність за кутом, у частках максимуму</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>N щілин</span><span><span class="chip cS"></span>дві щілини</span></div>
-            <canvas id="m2ci"></canvas>
-          </div>
-          <div class="chartbox" id="m2cww">
-            <h4>ширина головного максимуму від числа щілин, градуси</h4>
-            <div class="legend sm"><span><span class="chip cB"></span>~1/N</span><span><span class="chip cI"></span>зараз</span></div>
-            <canvas id="m2cw"></canvas>
-          </div>
-        </div>
-      </div>
-    
-</section>
 <section class="module" id="m3">
   <p class="caption">Звичайна ґратка більшу частину світла віддає в нульовий порядок, де спектра
   немає зовсім. Ешелета — ґратка з пилкоподібним профілем: кожна грань нахилена так, щоб дзеркально
@@ -1373,218 +1341,6 @@ const M1={
   }
 };
 
-/* ===================== МОДУЛЬ 2 · від двох щілин до N ===================== */
-const M2={
-  mode:'free', nmm:45, N:2, lam:620, showAns:true,
-  NSMIN:2, NSMAX:60, NMMIN:20, NMMAX:120, LAMMIN:400, LAMMAX:700,
-  hi:{x:null}, hw:{x:null}, tipi:null, tipw:null,
-  GG:[['N','щілин N',2,60,1,CLR.k2,null,'m2vN',0,''],
-      ['nmm','штрихів на мм',20,120,1,CLR.k1,null,'m2vn',0,''],
-      ['lam','хвиля λ, нм',400,700,5,CLR.k3,null,'m2vlam',0,'']],
-  d(){return 1e6/this.nmm;},
-  ang(m){const s=m*this.lam/this.d(); return s<=1?Math.asin(s):null;},
-  /* кут між першим і другим головними максимумами */
-  theta12(){const a1=this.ang(1),a2=this.ang(2); return (a1===null||a2===null)?null:a2-a1;},
-  /* довжина хвилі з виміряного кута Θ */
-  lamFromTheta(Th){
-    let lo=0,hi=0.45;
-    for(let i=0;i<60;i++){const x=(lo+hi)/2;
-      if(Math.asin(Math.min(1,2*x))-Math.asin(x)<Th) lo=x; else hi=x;}
-    return (lo+hi)/2*this.d();
-  },
-  I(th,N){
-    const a=Math.PI*this.d()*Math.sin(th)/this.lam;
-    const s=Math.sin(a);
-    return Math.abs(s)<1e-12?1:Math.pow(Math.sin((N||this.N)*a)/(s*(N||this.N)),2);
-  },
-  /* півширина головного максимуму: перший нуль при N·a = π */
-  width(N){
-    const n=N||this.N;
-    return Math.asin(Math.min(1,this.lam/(n*this.d())))*2;
-  },
-  setTask(){this.nmm=45; this.lam=this.lamFromTheta(1.6*DEG); this.N=2;},
-  setMode(m){this.mode=m; if(m==='task') this.setTask();
-    this.showAns=m!=='task'; this.syncAns();},
-  syncAns(){const task=this.mode==='task';
-    $('m2ans').hidden=!task||this.showAns; $('m2ansBox').hidden=task&&!this.showAns;
-    $('m2rowLam').hidden=task;},
-  init(){
-    grip('m2scene',this,()=>this.grips());
-    $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
-    $('m2re').onclick=()=>this.setTask();
-    this.tipi=makeTip('m2ciw'); this.tipw=makeTip('m2cww');
-    hover('m2ci',this.hi); hover('m2cw',this.hw);
-    this.hi.xlab='θ'; this.hi.xunit='°'; this.hi.xdec=2;
-    this.hw.xlab='N'; this.hw.xunit=''; this.hw.xdec=0;
-    this.setTask(); this.syncAns();
-  },
-  gcol(b){return gcolOf(b,this.GG.length);},
-  THM(){return 5;},                          /* видимий діапазон кутів, ° */
-  geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52;
-    return {C,H,sx:bb.w*0.08,sw:bb.w*0.84,gy:118,gh:54,
-      yScr:172+Math.max(120,(C.gtop-200)*0.58),hScr:34,
-      SXa:a=>bb.w*0.08+(a/(2*this.THM())+0.5)*bb.w*0.84};
-  });},
-  grips(){
-    if(this.mode!=='free') return [];
-    const b=cvx('m2scene'); if(!b) return [];
-    return gaugeGrips(this.gcol(b),this.GG,this);
-  },
-  tick(){this.render();},
-  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m2scene'); if(!b) return;
-    const C=this.gcol(b);
-    if(this.mode==='free'){
-      gaugeCol(b.g,C,this.GG,this);
-      for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
-    } else {
-      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
-      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
-      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: 45 штрихів/мм, кут між 1-м і 2-м порядками 1,6°',
-        C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
-    }
-    $('m2vN').textContent=fmt(this.N,0);
-    $('m2vn').textContent=fmt(this.nmm,0)+' штр./мм';
-    $('m2vlam').textContent=fmt(this.lam,0)+' нм';
-  },
-  scene(){
-    const b=cvx('m2scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, TH=this.THM();
-    g.clearRect(0,0,w,H);
-    const SX=a=>Q.sx+(a/(2*TH)+0.5)*Q.sw;   /* a у градусах */
-    /* ---- ґратка зі щілинами ---- */
-    const gy=Q.gy, gh=Q.gh, x0=Q.sx, ww=Q.sw;
-    g.fillStyle='#2a2a2a';
-    g.fillRect(x0,gy,ww,gh);
-    const nDraw=Math.min(this.N,26), pitch=ww/(nDraw+1);
-    for(let i=0;i<nDraw;i++){
-      const x=x0+pitch*(i+1);
-      g.fillStyle='#f6f4ee'; g.fillRect(x-1.6,gy,3.2,gh);
-    }
-    if(this.N>nDraw)
-      txt(g,'показано '+nDraw+' з '+this.N+' щілин',x0+ww-6,gy-8,
-        {color:CLR.mut,size:10,align:'right'});
-    txtN(g,'ґратка · '+fmt(this.nmm,0)+' штрихів/мм · d = '+fmt(this.d()/1000,2)+' мкм',
-      x0,gy-8,{color:CLR.k1,size:11,bold:true});
-    /* падаюча хвиля */
-    const c=wlRGB(this.lam), cs='rgb('+c[0]+','+c[1]+','+c[2]+')';
-    for(let i=0;i<4;i++){
-      g.strokeStyle=cs; g.lineWidth=2; g.globalAlpha=0.28+i*0.14;
-      g.beginPath(); g.moveTo(x0,gy-14-i*9); g.lineTo(x0+ww,gy-14-i*9); g.stroke();
-    }
-    g.globalAlpha=1;
-    /* довжину хвилі падаючого світла й треба знайти */
-    txtN(g,fmt(this.lam,0)+' нм · '+wlName(this.lam)+' · плоска хвиля по нормалі',
-      x0+ww/2,gy-64,{color:cs,size:13,bold:true,align:'center',name:'X'});
-    /* ---- смуга екрана: інтенсивність у кольорі ---- */
-    const ys=Q.yScr, hs=Q.hScr, NPX=Math.max(60,Math.round(ww));
-    for(let i=0;i<NPX;i++){
-      const a=(-TH+2*TH*i/(NPX-1))*DEG;
-      const I=this.I(a);
-      g.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+Math.max(0,Math.min(1,I)).toFixed(3)+')';
-      g.fillRect(x0+ww*i/NPX,ys,ww/NPX+1,hs);
-    }
-    g.strokeStyle=CLR.ink; g.lineWidth=1.5;
-    g.strokeRect(x0,ys,ww,hs);
-    txt(g,'екран',x0,ys-6,{color:CLR.ink,size:11,bold:true});
-    /* головні максимуми і кути */
-    for(let m=-2;m<=2;m++){
-      const a=m===0?0:this.ang(Math.abs(m));
-      if(a===null) continue;
-      const ad=Math.sign(m||1)*a/DEG; if(Math.abs(ad)>TH) continue;
-      const px=SX(m===0?0:ad);
-      g.strokeStyle=m===0?CLR.sec:CLR.k2; g.lineWidth=1;
-      g.setLineDash([3,3]);
-      g.beginPath(); g.moveTo(px,gy+gh); g.lineTo(px,ys); g.stroke();
-      g.setLineDash([]);
-      txt(g,'m = '+m,px,ys+hs+16,{color:m===0?CLR.sec:CLR.k2,size:10.5,
-        bold:true,align:'center'});
-      if(m>0) txtN(g,fmt(a/DEG,2)+'°',px,ys+hs+30,{color:CLR.mut,size:10,align:'center'});
-    }
-    /* кут Θ між 1-м і 2-м порядками */
-    const a1=this.ang(1), a2=this.ang(2);
-    if(a1!==null&&a2!==null&&a2/DEG<TH){
-      const p1=SX(a1/DEG), p2=SX(a2/DEG), yy=ys+hs+46;
-      g.strokeStyle=CLR.ink; g.lineWidth=2;
-      arrow(g,p1,yy,p2,yy,CLR.ink,2); arrow(g,p2,yy,p1,yy,CLR.ink,2);
-      pillN(g,'Θ = '+fmt((a2-a1)/DEG,2)+'°',(p1+p2)/2,yy-14,
-        {color:CLR.ink,size:11.5,bold:true});
-    }
-    /* профіль інтенсивності над екраном */
-    const yb=ys-10, hI=Math.max(30,ys-gy-gh-48);
-    g.strokeStyle=CLR.k3; g.lineWidth=2; g.beginPath();
-    for(let i=0;i<=240;i++){
-      const a=(-TH+2*TH*i/240)*DEG, I=this.I(a);
-      const px=x0+ww*i/240, py=yb-hI*Math.min(1,I);
-      i?g.lineTo(px,py):g.moveTo(px,py);
-    }
-    g.stroke();
-    txtN(g,'розподіл інтенсивності · ширина головного максимума '+
-      fmt(this.width()/DEG,3)+'°',x0+4,yb-hI-6,{color:CLR.k3,size:10.5,bold:true});
-    /* ширина головного максимуму */
-    const wdeg=this.width()/DEG;
-    if(wdeg<TH){
-      const pl=SX(-wdeg/2), pr=SX(wdeg/2), yw=yb+2;
-      g.strokeStyle=CLR.k2; g.lineWidth=1.5;
-      g.beginPath(); g.moveTo(pl,yw-6); g.lineTo(pl,yw+6);
-      g.moveTo(pr,yw-6); g.lineTo(pr,yw+6); g.stroke();
-
-    }
-    capN(g,'N = '+this.N+' щілин',12,20,{color:CLR.k2,size:12.5,bold:true});
-    capN(g,'положення максимумів визначає лише період d, а число щілин — їхню гостроту',12,36,{color:CLR.mut,size:10.5});
-  },
-  table(){
-    const a1=this.ang(1), a2=this.ang(2), th=this.theta12();
-    const f=x=>x===null?'—':fmt(x/DEG,3)+'°';
-    $('m2vth').textContent=th===null?'—':fmt(th/DEG,2)+'°';
-    $('m2t').textContent=this.N+' щілин · '+fmt(this.lam,0)+' нм';
-    $('m2rL').textContent=fmt(this.lam,1)+' нм';
-    $('m2rC').textContent=wlName(this.lam);
-    $('m2k1').textContent=f(a1);
-    $('m2k2').textContent=f(a2);
-    $('m2kPos').textContent=fmt(this.d()/1000,2)+' мкм';
-    $('m2kW').textContent=fmt(this.width()/DEG,3)+'°';
-    $('m2kMin').textContent=String(this.N-1);
-    $('m2kRes').textContent=fmt(this.lam/(this.N*1),1)+' нм (у 1-му порядку)';
-    $('m2fx').innerHTML=
-      '<i>d</i> sin θ₁ = λ,&nbsp; <i>d</i> sin θ₂ = 2λ,&nbsp; Θ = θ₂ − θ₁<br>'+
-      'arcsin(2λ/<i>d</i>) − arcsin(λ/<i>d</i>) = Θ &nbsp;⇒&nbsp; λ = <b>'+
-      fmt(this.lam,1)+' нм</b><br><i>d</i> = 1/'+fmt(this.nmm,0)+' мм = '+
-      fmt(this.d()/1000,2)+' мкм';
-    $('m2fx2').innerHTML='між сусідніми головними максимумами лежить <b>N − 1 = '+
-      (this.N-1)+'</b> мінімумів; ширина максимуму ~ λ/(<i>N d</i>) — саме тому '+
-      'роздільна здатність росте з числом щілин';
-  },
-  charts(){
-    const bi=cvx('m2ci');
-    if(bi){
-      const TH=this.THM(), ts=[],y2=[],yN=[];
-      for(let i=0;i<=300;i++){
-        const a=TH*i/300; ts.push(a);
-        y2.push(this.I(a*DEG,2)); yN.push(this.I(a*DEG,this.N));
-      }
-      const rr=drawChart(bi,{tMax:TH,yMin:0,yMax:1.08,yLab:'I/I₀',
-        xLab:'θ, ° (права половина картини)',yDec:2,hover:this.hi.x,
-        series:[{ts,ys:y2,color:CLR.sec,label:'N = 2'},
-                {ts,ys:yN,color:CLR.k2,label:'N = '+this.N}]});
-      showTip(this.tipi,rr,'',this.hi,[['N = 2',CLR.sec],['N = '+this.N,CLR.k2]],2);
-    }
-    const bw=cvx('m2cw');
-    if(bw){
-      const ts=[],ys=[];
-      for(let n=2;n<=this.NSMAX;n++){ts.push(n); ys.push(this.width(n)/DEG);}
-      const rr=drawChart(bw,{tMax:this.NSMAX,yMin:0,yMax:this.width(2)/DEG*1.08,
-        yLab:'°',xLab:'число щілин N',yDec:2,hover:this.hw.x,
-        series:[{ts,ys,color:CLR.k2,label:'ширина'},
-                {ts:[this.N,this.N],ys:[0,this.width()/DEG],color:CLR.ink,
-                 label:'зараз',dash:[4,3]}]});
-      showTip(this.tipw,rr,'°',this.hw,[['ширина максимуму',CLR.k2],['зараз',CLR.ink]],3);
-    }
-  }
-};
 
 /* ===================== завантаження ===================== */
 
@@ -1728,7 +1484,7 @@ const M3={
   }
 };
 
-const MODULES={m1:M1,m2:M2,m3:M3};
+const MODULES={m1:M1,m3:M3};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;

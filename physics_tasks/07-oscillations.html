@@ -200,6 +200,58 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
   .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
+
+/* ===================== задача: умова, підказки, відповідь ================
+   Умова згорнута за замовчуванням: спершу студент дивиться на сцену й
+   намагається сам зрозуміти, про що задача. Розгорнути її можна будь-коли
+   одним дотиком — це підказка нульового рівня, а не покарання. */
+details.condbox{margin:0 0 12px}
+details.condbox>summary{list-style:none; cursor:pointer; display:inline-flex;
+  align-items:center; gap:7px; font:600 12.5px/1 system-ui,sans-serif; color:var(--sec);
+  border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 13px;
+  min-height:34px; box-sizing:border-box}
+details.condbox>summary::-webkit-details-marker{display:none}
+details.condbox>summary::before{content:'▸'; color:var(--mut); font-size:11px}
+details.condbox[open]>summary::before{content:'▾'}
+details.condbox>summary:hover{border-color:var(--axis)}
+details.condbox .cond{margin:10px 0 0}
+.taskbox{display:flex; flex-direction:column; gap:11px}
+.taskbox h3{margin-bottom:0}
+.hintrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.hintrow .btn{min-height:34px}
+.hintrow .btn[disabled]{opacity:.4; cursor:default}
+.hintrow .btn.on{border-color:var(--k3); color:var(--k3)}
+.hint{border-left:3px solid var(--k3); background:#fff; border-radius:0 8px 8px 0;
+  padding:10px 14px; font-size:13.5px; color:var(--ink); line-height:1.55}
+.hint .lv{display:block; font:600 10.5px/1 system-ui,sans-serif; color:var(--mut);
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px}
+.hint.lv3{border-left-color:var(--k2)}
+.hint b{font-weight:600}
+.hint i{color:var(--sec); font-style:italic}
+.symrow{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.symrow .slab{font:12px/1 system-ui,sans-serif; color:var(--mut); margin-right:2px}
+.symrow button{appearance:none; border:1px solid var(--line); background:#fff;
+  border-radius:7px; padding:5px 10px; min-height:30px; cursor:pointer;
+  font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--ink)}
+.symrow button:hover{border-color:var(--k1); color:var(--k1)}
+.ansrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.ansrow .alab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec)}
+.ansin{flex:1 1 260px; min-width:0; border:1px solid var(--line); border-radius:8px;
+  padding:10px 12px; background:#fff; color:var(--ink);
+  font:14px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ansin:focus{outline:none; border-color:var(--k1)}
+.ansin::placeholder{color:var(--axis)}
+.verdict{font-size:13px; line-height:1.55; margin:0; padding:9px 13px; border-radius:8px;
+  border-left:3px solid var(--axis); background:#fff; color:var(--sec)}
+.verdict.ok{border-left-color:var(--k3); color:#0d7a55; font-weight:600}
+.verdict.no{border-left-color:var(--k2); color:#b8431a}
+.verdict.err{border-left-color:var(--axis); color:var(--sec)}
+.verdict:empty{display:none}
+.taskhelp{font-size:12px; color:var(--mut); margin:0; line-height:1.5}
+@media (max-width:480px){
+  .ansin{flex-basis:100%}
+  .hintrow .btn{flex:1 1 auto}
+}
 </style>
 </head>
 <body>
@@ -1784,9 +1836,391 @@ function activate(id){
 $('tabs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(b) activate(b.dataset.m);
 });
+
+/* ======================================================================
+   ЗАДАЧА: схована умова, три підказки, поле відповіді й перевірка
+   ----------------------------------------------------------------------
+   Відповідь студент пише формулою, а не числом, — і той самий вираз можна
+   записати десятком способів: λl/d, l·λ/d, λ·(l/d). Порівнювати рядки тут
+   марно. Тому формула розбирається в дерево й перевіряється підстановкою
+   випадкових чисел: збіг із еталоном на дюжині незалежних наборів означає
+   тотожність виразів, а не щасливий збіг на одному прикладі.
+   ====================================================================== */
+
+const TASKS={};                        /* кожен файл наповнює своїми модулями */
+
+/* ---- функції, які можна писати у відповіді ---------------------------
+   Навмисно короткий список: що більше імен, то більший ризик, що назва
+   функції з'їсть символ задачі (наприклад lg проковтнуло б l·g). */
+const FUNS={
+  sqrt:Math.sqrt, '√':Math.sqrt, abs:Math.abs,
+  sin:Math.sin, cos:Math.cos, tg:Math.tan, tan:Math.tan,
+  ctg:x=>1/Math.tan(x), cot:x=>1/Math.tan(x),
+  arcsin:Math.asin, asin:Math.asin, arccos:Math.acos, acos:Math.acos,
+  arctg:Math.atan, arctan:Math.atan, atan:Math.atan,
+  floor:Math.floor, ceil:Math.ceil, round:Math.round
+};
+/* функції, чий аргумент мусить бути безрозмірним */
+const PUREFUN={sin:1,cos:1,tg:1,tan:1,ctg:1,cot:1,exp:1};
+/* функції, чий результат безрозмірний за будь-якого безрозмірного входу */
+const ANGFUN={arcsin:1,asin:1,arccos:1,acos:1,arctg:1,arctan:1,atan:1};
+
+/* ---- розбір ----------------------------------------------------------
+   Токенізатор ріже рядок не «по літерах», а по НАЙДОВШОМУ відомому імені
+   з таблиці символів задачі. Саме це дозволяє писати λl/d без зірочки:
+   рядок розпадається на λ, l, /, d, бо всі три імені оголошені. */
+function tkz(src,syms){
+  const names=Object.keys(syms).concat(Object.keys(FUNS)).sort((a,b)=>b.length-a.length);
+  const S=String(src).replace(/\s+/g,'').replace(/[−–—]/g,'-');
+  const out=[]; let i=0;
+  while(i<S.length){
+    const c=S[i];
+    if(/[0-9]/.test(c)||(c==='.'&&/[0-9]/.test(S[i+1]||''))){
+      let j=i; while(j<S.length&&/[0-9.,]/.test(S[j])) j++;
+      const num=parseFloat(S.slice(i,j).replace(',','.'));
+      if(!isFinite(num)) throw {k:'syntax',at:S.slice(i,j)};
+      out.push({t:'num',v:num}); i=j; continue;
+    }
+    if('+-*/^(),'.indexOf(c)>=0){out.push({t:'op',v:c}); i++; continue;}
+    if('·×∙'.indexOf(c)>=0){out.push({t:'op',v:'*'}); i++; continue;}
+    if(c==='÷'){out.push({t:'op',v:'/'}); i++; continue;}
+    if(c==='['){out.push({t:'op',v:'('}); i++; continue;}
+    if(c===']'){out.push({t:'op',v:')'}); i++; continue;}
+    if('²³⁴'.indexOf(c)>=0){
+      out.push({t:'op',v:'^'}); out.push({t:'num',v:{'²':2,'³':3,'⁴':4}[c]}); i++; continue;}
+    if(c==='π'){out.push({t:'sym',v:'π'}); i++; continue;}
+    let hit=null;
+    for(const n of names) if(S.startsWith(n,i)){hit=n; break;}
+    if(hit){
+      out.push({t:(FUNS[hit]&&!syms[hit])?'fun':'sym',v:hit});
+      i+=hit.length; continue;
+    }
+    throw {k:'unknown',at:S.slice(i,i+8)};
+  }
+  return out;
+}
+
+/* Рекурсивний спуск. Неявне множення дозволене всюди, де за атомом одразу
+   стоїть інший атом: 2gl, λl, 2π√(...) читаються так, як їх пишуть на папері. */
+function parseExpr(tk,syms){
+  let p=0;
+  const peek=()=>tk[p], eat=v=>{
+    if(!tk[p]||tk[p].t!=='op'||tk[p].v!==v) throw {k:'syntax',at:v};
+    p++;
+  };
+  const startsAtom=t=>t&&(t.t==='num'||t.t==='sym'||t.t==='fun'||(t.t==='op'&&t.v==='('));
+  function atom(){
+    const t=peek();
+    if(!t) throw {k:'syntax',at:'кінець виразу'};
+    if(t.t==='num'){p++; return {n:'num',v:t.v};}
+    if(t.t==='sym'){p++; return {n:'sym',v:t.v};}
+    if(t.t==='fun'){
+      p++; eat('('); const a=expr(); eat(')');
+      return {n:'fun',f:t.v,a};
+    }
+    if(t.t==='op'&&t.v==='('){p++; const a=expr(); eat(')'); return a;}
+    throw {k:'syntax',at:t.v};
+  }
+  function power(){
+    const b=atom();
+    if(peek()&&peek().t==='op'&&peek().v==='^'){p++; return {n:'pow',a:b,b:unary()};}
+    return b;
+  }
+  function unary(){
+    const t=peek();
+    if(t&&t.t==='op'&&(t.v==='-'||t.v==='+')){p++; const a=unary();
+      return t.v==='-'?{n:'neg',a}:a;}
+    return power();
+  }
+  function term(){
+    let a=unary();
+    for(;;){
+      const t=peek();
+      if(t&&t.t==='op'&&(t.v==='*'||t.v==='/')){p++; a={n:t.v,a,b:unary()};}
+      else if(startsAtom(t)) a={n:'*',a,b:unary()};      /* неявне множення */
+      else return a;
+    }
+  }
+  function expr(){
+    let a=term();
+    for(;;){
+      const t=peek();
+      if(t&&t.t==='op'&&(t.v==='+'||t.v==='-')){p++; a={n:t.v,a,b:term()};}
+      else return a;
+    }
+  }
+  const r=expr();
+  if(p<tk.length) throw {k:'syntax',at:String(tk[p].v)};
+  return r;
+}
+function parseFormula(src,syms){return parseExpr(tkz(src,syms),syms);}
+
+/* ---- обчислення числом ------------------------------------------------ */
+function evalNode(nd,env){
+  switch(nd.n){
+    case 'num': return nd.v;
+    case 'sym': return nd.v==='π'?Math.PI:env[nd.v];
+    case 'neg': return -evalNode(nd.a,env);
+    case '+': return evalNode(nd.a,env)+evalNode(nd.b,env);
+    case '-': return evalNode(nd.a,env)-evalNode(nd.b,env);
+    case '*': return evalNode(nd.a,env)*evalNode(nd.b,env);
+    case '/': return evalNode(nd.a,env)/evalNode(nd.b,env);
+    case 'pow': return Math.pow(evalNode(nd.a,env),evalNode(nd.b,env));
+    case 'fun': return FUNS[nd.f](evalNode(nd.a,env));
+  }
+  return NaN;
+}
+
+/* ---- обчислення розмірністю ------------------------------------------
+   Той самий вираз проганяємо ще раз, але замість чисел підставляємо
+   розмірності. Це не вирішує, правильна відповідь чи ні, — це дає
+   зрозумілу причину, коли вона неправильна: «вийшли метри, а треба
+   секунди» набагато кориснішe за просте «не сходиться». */
+const DBASE=['M','L','T','I','K','N','J'];
+const dZero=()=>[0,0,0,0,0,0,0];
+const dEq=(a,b)=>a.every((x,i)=>Math.abs(x-b[i])<1e-9);
+const dPure=a=>a.every(x=>Math.abs(x)<1e-9);
+function dStr(a){
+  const up=[],dn=[];
+  a.forEach((x,i)=>{
+    if(Math.abs(x)<1e-9) return;
+    const e=Math.abs(x), s=DBASE[i]+(Math.abs(e-1)<1e-9?'':'^'+(+e.toFixed(3)));
+    (x>0?up:dn).push(s);
+  });
+  if(!up.length&&!dn.length) return 'безрозмірна';
+  return (up.join('·')||'1')+(dn.length?'/'+(dn.length>1?'('+dn.join('·')+')':dn[0]):'');
+}
+function dimOf(str){
+  if(!str||str==='1') return dZero();
+  const syms={}; DBASE.forEach(b=>{syms[b]=1;});
+  const nd=parseFormula(str,syms);
+  const env={}; DBASE.forEach((b,i)=>{const v=dZero(); v[i]=1; env[b]=v;});
+  return dimEval(nd,env);
+}
+function dimEval(nd,env){
+  const add=(a,b,s)=>a.map((x,i)=>x+s*b[i]);
+  switch(nd.n){
+    case 'num': return dZero();
+    case 'sym': return nd.v==='π'?dZero():(env[nd.v]||dZero());
+    case 'neg': return dimEval(nd.a,env);
+    case '+': case '-': {
+      const a=dimEval(nd.a,env), b=dimEval(nd.b,env);
+      if(!dEq(a,b)) throw {k:'dimsum',a:dStr(a),b:dStr(b)};
+      return a;
+    }
+    case '*': return add(dimEval(nd.a,env),dimEval(nd.b,env),1);
+    case '/': return add(dimEval(nd.a,env),dimEval(nd.b,env),-1);
+    case 'pow': {
+      const a=dimEval(nd.a,env);
+      if(dPure(a)) return dZero();          /* безрозмірна основа — показник вільний */
+      const e=evalNode(nd.b,{});
+      if(!isFinite(e)) throw {k:'dimpow'};
+      return a.map(x=>x*e);
+    }
+    case 'fun': {
+      const a=dimEval(nd.a,env);
+      if(nd.f==='sqrt'||nd.f==='√') return a.map(x=>x/2);
+      if(nd.f==='abs') return a;
+      if(!dPure(a)&&(PUREFUN[nd.f]||ANGFUN[nd.f])) throw {k:'dimarg',f:nd.f,a:dStr(a)};
+      return dZero();
+    }
+  }
+  return dZero();
+}
+
+/* ---- перевірка відповіді --------------------------------------------- */
+const TOL=1e-9, NTRY=12;
+function checkFormula(T,src){
+  const syms={};
+  for(const v of T.vars) for(const n of [v.s].concat(v.alias||[])) syms[n]=v;
+  for(const k in (T.consts||{})) syms[k]=T.consts[k];
+  syms['π']={};
+  let nd;
+  try{ nd=parseFormula(src,syms); }
+  catch(e){
+    if(e.k==='unknown') return {s:'err',
+      m:'Не знаю позначення «'+e.at+'». Дозволені символи наведено кнопками вище; '+
+        'множення можна писати як * або · (або не писати зовсім).'};
+    return {s:'err',m:'Вираз не читається біля «'+(e.at||'?')+'» — перевірте дужки й знаки.'};
+  }
+  /* Розмірність вирішує сама, і то першою. Числова перевірка сліпа там, де
+     величини дуже малі: при λ ≈ 5·10⁻⁷ sin(λ) чисельно не відрізнити від λ,
+     і хибний вираз проліз би. Але sin від довжини хвилі — це взагалі не
+     формула, і саме розмірність це ловить. */
+  let dmsg='';
+  if(T.dim){
+    let bad=null;
+    try{
+      const env={}; for(const v of T.vars)
+        for(const n of [v.s].concat(v.alias||[])) env[n]=dimOf(v.dim);
+      for(const k in (T.consts||{})) env[k]=dimOf(T.consts[k].dim);
+      const got=dimEval(nd,env), want=dimOf(T.dim);
+      if(!dEq(got,want)) bad='Розмірність не та: вийшло '+dStr(got)+', а треба '+dStr(want)+'.';
+    }catch(e){
+      if(e.k==='dimsum') bad='Ви додаєте величини різної розмірності: '+e.a+' і '+e.b+'.';
+      else if(e.k==='dimarg') bad='Аргумент '+e.f+' має бути безрозмірним, а він '+e.a+'.';
+      else if(e.k==='dimpow') bad='Показник степеня має бути числом.';
+      else throw e;
+    }
+    if(bad) return {s:'no',m:bad};
+  }
+  /* власне перевірка: дюжина випадкових наборів значень */
+  let bad=0, nan=0;
+  for(let k=0;k<NTRY;k++){
+    let env=null, ref=NaN, tries=0;
+    while(tries++<40){
+      env={};
+      for(const v of T.vars){
+        const x=v.int?Math.round(v.lo+(v.hi-v.lo)*Math.random())
+                     :v.lo+(v.hi-v.lo)*Math.random();
+        for(const n of [v.s].concat(v.alias||[])) env[n]=x;
+      }
+      for(const c in (T.consts||{})) env[c]=T.consts[c].v;
+      ref=T.ref(env);
+      if(isFinite(ref)) break;
+    }
+    if(!isFinite(ref)) continue;
+    let got;
+    try{ got=evalNode(nd,env); }catch(e){ got=NaN; }
+    if(!isFinite(got)){nan++; continue;}
+    if(Math.abs(got-ref)>TOL*Math.max(Math.abs(got),Math.abs(ref))+1e-12) bad++;
+  }
+  if(nan>=NTRY-1) return {s:'no',
+    m:'Вираз не дає числа на допустимих значеннях — імовірно, корінь із від’ємного '+
+      'або ділення на нуль.'+dmsg};
+  if(bad===0) return {s:'ok',m:'Правильно. Вираз збігається з еталоном на всіх пробних наборах значень.'};
+  return {s:'no',m:'Не сходиться: на пробних значеннях ваш вираз дає інше число.'+dmsg};
+}
+
+/* ---- побудова інтерфейсу --------------------------------------------- */
+const LS='tasks.'+location.pathname.split('/').pop();
+function taskState(){
+  try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; }
+}
+function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(e){} }
+
+function buildTasks(){
+  const st=taskState();
+  for(const mid in TASKS){
+    const T=TASKS[mid];
+    const sec=document.getElementById(mid); if(!sec) continue;
+    /* умову ховаємо в <details> просто на місці */
+    const cond=sec.querySelector('p.cond');
+    if(cond&&!cond.closest('details')){
+      const d=document.createElement('details');
+      d.className='condbox';
+      const sm=document.createElement('summary');
+      sm.textContent='Умова задачі';
+      d.appendChild(sm);
+      cond.parentNode.insertBefore(d,cond);
+      d.appendChild(cond);
+      d.open=!!(st[mid]&&st[mid].cond);
+      d.addEventListener('toggle',()=>{
+        const s=taskState(); s[mid]=s[mid]||{}; s[mid].cond=d.open; taskSave(s);
+      });
+    }
+    /* панель задачі — одразу під сценою */
+    const sceneCv=sec.querySelector('canvas[id$="scene"]');
+    const after=sceneCv?sceneCv.closest('.panel'):sec.lastElementChild;
+    if(!after) continue;
+    const box=document.createElement('div');
+    box.className='panel taskbox';
+    box.innerHTML=
+      '<h3>Ваша відповідь</h3>'+
+      '<div class="hintrow">'+
+        '<button class="btn" data-h="0">Підказка 1</button>'+
+        '<button class="btn" data-h="1">Підказка 2</button>'+
+        '<button class="btn" data-h="2">Розв’язок</button>'+
+      '</div>'+
+      '<div class="hints"></div>'+
+      '<div class="symrow"><span class="slab">символи:</span></div>'+
+      '<div class="ansrow">'+
+        '<span class="alab">'+(T.what||'X')+' =</span>'+
+        '<input class="ansin" type="text" spellcheck="false" autocapitalize="off" '+
+          'autocomplete="off" placeholder="'+(T.ph||'напр.  2*a*sqrt(b)/c')+'">'+
+        '<button class="btn chk">Перевірити</button>'+
+      '</div>'+
+      '<p class="verdict"></p>'+
+      '<p class="taskhelp">Пишіть звичайним рядком: * · / ^ ( ), sqrt( ), sin cos tg, '+
+        'arcsin arccos arctg, π. Зірочку між символами можна не ставити.</p>';
+    after.parentNode.insertBefore(box,after.nextSibling);
+
+    const symrow=box.querySelector('.symrow');
+    const inp=box.querySelector('.ansin');
+    for(const v of T.vars.concat(Object.keys(T.consts||{}).map(k=>({s:k,t:T.consts[k].t})))){
+      const b=document.createElement('button');
+      b.type='button'; b.textContent=v.s; b.title=v.t||'';
+      b.addEventListener('click',()=>{
+        const a=inp.selectionStart, z=inp.selectionEnd, s=inp.value;
+        inp.value=s.slice(0,a)+v.s+s.slice(z);
+        inp.focus(); inp.selectionStart=inp.selectionEnd=a+v.s.length;
+      });
+      symrow.appendChild(b);
+    }
+
+    const hints=box.querySelector('.hints');
+    const hbtn=[].slice.call(box.querySelectorAll('.hintrow .btn'));
+    const shown=(st[mid]&&st[mid].h)||0;
+    function openHint(i){
+      for(let k=hints.children.length;k<=i;k++){
+        const d=document.createElement('div');
+        d.className='hint'+(k===2?' lv3':'');
+        d.innerHTML='<span class="lv">'+(k===2?'розв’язок':'підказка '+(k+1))+
+          '</span>'+T.hints[k];
+        hints.appendChild(d);
+      }
+      hbtn.forEach((b,k)=>{
+        b.disabled=k>hints.children.length;         /* наступну — лише по черзі */
+        b.classList.toggle('on',k<hints.children.length);
+      });
+      const s=taskState(); s[mid]=s[mid]||{}; s[mid].h=hints.children.length; taskSave(s);
+    }
+    hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
+    hbtn.forEach((b,k)=>{b.disabled=k>0;});
+    if(shown) openHint(shown-1);
+
+    const verd=box.querySelector('.verdict');
+    const run=()=>{
+      const src=inp.value.trim();
+      if(!src){verd.className='verdict err'; verd.textContent='Порожньо — напишіть формулу.'; return;}
+      const r=checkFormula(T,src);
+      verd.className='verdict '+r.s; verd.textContent=r.m;
+      if(r.s==='ok'){const s=taskState(); s[mid]=s[mid]||{}; s[mid].ok=1; taskSave(s);}
+    };
+    box.querySelector('.chk').addEventListener('click',run);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); run();}});
+    if(st[mid]&&st[mid].ok){verd.className='verdict ok'; verd.textContent='Цю задачу ви вже розв’язали.';}
+  }
+}
+
+/* ---- задачі цього файла ---------------------------------------------- */
+TASKS.m2={
+  what:'період X', dim:'T',
+  vars:[{s:'m',dim:'M',lo:0.05,hi:1,t:'маса поршня, кг'},
+        {s:'l',dim:'L',lo:0.1,hi:0.6,t:'довжина половини, м'},
+        {s:'P',dim:'M/(L*T^2)',lo:100,hi:5000,t:'початковий тиск, Па'},
+        {s:'S',dim:'L^2',lo:1e-4,hi:1e-2,t:'переріз циліндра, м²'}],
+  ref:e=>2*Math.PI*Math.sqrt(e.m*e.l/(2*e.P*e.S)),
+  hints:[
+    'Поки поршень посередині, тиски з обох боків однакові й сили гасяться. Щойно він '+
+    'зсунувся, стиснута половина тисне <b>сильніше</b>, ніж розтягнута. Різниця цих двох '+
+    'сил і повертає поршень назад — це і є повертальна сила.',
+    'Поштовх незначний, температура стала, тож <i>pV</i> = const: '+
+    '<i>p</i>₁ = <i>Pl</i>/(<i>l</i>−<i>x</i>), <i>p</i>₂ = <i>Pl</i>/(<i>l</i>+<i>x</i>). '+
+    'Сила <i>F</i> = (<i>p</i>₂ − <i>p</i>₁)<i>S</i>. Розкладіть її при <i>x</i> ≪ <i>l</i> '+
+    'і побачите звичайний закон Гука <i>F</i> = −<i>kx</i>.',
+    '<i>F</i> = <i>PSl</i>(1/(<i>l</i>+<i>x</i>) − 1/(<i>l</i>−<i>x</i>)) = '+
+    '−2<i>PSlx</i>/(<i>l</i>²−<i>x</i>²) ≈ −(2<i>PS</i>/<i>l</i>)<i>x</i> при '+
+    '<i>x</i> ≪ <i>l</i>. Отже, ефективна жорсткість <i>k</i> = 2<i>PS</i>/<i>l</i>. '+
+    'Період пружинного коливання <i>T</i> = 2<i>π</i>√(<i>m</i>/<i>k</i>) ⇒ '+
+    '<b>X = 2π√(ml/(2PS))</b>.'
+  ]
+};
+
 for(const m of Object.values(MODULES)) m.init();
 foldPanels();
 touchRoles();
+buildTasks();
 (function(){const hs=location.hash.replace('#',''); if(MODULES[hs]) activate(hs);})();
 let LAST=performance.now();
 function loop(now){
