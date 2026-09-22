@@ -199,7 +199,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px)!important; aspect-ratio:auto}
   .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
-
 /* ===================== задача: умова, підказки, відповідь ================
    Умова згорнута за замовчуванням: спершу студент дивиться на сцену й
    намагається сам зрозуміти, про що задача. Розгорнути її можна будь-коли
@@ -227,19 +226,40 @@ details.condbox .cond{margin:10px 0 0}
 .hint.lv3{border-left-color:var(--k2)}
 .hint b{font-weight:600}
 .hint i{color:var(--sec); font-style:italic}
-.symrow{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
-.symrow .slab{font:12px/1 system-ui,sans-serif; color:var(--mut); margin-right:2px}
-.symrow button{appearance:none; border:1px solid var(--line); background:#fff;
-  border-radius:7px; padding:5px 10px; min-height:30px; cursor:pointer;
-  font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--ink)}
-.symrow button:hover{border-color:var(--k1); color:var(--k1)}
-.ansrow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
-.ansrow .alab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec)}
-.ansin{flex:1 1 260px; min-width:0; border:1px solid var(--line); border-radius:8px;
-  padding:10px 12px; background:#fff; color:var(--ink);
-  font:14px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
-.ansin:focus{outline:none; border-color:var(--k1)}
-.ansin::placeholder{color:var(--axis)}
+
+/* ---- конструктор формули ---------------------------------------------
+   Відповідь не набирають рядком, а складають: у виразі завжди видно
+   порожні місця, і кожне з них чекає, поки в нього щось покладуть. */
+.fxline{display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  border:1px solid var(--line); border-radius:8px; background:#fff; padding:12px 14px}
+.fxlab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec)}
+.fx{flex:1 1 200px; min-width:0; font:19px/1.3 'Times New Roman',Georgia,serif;
+  color:var(--ink); overflow-x:auto; padding:2px 0}
+.fx .node{border-radius:4px; padding:0 1px}
+.fx .node.sel{background:rgba(42,120,214,.15); box-shadow:0 0 0 1.5px var(--k1)}
+.fx i{font-style:italic}
+.fx .oper{padding:0 3px; color:var(--sec); cursor:pointer}
+.fx .paren{color:var(--mut)}
+.fx .hole{display:inline-block; width:15px; height:17px; vertical-align:-3px;
+  border:1.5px dashed var(--axis); border-radius:4px; background:#fbfbf9}
+.fx .hole.sel{border-color:var(--k1); border-style:solid; background:rgba(42,120,214,.15)}
+.fx .frac{display:inline-flex; flex-direction:column; vertical-align:middle;
+  text-align:center; margin:0 3px}
+.fx .frac>.num{border-bottom:1.3px solid currentColor; padding:0 5px 2px}
+.fx .frac>.den{padding:2px 5px 0}
+.fx sup{font-size:.68em; vertical-align:super}
+.fx .rad{display:inline-flex; align-items:flex-start}
+.fx .rad>.sign{font-size:1.05em; line-height:1; font-family:'Times New Roman',serif}
+.fx .rad>.body{border-top:1.3px solid currentColor; padding:2px 3px 0; margin-top:1px}
+.keyrow{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.keyrow .klab{font:12px/1 system-ui,sans-serif; color:var(--mut); width:60px; flex:0 0 auto}
+.keyrow button{appearance:none; border:1px solid var(--line); background:#fff;
+  border-radius:7px; min-width:34px; min-height:34px; padding:4px 9px; cursor:pointer;
+  font:14px/1 'Times New Roman',Georgia,serif; color:var(--ink)}
+.keyrow button.wide{font:12.5px/1 system-ui,sans-serif}
+.keyrow button:hover{border-color:var(--k1); color:var(--k1)}
+.keyrow button:active{background:rgba(42,120,214,.10)}
+.keyrow button.dim{color:var(--sec)}
 .verdict{font-size:13px; line-height:1.55; margin:0; padding:9px 13px; border-radius:8px;
   border-left:3px solid var(--axis); background:#fff; color:var(--sec)}
 .verdict.ok{border-left-color:var(--k3); color:#0d7a55; font-weight:600}
@@ -248,8 +268,9 @@ details.condbox .cond{margin:10px 0 0}
 .verdict:empty{display:none}
 .taskhelp{font-size:12px; color:var(--mut); margin:0; line-height:1.5}
 @media (max-width:480px){
-  .ansin{flex-basis:100%}
+  .keyrow .klab{width:100%}
   .hintrow .btn{flex:1 1 auto}
+  .fx{font-size:17px}
 }
 </style>
 </head>
@@ -1627,39 +1648,38 @@ function activate(id){
 $('tabs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(b) activate(b.dataset.m);
 });
-
 /* ======================================================================
-   ЗАДАЧА: схована умова, три підказки, поле відповіді й перевірка
+   ЗАДАЧА: схована умова, три підказки, конструктор формули й перевірка
    ----------------------------------------------------------------------
-   Відповідь студент пише формулою, а не числом, — і той самий вираз можна
-   записати десятком способів: λl/d, l·λ/d, λ·(l/d). Порівнювати рядки тут
-   марно. Тому формула розбирається в дерево й перевіряється підстановкою
-   випадкових чисел: збіг із еталоном на дюжині незалежних наборів означає
-   тотожність виразів, а не щасливий збіг на одному прикладі.
+   Відповідь студент не набирає рядком, а СКЛАДАЄ з готових частин. Вираз
+   від початку існує як дерево з порожніми місцями, і кожна кнопка кладе
+   щось у вибране місце або обгортає те, що там уже стоїть. Тому дріб
+   виглядає дробом, корінь — коренем, а «забув дужку» перестає бути
+   можливою помилкою: структуру задає не текст, а сама будова виразу.
+
+   Перевіряється це дерево підстановкою випадкових чисел: збіг із еталоном
+   на дюжині незалежних наборів означає тотожність виразів, а не щасливий
+   збіг на одному прикладі.
    ====================================================================== */
 
 const TASKS={};                        /* кожен файл наповнює своїми модулями */
 
-/* ---- функції, які можна писати у відповіді ---------------------------
-   Навмисно короткий список: що більше імен, то більший ризик, що назва
-   функції з'їсть символ задачі (наприклад lg проковтнуло б l·g). */
 const FUNS={
   sqrt:Math.sqrt, '√':Math.sqrt, abs:Math.abs,
   sin:Math.sin, cos:Math.cos, tg:Math.tan, tan:Math.tan,
   ctg:x=>1/Math.tan(x), cot:x=>1/Math.tan(x),
   arcsin:Math.asin, asin:Math.asin, arccos:Math.acos, acos:Math.acos,
-  arctg:Math.atan, arctan:Math.atan, atan:Math.atan,
-  floor:Math.floor, ceil:Math.ceil, round:Math.round
+  arctg:Math.atan, arctan:Math.atan, atan:Math.atan
 };
-/* функції, чий аргумент мусить бути безрозмірним */
-const PUREFUN={sin:1,cos:1,tg:1,tan:1,ctg:1,cot:1,exp:1};
-/* функції, чий результат безрозмірний за будь-якого безрозмірного входу */
+const PUREFUN={sin:1,cos:1,tg:1,tan:1,ctg:1,cot:1};
 const ANGFUN={arcsin:1,asin:1,arccos:1,acos:1,arctg:1,arctan:1,atan:1};
+/* що пропонує конструктор — однаковий набір у всіх задачах, щоб сам перелік
+   кнопок не підказував, чи є у відповіді тригонометрія */
+const FXFUNS=['sin','cos','tg','arcsin','arccos','arctg'];
 
-/* ---- розбір ----------------------------------------------------------
-   Токенізатор ріже рядок не «по літерах», а по НАЙДОВШОМУ відомому імені
-   з таблиці символів задачі. Саме це дозволяє писати λl/d без зірочки:
-   рядок розпадається на λ, l, /, d, бо всі три імені оголошені. */
+/* ---- розбір рядка ----------------------------------------------------
+   Потрібен для розмірностей («M/(L*T^2)») — саме ними описано кожну
+   величину задачі. Той самий розбір бере на себе й службові перевірки. */
 function tkz(src,syms){
   const names=Object.keys(syms).concat(Object.keys(FUNS)).sort((a,b)=>b.length-a.length);
   const S=String(src).replace(/\s+/g,'').replace(/[−–—]/g,'-');
@@ -1675,25 +1695,17 @@ function tkz(src,syms){
     if('+-*/^(),'.indexOf(c)>=0){out.push({t:'op',v:c}); i++; continue;}
     if('·×∙'.indexOf(c)>=0){out.push({t:'op',v:'*'}); i++; continue;}
     if(c==='÷'){out.push({t:'op',v:'/'}); i++; continue;}
-    if(c==='['){out.push({t:'op',v:'('}); i++; continue;}
-    if(c===']'){out.push({t:'op',v:')'}); i++; continue;}
     if('²³⁴'.indexOf(c)>=0){
       out.push({t:'op',v:'^'}); out.push({t:'num',v:{'²':2,'³':3,'⁴':4}[c]}); i++; continue;}
     if(c==='π'){out.push({t:'sym',v:'π'}); i++; continue;}
     let hit=null;
     for(const n of names) if(S.startsWith(n,i)){hit=n; break;}
-    if(hit){
-      out.push({t:(FUNS[hit]&&!syms[hit])?'fun':'sym',v:hit});
-      i+=hit.length; continue;
-    }
+    if(hit){out.push({t:(FUNS[hit]&&!syms[hit])?'fun':'sym',v:hit}); i+=hit.length; continue;}
     throw {k:'unknown',at:S.slice(i,i+8)};
   }
   return out;
 }
-
-/* Рекурсивний спуск. Неявне множення дозволене всюди, де за атомом одразу
-   стоїть інший атом: 2gl, λl, 2π√(...) читаються так, як їх пишуть на папері. */
-function parseExpr(tk,syms){
+function parseExpr(tk){
   let p=0;
   const peek=()=>tk[p], eat=v=>{
     if(!tk[p]||tk[p].t!=='op'||tk[p].v!==v) throw {k:'syntax',at:v};
@@ -1705,10 +1717,7 @@ function parseExpr(tk,syms){
     if(!t) throw {k:'syntax',at:'кінець виразу'};
     if(t.t==='num'){p++; return {n:'num',v:t.v};}
     if(t.t==='sym'){p++; return {n:'sym',v:t.v};}
-    if(t.t==='fun'){
-      p++; eat('('); const a=expr(); eat(')');
-      return {n:'fun',f:t.v,a};
-    }
+    if(t.t==='fun'){p++; eat('('); const a=expr(); eat(')'); return {n:'fun',f:t.v,a};}
     if(t.t==='op'&&t.v==='('){p++; const a=expr(); eat(')'); return a;}
     throw {k:'syntax',at:t.v};
   }
@@ -1728,7 +1737,7 @@ function parseExpr(tk,syms){
     for(;;){
       const t=peek();
       if(t&&t.t==='op'&&(t.v==='*'||t.v==='/')){p++; a={n:t.v,a,b:unary()};}
-      else if(startsAtom(t)) a={n:'*',a,b:unary()};      /* неявне множення */
+      else if(startsAtom(t)) a={n:'*',a,b:unary()};
       else return a;
     }
   }
@@ -1744,7 +1753,7 @@ function parseExpr(tk,syms){
   if(p<tk.length) throw {k:'syntax',at:String(tk[p].v)};
   return r;
 }
-function parseFormula(src,syms){return parseExpr(tkz(src,syms),syms);}
+function parseFormula(src,syms){return parseExpr(tkz(src,syms));}
 
 /* ---- обчислення числом ------------------------------------------------ */
 function evalNode(nd,env){
@@ -1762,11 +1771,7 @@ function evalNode(nd,env){
   return NaN;
 }
 
-/* ---- обчислення розмірністю ------------------------------------------
-   Той самий вираз проганяємо ще раз, але замість чисел підставляємо
-   розмірності. Це не вирішує, правильна відповідь чи ні, — це дає
-   зрозумілу причину, коли вона неправильна: «вийшли метри, а треба
-   секунди» набагато кориснішe за просте «не сходиться». */
+/* ---- обчислення розмірністю ------------------------------------------ */
 const DBASE=['M','L','T','I','K','N','J'];
 const dZero=()=>[0,0,0,0,0,0,0];
 const dEq=(a,b)=>a.every((x,i)=>Math.abs(x-b[i])<1e-9);
@@ -1821,30 +1826,23 @@ function dimEval(nd,env){
 
 /* ---- перевірка відповіді --------------------------------------------- */
 const TOL=1e-9, NTRY=12;
-function checkFormula(T,src){
-  const syms={};
-  for(const v of T.vars) for(const n of [v.s].concat(v.alias||[])) syms[n]=v;
-  for(const k in (T.consts||{})) syms[k]=T.consts[k];
-  syms['π']={};
-  let nd;
-  try{ nd=parseFormula(src,syms); }
-  catch(e){
-    if(e.k==='unknown') return {s:'err',
-      m:'Не знаю позначення «'+e.at+'». Дозволені символи наведено кнопками вище; '+
-        'множення можна писати як * або · (або не писати зовсім).'};
-    return {s:'err',m:'Вираз не читається біля «'+(e.at||'?')+'» — перевірте дужки й знаки.'};
-  }
+function symTable(T){
+  const s={};
+  for(const v of T.vars) for(const n of [v.s].concat(v.alias||[])) s[n]=v;
+  for(const k in (T.consts||{})) s[k]=T.consts[k];
+  s['π']={dim:'1'};
+  return s;
+}
+function checkAst(T,nd){
   /* Розмірність вирішує сама, і то першою. Числова перевірка сліпа там, де
      величини дуже малі: при λ ≈ 5·10⁻⁷ sin(λ) чисельно не відрізнити від λ,
-     і хибний вираз проліз би. Але sin від довжини хвилі — це взагалі не
+     і хибний вираз проліз би. Але синус від довжини хвилі — це взагалі не
      формула, і саме розмірність це ловить. */
-  let dmsg='';
   if(T.dim){
     let bad=null;
     try{
-      const env={}; for(const v of T.vars)
-        for(const n of [v.s].concat(v.alias||[])) env[n]=dimOf(v.dim);
-      for(const k in (T.consts||{})) env[k]=dimOf(T.consts[k].dim);
+      const env={}, tab=symTable(T);
+      for(const n in tab) if(tab[n].dim) env[n]=dimOf(tab[n].dim);
       const got=dimEval(nd,env), want=dimOf(T.dim);
       if(!dEq(got,want)) bad='Розмірність не та: вийшло '+dStr(got)+', а треба '+dStr(want)+'.';
     }catch(e){
@@ -1855,7 +1853,6 @@ function checkFormula(T,src){
     }
     if(bad) return {s:'no',m:bad};
   }
-  /* власне перевірка: дюжина випадкових наборів значень */
   let bad=0, nan=0;
   for(let k=0;k<NTRY;k++){
     let env=null, ref=NaN, tries=0;
@@ -1878,23 +1875,114 @@ function checkFormula(T,src){
   }
   if(nan>=NTRY-1) return {s:'no',
     m:'Вираз не дає числа на допустимих значеннях — імовірно, корінь із від’ємного '+
-      'або ділення на нуль.'+dmsg};
+      'або ділення на нуль.'};
   if(bad===0) return {s:'ok',m:'Правильно. Вираз збігається з еталоном на всіх пробних наборах значень.'};
-  return {s:'no',m:'Не сходиться: на пробних значеннях ваш вираз дає інше число.'+dmsg};
+  return {s:'no',m:'Не сходиться: на пробних значеннях ваш вираз дає інше число.'};
 }
 
-/* ---- побудова інтерфейсу --------------------------------------------- */
+/* ======================= КОНСТРУКТОР ФОРМУЛИ ==========================
+   Дерево: {t:'hole'} | {t:'num',v} | {t:'sym',v} | {t:'neg',a}
+           {t:'op',o:'+'|'-'|'*',a,b} | {t:'frac',a,b} | {t:'pow',a,b}
+           {t:'rad',a} | {t:'fun',f,a}
+   Вибране місце адресуємо шляхом — масивом ключів від кореня. */
+const hole=()=>({t:'hole'});
+function fxAt(r,p){let n=r; for(const k of p) n=n[k]; return n;}
+function fxSet(r,p,v){
+  if(!p.length) return v;
+  let n=r; for(let i=0;i<p.length-1;i++) n=n[p[i]];
+  n[p[p.length-1]]=v; return r;
+}
+function fxHoles(n,p,out){
+  out=out||[]; p=p||[];
+  if(n.t==='hole'){out.push(p); return out;}
+  for(const k of ['a','b']) if(n[k]) fxHoles(n[k],p.concat(k),out);
+  return out;
+}
+function fxNextHole(root,p){
+  const hs=fxHoles(root), key=p.join('.');
+  const i=hs.findIndex(h=>h.join('.')>key);
+  return hs.length?(i>=0?hs[i]:hs[0]):null;
+}
+function fxAllNodes(n,p,out){
+  out=out||[]; p=p||[]; out.push(p);
+  for(const k of ['a','b']) if(n[k]) fxAllNodes(n[k],p.concat(k),out);
+  return out;
+}
+/* пріоритет — щоб дужки з'являлися самі й лише там, де без них зміниться зміст */
+function fxPrec(n){
+  switch(n.t){
+    case 'op': return n.o==='*'?2:1;
+    case 'neg': return 1;
+    case 'pow': return 4;
+    default: return 5;                 /* hole, num, sym, frac, rad, fun */
+  }
+}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function fxHtml(n,p,sel){
+  p=p||[];
+  const ps=p.join('.'), on=(ps===sel)?' sel':'';
+  const A=(k,min)=>{
+    const c=n[k], h=fxHtml(c,p.concat(k),sel);
+    return fxPrec(c)<min?'<span class="paren">(</span>'+h+'<span class="paren">)</span>':h;
+  };
+  const op=g=>'<span class="oper" data-p="'+ps+'">'+g+'</span>';
+  switch(n.t){
+    case 'hole': return '<span class="node hole'+on+'" data-p="'+ps+'"></span>';
+    case 'num':  return '<span class="node'+on+'" data-p="'+ps+'">'+esc(n.v)+'</span>';
+    case 'sym':  return '<span class="node'+on+'" data-p="'+ps+'"><i>'+esc(n.v)+'</i></span>';
+    case 'neg':  return '<span class="node'+on+'" data-p="'+ps+'">'+op('−')+A('a',2)+'</span>';
+    case 'op': {
+      /* Додавання й множення асоціативні, тож правий доданок чи множник дужок
+         не потребує; віднімання потребує, бо a−(b−c) ≠ a−b−c. Інакше кожне
+         наступне «·» додавало б іще пару дужок, і вираз ставав нечитним. */
+      const rmin=(n.o==='-')?2:fxPrec(n);
+      return '<span class="node'+on+'" data-p="'+ps+'">'+A('a',fxPrec(n))+
+             op(n.o==='*'?'·':(n.o==='+'?'+':'−'))+A('b',rmin)+'</span>';
+    }
+    case 'frac': return '<span class="node frac'+on+'" data-p="'+ps+'">'+
+                        '<span class="num">'+fxHtml(n.a,p.concat('a'),sel)+'</span>'+
+                        '<span class="den">'+fxHtml(n.b,p.concat('b'),sel)+'</span></span>';
+    case 'pow':  return '<span class="node'+on+'" data-p="'+ps+'">'+A('a',5)+
+                        '<sup>'+fxHtml(n.b,p.concat('b'),sel)+'</sup></span>';
+    case 'rad':  return '<span class="node rad'+on+'" data-p="'+ps+'">'+
+                        '<span class="sign">√</span><span class="body">'+
+                        fxHtml(n.a,p.concat('a'),sel)+'</span></span>';
+    case 'fun':  return '<span class="node'+on+'" data-p="'+ps+'">'+esc(n.f)+
+                        '<span class="paren">(</span>'+fxHtml(n.a,p.concat('a'),sel)+
+                        '<span class="paren">)</span></span>';
+  }
+  return '';
+}
+function fxAst(n){
+  switch(n.t){
+    case 'num':  return {n:'num',v:parseFloat(String(n.v).replace(',','.'))};
+    case 'sym':  return {n:'sym',v:n.v};
+    case 'neg':  return {n:'neg',a:fxAst(n.a)};
+    case 'op':   return {n:n.o,a:fxAst(n.a),b:fxAst(n.b)};
+    case 'frac': return {n:'/',a:fxAst(n.a),b:fxAst(n.b)};
+    case 'pow':  return {n:'pow',a:fxAst(n.a),b:fxAst(n.b)};
+    case 'rad':  return {n:'fun',f:'sqrt',a:fxAst(n.a)};
+    case 'fun':  return {n:'fun',f:n.f,a:fxAst(n.a)};
+  }
+  return {n:'num',v:NaN};
+}
+
+/* ---- пам'ять між сеансами -------------------------------------------- */
 const LS='tasks.'+location.pathname.split('/').pop();
 function taskState(){
   try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; }
 }
 function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(e){} }
+function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},kv); taskSave(s);}
 
+/* ---- побудова інтерфейсу --------------------------------------------- */
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
     const T=TASKS[mid];
     const sec=document.getElementById(mid); if(!sec) continue;
+    const saved=st[mid]||{};
+
     /* умову ховаємо в <details> просто на місці */
     const cond=sec.querySelector('p.cond');
     if(cond&&!cond.closest('details')){
@@ -1905,12 +1993,10 @@ function buildTasks(){
       d.appendChild(sm);
       cond.parentNode.insertBefore(d,cond);
       d.appendChild(cond);
-      d.open=!!(st[mid]&&st[mid].cond);
-      d.addEventListener('toggle',()=>{
-        const s=taskState(); s[mid]=s[mid]||{}; s[mid].cond=d.open; taskSave(s);
-      });
+      d.open=!!saved.cond;
+      d.addEventListener('toggle',()=>taskPatch(mid,{cond:d.open}));
     }
-    /* панель задачі — одразу під сценою */
+
     const sceneCv=sec.querySelector('canvas[id$="scene"]');
     const after=sceneCv?sceneCv.closest('.panel'):sec.lastElementChild;
     if(!after) continue;
@@ -1924,34 +2010,114 @@ function buildTasks(){
         '<button class="btn" data-h="2">Розв’язок</button>'+
       '</div>'+
       '<div class="hints"></div>'+
-      '<div class="symrow"><span class="slab">символи:</span></div>'+
-      '<div class="ansrow">'+
-        '<span class="alab">'+(T.what||'X')+' =</span>'+
-        '<input class="ansin" type="text" spellcheck="false" autocapitalize="off" '+
-          'autocomplete="off" placeholder="'+(T.ph||'напр.  2*a*sqrt(b)/c')+'">'+
-        '<button class="btn chk">Перевірити</button>'+
-      '</div>'+
+      '<div class="fxline"><span class="fxlab">'+(T.what||'X')+' =</span>'+
+        '<div class="fx" tabindex="0"></div></div>'+
+      '<div class="keyrow ksym"><span class="klab">величини</span></div>'+
+      '<div class="keyrow kop"><span class="klab">дії</span></div>'+
+      '<div class="keyrow kfun"><span class="klab">функції</span></div>'+
+      '<div class="keyrow knum"><span class="klab">числа</span></div>'+
+      '<div class="keyrow kdo"></div>'+
       '<p class="verdict"></p>'+
-      '<p class="taskhelp">Пишіть звичайним рядком: * · / ^ ( ), sqrt( ), sin cos tg, '+
-        'arcsin arccos arctg, π. Зірочку між символами можна не ставити.</p>';
+      '<p class="taskhelp">Торкніться порожнього місця у формулі, а потім кнопки. '+
+        'Дія береться до того, що зараз вибране: вибрали <i>a</i>, натиснули дріб — '+
+        '<i>a</i> стає чисельником. Дужки ставляться самі.</p>';
     after.parentNode.insertBefore(box,after.nextSibling);
 
-    const symrow=box.querySelector('.symrow');
-    const inp=box.querySelector('.ansin');
-    for(const v of T.vars.concat(Object.keys(T.consts||{}).map(k=>({s:k,t:T.consts[k].t})))){
+    /* ---- стан конструктора ---- */
+    let root=hole(), sel='';
+    try{ if(saved.fx) {root=JSON.parse(saved.fx); sel=saved.sel||'';} }catch(e){}
+    const fx=box.querySelector('.fx'), verd=box.querySelector('.verdict');
+    const draw=()=>{
+      if(!fxAllNodes(root).some(p=>p.join('.')===sel)) sel='';
+      fx.innerHTML=fxHtml(root,[],sel);
+      /* Знак кореня — звичайна літера, і над дробом він лишався б куцим
+         гачком. Розтягуємо його під фактичну висоту підкореневого виразу;
+         вкладені корені міряємо зсередини назовні, інакше зовнішній міряв би
+         ще не розтягнутий внутрішній. */
+      const rads=[].slice.call(fx.querySelectorAll('.rad')).reverse();
+      for(const r of rads){
+        const b=r.querySelector('.body'), s=r.querySelector('.sign');
+        const h=b.offsetHeight||18;
+        s.style.fontSize=Math.max(17,h*0.92)+'px';
+        s.style.lineHeight=h+'px';
+      }
+      taskPatch(mid,{fx:JSON.stringify(root),sel:sel});
+    };
+    const P=()=>sel===''?[]:sel.split('.');
+    const cur=()=>fxAt(root,P());
+    const goto_=p=>{sel=p?p.join('.'):''; };
+    const after_=()=>{const h=fxNextHole(root,P()); if(h) goto_(h);};
+    const put=v=>{                                   /* величина або число */
+      const n=cur();
+      if(v.num&&n.t==='num'){n.v=String(n.v)+v.num;}
+      else root=fxSet(root,P(),v.num?{t:'num',v:v.num}:{t:'sym',v:v.sym});
+      if(!v.num) after_();
+      draw();
+    };
+    const wrapBin=(mk,go)=>{                         /* обгортаємо вибране */
+      const n=cur();
+      root=fxSet(root,P(),mk(n));
+      goto_(P().concat(go));
+      draw();
+    };
+    const wrapUn=mk=>{
+      const n=cur(), was=n.t==='hole';
+      root=fxSet(root,P(),mk(n));
+      if(was) goto_(P().concat('a'));
+      draw();
+    };
+    const del=()=>{
+      const p=P(), n=cur();
+      if(n.t==='num'&&String(n.v).length>1){n.v=String(n.v).slice(0,-1); draw(); return;}
+      if(n.t!=='hole'){root=fxSet(root,p,hole()); draw(); return;}
+      if(!p.length) return;
+      const pp=p.slice(0,-1), last=p[p.length-1], par=fxAt(root,pp);
+      const other=(par.t==='fun'||par.t==='rad'||par.t==='neg')?null:par[last==='a'?'b':'a'];
+      root=fxSet(root,pp,other||hole());
+      goto_(pp); draw();
+    };
+    const key=(row,label,fn,cls)=>{
       const b=document.createElement('button');
-      b.type='button'; b.textContent=v.s; b.title=v.t||'';
-      b.addEventListener('click',()=>{
-        const a=inp.selectionStart, z=inp.selectionEnd, s=inp.value;
-        inp.value=s.slice(0,a)+v.s+s.slice(z);
-        inp.focus(); inp.selectionStart=inp.selectionEnd=a+v.s.length;
-      });
-      symrow.appendChild(b);
-    }
+      b.type='button'; b.innerHTML=label; if(cls) b.className=cls;
+      b.addEventListener('click',e=>{e.preventDefault(); fn();});
+      box.querySelector(row).appendChild(b); return b;
+    };
+    for(const v of T.vars) key('.ksym','<i>'+esc(v.s)+'</i>',()=>put({sym:v.s})).title=v.t||'';
+    for(const k in (T.consts||{})) key('.ksym','<i>'+esc(k)+'</i>',
+      (kk=>()=>put({sym:kk}))(k)).title=T.consts[k].t||'';
+    key('.ksym','π',()=>put({sym:'π'}));
+    key('.kop','+',()=>wrapBin(n=>({t:'op',o:'+',a:n,b:hole()}),'b'));
+    key('.kop','−',()=>wrapBin(n=>({t:'op',o:'-',a:n,b:hole()}),'b'));
+    key('.kop','·',()=>wrapBin(n=>({t:'op',o:'*',a:n,b:hole()}),'b'));
+    key('.kop','<span style="font-size:.8em">a</span>⁄<span style="font-size:.8em">b</span>',
+        ()=>wrapBin(n=>({t:'frac',a:n,b:hole()}),'b'));
+    key('.kop','<span style="font-size:.85em">a</span><sup>b</sup>',
+        ()=>wrapBin(n=>({t:'pow',a:n,b:hole()}),'b'));
+    key('.kop','√',()=>wrapUn(n=>({t:'rad',a:n})));
+    key('.kop','−<i>a</i>',()=>wrapUn(n=>n.t==='neg'?n.a:{t:'neg',a:n}),'dim')
+      .title='змінити знак';
+    for(const f of FXFUNS) key('.kfun',f,(ff=>()=>wrapUn(n=>({t:'fun',f:ff,a:n})))(f),'wide');
+    for(let d=1;d<=9;d++) key('.knum',String(d),(dd=>()=>put({num:String(dd)}))(d));
+    key('.knum','0',()=>put({num:'0'}));
+    key('.knum',',',()=>put({num:','}));
+    key('.kdo','← стерти',del,'wide');
+    key('.kdo','очистити',()=>{root=hole(); sel=''; verd.textContent=''; draw();},'wide');
+    const chk=key('.kdo','Перевірити',()=>run(),'wide');
+    chk.className='btn';
 
+    fx.addEventListener('click',e=>{
+      const t=e.target.closest('[data-p]'); if(!t) return;
+      sel=t.getAttribute('data-p'); draw();
+    });
+    box.addEventListener('keydown',e=>{
+      if(e.key==='Backspace'){e.preventDefault(); del();}
+      else if(e.key==='Enter'){e.preventDefault(); run();}
+      else if(e.key==='Tab'&&!e.shiftKey){const h=fxNextHole(root,P()); if(h){e.preventDefault(); goto_(h); draw();}}
+    });
+
+    /* ---- підказки ---- */
     const hints=box.querySelector('.hints');
     const hbtn=[].slice.call(box.querySelectorAll('.hintrow .btn'));
-    const shown=(st[mid]&&st[mid].h)||0;
     function openHint(i){
       for(let k=hints.children.length;k<=i;k++){
         const d=document.createElement('div');
@@ -1961,26 +2127,30 @@ function buildTasks(){
         hints.appendChild(d);
       }
       hbtn.forEach((b,k)=>{
-        b.disabled=k>hints.children.length;         /* наступну — лише по черзі */
+        b.disabled=k>hints.children.length;
         b.classList.toggle('on',k<hints.children.length);
       });
-      const s=taskState(); s[mid]=s[mid]||{}; s[mid].h=hints.children.length; taskSave(s);
+      taskPatch(mid,{h:hints.children.length});
     }
     hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
     hbtn.forEach((b,k)=>{b.disabled=k>0;});
-    if(shown) openHint(shown-1);
+    if(saved.h) openHint(saved.h-1);
 
-    const verd=box.querySelector('.verdict');
-    const run=()=>{
-      const src=inp.value.trim();
-      if(!src){verd.className='verdict err'; verd.textContent='Порожньо — напишіть формулу.'; return;}
-      const r=checkFormula(T,src);
+    /* ---- перевірка ---- */
+    function run(){
+      if(fxHoles(root).length){
+        verd.className='verdict err';
+        verd.textContent='Формула ще не добудована — лишилися порожні місця.';
+        return;
+      }
+      let r;
+      try{ r=checkAst(T,fxAst(root)); }
+      catch(e){ r={s:'err',m:'Вираз не вдалося обчислити.'}; }
       verd.className='verdict '+r.s; verd.textContent=r.m;
-      if(r.s==='ok'){const s=taskState(); s[mid]=s[mid]||{}; s[mid].ok=1; taskSave(s);}
-    };
-    box.querySelector('.chk').addEventListener('click',run);
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); run();}});
-    if(st[mid]&&st[mid].ok){verd.className='verdict ok'; verd.textContent='Цю задачу ви вже розв’язали.';}
+      if(r.s==='ok') taskPatch(mid,{ok:1});
+    }
+    if(saved.ok){verd.className='verdict ok'; verd.textContent='Цю задачу ви вже розв’язали.';}
+    draw();
   }
 }
 
