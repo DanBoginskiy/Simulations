@@ -1196,6 +1196,39 @@ const M1={
   GG:[['v','v літака',100,220,1,CLR.k2,null,'m1vv',0,'м/с'],
       ['m','m пілота',60,110,1,CLR.sec,null,'m1vm',0,'кг']],
   ac(){return this.v*this.v/this.R;},
+  /* Що таке η — просто на кресленні. Вага пілота внизу й угорі — два
+     стовпчики; довший ділимо поділками завширшки з коротший, і кратність
+     видно оком, без жодної формули. */
+  etaStrip(g,Q,w){
+    const y=Q.stripY, Nhi=this.N(0), Nlo=this.N(Math.PI);
+    const x0=96, W=Math.min(330,w*0.30), k=W/Math.max(1e-9,Nhi);
+    const bar=(yy,val,lab,col)=>{
+      g.fillStyle='#eceae3';
+      g.beginPath(); g.roundRect(x0,yy-6,W,12,6); g.fill();
+      g.fillStyle=col; g.globalAlpha=0.5;
+      g.beginPath(); g.roundRect(x0,yy-6,Math.max(4,Math.min(W,val*k)),12,6); g.fill();
+      g.globalAlpha=1;
+      txt(g,lab,x0-9,yy+4,{color:CLR.sec,size:10.5,bold:true,align:'right'});
+    };
+    txt(g,'вага пілота',x0-9,y-16,{color:CLR.ink,size:11,bold:true,align:'right'});
+    bar(y,Nhi,'унизу',CLR.k2);
+    bar(y+22,Math.max(0,Nlo),'угорі',CLR.k1);
+    if(Nlo>1e-6){
+      const ws=Nlo*k;
+      g.strokeStyle=CLR.sec; g.lineWidth=1;
+      if(ws>6) for(let x=x0+ws;x<x0+W-1;x+=ws){
+        g.beginPath(); g.moveTo(x+0.5,y-7); g.lineTo(x+0.5,y+7); g.stroke();
+      }
+      txt(g,'η',x0+W+12,y+5,{color:CLR.ink,size:14,bold:true});
+      txt(g,'у стільки разів вага внизу більша за вагу вгорі',
+        x0+W+30,y+5,{color:CLR.mut,size:10.5});
+      txt(g,'поділки на верхньому стовпчику — це нижній, укладений цілими разами',
+        x0+W+30,y+22,{color:CLR.mut,size:9.5});
+    } else {
+      txt(g,'угорі крісло вже не тисне — пілот у невагомості',
+        x0+W+12,y+5,{color:CLR.k2,size:11,bold:true});
+    }
+  },
   /* φ відлічуємо від нижньої точки петлі */
   N(ph){return this.m*(this.ac()+G*Math.cos(ph));},
   eta(){const lo=this.ac()-G; return lo>1e-6?(this.ac()+G)/lo:Infinity;},
@@ -1229,12 +1262,18 @@ const M1={
      права під прилад перевантаження (§10). */
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-46;
-    const sc=fitScale(bb.w*0.56,H,54,56,2.2*this.RMAX,2.2*this.RMAX,0,0);
+    /* знизу лишаємо смугу під показ η — саме там видно, що це за величина */
+    const SB=80, HL=H-SB;
+    const sc=fitScale(bb.w*0.56,HL,54,56,2.2*this.RMAX,2.2*this.RMAX,0,0);
     /* Кадр пілота — велике вікно праворуч: у ньому і крісло з фігуркою, і
        сам прилад перевантаження. На петлі фігурка була б завбільшки з точку,
        а саме в кріслі й видно, звідки перевантаження береться. */
-    return {sc,C,cx:bb.w*0.22,cy:46+(H-26)/2,gy:46+H-14,
-      px0:bb.w*0.70,py0:46+H*0.50,pr:Math.min(H*0.46,230)};
+    /* Петля й вікно пілота — одна композиція, і її ставимо посередині кадру:
+       раніше петля тулилася до лівого краю, а праворуч лишалася порожня смуга. */
+    const pr=Math.min(HL*0.46,230), rmax=this.RMAX*sc, gap=28;
+    const left=Math.max(10,(bb.w-(2*rmax+2*pr+gap))/2);
+    return {sc,C,cx:left+rmax,cy:46+(HL-26)/2,gy:46+H-14,stripY:46+HL+26,
+      px0:left+2*rmax+gap+pr,py0:46+HL*0.50,pr};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1308,7 +1347,11 @@ const M1={
     g.beginPath(); g.moveTo(-6,5.5); g.lineTo(-14,18); g.lineTo(-2,5.5); g.stroke();
     g.restore();
     /* сили на пілота: реакція крісла до центра, тяжіння вниз */
-    const N=this.N(ph), kN=Math.min(64,rp*0.62)/(this.m*(this.VMAX*this.VMAX/this.RMIN+G));
+    /* Масштаб сил беремо від ваги спокою: раніше він рахувався від найбільшої
+       можливої N, і стрілка mg вироджувалась у шестипіксельний обрубок. Тепер
+       mg завжди видно, а N лише підтискаємо, щоб не вилізла за петлю. */
+    const N=this.N(ph);
+    const kN=Math.min(30/(this.m*G), rp*0.66/Math.max(1e-6,this.N(0)));
     const nx=(Q.cx-px)/rp, ny=(Q.cy-py)/rp;
     arrow(g,px,py,px+nx*N*kN,py+ny*N*kN,CLR.k3,3);
     txt(g,'N',px+nx*N*kN+nx*10,py+ny*N*kN+ny*10+4,
@@ -1320,6 +1363,7 @@ const M1={
     arrow(g,px,py,px+tx*44,py+ty*44,CLR.k1,2.6);
     txt(g,'X',px+tx*56,py+ty*56+4,{color:CLR.k1,size:13,bold:true,align:'center'});
     dot(g,px,py,4,CLR.k2);
+    this.etaStrip(g,Q,w);
     this.pilot(g,Q,ph,N);
     capN(g,'мертва петля зі сталою швидкістю',12,20,{color:CLR.k1,size:12.5,bold:true});
     capN(g,'вага пілота міняється по колу, маса — ні',12,36,{color:CLR.mut,size:10.5});
@@ -1478,32 +1522,31 @@ const M2={
      β — саме там осколок летить найдалі. Результат кешується: межі залежать
      лише від сталих діапазонів, а не від поточного стану. */
   _fr:null,
-  frameScan(){
-    if(this._fr) return this._fr;
+  /* Кадр міряємо під ПОТОЧНИЙ розліт, а не під найгірший випадок усього
+     діапазону: інакше при звичайних значеннях уся подія тулилася в куток, а
+     дев'ять десятих полотна стояли порожні. Під час перетягування геометрія
+     заморожена (frozen), тож малюнок не «дихає» під пальцем. */
+  curFrame(){
     let X=0,Y=0;
-    const keep={v0:this.v0,al:this.al,be:this.be,tb:this.tb};
-    this.v0=this.VMAX; this.be=this.BEMAX;
-    for(let ia=0;ia<=4;ia++){
-      this.al=this.ALMIN+(this.ALMAX-this.ALMIN)*ia/4;
-      const tf=this.tFall();
-      for(let ib=0;ib<=4;ib++){
-        this.tb=Math.max(0.05,tf*0.92*(0.1+0.9*ib/4));
-        for(const i of [0,1]){
-          const th=this.tHit(i);
-          X=Math.max(X,this.frag(i,th).x);
-          for(let k=0;k<=8;k++) Y=Math.max(Y,this.frag(i,this.tb+(th-this.tb)*k/8).y);
-        }
+    const tf=this.tFall();
+    for(let k=0;k<=16;k++){
+      const p=this.pos(tf*k/16); X=Math.max(X,p.x); Y=Math.max(Y,p.y);
+    }
+    for(const i of [0,1]){
+      const th=this.tHit(i);
+      for(let k=0;k<=16;k++){
+        const p=this.frag(i,this.tb+(th-this.tb)*k/16);
+        X=Math.max(X,p.x); Y=Math.max(Y,p.y);
       }
     }
-    Object.assign(this,keep);
-    return this._fr={X,Y};
+    return {X:Math.max(X,1),Y:Math.max(Y,0.5)};
   },
   /* Кадр береться рівно під найдальший і найвищий осколок, який узагалі
      можливий у межах ручок — жодних стель. Діапазони натомість звужено до
      того, що потрібне задачі: осколок тепер не вилітає за сцену ніколи. */
   RGmax(){return this.VMAX*this.VMAX*Math.sin(2*this.ALMIN*DEG)/G;},
-  frameX(){return this.frameScan().X*1.04;},
-  frameY(){return this.frameScan().Y*1.10;},
+  frameX(){return this.curFrame().X*1.10;},
+  frameY(){return this.curFrame().Y*1.18;},
   setTask(){const T=this.TASK; this.v0=T.v0; this.al=T.al; this.be=T.be; this.tb=T.tb;},
   reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
@@ -1531,9 +1574,11 @@ const M2={
        край. Межі скануються по кутах і миті розриву — це верхня межа
        діапазону, а не поточне значення (§10). */
     const RM=this.frameX(), HM=this.frameY();
-    const sc=fitScale(bb.w,bb.h,80,86,RM*1.06,HM,0,0);
-    return {sc,ox:44,oy:bb.h-34,RM,HM,
-      SX:x=>44+x*sc, SY:y=>bb.h-34-y*sc, kv:Math.min(9,sc*0.9)};
+    const sc=fitScale(bb.w,bb.h,80,86,RM*1.06,HM,RM,HM);
+    /* креслення посередині кадру, а не притиснуте до лівого краю */
+    const ox=Math.max(44,(bb.w-RM*1.06*sc)/2);
+    return {sc,ox,oy:bb.h-34,RM,HM,
+      SX:x=>ox+x*sc, SY:y=>bb.h-34-y*sc, kv:Math.min(9,sc*0.9)};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1727,7 +1772,6 @@ const M2={
       {color:'#1c5cab',size:12,bold:true});
     txt(g,'v₀',O.x+this.vx()*Q.kv+8,O.y-this.v0*Math.sin(this.al*DEG)*Q.kv,
       {color:'#1c5cab',size:12,bold:true});
-    txtN(g,'α = '+fmt(this.al,0)+'°',O.x+36,O.y-14,{color:'#1c5cab',size:11,bold:true});
     const be=this.be*DEG, LB=54, BX=SX(PB.x), BY=SY(PB.y);
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(BX,BY); g.lineTo(BX+LB+16,BY); g.stroke(); g.setLineDash([]);
@@ -1738,7 +1782,6 @@ const M2={
     arc(g,BX,BY,26,0,-be,CLR.k2,1.4);
     txt(g,'β',BX+30*Math.cos(be/2),BY-30*Math.sin(be/2)+4,
       {color:'#b8431a',size:12,bold:true});
-    txtN(g,'β = '+fmt(this.be,0)+'°',BX+LB+20,BY+4,{color:'#b8431a',size:11,bold:true});
     capN(g,t<this.tb?'граната летить цілою':'вибух стався — уявний снаряд його не помітив',12,20,{color:t<this.tb?CLR.ink:CLR.k2,size:12.5,bold:true});
     capN(g,'пунктирна парабола — шлях, яким летіла б нерозірвана граната',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) drawGrip(g,hh,this);
@@ -1867,8 +1910,10 @@ const M3={
     const x0=Math.max(60,Math.ceil(Math.max(
       labWidth('швидкість',11*TK,true),labWidth('енергія',11*TK,true)))+20);
     const bw=(bb.w-x0-60)/this.NB;
-    return {C,H,bw,x0,ytop:70,bh:Math.min(120,H*0.40),
-      barY:70+Math.min(120,H*0.40)+52, barW:bb.w-x0-100};
+    /* стос і дві шкали — одна композиція, і вона стоїть посередині кадру */
+    const bh=Math.min(120,H*0.40), top=46+Math.max(20,(H-(bh+186))/2);
+    return {C,H,bw,x0,ytop:top,bh,
+      barY:top+bh+56, barW:bb.w-x0-100};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -1958,6 +2003,18 @@ const M3={
       txt(g,val,Q.x0+Q.barW+10,y+4,{color:CLR.ink,size:11.5,bold:true});
     };
     bar(Q.barY,vRel,CLR.k2,'швидкість',fmt(vRel*100,0)+' %');
+    /* Що таке η — просто на шкалі швидкості: перша дошка з'їдає саме цю
+       частку, і видно її як відрізок від правого кінця до першої поділки. */
+    {
+      const y=Q.barY, x1=Q.x0+(1-this.eta)*Q.barW, x2=Q.x0+Q.barW;
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(x1,y-22); g.lineTo(x1,y-9); g.stroke(); g.setLineDash([]);
+      arrow(g,x1,y-24,x2,y-24,CLR.k2,1.4);
+      arrow(g,x2,y-24,x1,y-24,CLR.k2,1.4);
+      txt(g,'η',(x1+x2)/2,y-30,{color:'#b8431a',size:13,bold:true,align:'center'});
+      txt(g,'η — частка швидкості, яку забирає перша дошка',Q.x0,y-28,
+        {color:CLR.mut,size:10.5});
+    }
     bar(Q.barY+58,eRel,CLR.ink,'енергія',fmt(eRel*100,0)+' %');
     capN(g,'поділки — межі дощок: на шкалі енергії вони рівномірні, на шкалі швидкості — ні',
       Q.x0,Q.barY+88,{color:CLR.mut,size:10.5});
@@ -2074,9 +2131,13 @@ const M4={
   GG:[['eta','η — брус важчий у',10,1000,5,CLR.k3,null,'m4vet',0,'']],
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-46;
-    const sc=fitScale(bb.w*0.62,H,90,120,2*this.LMAX,this.LMAX*1.25,0,0);
-    return {C,H,sc,px:bb.w*0.36,py:66,kv:66/this.VMAX,
-      ex:bb.w*0.74,ey:78,eh:Math.min(150,H*0.52)};
+    /* Стовпчики енергії зі сцени прибрано, тож маятник більше не тулиться
+       ліворуч: ставимо його посередині кадру й по висоті теж. */
+    const sc=fitScale(bb.w*0.86,H,90,120,2*this.LMAX,this.LMAX*1.25,0,0);
+    /* по висоті центруємо на поточній довжині ниток, а не на найбільшій:
+       інакше короткий маятник висить у верхній третині порожнього кадру */
+    const Lnow=this.l*sc;
+    return {C,H,sc,px:bb.w*0.5,py:46+Math.max(16,(H-(Lnow+96))/2),kv:66/this.VMAX};
   });},
   grips(){
     if(this.mode!=='free') return [];
@@ -2158,9 +2219,6 @@ const M4={
       arc(g,Q.px,Q.py,L*0.72,Math.PI/2,Math.PI/2-am,CLR.k2,1.6);
     txt(g,'X',Q.px+L*0.80*Math.sin(am/2)+8,Q.py+L*0.80*Math.cos(am/2),
       {color:'#b8431a',size:13,bold:true});
-      txtN(g,'α = '+fmt(this.alCap(),1)+'°'+(this.overTop()?' (упор)':''),
-        Q.px+L*0.78*Math.sin(am/2)+10,
-        Q.py+L*0.78*Math.cos(am/2)+4,{color:'#b8431a',size:11.5,bold:true});
     }
     if(this.overTop())
       pill(g,'мотузка провисає вище 90° — це вже не маятник; зменште v або збільште η',
@@ -2195,28 +2253,7 @@ const M4={
       g.beginPath(); g.ellipse(px,py,9,4.5,0,0,7); g.fill();
       arrow(g,Q.px-140,Q.py+L+26,Q.px-140+this.v*Q.kv,Q.py+L+26,CLR.ink,2.5);
       txt(g,'v',Q.px-136+this.v*Q.kv,Q.py+L+20,{color:CLR.ink,size:12,bold:true});
-      txtN(g,'v = '+fmt(this.v,0)+' м/с',Q.px-140,Q.py+L+44,{color:CLR.ink,size:11,bold:true});
     }
-    /* два стовпчики енергії: до удару й одразу після нього */
-    const E0=this.E0(), E1=this.E1();
-    const col=(x,frac,color,lab,val)=>{
-      g.fillStyle='#eceae3';
-      g.beginPath(); g.roundRect(x-19,Q.ey,38,Q.eh,5); g.fill();
-      g.strokeStyle=CLR.axis; g.lineWidth=1;
-      g.beginPath(); g.roundRect(x-18.5,Q.ey+.5,37,Q.eh-1,4.5); g.stroke();
-      const fh=Math.max(2,Math.min(1,frac)*Q.eh);
-      g.fillStyle=color; g.globalAlpha=0.40;
-      g.beginPath(); g.roundRect(x-19,Q.ey+Q.eh-fh,38,fh,5); g.fill(); g.globalAlpha=1;
-      txt(g,lab,x,Q.ey-8,{color:CLR.sec,size:10.5,bold:true,align:'center'});
-      txt(g,val,x,Q.ey+Q.eh+16,{color:CLR.ink,size:11,bold:true,align:'center'});
-    };
-    col(Q.ex,1,CLR.ink,'до удару',fmt(E0,0)+' Дж');
-    col(Q.ex+72,E1/E0,CLR.k1,'після удару',fmt(E1,1)+' Дж');
-    g.strokeStyle=CLR.k2; g.lineWidth=1.5; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(Q.ex+20,Q.ey+2); g.lineTo(Q.ex+52,Q.ey+2); g.stroke(); g.setLineDash([]);
-    pillN(g,'у тепло: '+fmt(this.heat()*100,2)+' %',Q.ex+36,Q.ey-24,
-      {color:'#b8431a',size:11.5,bold:true});
-    txt(g,'імпульс зберігається — енергія ні',Q.ex-24,Q.ey+Q.eh+38,{color:CLR.mut,size:10.5});
     capN(g,this.phase==='fly'?'куля летить до бруса':'куля застрягла — далі йде маятник',12,20,{color:this.phase==='fly'?CLR.ink:CLR.k1,size:12.5,bold:true});
     capN(g,'у брус переходить увесь імпульс і менш ніж один відсоток енергії',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='l'||hh.id==='v') drawGrip(g,hh,this);

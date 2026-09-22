@@ -1190,7 +1190,9 @@ const M1={
   geo(b){return frozen(this,b,bb=>{
     const D=1;                                   /* діаметр основи, умовна одиниця */
     const sc=fitScale(bb.w*0.62,bb.h,120,132,3.2,this.KMAX*1.18,0,0);
-    return {sc,D,hx:64,hy:bb.h-72,
+    /* дошку з тілом ставимо посередині кадру, а не притискаємо до лівого краю */
+    const L=4.4*sc, hx=Math.max(24,(bb.w-(L+30))/2);
+    return {sc,D,hx,hy:bb.h-72,
       mu:{y:bb.h-28,x0:bb.w-4*74-14,dx:74}};
   });},
   grips(){
@@ -1269,7 +1271,6 @@ const M1={
     /* найбільший кут, за якого тіло ще стоїть, і є шуканим */
     txt(g,'X',Q.hx+66*Math.cos(a/2),Q.hy-66*Math.sin(a/2)+4,
       {color:'#0d7a55',size:13,bold:true});
-    txtN(g,'φ = '+fmt(this.phi,1)+'°',Q.hx+66,Q.hy-24,{color:'#0d7a55',size:12,bold:true});
     /* тіло стоїть на дошці: основа шириною d = 1, висота k·d */
     const u=2.0;                                  /* положення основи вздовж дошки */
     const bx=Q.hx+u*Math.cos(a)*sc, by=Q.hy-u*Math.sin(a)*sc;
@@ -1300,6 +1301,21 @@ const M1={
       const E1=Pb(-0.5,this.k-0.12), E2=Pb(0.5,this.k-0.12);
       g.beginPath(); g.moveTo(E1.x,E1.y); g.lineTo(E2.x,E2.y); g.stroke();
     }
+    /* Що таке k — просто на тілі: діаметр основи d і висота h. Обидва розміри
+       їдуть разом із тілом, тож видно, що k — це їхнє відношення, а не
+       якесь окреме число з умови. */
+    {
+      const a0=Pb(-0.5,0), b0=Pb(0.5,0), m0=Pb(0,0), m1=Pb(0,this.k);
+      const od=18, ou=0.5*sc+18;
+      arrow(g,a0.x-nx*od,a0.y-ny*od,b0.x-nx*od,b0.y-ny*od,CLR.sec,1.4);
+      arrow(g,b0.x-nx*od,b0.y-ny*od,a0.x-nx*od,a0.y-ny*od,CLR.sec,1.4);
+      txt(g,'d',(a0.x+b0.x)/2-nx*od*1.9,(a0.y+b0.y)/2-ny*od*1.9+4,
+        {color:CLR.sec,size:12,bold:true,align:'center'});
+      arrow(g,m0.x+ux*ou,m0.y+uy*ou,m1.x+ux*ou,m1.y+uy*ou,CLR.sec,1.4);
+      arrow(g,m1.x+ux*ou,m1.y+uy*ou,m0.x+ux*ou,m0.y+uy*ou,CLR.sec,1.4);
+      txt(g,'h',(m0.x+m1.x)/2+ux*(ou+14),(m0.y+m1.y)/2+uy*(ou+14)+4,
+        {color:CLR.sec,size:12,bold:true,align:'center'});
+    }
     /* центр ваги і прямовисна з нього — критерій перекидання */
     const CG=Pb(0,this.k*cg);
     dot(g,CG.x,CG.y,6,'#fff',CLR.ink);
@@ -1327,7 +1343,7 @@ const M1={
       :['стоїть стійко',CLR.k1,'прямовисна з центра ваги ще всередині опори'];
     capN(g,st[0],12,20,{color:st[1],size:12.5,bold:true});
     capN(g,st[2],12,36,{color:CLR.mut,size:10.5});
-    txtN(g,S.n+', h/d = '+fmt(this.k,1)+', центр ваги на '+fmt(cg,2)+'·h',
+    txt(g,S.n+' · k — у скільки разів висота h більша за діаметр d',
       12,h-10,{color:S.tc,size:10.5,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },

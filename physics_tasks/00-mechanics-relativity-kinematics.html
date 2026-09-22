@@ -2182,7 +2182,11 @@ const M4={
     const wx=rot?SP*1.30+1.2:SP*Math.cos(a)+1.3;
     const wy=rot?this.HMAX*1.5:SP*Math.sin(a)+this.HMAX*1.7;
     const sc=fitScale(bb.w,H,74,50,wx,wy,0,0);
-    const ox=44+0.9*this.HMAX*sc, oy=rot?46+H*0.80:56+this.HMAX*1.35*sc;
+    /* Креслення ставимо посередині кадру: fitScale упирається лише в один
+       з двох розмірів, і без центрування малюнок тулився в кут, а половина
+       полотна стояла порожня. */
+    const padX=Math.max(44,(bb.w-wx*sc)/2), padY=Math.max(46,(H-wy*sc)/2);
+    const ox=padX+0.9*this.HMAX*sc, oy=rot?padY+wy*sc*0.92:padY+this.HMAX*1.35*sc;
     return {sc,ox,oy,rot,C,LM,wx,wy,SP,viewXi:SP*1.15,
       /* єдине перетворення для всього креслення (§10): дошка, слід, ручки */
       M:(xi,eta)=>{
@@ -2292,8 +2296,6 @@ const M4={
     g.strokeStyle=CLR.k3; g.lineWidth=1.4;
     g.beginPath(); g.moveTo(nO.x,nO.y);
     g.lineTo(nO.x+(R+16)*Math.cos(A),nO.y+sg*(R+16)*Math.sin(A)); g.stroke();
-    txtN(g,'α = '+fmt(this.al,0)+'°',nO.x+R+22,nO.y+sg*R*Math.sin(A)/2+4,
-      {color:'#0d7a55',size:11.5,bold:true});
     if(Q.rot) txt(g,'горизонт',nO.x+96,nO.y-92*Math.tan(A)-5,{color:CLR.mut,size:10});
     /* уся траєкторія — допоміжна геометрія, пройдена частина — слід (§7.4) */
     const T=this.T();
@@ -2321,10 +2323,10 @@ const M4={
       g.moveTo(b2.x,b2.y); g.lineTo(a2.x,a2.y); g.stroke(); g.setLineDash([]);
       arrow(g,a1.x,a1.y,a2.x,a2.y,CLR.k2,1.6);
       arrow(g,a2.x,a2.y,a1.x,a1.y,CLR.k2,1.6);
-      pill(g,n?'L'+'₁₂₃₄₅₆'[n]:'L',
+      pill(g,n?'L'+'₁₂₃₄₅₆'[n]:'відстань: L',
         (a1.x+a2.x)/2,(a1.y+a2.y)/2-2,{color:'#b8431a',size:12.5,bold:true});
       /* час до першого ж повторного удару — те, що шукають */
-      if(n===0) pill(g,'X',(a1.x+a2.x)/2,(a1.y+a2.y)/2-24,
+      if(n===0) pill(g,'час: X',(a1.x+a2.x)/2,(a1.y+a2.y)/2-24,
         {color:CLR.ink,size:13,bold:true});
     }
     /* точка старту й вертикаль вільного падіння */
