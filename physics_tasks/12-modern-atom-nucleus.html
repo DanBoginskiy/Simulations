@@ -234,7 +234,9 @@ details.condbox .cond{margin:10px 0 0}
    порожні місця, і кожне з них чекає, поки в нього щось покладуть. */
 .fxline{display:flex; flex-wrap:wrap; gap:10px; align-items:center;
   border:1px solid var(--line); border-radius:8px; background:#fff; padding:12px 14px}
-.fxlab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec)}
+.fxline.act{border-color:var(--k1); box-shadow:inset 3px 0 0 var(--k1)}
+.fxlab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); flex:0 0 auto}
+.fxpack{display:flex; flex-direction:column; gap:8px}
 .fx{flex:1 1 200px; min-width:0; font:19px/1.3 'Times New Roman',Georgia,serif;
   color:var(--ink); overflow-x:auto; padding:2px 0}
 .fx .node{border-radius:4px; padding:0 1px}
@@ -250,6 +252,8 @@ details.condbox .cond{margin:10px 0 0}
 .fx .frac>.num{border-bottom:1.3px solid currentColor; padding:0 5px 2px}
 .fx .frac>.den{padding:2px 5px 0}
 .fx sup{font-size:.68em; vertical-align:super}
+.fx sub{font-size:.68em; vertical-align:-.22em}
+.keyrow button sub{font-size:.7em; vertical-align:-.2em}
 .fx .rad{display:inline-flex; align-items:flex-start}
 .fx .rad>.sign{font-size:1.05em; line-height:1; font-family:'Times New Roman',serif}
 .fx .rad>.body{border-top:1.3px solid currentColor; padding:2px 3px 0; margin-top:1px}
@@ -1432,6 +1436,7 @@ const TASKS={};                        /* кожен файл наповнює �
 
 const FUNS={
   sqrt:Math.sqrt, '√':Math.sqrt, abs:Math.abs,
+  floor:Math.floor, ceil:Math.ceil,
   sin:Math.sin, cos:Math.cos, tg:Math.tan, tan:Math.tan,
   ctg:x=>1/Math.tan(x), cot:x=>1/Math.tan(x),
   arcsin:Math.asin, asin:Math.asin, arccos:Math.acos, acos:Math.acos,
@@ -1439,6 +1444,8 @@ const FUNS={
 };
 const PUREFUN={sin:1,cos:1,tg:1,tan:1,ctg:1,cot:1};
 const ANGFUN={arcsin:1,asin:1,arccos:1,acos:1,arctg:1,arctan:1,atan:1};
+/* заокруглення має сенс лише для безрозмірної величини */
+const INTFUN={floor:1,ceil:1};
 /* що пропонує конструктор — однаковий набір у всіх задачах, щоб сам перелік
    кнопок не підказував, чи є у відповіді тригонометрія */
 const FXFUNS=['sin','cos','tg','arcsin','arccos','arctg'];
@@ -1583,7 +1590,7 @@ function dimEval(nd,env){
       const a=dimEval(nd.a,env);
       if(nd.f==='sqrt'||nd.f==='√') return a.map(x=>x/2);
       if(nd.f==='abs') return a;
-      if(!dPure(a)&&(PUREFUN[nd.f]||ANGFUN[nd.f])) throw {k:'dimarg',f:nd.f,a:dStr(a)};
+      if(!dPure(a)&&(PUREFUN[nd.f]||ANGFUN[nd.f]||INTFUN[nd.f])) throw {k:'dimarg',f:nd.f,a:dStr(a)};
       return dZero();
     }
   }
@@ -1599,17 +1606,21 @@ function symTable(T){
   s['π']={dim:'1'};
   return s;
 }
-function checkAst(T,nd){
+/* Більшість задач питають не одну величину, а дві-три. Для однієї частини
+   опис лежить просто в задачі, для кількох — у T.parts; далі код бачить
+   і те, й те однаково. */
+function taskParts(T){return T.parts||[{what:T.what,dim:T.dim,ref:T.ref}];}
+function checkAst(T,part,nd){
   /* Розмірність вирішує сама, і то першою. Числова перевірка сліпа там, де
      величини дуже малі: при λ ≈ 5·10⁻⁷ sin(λ) чисельно не відрізнити від λ,
      і хибний вираз проліз би. Але синус від довжини хвилі — це взагалі не
      формула, і саме розмірність це ловить. */
-  if(T.dim){
+  if(part.dim){
     let bad=null;
     try{
       const env={}, tab=symTable(T);
       for(const n in tab) if(tab[n].dim) env[n]=dimOf(tab[n].dim);
-      const got=dimEval(nd,env), want=dimOf(T.dim);
+      const got=dimEval(nd,env), want=dimOf(part.dim);
       if(!dEq(got,want)) bad='Розмірність не та: вийшло '+dStr(got)+', а треба '+dStr(want)+'.';
     }catch(e){
       if(e.k==='dimsum') bad='Ви додаєте величини різної розмірності: '+e.a+' і '+e.b+'.';
@@ -1630,7 +1641,7 @@ function checkAst(T,nd){
         for(const n of [v.s].concat(v.alias||[])) env[n]=x;
       }
       for(const c in (T.consts||{})) env[c]=T.consts[c].v;
-      ref=T.ref(env);
+      ref=part.ref(env);
       if(isFinite(ref)) break;
     }
     if(!isFinite(ref)) continue;
@@ -1684,6 +1695,19 @@ function fxPrec(n){
   }
 }
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+/* Нижні індекси в позначеннях (v₀, λ₂, I₁) — це окремі символи Юнікоду, і
+   серифний шрифт формул малює їх як звичайні літери: «Uo» замість «U₀».
+   Тому віддаємо їх браузерові справжнім <sub>. */
+const SUBCH={'\u2080':'0','\u2081':'1','\u2082':'2','\u2083':'3','\u2084':'4',
+  '\u2085':'5','\u2086':'6','\u2087':'7','\u2088':'8','\u2089':'9','\u2093':'x'};
+function symHtml(s){
+  let out='', sub='';
+  for(const ch of String(s)){
+    if(SUBCH[ch]) sub+=SUBCH[ch];
+    else{ if(sub){out+='<sub>'+sub+'</sub>'; sub='';} out+=esc(ch); }
+  }
+  return out+(sub?'<sub>'+sub+'</sub>':'');
+}
 function fxHtml(n,p,sel){
   p=p||[];
   const ps=p.join('.'), on=(ps===sel)?' sel':'';
@@ -1695,7 +1719,7 @@ function fxHtml(n,p,sel){
   switch(n.t){
     case 'hole': return '<span class="node hole'+on+'" data-p="'+ps+'"></span>';
     case 'num':  return '<span class="node'+on+'" data-p="'+ps+'">'+esc(n.v)+'</span>';
-    case 'sym':  return '<span class="node'+on+'" data-p="'+ps+'"><i>'+esc(n.v)+'</i></span>';
+    case 'sym':  return '<span class="node'+on+'" data-p="'+ps+'"><i>'+symHtml(n.v)+'</i></span>';
     case 'neg':  return '<span class="node'+on+'" data-p="'+ps+'">'+op('−')+A('a',2)+'</span>';
     case 'op': {
       /* Додавання й множення асоціативні, тож правий доданок чи множник дужок
@@ -1713,9 +1737,15 @@ function fxHtml(n,p,sel){
     case 'rad':  return '<span class="node rad'+on+'" data-p="'+ps+'">'+
                         '<span class="sign">√</span><span class="body">'+
                         fxHtml(n.a,p.concat('a'),sel)+'</span></span>';
-    case 'fun':  return '<span class="node'+on+'" data-p="'+ps+'">'+esc(n.f)+
-                        '<span class="paren">(</span>'+fxHtml(n.a,p.concat('a'),sel)+
-                        '<span class="paren">)</span></span>';
+    case 'fun': {
+      /* Модуль і заокруглення мають власні дужки — їх і малюємо, інакше на
+         кресленні стояло б слово floor, а на кнопці ⌊a⌋. */
+      const BR={abs:['|','|'],floor:['⌊','⌋'],ceil:['⌈','⌉']}[n.f];
+      const in_=fxHtml(n.a,p.concat('a'),sel);
+      return '<span class="node'+on+'" data-p="'+ps+'">'+(BR?'':esc(n.f))+
+             '<span class="paren">'+(BR?BR[0]:'(')+'</span>'+in_+
+             '<span class="paren">'+(BR?BR[1]:')')+'</span></span>';
+    }
   }
   return '';
 }
@@ -1745,7 +1775,7 @@ function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
-    const T=TASKS[mid];
+    const T=TASKS[mid], parts=taskParts(T);
     const sec=document.getElementById(mid); if(!sec) continue;
     const saved=st[mid]||{};
 
@@ -1776,8 +1806,10 @@ function buildTasks(){
         '<button class="btn" data-h="2">Розв’язок</button>'+
       '</div>'+
       '<div class="hints"></div>'+
-      '<div class="fxline"><span class="fxlab">'+(T.what||'X')+' =</span>'+
-        '<div class="fx" tabindex="0"></div></div>'+
+      '<div class="fxpack">'+parts.map((q,i)=>
+        '<div class="fxline'+(i?'':' act')+'" data-i="'+i+'">'+
+        '<span class="fxlab">'+q.what+' =</span>'+
+        '<div class="fx" tabindex="0"></div></div>').join('')+'</div>'+
       '<div class="keyrow ksym"><span class="klab">величини</span></div>'+
       '<div class="keyrow kop"><span class="klab">дії</span></div>'+
       '<div class="keyrow kfun"><span class="klab">функції</span></div>'+
@@ -1786,60 +1818,72 @@ function buildTasks(){
       '<p class="verdict"></p>'+
       '<p class="taskhelp">Торкніться порожнього місця у формулі, а потім кнопки. '+
         'Дія береться до того, що зараз вибране: вибрали <i>a</i>, натиснули дріб — '+
-        '<i>a</i> стає чисельником. Дужки ставляться самі.</p>';
+        '<i>a</i> стає чисельником. Дужки ставляться самі.'+
+        (parts.length>1?' Рядків відповіді кілька — торкніться потрібного, щоб '+
+          'перейти на нього.':'')+'</p>';
     after.parentNode.insertBefore(box,after.nextSibling);
 
-    /* ---- стан конструктора ---- */
-    let root=hole(), sel='';
-    try{ if(saved.fx) {root=JSON.parse(saved.fx); sel=saved.sel||'';} }catch(e){}
-    const fx=box.querySelector('.fx'), verd=box.querySelector('.verdict');
-    const draw=()=>{
-      if(!fxAllNodes(root).some(p=>p.join('.')===sel)) sel='';
-      fx.innerHTML=fxHtml(root,[],sel);
-      /* Знак кореня — звичайна літера, і над дробом він лишався б куцим
-         гачком. Розтягуємо його під фактичну висоту підкореневого виразу;
-         вкладені корені міряємо зсередини назовні, інакше зовнішній міряв би
-         ще не розтягнутий внутрішній. */
-      const rads=[].slice.call(fx.querySelectorAll('.rad')).reverse();
-      for(const r of rads){
-        const b=r.querySelector('.body'), s=r.querySelector('.sign');
-        const h=b.offsetHeight||18;
-        s.style.fontSize=Math.max(17,h*0.92)+'px';
-        s.style.lineHeight=h+'px';
+    /* ---- стан конструктора: по дереву на кожну частину відповіді ---- */
+    const roots=parts.map(()=>hole()), sels=parts.map(()=>'');
+    let act=0;
+    try{
+      if(saved.fx){
+        const a=JSON.parse(saved.fx);
+        if(Array.isArray(a)) a.forEach((n,i)=>{if(i<roots.length&&n) roots[i]=n;});
+        if(Array.isArray(saved.sel)) saved.sel.forEach((s,i)=>{if(i<sels.length) sels[i]=s||'';});
       }
-      taskPatch(mid,{fx:JSON.stringify(root),sel:sel});
+    }catch(e){}
+    const lines=[].slice.call(box.querySelectorAll('.fxline'));
+    const fxs=lines.map(l=>l.querySelector('.fx'));
+    const verd=box.querySelector('.verdict');
+    const draw=()=>{
+      lines.forEach((l,i)=>l.classList.toggle('act',i===act));
+      fxs.forEach((fx,i)=>{
+        if(!fxAllNodes(roots[i]).some(p=>p.join('.')===sels[i])) sels[i]='';
+        fx.innerHTML=fxHtml(roots[i],[],sels[i]);
+        /* Знак кореня — звичайна літера, і над дробом він лишався б куцим
+           гачком. Розтягуємо його під фактичну висоту підкореневого виразу;
+           вкладені корені міряємо зсередини назовні, інакше зовнішній міряв
+           би ще не розтягнутий внутрішній. */
+        const rads=[].slice.call(fx.querySelectorAll('.rad')).reverse();
+        for(const r of rads){
+          const b=r.querySelector('.body'), s=r.querySelector('.sign');
+          const h=b.offsetHeight||18;
+          s.style.fontSize=Math.max(17,h*0.92)+'px';
+          s.style.lineHeight=h+'px';
+        }
+      });
+      taskPatch(mid,{fx:JSON.stringify(roots),sel:sels.slice()});
     };
-    const P=()=>sel===''?[]:sel.split('.');
-    const cur=()=>fxAt(root,P());
-    const goto_=p=>{sel=p?p.join('.'):''; };
-    const after_=()=>{const h=fxNextHole(root,P()); if(h) goto_(h);};
-    const put=v=>{                                   /* величина або число */
+    const P=()=>sels[act]===''?[]:sels[act].split('.');
+    const cur=()=>fxAt(roots[act],P());
+    const goto_=p=>{sels[act]=p?p.join('.'):'';};
+    const after_=()=>{const h=fxNextHole(roots[act],P()); if(h) goto_(h);};
+    const put=v=>{
       const n=cur();
-      if(v.num&&n.t==='num'){n.v=String(n.v)+v.num;}
-      else root=fxSet(root,P(),v.num?{t:'num',v:v.num}:{t:'sym',v:v.sym});
+      if(v.num&&n.t==='num') n.v=String(n.v)+v.num;
+      else roots[act]=fxSet(roots[act],P(),v.num?{t:'num',v:v.num}:{t:'sym',v:v.sym});
       if(!v.num) after_();
       draw();
     };
-    const wrapBin=(mk,go)=>{                         /* обгортаємо вибране */
-      const n=cur();
-      root=fxSet(root,P(),mk(n));
-      goto_(P().concat(go));
-      draw();
+    const wrapBin=(mk,go)=>{
+      roots[act]=fxSet(roots[act],P(),mk(cur()));
+      goto_(P().concat(go)); draw();
     };
     const wrapUn=mk=>{
       const n=cur(), was=n.t==='hole';
-      root=fxSet(root,P(),mk(n));
+      roots[act]=fxSet(roots[act],P(),mk(n));
       if(was) goto_(P().concat('a'));
       draw();
     };
     const del=()=>{
       const p=P(), n=cur();
       if(n.t==='num'&&String(n.v).length>1){n.v=String(n.v).slice(0,-1); draw(); return;}
-      if(n.t!=='hole'){root=fxSet(root,p,hole()); draw(); return;}
+      if(n.t!=='hole'){roots[act]=fxSet(roots[act],p,hole()); draw(); return;}
       if(!p.length) return;
-      const pp=p.slice(0,-1), last=p[p.length-1], par=fxAt(root,pp);
+      const pp=p.slice(0,-1), last=p[p.length-1], par=fxAt(roots[act],pp);
       const other=(par.t==='fun'||par.t==='rad'||par.t==='neg')?null:par[last==='a'?'b':'a'];
-      root=fxSet(root,pp,other||hole());
+      roots[act]=fxSet(roots[act],pp,other||hole());
       goto_(pp); draw();
     };
     const key=(row,label,fn,cls)=>{
@@ -1848,8 +1892,8 @@ function buildTasks(){
       b.addEventListener('click',e=>{e.preventDefault(); fn();});
       box.querySelector(row).appendChild(b); return b;
     };
-    for(const v of T.vars) key('.ksym','<i>'+esc(v.s)+'</i>',()=>put({sym:v.s})).title=v.t||'';
-    for(const k in (T.consts||{})) key('.ksym','<i>'+esc(k)+'</i>',
+    for(const v of T.vars) key('.ksym','<i>'+symHtml(v.s)+'</i>',()=>put({sym:v.s})).title=v.t||'';
+    for(const k in (T.consts||{})) key('.ksym','<i>'+symHtml(k)+'</i>',
       (kk=>()=>put({sym:kk}))(k)).title=T.consts[k].t||'';
     key('.ksym','π',()=>put({sym:'π'}));
     key('.kop','+',()=>wrapBin(n=>({t:'op',o:'+',a:n,b:hole()}),'b'));
@@ -1862,23 +1906,34 @@ function buildTasks(){
     key('.kop','√',()=>wrapUn(n=>({t:'rad',a:n})));
     key('.kop','−<i>a</i>',()=>wrapUn(n=>n.t==='neg'?n.a:{t:'neg',a:n}),'dim')
       .title='змінити знак';
+    key('.kop','|<i>a</i>|',()=>wrapUn(n=>({t:'fun',f:'abs',a:n})),'dim').title='модуль';
+    key('.kop','⌊<i>a</i>⌋',()=>wrapUn(n=>({t:'fun',f:'floor',a:n})),'dim')
+      .title='ціла частина, заокруглення вниз';
+    key('.kop','⌈<i>a</i>⌉',()=>wrapUn(n=>({t:'fun',f:'ceil',a:n})),'dim')
+      .title='заокруглення вгору';
     for(const f of FXFUNS) key('.kfun',f,(ff=>()=>wrapUn(n=>({t:'fun',f:ff,a:n})))(f),'wide');
     for(let d=1;d<=9;d++) key('.knum',String(d),(dd=>()=>put({num:String(dd)}))(d));
     key('.knum','0',()=>put({num:'0'}));
     key('.knum',',',()=>put({num:','}));
     key('.kdo','← стерти',del,'wide');
-    key('.kdo','очистити',()=>{root=hole(); sel=''; verd.textContent=''; draw();},'wide');
-    const chk=key('.kdo','Перевірити',()=>run(),'wide');
-    chk.className='btn';
+    key('.kdo','очистити',()=>{roots[act]=hole(); sels[act]=''; verd.textContent=''; draw();},'wide');
+    key('.kdo','Перевірити',()=>run(),'wide').className='btn';
 
-    fx.addEventListener('click',e=>{
-      const t=e.target.closest('[data-p]'); if(!t) return;
-      sel=t.getAttribute('data-p'); draw();
+    lines.forEach((line,i)=>{
+      line.addEventListener('click',e=>{
+        act=i;
+        const t=e.target.closest('[data-p]');
+        if(t) sels[i]=t.getAttribute('data-p');
+        draw();
+      });
     });
     box.addEventListener('keydown',e=>{
       if(e.key==='Backspace'){e.preventDefault(); del();}
       else if(e.key==='Enter'){e.preventDefault(); run();}
-      else if(e.key==='Tab'&&!e.shiftKey){const h=fxNextHole(root,P()); if(h){e.preventDefault(); goto_(h); draw();}}
+      else if(e.key==='Tab'&&!e.shiftKey){
+        const h=fxNextHole(roots[act],P());
+        if(h){e.preventDefault(); goto_(h); draw();}
+      }
     });
 
     /* ---- підказки ---- */
@@ -1904,16 +1959,25 @@ function buildTasks(){
 
     /* ---- перевірка ---- */
     function run(){
-      if(fxHoles(root).length){
-        verd.className='verdict err';
-        verd.textContent='Формула ще не добудована — лишилися порожні місця.';
+      const res=parts.map((q,i)=>{
+        if(fxHoles(roots[i]).length)
+          return {s:'err',m:'формула не добудована — лишилися порожні місця'};
+        try{ return checkAst(T,q,fxAst(roots[i])); }
+        catch(e){ return {s:'err',m:'вираз не вдалося обчислити'}; }
+      });
+      const allOk=res.every(r=>r.s==='ok');
+      if(allOk){
+        verd.className='verdict ok';
+        verd.textContent=parts.length>1
+          ? 'Правильно — усі частини відповіді збігаються з еталоном.'
+          : 'Правильно. Вираз збігається з еталоном на всіх пробних наборах значень.';
+        taskPatch(mid,{ok:1});
         return;
       }
-      let r;
-      try{ r=checkAst(T,fxAst(root)); }
-      catch(e){ r={s:'err',m:'Вираз не вдалося обчислити.'}; }
-      verd.className='verdict '+r.s; verd.textContent=r.m;
-      if(r.s==='ok') taskPatch(mid,{ok:1});
+      verd.className='verdict '+(res.some(r=>r.s==='no')?'no':'err');
+      verd.textContent=parts.length>1
+        ? res.map((r,i)=>parts[i].what+': '+(r.s==='ok'?'правильно':r.m)).join(' · ')
+        : (res[0].m.charAt(0).toUpperCase()+res[0].m.slice(1));
     }
     if(saved.ok){verd.className='verdict ok'; verd.textContent='Цю задачу ви вже розв’язали.';}
     draw();
