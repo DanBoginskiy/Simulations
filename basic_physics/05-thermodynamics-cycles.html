@@ -142,6 +142,7 @@ table.read tr:last-child td{border-bottom:none}
 #m2scene{width:100%; aspect-ratio:940/340; min-height:min(210px,56vw)}
 #m3scene{width:100%; aspect-ratio:940/420; min-height:min(210px,56vw)}
 #m5scene{width:100%; aspect-ratio:940/450; min-height:min(210px,56vw)}
+#m6scene{width:100%; aspect-ratio:990/442; min-height:min(210px,56vw)}
 
 footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 @media (max-width:1240px){
@@ -215,6 +216,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <button data-m="m2">2 · Фазові переходи</button>
   <button data-m="m3">3 · Цикл Карно</button>
   <button data-m="m5">4 · Холодильник</button>
+  <button data-m="m6">5 · Точка роси</button>
 </nav>
 
 <!-- ================= МОДУЛЬ 1 ================= -->
@@ -447,6 +449,70 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   </div>
 </section>
 
+<!-- ================= МОДУЛЬ 6 ================= -->
+<section class="module" id="m6">
+  <p class="caption">Абсолютна вологість за ніч не змінюється — змінюється лише крива насичення.
+  Щойно вона опускається нижче за пару, що вже є в повітрі, надлишок випадає росою.</p>
+
+  <div class="pgrid">
+    <div class="scene">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="ibtn" id="m6play" title="пуск / пауза">⏸</button>
+          <button class="ibtn" id="m6re" title="заново">↺</button>
+          <span class="lbl" id="m6t"></span>
+        </div>
+        <canvas id="m6scene"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Нічне охолодження</h3>
+        <div class="chartrow">
+          <div class="chartbox" id="m6crw">
+            <h4>крива насичення й абсолютна вологість, г/м³</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>ρ_нас(t)</span><span><span class="chip cA"></span>абсолютна — стала</span><span><span class="chip cI"></span>зараз</span></div>
+            <canvas id="m6cr"></canvas>
+          </div>
+          <div class="chartbox" id="m6cfw">
+            <h4>відносна вологість за ніч, %</h4>
+            <div class="legend sm"><span><span class="chip cB"></span>φ(t)</span><span><span class="chip cI"></span>100 % — точка роси</span></div>
+            <canvas id="m6cf"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Умова задачі 3.4</h3>
+        <p class="cond">Увечері температура повітря була <b>t₁ = 20 °C</b> при відносній вологості
+        <b>φ₁ = 70 %</b>, а під ранок знизилася до <b>t₂ = 10 °C</b>. Визначити масу роси <b>m</b>,
+        що випала з кожного кубометра повітря.</p>
+        <div class="kv"><span><var>t</var><sub>1</sub> — увечері</span><b id="m6vt1"></b></div>
+        <div class="kv"><span><var>φ</var><sub>1</sub> — відносна вологість увечері</span><b id="m6vf1"></b></div>
+        <div class="kv"><span><var>t</var><sub>2</sub> — під ранок</span><b id="m6vt2"></b></div>
+      </div>
+      <div class="panel">
+        <h3>Відповідь</h3>
+        <button class="btn" id="m6ans">показати відповідь<small>маса роси з кубометра</small></button>
+        <div class="ansbox" id="m6ansBox" hidden>
+          <div class="kv"><span>точка роси</span><b id="m6rTd"></b></div>
+          <div class="kv"><span>маса роси <var>m</var></span><b id="m6rM"></b></div>
+          <div class="formulas" id="m6fx"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Стан повітря зараз</h3>
+        <div class="kv"><span>температура</span><b id="m6kT"></b></div>
+        <div class="kv"><span>абсолютна вологість<span class="badge">не змінюється до роси</span></span><b id="m6kAbs"></b></div>
+        <div class="kv"><span>густина насиченої пари</span><b id="m6kSat"></b></div>
+        <div class="kv"><span>відносна вологість</span><b id="m6kPhi"></b></div>
+        <div class="kv"><span>випало роси</span><b id="m6kDew"></b></div>
+        <div class="kv"><span>стан</span><b id="m6kSt"></b></div>
+        <div class="formulas">роси не буде, якщо охолодження не дійде до точки роси</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer>Допоміжний матеріал з термодинаміки · перший закон · рівняння теплового балансу · цикли теплових машин</footer>
 </div>
 
@@ -464,7 +530,15 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    ===================================================================== */
 
 /* ===================== спільні утиліти ===================== */
-const $=id=>document.getElementById(id);
+const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
+  style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+  addEventListener(){},removeEventListener(){},appendChild(){},remove(){},
+  querySelector(){return null;},querySelectorAll(){return [];},
+  closest(){return null;},contains(){return false;},focus(){},click(){},
+  getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
+/* Порожній об'єкт замість відсутнього вузла: модуль може писати в поле, якого
+   на цій сторінці немає, і сторінка від цього не падає. */
+function $(id){return document.getElementById(id)||NULLEL;}
 const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',globe:'#f2f5f9',sky:'#f6f4ef'};
 const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
@@ -2010,7 +2084,326 @@ const M5={
   }
 };
 
-const MODULES={m1:M1,m2:M2,m3:M3,m5:M5};
+const RSAT=[4.85,6.80,9.40,10.70,12.10,12.80,13.60,15.40,17.30,19.40,23.00,30.30,39.60,51.20];
+
+/* густина насиченої пари, г/м³ — табличні значення */
+const TSAT=[0,5,10,12,14,15,16,18,20,22,25,30,35,40];
+
+function rhoSat(t){
+  if(t<=TSAT[0]) return RSAT[0];
+  if(t>=TSAT[TSAT.length-1]) return RSAT[RSAT.length-1];
+  let i=0; while(TSAT[i+1]<t) i++;
+  return RSAT[i]+(RSAT[i+1]-RSAT[i])*(t-TSAT[i])/(TSAT[i+1]-TSAT[i]);
+}
+
+/* ---- колонка повзунків під сценою -------------------------------------
+   Той самий набір, що у файлах 12 і 13: смуга керування під кресленням.
+   Назви slCol/slGrips окремі, бо gaugeCol у цьому файлі — старіші
+   вертикальні шкали, на яких тримаються решта модулів. */
+/* Полотно лише для вимірювання тексту: gaugeGrips() малює не сам, а мусить
+   знати ширину підпису так само, як gaugeCol(), інакше доріжка й ручка
+   роз'їдуться. Один контекст на сторінку, нічого не малює. */
+const MEAS=document.createElement('canvas').getContext('2d');
+
+function labWidth(s,size,bold){
+  MEAS.font=(bold?'600 ':'')+size+'px system-ui,sans-serif';
+  return MEAS.measureText(s).width;
+}
+
+/* Ліва поличка під підписи повзунків. Була стала — 110 px, — і довгий підпис
+   («поверхневий натяг σ, мН/м», «маса пластиліну, кг») просто звисав за лівий
+   край кадру. Тепер доріжка з'їжджає праворуч рівно на стільки, скільки
+   бракує, і рівно на стільки ж коротшає: її правий кінець і підпис значення
+   лишаються на місці. */
+function gfit(C,list){
+  let need=0;
+  for(const m of list) need=Math.max(need,labWidth(m[1],11*TK,true));
+  /* Зсовуємось не більше, ніж дозволяє сама доріжка: її правий кінець і
+     підпис значення мусять лишитися на місці, інакше замість підпису за
+     лівий край поїде число за правий. Далі підпис стискається кеглем. */
+  const d=Math.min(Math.ceil(need)+22-C.x[0],Math.max(0,C.W-60));
+  if(d<=0) return C;
+  return {...C, x:C.x.map(v=>v+d), W:Math.max(60,C.W-d)};
+}
+
+/* Смуга керування під кресленням. Це не повзунки з бічної колонки: смуга
+   лежить у тому самому кадрі, під самою сценою, тягнеться пальцем і
+   перебирається з клавіатури нарівні з рештою ручок. Її беруть тоді, коли
+   величина не має власного розміру в кресленні (частота, кількість витків,
+   коефіцієнт опору) — саме той випадок, для якого §19 іще припускав повзунок.
+   Смузі відведено власну висоту в полотні, тож вона нічого не накриває. */
+function gpos(C,i){
+  return {x:C.x[i%C.cols], y:C.y0+Math.floor(i/C.cols)*C.dy};
+}
+
+/* Повзунок-жолоб. Тонка лінія з крапкою радіуса 8 px була незручна: у неї
+   важко влучити й неможливо вести значення пальцем. Тепер це широкий жолоб
+   із великим повзунком, підписаними межами й значенням поруч; уся доріжка —
+   зона захоплення, тож повзунок стрибає під палець. */
+function slideTrack(g,x,y,W,f,col,vertical){
+  /* Жолоб міряється тим самим TK, що й підписи: інакше на телефоні
+     дванадцятипіксельна смуга лишається завширшки з половину сцени. */
+  const F=Math.max(0,Math.min(1,f));
+  const TH=12*TK, hT=TH/2, R=10*TK, mn=Math.min(TH,W);
+  g.fillStyle='#eceae3';
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT,y-W,TH,W,hT); else g.roundRect(x,y-hT,W,TH,hT);
+  g.fill();
+  g.strokeStyle=CLR.axis; g.lineWidth=1;
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT+.5,y-W+.5,TH-1,W-1,hT-.5);
+  else g.roundRect(x+.5,y-hT+.5,W-1,TH-1,hT-.5);
+  g.stroke();
+  g.fillStyle=col; g.globalAlpha=0.34;
+  g.beginPath();
+  if(vertical) g.roundRect(x-hT,y-Math.max(mn,F*W),TH,Math.max(mn,F*W),hT);
+  else g.roundRect(x,y-hT,Math.max(mn,F*W),TH,hT);
+  g.fill(); g.globalAlpha=1;
+  for(let q=0;q<=4;q++){
+    g.strokeStyle=CLR.axis; g.lineWidth=1; g.beginPath();
+    if(vertical){const ty=y-q*W/4; g.moveTo(x+hT+3*TK,ty+.5); g.lineTo(x+hT+6*TK,ty+.5);}
+    else {const tx=x+q*W/4; g.moveTo(tx+.5,y+hT+3*TK); g.lineTo(tx+.5,y+hT+6*TK);}
+    g.stroke();
+  }
+  const hx=vertical?x:x+F*W, hy=vertical?y-F*W:y;
+  g.fillStyle='#fff'; g.strokeStyle=col; g.lineWidth=3;
+  g.beginPath(); g.arc(hx,hy,R,0,7); g.fill(); g.stroke();
+  g.fillStyle=col;
+  g.beginPath(); g.arc(hx,hy,R*0.35,0,7); g.fill();
+  return {hx,hy};
+}
+
+function gcolOf(b,n){
+  const two=b.w>=560, cols=two?2:1, rows=Math.ceil(n/cols);
+  const gtop=b.h-(n?rows*38+22:0);
+  const W=two?b.w*0.5-210:Math.max(120,b.w-230);
+  return {W, x:two?[110,b.w*0.5+110]:[110,110], cols, dy:38, rows, gtop,
+    w:b.w, h:b.h, y0:gtop+26};
+}
+
+function slCol(g,C0,list,st){
+  g.clearRect(0,C0.gtop,C0.w,C0.h-C0.gtop);
+  if(!list.length) return;
+  const C=gfit(C0,list);
+  g.strokeStyle=CLR.grid; g.lineWidth=1;
+  g.beginPath(); g.moveTo(8,C.gtop+8.5);
+  g.lineTo(Math.min(C.w-8,C.x[C.cols-1]+C.W+16),C.gtop+8.5); g.stroke();
+  list.forEach((m,i)=>{
+    const p=gpos(C,i);
+    slideTrack(g,p.x,p.y,C.W,(st[m[0]]-m[2])/(m[3]-m[2]),m[5]||CLR.k1,false);
+    txt(g,m[1],p.x-15,p.y+4,{color:CLR.sec,size:11,bold:true,align:'right',max:p.x-19});
+    /* Ні меж, ні поточного числа: положення повзунка саме й показує, більша
+       величина чи менша, а наскільки — видно з довжини вектора на сцені. */
+  });
+}
+
+function slGrips(C0,list,st){
+  const C=gfit(C0,list);
+  return list.map((m,i)=>{
+    const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
+    return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
+      hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      move:(px,py)=>{
+        st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
+        if(m[6]) m[6].call(st);
+      }};
+  });
+}
+
+const M6={
+  mode:'free', t1:20, f1:0.70, t2:10,
+  t:0, playing:true, waitT:0, showAns:true, TT:6.0,
+  T1MIN:10, T1MAX:35, T2MIN:0, T2MAX:30,
+  hr:{x:null}, hf:{x:null}, tipr:null, tipf:null,
+  GG:[['t1','увечері t₁, °C',10,35,1,CLR.k2,null,'m6vt1',0,'°C'],
+      ['f1','вологість φ₁',0.3,0.95,0.01,CLR.k1,null,'m6vf1',2,''],
+      ['t2','уранці t₂, °C',0,30,1,CLR.k3,null,'m6vt2',0,'°C']],
+  abs(){return this.f1*rhoSat(this.t1);},
+  dewPoint(){
+    const a=this.abs();
+    let lo=0,hi=40;
+    for(let i=0;i<40;i++){const m=(lo+hi)/2; if(rhoSat(m)<a) lo=m; else hi=m;}
+    return (lo+hi)/2;
+  },
+  dew(){return Math.max(0,this.abs()-rhoSat(this.t2));},
+  Tnow(){return this.t1+(this.t2-this.t1)*Math.min(1,this.t/(this.TT*0.85));},
+  absNow(){return Math.min(this.abs(),rhoSat(this.Tnow()));},
+  dewNow(){return Math.max(0,this.abs()-rhoSat(this.Tnow()));},
+  setTask(){this.t1=20; this.f1=0.70; this.t2=10;},
+  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  updBtn(){$('m6play').textContent=this.playing?'⏸':'▶';},
+  setMode(m){this.mode=m; if(m==='task') this.setTask();
+    this.showAns=m!=='task'; this.syncAns(); this.reset();},
+  syncAns(){const task=this.mode==='task';
+    $('m6ans').hidden=!task||this.showAns; $('m6ansBox').hidden=task&&!this.showAns;},
+  init(){
+    grip('m6scene',this,()=>this.grips());
+    $('m6ans').onclick=()=>{this.showAns=true; this.syncAns();};
+    $('m6play').onclick=()=>{
+      if(!this.playing&&this.t>=this.TT) this.reset();
+      else {this.playing=!this.playing; this.updBtn();}};
+    $('m6re').onclick=()=>this.reset();
+    this.tipr=makeTip('m6crw'); this.tipf=makeTip('m6cfw');
+    hover('m6cr',this.hr); hover('m6cf',this.hf);
+    this.hr.xlab='t'; this.hr.xunit='°C'; this.hr.xdec=0;
+    this.hf.xlab='t'; this.hf.xunit='°C'; this.hf.xdec=0;
+    this.setTask(); this.syncAns(); this.reset();
+  },
+  gcol(b){return gcolOf(b,this.GG.length);},
+  geo(b){return frozen(this,b,bb=>{
+    const C=this.gcol(bb), H=C.gtop-52;
+    return {C,H,gx:bb.w*0.56,gy:64,gw:Math.min(180,bb.w*0.2),gh:H-90,
+      sx:34,sy:60,sw:bb.w*0.42,sh:H-70};
+  });},
+  grips(){
+    if(this.mode!=='free') return [];
+    const b=cvx('m6scene'); if(!b) return [];
+    return slGrips(this.gcol(b),this.GG,this);
+  },
+  tick(dt){
+    if(this._grab==null){
+      if(this.playing){
+        this.t=Math.min(this.TT,this.t+dt);
+        if(this.t>=this.TT){this.playing=false; this.waitT=0; this.updBtn();}
+      } else if(this.t>=this.TT){this.waitT+=dt; if(this.waitT>2.0) this.reset();}
+    }
+    this.render();
+  },
+  render(){this.scene(); this.table(); this.charts(); this.gdraw();},
+  gdraw(){
+    const b=cvx('m6scene'); if(!b) return;
+    const C=this.gcol(b);
+    if(this.mode==='free'){
+      slCol(b.g,C,this.GG,this);
+      for(const hh of slGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
+    } else {
+      b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
+      b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
+      b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
+      txt(b.g,'умова задачі: 20 °C і 70 % увечері, 10 °C уранці',C.w/2,C.gtop+30,
+        {color:CLR.mut,size:10.5,align:'center'});
+    }
+    $('m6vt1').textContent=fmt(this.t1,0)+' °C';
+    $('m6vf1').textContent=fmt(this.f1*100,0)+' %';
+    $('m6vt2').textContent=fmt(this.t2,0)+' °C';
+  },
+  scene(){
+    const b=cvx('m6scene'); if(!b) return;
+    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
+    const T=this.Tnow(), dew=this.dewNow(), td=this.dewPoint();
+    g.clearRect(0,0,w,H);
+    /* Нічна сцена: шибка, на якій осідає роса. Трава була зайвою деталлю —
+       пара конденсується на будь-якій холодній поверхні, і скло показує це
+       чистіше: видно й самі краплі, і те, як вони стікають. */
+    const sy=Q.sy, sh=Q.sh, sx=Q.sx, sw=Q.sw;
+    g.fillStyle='#eef2f7'; g.fillRect(sx,sy,sw,sh);
+    g.strokeStyle=CLR.axis; g.lineWidth=1.5;
+    g.strokeRect(sx+.5,sy+.5,sw-1,sh-1);
+    /* рама шибки: горизонтальний і вертикальний імпости */
+    g.strokeStyle='#b9b7ae'; g.lineWidth=7;
+    g.beginPath(); g.moveTo(sx+sw/2,sy); g.lineTo(sx+sw/2,sy+sh);
+    g.moveTo(sx,sy+sh*0.52); g.lineTo(sx+sw,sy+sh*0.52); g.stroke();
+    g.strokeStyle='rgba(255,255,255,.8)'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(sx+sw/2-2,sy); g.lineTo(sx+sw/2-2,sy+sh); g.stroke();
+    /* краплі роси на склі — їх тим більше, що більша випала маса */
+    const nd=Math.round(Math.min(46,dew*8));
+    for(let i=0;i<nd;i++){
+      const bx=sx+14+((i*61)%(sw-28)), by=sy+16+((i*37)%(sh-32));
+      const r=2.4+((i*13)%3)*0.6;
+      dot(g,bx,by,r,'rgba(42,120,214,.55)');
+      /* найбільші вже стікають доріжкою */
+      if(r>3.2){
+        g.strokeStyle='rgba(42,120,214,.30)'; g.lineWidth=1.4;
+        g.beginPath(); g.moveTo(bx,by); g.lineTo(bx,Math.min(sy+sh-4,by+16)); g.stroke();
+      }
+    }
+    txt(g,'скло вночі остигає',sx+10,sy+20,{color:CLR.sec,size:11.5,bold:true});
+    txtN(g,fmt(T,1)+' °C',sx+sw-10,sy+20,{color:'#b8431a',size:13,bold:true,align:'right'});
+    if(dew>0.01) pillN(g,'роси: '+fmt(dew,2)+' г/м³',sx+sw/2,sy+sh-14,
+      {color:'#1c5cab',size:12,bold:true});
+    else txt(g,'роса ще не випадає',sx+sw/2,sy+sh-12,{color:CLR.mut,size:11,align:'center'});
+    /* дві колонки: скільки пари в повітрі і скільки воно ще може втримати */
+    const cx=Q.gx, gw=Q.gw, gy=Q.gy, gh=Q.gh;
+    const maxR=RSAT[RSAT.length-1]*0.62;
+    const colB=(x,val,col,tc,lab,sub)=>{
+      g.fillStyle='#eceae3';
+      g.beginPath(); g.roundRect(x,gy,gw*0.4,gh,5); g.fill();
+      g.strokeStyle=CLR.axis; g.lineWidth=1;
+      g.beginPath(); g.roundRect(x+.5,gy+.5,gw*0.4-1,gh-1,4.5); g.stroke();
+      const fh=Math.max(2,Math.min(1,val/maxR)*gh);
+      g.fillStyle=col; g.globalAlpha=0.40;
+      g.beginPath(); g.roundRect(x,gy+gh-fh,gw*0.4,fh,5); g.fill(); g.globalAlpha=1;
+      txt(g,lab,x+gw*0.2,gy-20,{color:tc,size:11,bold:true,align:'center'});
+      txt(g,sub,x+gw*0.2,gy-7,{color:CLR.mut,size:9.5,align:'center'});
+      txtN(g,fmt(val,2),x+gw*0.2,gy+gh+16,{color:CLR.ink,size:11,bold:true,align:'center'});
+    };
+    colB(cx,this.abs(),CLR.k1,'#1c5cab','у повітрі','абсолютна');
+    colB(cx+gw*0.6,rhoSat(T),CLR.k3,'#0d7a55','межа','ρ_нас(t)');
+    /* надлишок — саме він і випадає */
+    if(dew>0.01){
+      const y1=gy+gh-Math.min(1,this.abs()/maxR)*gh;
+      const y2=gy+gh-Math.min(1,rhoSat(T)/maxR)*gh;
+      g.strokeStyle=CLR.k2; g.lineWidth=2;
+      arrow(g,cx+gw*0.48,y2,cx+gw*0.48,y1,CLR.k2,2);
+      arrow(g,cx+gw*0.48,y1,cx+gw*0.48,y2,CLR.k2,2);
+      /* надлишок пари, що випадає росою, — шукана маса */
+      pill(g,'надлишок — це й випаде росою',cx+gw*0.5,(y1+y2)/2+4,
+        {color:'#b8431a',size:11.5,bold:true});
+    }
+    txt(g,'г/м³',cx-6,gy-7,{color:CLR.mut,size:10,align:'right'});
+    const reached=T<=td+1e-9;
+    capN(g,reached?'точку роси пройдено':'до точки роси ще далеко',12,20,{color:reached?CLR.k1:CLR.ink,size:12.5,bold:true});
+    txt(g,'точка роси — там крива насичення дорівнює наявній парі',
+      12,36,{color:CLR.mut,size:10.5});
+  },
+  table(){
+    const T=this.Tnow(), td=this.dewPoint();
+    $('m6t').textContent='t = '+fmt(T,1)+' °C';
+    $('m6rTd').textContent=fmt(td,1)+' °C';
+    $('m6rM').textContent=fmt(this.dew(),2)+' г з кубометра';
+    $('m6kT').textContent=fmt(T,1)+' °C';
+    $('m6kAbs').textContent=fmt(this.abs(),2)+' г/м³';
+    $('m6kSat').textContent=fmt(rhoSat(T),2)+' г/м³';
+    $('m6kPhi').textContent=fmt(100*Math.min(this.abs(),rhoSat(T))/rhoSat(T),0)+' %';
+    $('m6kDew').textContent=fmt(this.dewNow(),2)+' г/м³';
+    $('m6kSt').textContent=this.dewNow()>0.01?'роса випадає':(T<=td+0.5?'на межі':'роси немає');
+    $('m6fx').innerHTML=
+      '<i>ρ</i><sub>абс</sub> = <i>φ</i><sub>1</sub><i>ρ</i><sub>нас</sub>(<i>t</i><sub>1</sub>) = '+
+      fmt(this.f1,2)+'·'+fmt(rhoSat(this.t1),2)+' = <b>'+fmt(this.abs(),2)+' г/м³</b><br>'+
+      '<i>m</i> = <i>ρ</i><sub>абс</sub> − <i>ρ</i><sub>нас</sub>(<i>t</i><sub>2</sub>) = '+
+      fmt(this.abs(),2)+' − '+fmt(rhoSat(this.t2),2)+' = <b>'+fmt(this.dew(),2)+' г/м³</b>';
+  },
+  charts(){
+    const T=this.Tnow(), a=this.abs();
+    const br=cvx('m6cr');
+    if(br){
+      const ts=[],ys=[],ab=[];
+      for(let i=0;i<=60;i++){const tt=40*i/60; ts.push(tt); ys.push(rhoSat(tt)); ab.push(a);}
+      const r=drawChart(br,{tMax:40,yMin:0,yMax:36,yLab:'г/м³',xLab:'t, °C',xStep:10,
+        yDec:0,hover:this.hr.x,
+        series:[{ts,ys,color:CLR.k3,label:'ρ_нас'},
+                {ts,ys:ab,color:CLR.k1,label:'у повітрі',dash:[5,4]},
+                {ts:[T,T],ys:[0,Math.max(a,rhoSat(T))],color:CLR.ink,label:'зараз',dash:[4,3]}]});
+      showTip(this.tipr,r,'г/м³',this.hr,
+        [['ρ_нас',CLR.k3],['абсолютна',CLR.k1],['зараз',CLR.ink]],2);
+    }
+    const bf=cvx('m6cf');
+    if(bf){
+      const ts=[],ys=[];
+      for(let i=0;i<=60;i++){
+        const tt=this.T2MIN+(this.T1MAX-this.T2MIN)*i/60; ts.push(tt);
+        ys.push(Math.min(100,100*a/rhoSat(tt)));
+      }
+      const r=drawChart(bf,{tMax:this.T1MAX,yMin:0,yMax:118,yLab:'%',xLab:'t, °C',xStep:5,
+        yDec:0,hover:this.hf.x,
+        series:[{ts,ys,color:CLR.k2,label:'φ'},
+                {ts:[this.T2MIN,this.T1MAX],ys:[100,100],color:CLR.ink,label:'100 %',dash:[5,4]}]});
+      showTip(this.tipf,r,'%',this.hf,[['φ',CLR.k2],['насичення',CLR.ink]],0);
+    }
+  }
+};
+
+const MODULES={m1:M1,m2:M2,m3:M3,m5:M5,m6:M6};
 
 /* ===================== завантаження ===================== */
 let ACT='m1';
