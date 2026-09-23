@@ -239,10 +239,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
   <div class="panel">
     <div class="toolbar">
-      <div class="seg" id="m1geom">
-        <button data-v="head" class="active" style="--c:var(--k1)">лобове</button>
-        <button data-v="obl" style="--c:var(--k3)">не лобове</button>
-      </div>
       <span class="lbl">Характер удару:</span>
       <div class="seg" id="m1kind">
         <button data-v="elastic" class="active" style="--c:var(--k1)">абсолютно пружний</button>
@@ -1298,7 +1294,7 @@ const MU_S=4*Math.PI*Math.PI;     /* GM Сонця в одиницях а.о.³/
 
 /* ===================== МОДУЛЬ 1 · зіткнення тіл ===================== */
 const M1={
-  kind:'elastic', geom:'head', m1:1, v1:4, m2:2, v2:-1, k:0.6,
+  kind:'elastic', geom:'obl', m1:1, v1:4, m2:2, v2:-1, k:0.6,
   bp:0.3, X0:-4,                 /* прицільний параметр і точка старту шайби 1 */
   T:6, t:0, playing:false, waitT:0,
   hp:{x:null}, he:{x:null}, tipp:null, tipe:null,
@@ -1453,7 +1449,6 @@ const M1={
   },
   init(){
     seg('m1kind',v=>{this.kind=v; $('m1gK').hidden=v!=='partial'; this.reset();});
-    seg('m1geom',v=>{this.geom=v; this.showGeom(); this.reset();});
     grip('m1scene',this,()=>this.grips());
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.tMax()) this.reset();
@@ -1466,12 +1461,13 @@ const M1={
     this.showGeom();
     this.reset();
   },
+  /* Окремого режиму «лобове» більше немає: лобовий удар — це просто нульова
+     прицільна відстань, і тримати для нього окрему кнопку означало ховати саме
+     цю залежність. Лишилася одна площина, на якій b тягнуть ручкою, а сцена
+     сама каже, лобовий зараз удар чи ні. */
   showGeom(){
-    const ob=this.geom==='obl';
-    $('m1gB').hidden=!ob;
-    /* косий удар — це площина, а не напрямна: їй потрібна висота. Полотно
-       міняє висоту разом із режимом, кеш розмірів скидається. */
-    $('m1scene').style.height=ob?'540px':'';
+    $('m1gB').hidden=false;
+    $('m1scene').style.height='540px';
     delete CV['m1scene'];
   },
   TM(){return this.geom==='obl'?this.tMaxOb():this.tMax();},
@@ -1565,10 +1561,21 @@ const M1={
     }
     if(this.kind==='partial')
       shelf(g,{y:h-18,x0:w-4*66-6,dx:66},this.KK,this.k,'матеріал');
-    capN(g,st.hit?'після удару кожна шайба летить своїм кутом'
-                :'шайба 1 зачепить шайбу 2 збоку — удар буде не лобовим',12,20,{color:st.hit?CLR.k3:CLR.k1,size:12.5,bold:true});
+    /* Лобовий удар — не окремий режим, а окремий випадок: прицільна відстань
+       нульова, центри лежать на лінії польоту. Сцена каже це прямо й міняє
+       слова разом із ручкою b — саме в цьому й уся залежність. */
+    const head=Math.abs(q.b)<=0.03;
+    capN(g,st.hit?(head?'удар був лобовий: обидві шайби лишилися на лінії польоту'
+                       :'удар був не лобовий: кожна шайба пішла своїм кутом')
+                :(head?'удар буде лобовий: центри шайб на одній лінії'
+                       :'удар буде не лобовий: лінія польоту проходить повз центр'),
+      12,20,{color:head?CLR.k1:CLR.k3,size:12.5,bold:true});
     capN(g,'обмін відбувається вздовж лінії центрів; уздовж дотичної швидкості не міняються',
       12,36,{color:CLR.mut,size:10.5});
+    /* Та сама відповідь — і на самому кресленні, біля мітки b: із бічної панелі
+       її не видно, коли дивишся на шайби. */
+    txt(g,head?'b = 0 — удар лобовий':'b ≠ 0 — удар не лобовий',
+      SX(this.WX[0])+4,SY(-this.WY)+32,{color:head?'#1c5cab':'#0d7a55',size:11.5,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   tableOb(){
@@ -2415,7 +2422,10 @@ const M4={
   geo(b){return frozen(this,b,bb=>{
     /* найдовший підвіс діапазону (L ≤ 2 м) — кадр під нього, а не під поточний */
     const LMAX=2;
-    const sc=fitScale(bb.w,bb.h,150,56,2.6*LMAX,1.25*LMAX,0,0);
+    /* Кадр був розрахований на 2,6 довжини підвісу вшир, хоч маятник далі
+       ніж на дві не відхиляється, та ще й лишав 150 px полів — маятник виходив
+       удвічі менший за місце, яке мав. */
+    const sc=fitScale(bb.w,bb.h,96,34,2.15*LMAX,1.12*LMAX,0,0);
     const px=bb.w*0.52, py=30, th=this.th();
     return {sc,px,py,th, bx:px+this.L*sc*Math.sin(th), by:py+this.L*sc*Math.cos(th),
       gx0:px-this.L*sc*1.05-40, gy0:py+this.L*sc};
@@ -2623,7 +2633,10 @@ const M5={
     /* Кадр під найбільшу орбіту діапазону (a ≤ 5). Півширина максимальна при a = 5,
        піввисота a√(1−e²) — там само при e = 0, тож обидві межі дає той самий a. */
     const AMAX=5;
-    const sc=fitScale(bb.w,bb.h,40,44,2*AMAX+0.6,2*AMAX+0.6,0,0);
+    /* Поля кадру зменшено: орбіта має заповнювати полотно, а не плавати
+       посеред порожнечі. Розмах лишається за найбільшою орбітою діапазону — це
+       й дає змогу бачити, що велика піввісь справді росте (§10). */
+    const sc=fitScale(bb.w,bb.h,14,20,2*AMAX+0.4,2*AMAX+0.4,0,0);
     const cx=bb.w/2+a*e*sc, cy=bb.h/2+6;
     return {sc,cx,cy,SX:x=>cx+x*sc,SY:y=>cy-y*sc};
   });},

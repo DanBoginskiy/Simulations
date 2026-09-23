@@ -423,16 +423,6 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         </div>
         <canvas id="m5scene"></canvas>
       </div>
-      <div class="panel">
-        <h3>Ефективність</h3>
-        <div class="chartrow">
-          <div class="chartbox" id="m5ccw"><h4 id="m5cch"></h4>
-            <div class="legend sm" id="m5ccl"></div><canvas id="m5cc"></canvas></div>
-          <div class="chartbox" id="m5cqw"><h4>куди дівається енергія, Вт</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>теплота з холодного боку</span><span><span class="chip cA"></span>робота компресора</span><span><span class="chip cI"></span>віддано гарячому боку</span></div>
-            <canvas id="m5cq"></canvas></div>
-        </div>
-      </div>
     </div>
     <div class="side">
       <div class="panel">
@@ -1974,7 +1964,6 @@ const M5={
   /* Тепловий насос прибрано: це той самий зворотний цикл, лише з іншим боком
      у ролі корисного. Модуль лишається про холодильник, і вся сцена — про нього. */
   tc:5, th:35, P:400, q:0.5, t:0,
-  hc:{x:null}, hq:{x:null}, tipc:null, tipq:null,
   Tc(){return this.tc+273.15;},
   Th(){return Math.max(this.Tc()+1,this.th+273.15);},
   copIdeal(){
@@ -1986,14 +1975,7 @@ const M5={
     const Qc=this.cop()*this.P;
     return {Qc,Qh:Qc+this.P,A:this.P};
   },
-  showMode(){
-    $('m5cch').textContent='холодильний коефіцієнт від температури в камері';
-    $('m5ccl').innerHTML='<span><span class="chip cA"></span>ідеальний Tх/ΔT</span>'+
-      '<span><span class="chip cB"></span>реальний</span>'+
-      '<span><span class="chip cI"></span>tх, задано на сцені</span>';
-    this.hc.xlab='tх'; this.hc.xunit='°C'; this.hc.xdec=0;
-    this.hq.xlab='tх'; this.hq.xunit='°C'; this.hq.xdec=0;
-  },
+  showMode(){},
   QQ:[['проста',0.3],['звичайна',0.5],['добра',0.7],['найкраща',0.9]],
   geo(b){return frozen(this,b,bb=>{
     const bw=Math.min(250,bb.w*0.28);
@@ -2023,12 +2005,10 @@ const M5={
   },
   init(){
     grip('m5scene',this,()=>this.grips());
-    this.tipc=makeTip('m5ccw'); this.tipq=makeTip('m5cqw');
-    hover('m5cc',this.hc); hover('m5cq',this.hq);
     this.showMode();
   },
   tick(dt){this.t+=dt; this.render();},
-  render(){this.scene(); this.table(); this.charts();},
+  render(){this.scene(); this.table();},
   scene(){
     const b=cvx('m5scene'); if(!b) return;
     const {g,w,h}=b, F=this.flows();
@@ -2158,40 +2138,7 @@ const M5={
     $('m5kQh').textContent=fmt(F.Qh,0)+' Вт';
     $('m5kBal').textContent=fmt(F.Qh-F.Qc-F.A,3)+' Вт';
   },
-  charts(){
-    const bc=cvx('m5cc');
-    if(bc){
-      const ts=[],id=[],re=[];
-      for(let i=0;i<=60;i++){
-        const tc=-30+50*i/60, Tc=tc+273.15, Th=Math.max(Tc+1,this.th+273.15);
-        ts.push(tc);
-        const c=Tc/(Th-Tc);
-        id.push(Math.min(30,c)); re.push(Math.min(30,this.q*c));
-      }
-      const hi=Math.min(30,Math.max(...id))*1.12;
-      const r=drawChart(bc,{tMax:20,yMin:0,yMax:hi,yLab:'',xLab:'tх, °C',xStep:10,yDec:1,
-        hover:this.hc.x,
-        series:[{ts,ys:id,color:CLR.k1,label:'ідеал'},{ts,ys:re,color:CLR.k2,label:'реальний'},
-                {ts:[this.tc,this.tc],ys:[0,Math.min(30,this.cop())],color:CLR.ink,label:'задано на сцені',dash:[4,3]}]});
-      showTip(this.tipc,r,'',this.hc,[['ідеальний',CLR.k1],['реальний',CLR.k2],['tх, задано на сцені',CLR.ink]],2);
-    }
-    const bq=cvx('m5cq');
-    if(bq){
-      const ts=[],qc=[],a=[],qh=[];
-      for(let i=0;i<=60;i++){
-        const tc=-30+50*i/60, Tc=tc+273.15, Th=Math.max(Tc+1,this.th+273.15);
-        const c=this.q*Tc/(Th-Tc);
-        ts.push(tc); a.push(this.P);
-        qc.push(Math.min(9000,c*this.P)); qh.push(Math.min(9000,c*this.P+this.P));
-      }
-      const hi=Math.max(...qh)*1.12;
-      const r=drawChart(bq,{tMax:20,yMin:0,yMax:hi,yLab:'Q, Вт',xLab:'tх, °C',xStep:10,hover:this.hq.x,
-        series:[{ts,ys:qc,color:CLR.k3,label:'Qх'},{ts,ys:a,color:CLR.k1,label:'P',dash:[5,4]},
-                {ts,ys:qh,color:CLR.ink,label:'Qг'},
-                {ts:[this.tc,this.tc],ys:[0,hi*0.96],color:CLR.ink,label:'',dash:[4,3]}]});
-      showTip(this.tipq,r,'Вт',this.hq,[['Qх',CLR.k3],['P',CLR.k1],['Qг',CLR.ink],['',CLR.ink]],0);
-    }
-  }
+  charts(){}
 };
 
 const RSAT=[4.85,6.80,9.40,10.70,12.10,12.80,13.60,15.40,17.30,19.40,23.00,30.30,39.60,51.20];

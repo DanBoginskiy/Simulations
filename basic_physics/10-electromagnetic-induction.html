@@ -915,6 +915,32 @@ function txt(g,s,x,y,o={}){
   g.fillText(s,x,y);
   return sz;
 }
+/* Стрілковий прилад, увімкнений у саме коло: кружок із буквою й стрілкою,
+   як на схемі. Стовпчик збоку показував те саме число, але нічим не був
+   пов'язаний із колом — незрозуміло було навіть, між якими точками він
+   міряє. Прилад стоїть у розриві дроту, і це видно. */
+function meter(g,cx,cy,r,frac,lab,col,val,endLab){
+  g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1.8;
+  g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); g.stroke();
+  const a0=Math.PI*0.78, sw=Math.PI*1.44;
+  g.strokeStyle=CLR.axis; g.lineWidth=1;
+  for(let k=0;k<=4;k++){
+    const a=a0+k/4*sw;
+    g.beginPath();
+    g.moveTo(cx+Math.cos(a)*(r-5),cy+Math.sin(a)*(r-5));
+    g.lineTo(cx+Math.cos(a)*(r-1),cy+Math.sin(a)*(r-1)); g.stroke();
+  }
+  const a=a0+Math.max(0,Math.min(1,frac))*sw;
+  arrow(g,cx,cy+r*0.22,cx+Math.cos(a)*(r-7),cy+r*0.22+Math.sin(a)*(r-7),col,2.2);
+  dot(g,cx,cy+r*0.22,2.6,col);
+  txt(g,lab,cx,cy-r*0.30,{color:col,size:13,bold:true,align:'center'});
+  if(endLab){
+    const ae=a0+sw;
+    txt(g,endLab,cx+Math.cos(ae)*(r+7),cy+r*0.22+Math.sin(ae)*(r+7)+4,
+      {color:CLR.mut,size:10,bold:true});
+  }
+  if(val) txtN(g,val,cx,cy+r+15,{color:CLR.sec,size:10.5,bold:true,align:'center'});
+}
 /* ---- числа зі сцени ------------------------------------------------------
    Число на кресленні читається лише тоді, коли кресленню є де дихати. Щойно
    кадр вужчає, воно не зникає, а переїжджає в кутовий блок: сцена лишається
@@ -2361,10 +2387,14 @@ const M4={
     /* струм — рухомі крапки */
     const loop=[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}];
     flowDots(g,loop,(this.ph*6)%1,CLR.k2,Math.max(0,Math.round(14*Math.abs(rel))));
-    /* стовпчики струму та енергії */
+    /* Амперметр стоїть у самому колі — на нижньому дроті, лівіше опору.
+       Кінець шкали — усталений струм I₀ цього кола: стрілка показує, наскільки
+       далеко зайшов перехідний процес, а це і є те, про що модуль. */
+    meter(g,(x1+x2)*0.32,y2,Math.min(26,h*0.10),Math.abs(rel),'A',CLR.k2,
+      fmt(I,3)+' А','I₀');
+    /* стовпчик енергії лишається: він показує не струм, а запас у котушці */
     const bx=w*0.87, hh=h*0.24, by=h*0.55;
-    const bars=[[bx,Math.abs(rel),'I',CLR.k2,fmt(I,3)+' А'],
-      [bx+w*0.085,Math.min(1,I*I/(I0*I0)),'W',CLR.ink,sci(this.Lh()*I*I/2,2)+' Дж']];
+    const bars=[[bx+w*0.085,Math.min(1,I*I/(I0*I0)),'W',CLR.ink,sci(this.Lh()*I*I/2,2)+' Дж']];
     for(const [xx,fr,lab,col,val] of bars){
       g.strokeStyle=CLR.axis; g.lineWidth=1;
       g.beginPath(); g.moveTo(xx-15,by+hh+0.5); g.lineTo(xx+15,by+hh+0.5); g.stroke();

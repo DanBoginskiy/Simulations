@@ -2123,7 +2123,13 @@ const M4={
                  {ts,ys:em,color:CLR.ink,label:'−обвідна',dash:[4,3]});
         nm.push(['обвідна',CLR.ink],['−обвідна',CLR.ink]);
       }
-      ser.push({ts:[t,t],ys:[lo,hi],color:CLR.sec,label:'зараз',dash:[2,3]});
+      /* Мітка поточної миті — це точка НА кривій, а не крапка під стелею
+          кадру. Раніше позначка була просто вертикаллю від низу до верху, а
+          крапку drawChart ставить у кінці ряду — тобто на самому верху; в
+          режимі густої оливи крива йде низько, і крапка висіла далеко від неї. */
+      const xn=this.X(t)*100;
+      ser.push({ts:[t,t],ys:[lo,hi],color:CLR.sec,label:'',dash:[2,3]});
+      ser.push({ts:[t,t],ys:[xn,xn],color:CLR.sec,label:'задано на сцені'});
       nm.push(['задано на сцені',CLR.sec]);
       const r=drawChart(bx,{tMax:tot,yMin:lo,yMax:hi,yLab:'x, см',xLab:'t, с',yDec:1,xDec:2,
         hover:this.hx.x,series:ser});
@@ -2142,7 +2148,9 @@ const M4={
         hover:this.he.x,
         series:[{ts,ys:es,color:CLR.k3,label:''},
           {ts,ys:ref,color:CLR.ink,label:'E₀/2',dash:[4,3]},
-          {ts:[t,t],ys:[0,hi],color:CLR.sec,label:'задано на сцені',dash:[2,3]}]});
+          {ts:[t,t],ys:[0,hi],color:CLR.sec,label:'',dash:[2,3]},
+          /* та сама поправка, що й на графіку зміщення: крапка сидить на кривій */
+          {ts:[t,t],ys:[this.Et(t)*1000,this.Et(t)*1000],color:CLR.sec,label:'задано на сцені'}]});
       showTip(this.tipe,r,'мДж',this.he,[['E',CLR.k3],['E₀/2',CLR.ink],['задано на сцені',CLR.sec]],1);
     }
   }

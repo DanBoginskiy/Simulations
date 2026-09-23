@@ -150,7 +150,14 @@ table.read tr:last-child td{border-bottom:none}
    тож висота йде за висотою вікна, а не за пропорцією її десктопного місця. */
 #m3diag{width:100%; height:clamp(160px,32vh,250px)}
 /* ============ модуль 5 ============ */
-.m5grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+/* Три сфери стоять поруч і мусять бути на одній лінії. Заголовки в них різної
+   довжини: один лягає в рядок, два переносяться — і полотна з'їжджали одне
+   відносно одного на висоту рядка. Тому заголовку задано місце під два рядки,
+   а підписи під сферою притиснуто до низу картки. */
+.m5grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:stretch}
+.m5grid .panel{display:flex; flex-direction:column}
+.m5grid .panel>h3{min-height:2.5em; margin-bottom:6px}
+.m5grid .coords{margin-top:auto}
 .m5grid canvas{width:100%; height:clamp(200px,min(54vh,92vw),420px); cursor:grab}
 /* Три глобуси лишаються в ряд аж до телефона: кожен із них круглий, і в
    один стовпчик вони дають три екрани прокрутки замість одного погляду. */
@@ -2211,11 +2218,19 @@ const M3={
     arrow(g,X(0),Y(0),X(this.vc),Y(0),CLR.k1,2.5);
     arrow(g,X(0),Y(0),X(vr.x),Y(vr.y),CLR.k2,2.5);
     arrow(g,X(0),Y(0),X(vp.x),Y(vp.y),CLR.ink,2.5);
-    /* три підписи рознесені по рядках унизу, щоб не лягали на стрілки */
+    /* Підписано кожен вектор, і підписано крупно — просто на ньому. Раніше на
+       самій побудові стояв лише v_P, а два доданки були дрібним рядком унизу:
+       дивлячись на дві стрілки, не можна було сказати, котра з них котра. */
+    const clampY=y=>Math.max(14,Math.min(h-30,y));
+    const tag=(lab,x1,y1,dx,dy,col)=>
+      pill(g,lab,clamp(x1+dx),clampY(y1+dy),{color:col,size:13,bold:true});
+    tag('v_пост',(X(0)+X(this.vc))/2,Y(0),0,-14,'#1c5cab');
+    tag('v_об',(X(0)+X(vr.x))/2,(Y(0)+Y(vr.y))/2,vr.x<0?-24:24,vr.y>0?-10:14,'#b8431a');
+    tag('v_P',X(vp.x),Y(vp.y),vp.x>this.vc/2?-22:22,4,CLR.ink);
+    /* числа — окремим рядком унизу, вони не мусять бути великими */
     txtN(g,'v_пост = '+fmt(this.vc)+' м/с',10,h-22,{color:'#1c5cab',size:11,bold:true});
     txtN(g,'v_об = '+fmt(this.vc)+' м/с',10,h-8,{color:'#b8431a',size:11,bold:true});
     txtN(g,'v_P = '+fmt(this.speedP(this.t),2)+' м/с',w-10,h-15,{color:CLR.ink,size:12,bold:true,align:'right'});
-    pill(g,'v_P',clamp(X(vp.x)+(vp.x>this.vc/2?-18:18)),Y(vp.y)+4,{color:CLR.ink,size:11.5,bold:true});
   },
   charts(){
     const h=this.hist,T=this.T();
@@ -2529,8 +2544,11 @@ const M5={
     const gr=sphPt(20,0,V), grRight=gr.x>w*0.55;
     if(gr.front) txt(g,'Гринвіч',gr.x+(grRight?-9:9),gr.y-6,
       {color:'#b8431a',size:10.5,bold:true,align:grRight?'right':'left'});
-    capN(g,'Земля обертається',12,20,{color:CLR.k2,size:12.5,bold:true});
-    capN(g,'широта — від екватора, довгота — від Гринвіча',12,36,{color:CLR.mut,size:10.5});
+    /* Пояснення кожної сфери — на її ж полотні. Через capN вони всі три
+       збиралися в один рядок над першою карткою, і та з'їжджала вниз на три
+       рядки: сфери переставали стояти на одній лінії. */
+    txt(g,'Земля обертається',12,20,{color:CLR.k2,size:12.5,bold:true});
+    txt(g,'широта — від екватора, довгота — від Гринвіча',12,36,{color:CLR.mut,size:10.5});
   },
   /* та сама точка P мовою математики: сферична система (r, θ, φ) —
      у стилі сусідніх глобусів, з тим самим перетягуванням камери */
@@ -2578,8 +2596,8 @@ const M5={
     if(mF.front&&Math.abs(lam)>8) txt(g,'φ',mF.x,mF.y+16,{color:'#b8431a',size:12.5,bold:true,align:'center'});
     dot(g,P.x,P.y,P.front?6:4.5,P.front?CLR.ink:'#fff',P.front?'#fff':CLR.mut);
     txt(g,'M',P.x+9,P.y-7,{color:CLR.ink,size:12.5,bold:true});
-    capN(g,'та сама точка мовою математики',12,20,{color:CLR.ink,size:12.5,bold:true});
-    capN(g,'θ — від екватора вгору, φ — від осі x у площині xy',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'та сама точка мовою математики',12,20,{color:CLR.ink,size:12.5,bold:true});
+    txt(g,'θ — від екватора вгору, φ — від осі x у площині xy',12,36,{color:CLR.mut,size:10.5});
     txt(g,'θ = φ_геогр · φ_сф = λ',12,h-10,{color:CLR.mut,size:10.5});
   },
   sky(){
@@ -2625,8 +2643,8 @@ const M5={
        (саме значення S виведене під полотном і в панелі величин) */
     const SM=sphPt(0,S*15,V);
     dot(g,SM.x,SM.y,4.5,SM.front?CLR.k2:'#fff',SM.front?'#fff':CLR.k2);
-    capN(g,'небесна сфера нерухома',12,20,{color:CLR.k3,size:12.5,bold:true});
-    capN(g,'меридіан біжить по сфері — це і є зоряний час',12,36,{color:CLR.mut,size:10.5});
+    txt(g,'небесна сфера нерухома',12,20,{color:CLR.k3,size:12.5,bold:true});
+    txt(g,'меридіан біжить по сфері — це і є зоряний час',12,36,{color:CLR.mut,size:10.5});
     /* годинний кут — у зоряному часі; переводимо в звичайні (сонячні) хвилини */
     const ha=this.HA();
     txt(g,Math.abs(ha)<0.02?'світило кульмінує зараз: t = 0'
