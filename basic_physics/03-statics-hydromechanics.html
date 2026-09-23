@@ -210,8 +210,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -688,8 +692,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -698,7 +709,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -957,7 +968,9 @@ function arc(g,x,y,r,a1,a2,color,w=1.2){
 const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
-  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  /* Нижнє поле більше за верхнє: під віссю стоять і числа поділок, і назва
+     самої осі — рядком нижче, при правому краї поля графіка. */
+  const L=44,R=54,T=12,B=40,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
   /* ---- масштаб графіка не «дихає» ---------------------------------------
      Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
@@ -996,7 +1009,7 @@ function drawChart(box,opt){
   for(let t=0;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,fmt(t,opt.xDec||0),X(t),T+ph+15,{color:CLR.mut,size:10,align:'center'});
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
@@ -1004,7 +1017,10 @@ function drawChart(box,opt){
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
   txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  /* Назва осі абсцис — під самою віссю, у тому місці, де поле графіка
+     закінчується. Угорі вона читалася як другий заголовок і зліплювалася
+     з назвою осі ординат на вузькому кадрі. */
+  txt(g,opt.xLab||'t, с',L+pw,T+ph+31,{color:CLR.mut,size:10.5,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1462,7 +1478,7 @@ const BODY2={cyl:{n:'циліндр',cg:0.5,col:'k1',tc:'#1c5cab'},
              cone:{n:'конус',cg:0.25,col:'k2',tc:'#b8431a'},
              box:{n:'брусок',cg:0.5,col:'k3',tc:'#0d7a55'}};
 const M2={
-  b:0.6, h:1.2, mu:0.6, al:0, playing:true, body:'cyl',
+  b:0.6, h:1.2, mu:0.6, al:0, playing:false, body:'cyl',
   ha:{x:null}, hm:{x:null}, tipa:null, tipm:null,
   B(){return BODY2[this.body];},
   cgh(){return this.B().cg*this.h;},              /* висота центра ваги, м */
@@ -1530,7 +1546,7 @@ const M2={
       this.playing=!this.playing;
       $('m2play').textContent=this.playing?'⏸':'▶';
     };
-    $('m2re').onclick=()=>{this.al=0; this.playing=true; $('m2play').textContent='⏸';};
+    $('m2re').onclick=()=>{this.al=0; this.playing=false; $('m2play').textContent='▶';};
     this.tipa=makeTip('m2caw'); this.tipm=makeTip('m2cmw');
     hover('m2ca',this.ha); hover('m2cm',this.hm);
     this.ha.xlab='b/h'; this.ha.xunit=''; this.ha.xdec=2;

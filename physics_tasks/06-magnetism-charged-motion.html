@@ -283,8 +283,12 @@ details.condbox .cond{margin:10px 0 0}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -536,8 +540,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -546,7 +557,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -1545,7 +1556,7 @@ const M2={
      завжди проходили ті самі частинки. Відбирає тепер саме поле: вікно
      v = E/B рухається вздовж нерухомого пучка. */
   mode:'free', E:1e4, B:1e-2, slit:2, L:0.022,
-  t:0, playing:true, showAns:true, N:25,
+  t:0, playing:false, showAns:true, N:25,
   VMIN:0.5e6, VMAX:1.8e6,
   SLMIN:0.2, SLMAX:12,
   hd:{x:null}, hn:{x:null}, tipd:null, tipn:null,
@@ -1588,7 +1599,7 @@ const M2={
     return [Math.max(V0,lo-pad),Math.min(V1,hi+pad)];
   },
   setTask(){this.E=1e4; this.B=1e-2; this.slit=2; this.L=0.022;},
-  reset(){this.t=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.playing=false; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -1824,7 +1835,7 @@ function dragView(id,st){
 /* ===================== МОДУЛЬ 3 · протон у паралельних E і B ===================== */
 const M3={
   mode:'free', conf:'par', v0:5e5, E:2000, B:1e-2, qm:9.58e7,
-  t:0, playing:true, waitT:0, showAns:true, TT:4.4, view:-64, tilt:20,
+  t:0, playing:false, waitT:0, showAns:true, TT:4.4, view:-64, tilt:20,
   VMIN:3e5, VMAX:8e5, EMIN:500, EMAX:4000, BMIN:8e-3, BMAX:2e-2,
   hz:{x:null}, hx:{x:null}, tipz:null, tipx:null,
   GG:[['vMm','швидкість, Мм/с',0.3,0.8,0.02,CLR.k2,null,'m3vv',2,'Мм/с'],
@@ -1866,7 +1877,7 @@ const M3={
   setTask(){this.conf='par'; this.v0=5e5; this.E=2000; this.B=1e-2;
     this.GG[1][2]=0.02; this.GG[1][3]=4; this.GG[1][4]=0.02; this.GG[1][8]=2;
     document.querySelectorAll('#m3conf button').forEach(b=>b.classList.toggle('active',b.dataset.v==='par'));},
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.updBtn();},
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -1879,7 +1890,7 @@ const M3={
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3play').onclick=()=>{
       if(!this.playing&&this.t>=this.TT) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}};
+      this.playing=!this.playing; this.updBtn();};
     $('m3re').onclick=()=>this.reset();
     this.tipz=makeTip('m3czw'); this.tipx=makeTip('m3cxw');
     hover('m3cz',this.hz); hover('m3cx',this.hx);
@@ -1964,7 +1975,7 @@ const M3={
       if(this.playing){
         this.t=Math.min(this.TT,this.t+dt);
         if(this.t>=this.TT){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.TT){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+      } else if(this.t>=this.TT){this.waitT+=dt;}
     }
     this.render();
   },

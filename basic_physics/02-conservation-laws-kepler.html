@@ -210,8 +210,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -679,8 +683,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -689,7 +700,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -948,7 +959,9 @@ function arc(g,x,y,r,a1,a2,color,w=1.2){
 const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
-  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  /* Нижнє поле більше за верхнє: під віссю стоять і числа поділок, і назва
+     самої осі — рядком нижче, при правому краї поля графіка. */
+  const L=44,R=54,T=12,B=40,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
   /* ---- масштаб графіка не «дихає» ---------------------------------------
      Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
@@ -987,7 +1000,7 @@ function drawChart(box,opt){
   for(let t=0;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,fmt(t,opt.xDec||0),X(t),T+ph+15,{color:CLR.mut,size:10,align:'center'});
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
@@ -995,7 +1008,10 @@ function drawChart(box,opt){
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
   txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  /* Назва осі абсцис — під самою віссю, у тому місці, де поле графіка
+     закінчується. Угорі вона читалася як другий заголовок і зліплювалася
+     з назвою осі ординат на вузькому кадрі. */
+  txt(g,opt.xLab||'t, с',L+pw,T+ph+31,{color:CLR.mut,size:10.5,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1284,7 +1300,7 @@ const MU_S=4*Math.PI*Math.PI;     /* GM Сонця в одиницях а.о.³/
 const M1={
   kind:'elastic', geom:'head', m1:1, v1:4, m2:2, v2:-1, k:0.6,
   bp:0.3, X0:-4,                 /* прицільний параметр і точка старту шайби 1 */
-  T:6, t:0, playing:true, waitT:0,
+  T:6, t:0, playing:false, waitT:0,
   hp:{x:null}, he:{x:null}, tipp:null, tipe:null,
   kk(){return this.kind==='elastic'?1:this.kind==='plastic'?0:this.k;},
   /* загальні формули удару з коефіцієнтом відновлення k:
@@ -1365,7 +1381,7 @@ const M1={
     }
     return this.T;
   },
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   KK:[['пластилін',0.1],['дерево',0.4],['сталь',0.6],['гума',0.85]],
   /* Шайби в обох геометріях однакові: радіус росте як корінь із маси, тож
@@ -1441,7 +1457,7 @@ const M1={
     grip('m1scene',this,()=>this.grips());
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.tMax()) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m1re').onclick=()=>this.reset();
     this.tipp=makeTip('m1cpw'); this.tipe=makeTip('m1cew');
@@ -1465,7 +1481,7 @@ const M1={
       if(this.playing){
         this.t=Math.min(TM,this.t+dt);
         if(this.t>=TM){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=TM){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+      } else if(this.t>=TM){this.waitT+=dt;}
     }
     this.render();
   },
@@ -1724,7 +1740,7 @@ const M1={
 const BETA=35*Math.PI/180;        /* кут похилої ділянки гірки */
 const M2={
   h0:3, R:0.6, mu:0.05, m:0.2,
-  TSHOW:9, t:0, playing:true, waitT:0, path:null,
+  TSHOW:9, t:0, playing:false, waitT:0, path:null,
   he:{x:null}, hv:{x:null}, tipe:null, tipv:null,
   /* Стик похилої з горизонталлю згладжено дугою спряження: без неї траса має
      злам, швидкість там міняє напрям стрибком, і на графіках v(s) та E(s)
@@ -1796,7 +1812,7 @@ const M2={
     }
     this.path={...arr,stop,tEnd:arr.t[arr.t.length-1]};
   },
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.build(); this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.build(); this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   idx(){
     const p=this.path, tt=this.t/this.TSHOW*p.tEnd;
@@ -1835,7 +1851,7 @@ const M2={
     grip('m2scene',this,()=>this.grips());
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.TSHOW) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m2re').onclick=()=>this.reset();
     this.tipe=makeTip('m2cew'); this.tipv=makeTip('m2cvw');
@@ -1849,7 +1865,7 @@ const M2={
       if(this.playing){
         this.t=Math.min(this.TSHOW,this.t+dt);
         if(this.t>=this.TSHOW){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.TSHOW){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+      } else if(this.t>=this.TSHOW){this.waitT+=dt;}
     }
     this.render();
   },
@@ -1961,7 +1977,7 @@ const M3={
   M0:1000, frac:0.7, u:2500, N:12,
   q:40,                          /* витрата палива, кг/с — для старту із Землі */
   HWIN:400,                      /* висота видимого вікна, м: камера їде за ракетою */
-  TSHOW:10, t:0, playing:true, waitT:0, steps:null, lau:null,
+  TSHOW:10, t:0, playing:false, waitT:0, steps:null, lau:null,
   hv:{x:null}, hp:{x:null}, tipv:null, tipp:null,
   /* --- старт із Землі: рівняння Мещерського ------------------------------
      m·dv/dt = u·μ − mg. Перший доданок — реактивна сила (тяга) F = μu, вона
@@ -2003,7 +2019,7 @@ const M3={
     }
     this.steps={v,pg,dm,Mf,Mk:this.M0-Mf};
   },
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.build(); this.buildLaunch(); this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.build(); this.buildLaunch(); this.updBtn();},
   showMode(){
     const L=this.mode==='launch';
     $('m3rN').hidden=L; $('m3rQ').hidden=!L; $('m3rP').hidden=L; $('m3kvL').hidden=!L;
@@ -2092,7 +2108,7 @@ const M3={
     grip('m3scene',this,()=>this.grips());
     $('m3play').onclick=()=>{
       if(!this.playing&&this.t>=this.TSHOW) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m3re').onclick=()=>this.reset();
     this.tipv=makeTip('m3cvw'); this.tipp=makeTip('m3cpw');
@@ -2107,7 +2123,7 @@ const M3={
       if(this.playing){
         this.t=Math.min(this.TSHOW,this.t+dt);
         if(this.t>=this.TSHOW){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.TSHOW){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+      } else if(this.t>=this.TSHOW){this.waitT+=dt;}
     }
     this.render();
   },
@@ -2369,7 +2385,7 @@ const M3={
 /* ===================== МОДУЛЬ 4 · балістичний маятник ===================== */
 const M4={
   m:10, v:300, M:3, L:1,
-  TSHOW:8, t:0, playing:true, waitT:0, sw:null,
+  TSHOW:8, t:0, playing:false, waitT:0, sw:null,
   hh:{x:null}, he:{x:null}, tiph:null, tipe:null,
   mk(){return this.m/1000;},                       /* маса кулі задана в грамах */
   V(){return this.mk()*this.v/(this.mk()+this.M);},
@@ -2393,7 +2409,7 @@ const M4={
     }
     this.sw={th,ts,tEnd:ts[ts.length-1]};
   },
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.build(); this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.build(); this.updBtn();},
   updBtn(){$('m4play').textContent=this.playing?'⏸':'▶';},
   phase(){return this.t<1.2?'fly':'swing';},
   geo(b){return frozen(this,b,bb=>{
@@ -2428,7 +2444,7 @@ const M4={
     grip('m4scene',this,()=>this.grips());
     $('m4play').onclick=()=>{
       if(!this.playing&&this.t>=this.TSHOW) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m4re').onclick=()=>this.reset();
     this.tiph=makeTip('m4chw'); this.tipe=makeTip('m4cew');
@@ -2442,7 +2458,7 @@ const M4={
       if(this.playing){
         this.t=Math.min(this.TSHOW,this.t+dt);
         if(this.t>=this.TSHOW){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.TSHOW){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+      } else if(this.t>=this.TSHOW){this.waitT+=dt;}
     }
     this.render();
   },
@@ -2579,7 +2595,7 @@ const PLANETS5=[
   {n:'Сатурн',  a:9.5370,T:29.457}
 ];
 const M5={
-  a:1.5, e:0.5, TSHOW:14, t:0, playing:true,
+  a:1.5, e:0.5, TSHOW:14, t:0, playing:false,
   /* розв'язок рівняння Кеплера M = E − e·sin E методом Ньютона */
   ecc(M){
     let E=M;
@@ -2597,7 +2613,7 @@ const M5={
     return {x,y,r,v:Math.sqrt(MU_S*(2/r-1/a))};
   },
   per(){return Math.pow(this.a,1.5);},
-  reset(){this.t=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.playing=false; this.updBtn();},
   updBtn(){$('m5play').textContent=this.playing?'⏸':'▶';},
   /* Перигелій і афелій задають орбіту повністю: a = (rп + rа)/2,
      e = (rа − rп)/(rа + rп). Саме так її й будують — двома точками

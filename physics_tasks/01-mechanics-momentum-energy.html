@@ -284,8 +284,12 @@ details.condbox .cond{margin:10px 0 0}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -533,8 +537,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -543,7 +554,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -1284,7 +1295,7 @@ function drawGrip(g,h,st){
 /* ===================== МОДУЛЬ 1 · мертва петля ===================== */
 const M1={
   mode:'free', R:1000, v:140, m:80,
-  t:0, ph:0, playing:true, showAns:true, SPD:8,
+  t:0, ph:0, playing:false, showAns:true, SPD:8,
   RMIN:500, RMAX:1200, VMIN:100, VMAX:220,
   hn:{x:null}, he:{x:null}, tipn:null, tipe:null,
   TASK:{R:1000, eta:3, m:80},
@@ -1364,7 +1375,7 @@ const M1={
      міняла б наслідок (положення), якого вона ще не встигла набігти. */
   phi(){return this.ph;},
   setTask(){this.R=this.TASK.R; this.m=this.TASK.m; this.v=Math.sqrt(2*G*this.R);},
-  reset(){this.t=0; this.ph=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.ph=0; this.playing=false; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -1623,7 +1634,7 @@ const M1={
 /* ===================== МОДУЛЬ 2 · розрив гранати ===================== */
 const M2={
   mode:'free', v0:10, al:60, be:45, tb:0.25,
-  t:0, playing:true, waitT:0, showAns:true,
+  t:0, playing:false, waitT:0, showAns:true,
   VMIN:8, VMAX:11, ALMIN:45, ALMAX:70, BEMIN:20, BEMAX:45,
   hh:{x:null}, hv:{x:null}, tiph:null, tipv:null,
   TASK:{v0:10, al:60, be:45, tb:0.25},
@@ -1682,7 +1693,7 @@ const M2={
   frameX(){return this.curFrame().X*1.10;},
   frameY(){return this.curFrame().Y*1.18;},
   setTask(){const T=this.TASK; this.v0=T.v0; this.al=T.al; this.be=T.be; this.tb=T.tb;},
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -1693,7 +1704,7 @@ const M2={
     $('m2ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T()) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}};
+      this.playing=!this.playing; this.updBtn();};
     $('m2re').onclick=()=>this.reset();
     this.tiph=makeTip('m2chw'); this.tipv=makeTip('m2cvw');
     hover('m2ch',this.hh); hover('m2cv',this.hv);
@@ -1748,7 +1759,7 @@ const M2={
       if(this.playing){
         this.t=Math.min(T,this.t+dt*0.55);
         if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=T){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+      } else if(this.t>=T){this.waitT+=dt;}
     }
     this.render();
   },
@@ -1994,7 +2005,7 @@ const M2={
 /* ===================== МОДУЛЬ 3 · куля крізь стос дощок ===================== */
 const M3={
   mode:'free', eta:0.10, v0:400, m:0.009,
-  t:0, playing:true, waitT:0, showAns:true, T:4.2,
+  t:0, playing:false, waitT:0, showAns:true, T:4.2,
   NB:9, D:0.025,                        /* показано дощок і товщина однієї, м */
   hv:{x:null}, hn:{x:null}, tipv:null, tipn:null,
   TASK:{eta:0.10, v0:400, m:0.009},
@@ -2016,7 +2027,7 @@ const M3={
   /* екранний час T відображає весь проліт — фізично він триває частки мілісекунди */
   xNow(){return this.xOf(this.t/this.T*this.tStop());},
   setTask(){const T=this.TASK; this.eta=T.eta; this.v0=T.v0; this.m=T.m;},
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.updBtn();},
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -2027,7 +2038,7 @@ const M3={
     $('m3ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m3play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}};
+      this.playing=!this.playing; this.updBtn();};
     $('m3re').onclick=()=>this.reset();
     this.tipv=makeTip('m3cvw'); this.tipn=makeTip('m3cnw');
     hover('m3cv',this.hv); hover('m3cn',this.hn);
@@ -2059,7 +2070,7 @@ const M3={
       if(this.playing){
         this.t=Math.min(this.T,this.t+dt);
         if(this.t>=this.T){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.T){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+      } else if(this.t>=this.T){this.waitT+=dt;}
     }
     this.render();
   },
@@ -2205,7 +2216,7 @@ const M3={
 /* ===================== МОДУЛЬ 4 · балістичний маятник ===================== */
 const M4={
   mode:'free', v:800, eta:200, l:1.6,
-  th:0, om:0, phase:'fly', bx:0, t:0, playing:true, waitT:0, showAns:true,
+  th:0, om:0, phase:'fly', bx:0, t:0, playing:false, waitT:0, showAns:true,
   slack:false,                              /* мотузка провисла: α > 90° */
   THMAX:Math.PI/2,                          /* вище горизонталі маятник на мотузці не йде */
   VMIN:100, VMAX:1500, ETMIN:10, ETMAX:1000, LMIN:0.8, LMAX:2.4,
@@ -2242,7 +2253,7 @@ const M4={
   E1(){return (this.mB*(this.eta+1))*this.u()*this.u()/2;},
   setTask(){const T=this.TASK; this.v=T.v; this.eta=T.eta; this.l=T.l;},
   reset(){this.t=0; this.waitT=0; this.th=0; this.om=0; this.phase='fly'; this.bx=-1;
-    this.slack=false; this.playing=true; this.updBtn();},
+    this.slack=false; this.playing=false; this.updBtn();},
   updBtn(){$('m4play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -2253,7 +2264,7 @@ const M4={
     $('m4ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m4play').onclick=()=>{
       if(!this.playing&&this.t>=8) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}};
+      this.playing=!this.playing; this.updBtn();};
     $('m4re').onclick=()=>this.reset();
     this.tipa=makeTip('m4caw'); this.tipe=makeTip('m4cew');
     hover('m4ca',this.ha); hover('m4ce',this.he);
@@ -2307,7 +2318,7 @@ const M4={
         }
       }
       if(this.t>=8){this.playing=false; this.waitT=0; this.updBtn();}
-    } else if(this.t>=8){this.waitT+=dt; if(this.waitT>1.6) this.reset();}
+    } else if(this.t>=8){this.waitT+=dt;}
     this.render();
   },
   render(){this.syncEta(); this.scene(); this.table(); this.charts(); this.gdraw();},

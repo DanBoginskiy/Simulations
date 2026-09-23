@@ -285,8 +285,12 @@ details.condbox .cond{margin:10px 0 0}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -493,8 +497,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -503,7 +514,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();

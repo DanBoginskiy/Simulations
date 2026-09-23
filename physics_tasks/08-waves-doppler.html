@@ -282,8 +282,12 @@ details.condbox .cond{margin:10px 0 0}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -499,8 +503,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -509,7 +520,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -1250,7 +1261,7 @@ function drawGrip(g,h,st){
 /* ===================== МОДУЛЬ 1 · надзвуковий літак ===================== */
 const M1={
   mode:'free', H:4000, M:1.7695, v:330,
-  t:0, playing:true, showAns:true, showT:0,
+  t:0, playing:false, showAns:true, showT:0,
   MMIN:0.4, MMAX:2.6, HMIN:1500, HMAX:5000,
   ht:{x:null}, ha:{x:null}, tipt:null, tipa:null,
   GG:[['M','число Маха M',0.4,2.6,0.02,CLR.k2,null,'m1vm',2,''],
@@ -1262,7 +1273,7 @@ const M1={
   tau(){return this.M>1?this.H/this.v*Math.sqrt(this.M*this.M-1)/this.M:null;},
   MforTau(tau){const q=tau*this.v/this.H; return q<1?1/Math.sqrt(1-q*q):null;},
   setTask(){this.H=4000; this.v=330; this.M=this.MforTau(10);},
-  reset(){this.t=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.playing=false; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},
@@ -1463,7 +1474,7 @@ const M1={
 /* ===================== МОДУЛЬ 2 · два авто із сиренами ===================== */
 const M2={
   mode:'free', dir:'head', v1:25, v2:16.667, n10:400, n20:500, v:340, D:260,
-  t:0, playing:true, showAns:true,
+  t:0, playing:false, showAns:true,
   /* Показ уповільнено: справжній звук долає кадр (260 м) за 0,76 с, і за цей
      час авто встигає проїхати менш ніж метр — фронти видно, а зміщення їхніх
      центрів ні. Уповільнюємо звук і авто ОДНАКОВО, тож відношення v_авто/v_зв,
@@ -1492,7 +1503,7 @@ const M2={
   setTask(){this.dir='head'; this.v1=25; this.v2=60/3.6; this.n10=400; this.n20=500;
     document.querySelectorAll('#m2dir button').forEach(b=>b.classList.toggle('active',b.dataset.v==='head'));},
   reset(){this.t=0; this.cyc=0; this.startPos(); this.hist=[];
-    this.playing=true; this.updBtn();},
+    this.playing=false; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns(); this.reset();},

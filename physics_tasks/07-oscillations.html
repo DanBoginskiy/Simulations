@@ -283,8 +283,12 @@ details.condbox .cond{margin:10px 0 0}
    лише ручки — кожна своїм невидимим кружком поверх полотна. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 </style>
 </head>
 <body>
@@ -522,8 +526,15 @@ function mkHit(el,G){
   const b=document.createElement('b'); b.className='hit';
   const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
   b.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse') return;
     const h=b.__h; if(!h) return;
+    /* На пристрої, де є і сенсор, і миша, мішень дістається й миші. Тоді
+       беремо ручку лише якщо курсор справді на ній, а не будь-де в межах
+       сорока чотирьох пікселів: поруч можуть бути кнопки, намальовані на
+       самому полотні, і їхній натиск мішень не має права забирати. */
+    if(e.pointerType==='mouse'){
+      const p0=at(e);
+      if(Math.hypot(p0[0]-h.x,p0[1]-h.y)>(h.r||10)+6) return;
+    }
     G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
     if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
     /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
@@ -532,7 +543,7 @@ function mkHit(el,G){
     if(e.preventDefault) e.preventDefault();
   });
   b.addEventListener('pointermove',e=>{
-    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    if(G.st._grab==null) return;
     const p=at(e);
     for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
     if(e.preventDefault) e.preventDefault();
@@ -1273,7 +1284,7 @@ function drawGrip(g,h,st){
 /* ===================== МОДУЛЬ 1 · пластилін на пружину ===================== */
 const M1={
   mode:'free', M:1.5, m:0.5, k:250, h:0.2,
-  t:0, playing:true, waitT:0, showAns:true, TT:4.2,
+  t:0, playing:false, waitT:0, showAns:true, TT:4.2,
   mMIN:0.2, mMAX:1.0, KMIN:150, KMAX:400, HMIN:0.05, HMAX:0.4,
   hx:{x:null}, he:{x:null}, tipx:null, tipe:null,
   GG:[['m','маса пластиліну, кг',0.2,1,0.05,CLR.k2,null,'m1vm',2,'кг'],
@@ -1305,7 +1316,7 @@ const M1={
     return mt*v*v/2+this.k*x*x/2;
   },
   setTask(){this.M=1.5; this.m=0.5; this.k=250; this.h=0.2;},
-  reset(){this.t=0; this.waitT=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.waitT=0; this.playing=false; this.updBtn();},
   updBtn(){$('m1play').textContent=this.playing?'⏸':'▶';},
   setMode(mo){this.mode=mo; if(mo==='task') this.setTask();
     this.showAns=mo!=='task'; this.syncAns(); this.reset();},
@@ -1316,7 +1327,7 @@ const M1={
     $('m1ans').onclick=()=>{this.showAns=true; this.syncAns();};
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.TT) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}};
+      this.playing=!this.playing; this.updBtn();};
     $('m1re').onclick=()=>this.reset();
     this.tipx=makeTip('m1cxw'); this.tipe=makeTip('m1cew');
     hover('m1cx',this.hx); hover('m1ce',this.he);
@@ -1346,7 +1357,7 @@ const M1={
       if(this.playing){
         this.t=Math.min(this.TT,this.t+dt*0.7);
         if(this.t>=this.TT){this.playing=false; this.waitT=0; this.updBtn();}
-      } else if(this.t>=this.TT){this.waitT+=dt; if(this.waitT>1.8) this.reset();}
+      } else if(this.t>=this.TT){this.waitT+=dt;}
     }
     this.render();
   },
@@ -1512,7 +1523,7 @@ const M1={
 /* ===================== МОДУЛЬ 2 · газова пружина ===================== */
 const M2={
   mode:'free', P:5000, S:50e-4, m:2, l:1, amp:0.05,
-  t:0, playing:true, showAns:true, th:0, om0:0,
+  t:0, playing:false, showAns:true, th:0, om0:0,
   PMIN:2000, PMAX:20000, MMIN:0.5, MMAX:6, AMPMIN:0.02, AMPMAX:0.6,
   hf:{x:null}, hx:{x:null}, tipf:null, tipx:null,
   /* Амплітуда — не параметр системи, а початкова умова: вона з'являється
@@ -1533,7 +1544,7 @@ const M2={
   Flin(x){return -this.kEff()*x;},
   x:0, v:0,
   setTask(){this.P=5000; this.m=2; this.amp=0.05;},
-  reset(){this.t=0; this.x=this.amp; this.v=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.x=this.amp; this.v=0; this.playing=false; this.updBtn();},
   updBtn(){$('m2play').textContent=this.playing?'⏸':'▶';},
   setMode(mo){this.mode=mo; if(mo==='task') this.setTask();
     this.showAns=mo!=='task'; this.syncAns(); this.reset();},
@@ -1741,7 +1752,7 @@ const M2={
 /* ===================== МОДУЛЬ 3 · маятник зі стінкою ===================== */
 const M3={
   mode:'free', A:0.10, T0:1.2, L:0.05,
-  t:0, playing:true, showAns:true, TT:5.0,
+  t:0, playing:false, showAns:true, TT:5.0,
   AMIN:0.05, AMAX:0.16, T0MIN:0.6, T0MAX:2.4,
   hx:{x:null}, ht:{x:null}, tipx:null, tipt:null,
   GG:[['Acm','амплітуда A, см',5,16,0.5,CLR.k1,null,'m3va',1,'см'],
@@ -1761,7 +1772,7 @@ const M3={
   },
   vWall(){return 2*Math.PI/this.T0*Math.sqrt(Math.max(0,this.A*this.A-this.L*this.L));},
   setTask(){this.A=0.10; this.T0=1.2; this.L=0.05;},
-  reset(){this.t=0; this.playing=true; this.updBtn();},
+  reset(){this.t=0; this.playing=false; this.updBtn();},
   updBtn(){$('m3play').textContent=this.playing?'⏸':'▶';},
   setMode(mo){this.mode=mo; if(mo==='task') this.setTask();
     this.showAns=mo!=='task'; this.syncAns(); this.reset();},

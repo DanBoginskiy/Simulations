@@ -222,12 +222,16 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
    тільки вона забирає жест собі. */
 .hits{position:absolute; pointer-events:none; z-index:2}
 .hit{position:absolute; border:0; padding:0; margin:0; background:none;
-  border-radius:50%; pointer-events:auto; touch-action:none;
+  border-radius:50%; pointer-events:none; touch-action:none;
   -webkit-tap-highlight-color:transparent}
+/* Мішені існують заради пальця. На пристрої без сенсора вони мусять бути
+   наскрізними: інакше кружок у 44 px накриває ручку, ковтає натиск миші й
+   нічого з ним не робить — саме так і сталося, коли шар з'явився. */
+@media (any-pointer:coarse){.hit{pointer-events:auto}}
 .puck{display:none; align-items:center; justify-content:center;
   background:rgba(255,255,255,.86); border:1.4px dashed #9aa4ae;
   font:600 15px system-ui,sans-serif; color:#5b6670; cursor:grab}
-@media (pointer:coarse){.puck{display:flex}}
+@media (any-pointer:coarse){.puck{display:flex}}
 </style>
 </head>
 <body>
@@ -1066,7 +1070,9 @@ function arc(g,x,y,r,a1,a2,color,w=1.2){
 const CHFIT={};                 /* запам'ятані рамки графіків */
 function drawChart(box,opt){
   const {g,w,h}=box;
-  const L=44,R=54,T=12,B=26,pw=w-L-R,ph=h-T-B;
+  /* Нижнє поле більше за верхнє: під віссю стоять і числа поділок, і назва
+     самої осі — рядком нижче, при правому краї поля графіка. */
+  const L=44,R=54,T=12,B=40,pw=w-L-R,ph=h-T-B;
   if(pw<40||ph<30){g.clearRect(0,0,w,h); return null;}
   /* ---- масштаб графіка не «дихає» ---------------------------------------
      Рамка, з якою графік з'явився, лишається сталою. Вона розширюється лише
@@ -1105,7 +1111,7 @@ function drawChart(box,opt){
   for(let t=0;t<=opt.tMax+1e-9;t+=xs){
     g.strokeStyle=t<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(t)+.5,T); g.lineTo(X(t)+.5,T+ph); g.stroke();
-    txt(g,fmt(t,opt.xDec||0),X(t),h-10,{color:CLR.mut,size:10,align:'center'});
+    txt(g,fmt(t,opt.xDec||0),X(t),T+ph+15,{color:CLR.mut,size:10,align:'center'});
   }
   if(yMin<0&&yMax>0){
     g.strokeStyle=CLR.axis; g.beginPath(); g.moveTo(L,Y(0)+.5); g.lineTo(L+pw,Y(0)+.5); g.stroke();
@@ -1113,7 +1119,10 @@ function drawChart(box,opt){
   /* одиниці осей — у верхньому рядку кадру: біля самих осей вони
      наїжджають то на верхню поділку, то на прямий підпис серії */
   txt(g,opt.yLab,2,9,{color:CLR.mut,size:10.5});
-  txt(g,opt.xLab||'t, с',w-2,9,{color:CLR.mut,size:10.5,align:'right'});
+  /* Назва осі абсцис — під самою віссю, у тому місці, де поле графіка
+     закінчується. Угорі вона читалася як другий заголовок і зліплювалася
+     з назвою осі ординат на вузькому кадрі. */
+  txt(g,opt.xLab||'t, с',L+pw,T+ph+31,{color:CLR.mut,size:10.5,align:'right'});
   const ends=[];
   for(const s of opt.series){
     if(!s.ts||s.ts.length<2) continue;
@@ -1252,7 +1261,7 @@ function dragSphere(id,st,onDrag){
 const M1={
   mode:'proj', m:2, drag:false, kd:0.4,
   lv:7, lb:24, pv:18, pa:55, cR:6, cw:1.1,
-  t:0, playing:true, waitT:0,
+  t:0, playing:false, waitT:0,
   hist:null, rng:null,
   hx:{x:null}, hv:{x:null}, he:{x:null}, tipx:null, tipv:null, tipe:null,
 
@@ -1351,7 +1360,7 @@ const M1={
       vMin:R.vMin,vMax:R.vMax,eMin:R.eMin,eMax:R.eMax};
   },
   reset(){
-    this.t=0; this.waitT=0; this.playing=true;
+    this.t=0; this.waitT=0; this.playing=false;
     this.hist={ts:[],x:[],y:[],v:[],vx:[],vy:[],ek:[],ep:[],e:[]};
     this.recalc(); this.push(); this.updBtn();
   },
@@ -1388,7 +1397,7 @@ const M1={
     slider('m1m','кг',1,v=>{this.m=v; this.reset();});
     $('m1play').onclick=()=>{
       if(!this.playing&&this.t>=this.T()) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m1re').onclick=()=>this.reset();
     this.tipx=makeTip('m1cxw'); this.tipv=makeTip('m1cvw'); this.tipe=makeTip('m1cew');
@@ -1401,8 +1410,6 @@ const M1={
       this.t=Math.min(T,this.t+dt);
       this.push();
       if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
-    } else if(this.t>=T){
-      this.waitT+=dt; if(this.waitT>1.6) this.reset();
     }
     this.render();
   },
@@ -1569,13 +1576,13 @@ const M1={
 /* ===================== МОДУЛЬ 2 · обертальний рух ===================== */
 const M2={
   w0:1.2, eps:0.4, R:0.8, Ra:0.45,
-  T:8, t:0, playing:true, waitT:0,
+  T:8, t:0, playing:false, waitT:0,
   hist:null, rng:null,
   hp:{x:null}, hw:{x:null}, tipp:null, tipw:null,
   phi(t){return this.w0*t+this.eps*t*t/2;},
   om(t){return this.w0+this.eps*t;},
   reset(){
-    this.t=0; this.waitT=0; this.playing=true;
+    this.t=0; this.waitT=0; this.playing=false;
     this.hist={ts:[],phi:[],om:[],va:[],vb:[]};
     this.recalc(); this.push(); this.updBtn();
   },
@@ -1620,7 +1627,7 @@ const M2={
     this.sRa=sRa;
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m2re').onclick=()=>this.reset();
     this.tipp=makeTip('m2cpw'); this.tipw=makeTip('m2cww');
@@ -1668,8 +1675,6 @@ const M2={
       this.t=Math.min(this.T,this.t+dt);
       this.push();
       if(this.t>=this.T){this.playing=false; this.waitT=0; this.updBtn();}
-    } else if(this.t>=this.T){
-      this.waitT+=dt; if(this.waitT>1.6) this.reset();
     }
     this.render();
   },
@@ -1940,7 +1945,7 @@ const M2={
 const M3={
   vc:1, R:0.35, th0:0, frame:'road',
   fC:0.55, psiC:2.4,   /* вільна точка C: ρ = f_C·R від центра, фаза ψ від точки P */
-  t:0, playing:true, waitT:0, REV:1.15,
+  t:0, playing:false, waitT:0, REV:1.15,
   hist:null,
   hv:{x:null}, hy:{x:null}, tipv:null, tipy:null,
   om(){return this.vc/this.R;},
@@ -1958,7 +1963,7 @@ const M3={
   velP(t){const th=this.th(t);return {x:this.vc*(1-Math.cos(th)), y:this.vc*Math.sin(th)};},
   speedP(t){return 2*this.vc*Math.abs(Math.sin(this.th(t)/2));},
   reset(){
-    this.t=0; this.waitT=0; this.playing=true;
+    this.t=0; this.waitT=0; this.playing=false;
     this.hist={ts:[],v:[],vc:[],y:[]};
     this.push(); this.updBtn();
   },
@@ -1974,7 +1979,7 @@ const M3={
     seg('m3F',v=>{this.frame=v;});   /* перемикання СВ не скидає час */
     $('m3play').onclick=()=>{
       if(!this.playing&&this.t>=this.T()) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m3re').onclick=()=>this.reset();
     this.tipv=makeTip('m3cvw'); this.tipy=makeTip('m3cyw');
@@ -2025,8 +2030,6 @@ const M3={
       this.t=Math.min(T,this.t+dt);
       this.push();
       if(this.t>=T){this.playing=false; this.waitT=0; this.updBtn();}
-    } else if(this.t>=T){
-      this.waitT+=dt; if(this.waitT>1.6) this.reset();
     }
     this.render();
   },
@@ -2236,7 +2239,7 @@ const M3={
 
 /* ===================== МОДУЛЬ 4 · зоряний час ===================== */
 const M4={
-  tau:0, TMAX:12, speed:0.6, playing:true,
+  tau:0, TMAX:12, speed:0.6, playing:false,
   CULM0:21,                       /* умовний момент першої кульмінації зорі */
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null, sl:null,
   orbDeg(){return this.tau*360/YEAR;},                 /* кут по орбіті, ° */
@@ -2244,7 +2247,7 @@ const M4={
   solH(){return (this.tau%1)*24;},                     /* сонячний час доби */
   sidH(){return (this.tau*24*T_SOL/T_SID)%24;},        /* зоряний час доби */
   diffMin(){return this.tau*(T_SOL-T_SID)/60;},        /* випередження зоряного, хв */
-  reset(){this.tau=0; this.playing=true; this.updBtn(); this.syncSlider();},
+  reset(){this.tau=0; this.playing=false; this.updBtn(); this.syncSlider();},
   updBtn(){$('m4play').textContent=this.playing?'⏸':'▶';},
   syncSlider(){$('m4tau').value=this.tau; $('m4tauo').textContent=fmt(this.tau,2)+' діб';},
   init(){
@@ -2253,7 +2256,7 @@ const M4={
     $('m4tau').addEventListener('input',()=>{this.playing=false; this.updBtn();});
     $('m4play').onclick=()=>{
       if(!this.playing&&this.tau>=this.TMAX) this.reset();
-      else {this.playing=!this.playing; this.updBtn();}
+      this.playing=!this.playing; this.updBtn();
     };
     $('m4re').onclick=()=>this.reset();
     this.tip1=makeTip('m4c1w'); this.tip2=makeTip('m4c2w');
