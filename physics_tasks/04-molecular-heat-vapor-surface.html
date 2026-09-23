@@ -313,6 +313,7 @@ details.condbox .cond{margin:10px 0 0}
             <button data-v="water" class="active" style="--c:var(--k1)">вода</button>
             <button data-v="spirt" style="--c:var(--k2)">спирт</button>
             <button data-v="hg" style="--c:var(--k3)">ртуть</button>
+            <button data-v="any" style="--c:var(--sec)">рідина</button>
           </div>
           <button class="ibtn" id="m3re" title="заново">↺</button>
         </div>
@@ -515,10 +516,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -1164,6 +1176,9 @@ function gaugeGrips(C0,list,st){
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
       hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      /* Для пальця мішенню має бути вся доріжка, а не кружок на повзунку:
+         зона захоплення миші тут саме така, і мішень мусить її повторювати. */
+      hbox:{x:p.x-16,y:p.y-18,w:C.W+32,h:36},
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);
@@ -1229,7 +1244,13 @@ function drawGrip(g,h,st){
 const LIQ={
   water:{n:'вода',  sig:0.074, rho:1000,  col:'k1', tc:'#1c5cab', th0:65.55},
   spirt:{n:'спирт', sig:0.022, rho:790,   col:'k2', tc:'#b8431a', th0:15},
-  hg   :{n:'ртуть', sig:0.465, rho:13600, col:'k3', tc:'#0d7a55', th0:138}
+  hg   :{n:'ртуть', sig:0.465, rho:13600, col:'k3', tc:'#0d7a55', th0:138},
+  /* Четвертий стан — не речовина з довідника, а та, яку склали руками. Щойно
+     натяг чи густину зрушили з довідкового значення, назвати рідину водою вже
+     не можна: показ стає просто «рідина» й міняє колір на нейтральний. Число
+     adh (чисельник рівняння Юнга) лишається від тієї речовини, з якої почали,
+     — воно описує пару скло + рідина, а не саму рідину. */
+  any  :{n:'рідина', sig:0.074, rho:1000,  col:'sec', tc:'#6b6b6b', th0:65.55}
 };
 /* Крайовий кут — НЕ незалежна ручка. За рівнянням Юнга
    cos θ = (σ_тг − σ_тр)/σ, де чисельник — властивість пари тверде тіло + рідина
@@ -1250,8 +1271,9 @@ const M3={
      якому змінюють саме те, від чого залежить висота. */
   ha:{x:null}, hh:{x:null}, tiph:null, tipa:null,
   GG:[['dmm','діаметр трубки d, мм',0.15,1.6,0.05,CLR.k2,null,'m3vd2',2,'мм'],
-      ['sig','поверхневий натяг σ, мН/м',37,148,0.5,CLR.k3,null,'m3vsig2',1,'мН/м'],
-      ['rho','густина ρ, кг/м³',500,2000,25,CLR.k1,null,'m3vrho2',0,'кг/м³']],
+      ['sig','поверхневий натяг σ, мН/м',37,148,0.5,CLR.k3,
+        function(){this.goCustom();},'m3vsig2',1,'мН/м'],
+      ['rho','густина ρ, кг/м³',500,2000,25,CLR.k1,function(){this.goCustom();},'m3vrho2',0,'кг/м³']],
   L(){return LIQ[this.liq];},
   d(){return this.dmm*1e-3;},
   /* θ — наслідок: cos θ = adh/σ. При adh ≥ σ маємо повне змочування (θ = 0). */
@@ -1266,6 +1288,18 @@ const M3={
      нікуди не годився: θ = arccos(adh/σ) при великих σ виположується, і на
      останніх 70 % ходу кут мінявся всього на 8°. Беремо піввідрізок навколо
      довідкового натягу — 0.5σ₀…2σ₀ — там похідна кута найбільша. */
+  /* Ручна зміна σ або ρ відв'язує показ від довідкової речовини. */
+  goCustom(){
+    if(this.liq==='any') return;
+    LIQ.any.adh=this.L().adh;
+    LIQ.any.sig=this.L().sig; LIQ.any.rho=this.L().rho;
+    this.liq='any';
+    this.syncLiqBtns();
+  },
+  syncLiqBtns(){
+    document.querySelectorAll('#m3liq button').forEach(b=>
+      b.classList.toggle('active',b.dataset.v===this.liq));
+  },
   setLiq(v){
     const L=LIQ[v], s0=L.sig*1000;         /* мН/м */
     this.liq=v; this.sig=s0; this.rho=L.rho;
@@ -1274,8 +1308,7 @@ const M3={
     this.GG[2][2]=Math.round(L.rho*0.5); this.GG[2][3]=Math.round(L.rho*2);
     this.GG[2][4]=Math.max(5,Math.round(L.rho/40));
   },
-  setTask(){this.dmm=0.5; this.setLiq('water');
-    document.querySelectorAll('#m3liq button').forEach(b=>b.classList.toggle('active',b.dataset.v==='water'));},
+  setTask(){this.dmm=0.5; this.setLiq('water'); this.syncLiqBtns();},
   setMode(m){this.mode=m; if(m==='task') this.setTask();
     this.showAns=m!=='task'; this.syncAns();},
   syncAns(){const task=this.mode==='task';
@@ -1351,7 +1384,11 @@ const M3={
     const {g,w}=b, Q=this.geo(b), H=Q.C.gtop, L=this.L(), col=CLR[L.col];
     g.clearRect(0,0,w,H);
     const vy=Q.y0, vw=Q.x0+Q.dx*3.2+16, hgQ=this.liq==='hg';
-    g.fillStyle=hgQ?'#d8d6d2':CLR.water;
+    /* Колір рідини змінюється разом із речовиною: ртуть сіра, вода синя,
+       а рідина, складена руками, дістає власний нейтральний відтінок — щоб
+       з першого погляду було видно, що це вже не довідкова речовина. */
+    g.fillStyle=hgQ?'#d8d6d2':(this.liq==='any'?'#e6e4dd'
+      :this.liq==='spirt'?'#fbe7d8':CLR.water);
     g.fillRect(26,vy,vw-26,H-vy-30);
     g.strokeStyle=CLR.axis; g.lineWidth=2;
     g.beginPath(); g.moveTo(26,vy-26); g.lineTo(26,H-30); g.lineTo(vw,H-30);
@@ -1390,7 +1427,7 @@ const M3={
       pillN(g,'d = '+fmt(dmm,2)+' мм',x,top-18,{color:'#b8431a',size:11,bold:true});
       arrow(g,x+tw/2+18,vy,x+tw/2+18,my,CLR.k2,1.6);
       arrow(g,x+tw/2+18,my,x+tw/2+18,vy,CLR.k2,1.6);
-      txt(g,'h',x+tw/2+26,(vy+my)/2+4,{color:'#b8431a',size:12,bold:true});
+      /* другий підпис h прибрано: плашка з числом малює на сцені той самий символ */
       const ly=Math.abs(hp)>34?(vy+my)/2+4:(hp>=0?my-9:my+17);
       pillN(g,'h = '+fmt(hcm,2)+' см',x+tw/2+62,ly,{color:'#b8431a',size:11,bold:true});
     }
@@ -1857,6 +1894,20 @@ function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(
 function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},kv); taskSave(s);}
 
 /* ---- побудова інтерфейсу --------------------------------------------- */
+/* ---- підказки скидаються на старті показу ------------------------------
+   Підказку відкривають, коли застрягли на тому, що зараз на сцені. Щойно
+   глядач натискає пуск — він починає новий захід, і відкриті підказки з
+   попереднього лише заважають: вони вже розповіли те, що тепер треба
+   побачити самому. Тому кнопка пуску згортає їх усі. */
+const HINTRESET={};
+addEventListener('click',e=>{
+  /* кнопка пуску зветься в цій серії або mNplay, або mNpp — ловимо обидві */
+  const b=e.target&&e.target.closest?e.target.closest('button[id$="play"],button[id$="pp"]'):null;
+  if(!b) return;
+  const m=/^(m\d+)(play|pp)$/.exec(b.id);
+  const f=m&&HINTRESET[m[1]];
+  if(f) f();
+},true);
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
@@ -2041,6 +2092,13 @@ function buildTasks(){
     hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
     hbtn.forEach((b,k)=>{b.disabled=k>0;});
     if(saved.h) openHint(saved.h-1);
+    /* пуск показу згортає підказки цього модуля */
+    HINTRESET[mid]=()=>{
+      if(!hints.children.length) return;
+      hints.textContent='';
+      hbtn.forEach((b,k)=>{b.disabled=k>0; b.classList.remove('on');});
+      taskPatch(mid,{h:0});
+    };
 
     /* ---- перевірка ---- */
     function run(){

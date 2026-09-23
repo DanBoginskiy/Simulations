@@ -725,10 +725,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -1515,6 +1526,13 @@ const M1={
       g.beginPath(); g.moveTo(SX(this.WX[0]),SY(0)); g.lineTo(SX(q.xc),SY(0)); g.stroke();
       g.setLineDash([]);
       pillN(g,'b = '+fmt(q.b,2)+' м',SX(bx),SY(q.b/2)-(q.b>0?0:0),{color:'#0d7a55',size:11,bold:true});
+      /* Відповідь «лобовий чи ні» стоїть просто біля самої прицільної відстані:
+         саме вона її й вирішує. */
+      txt(g,'b ≠ 0 — удар не лобовий',SX(bx)+10,SY(q.b/2)+16,
+        {color:'#0d7a55',size:11,bold:true});
+    } else {
+      txt(g,'b = 0 — удар лобовий',SX(this.X0+1.1),SY(0)-14,
+        {color:'#1c5cab',size:11.5,bold:true});
     }
     /* лінія центрів: саме вздовж неї й відбувається обмін імпульсом */
     g.strokeStyle=CLR.sec; g.lineWidth=1.5; g.setLineDash([5,4]);
@@ -1574,8 +1592,7 @@ const M1={
       12,36,{color:CLR.mut,size:10.5});
     /* Та сама відповідь — і на самому кресленні, біля мітки b: із бічної панелі
        її не видно, коли дивишся на шайби. */
-    txt(g,head?'b = 0 — удар лобовий':'b ≠ 0 — удар не лобовий',
-      SX(this.WX[0])+4,SY(-this.WY)+32,{color:head?'#1c5cab':'#0d7a55',size:11.5,bold:true});
+
     for(const hh of this.grips()) drawGrip(g,hh,this);
   },
   tableOb(){

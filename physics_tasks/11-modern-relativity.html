@@ -537,10 +537,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -1186,6 +1197,9 @@ function gaugeGrips(C0,list,st){
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
       hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      /* Для пальця мішенню має бути вся доріжка, а не кружок на повзунку:
+         зона захоплення миші тут саме така, і мішень мусить її повторювати. */
+      hbox:{x:p.x-16,y:p.y-18,w:C.W+32,h:36},
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);
@@ -1257,16 +1271,36 @@ const M1={
      з'являються і скорочення, і поворот. Зміна β на ходу перераховує все
      одразу: швидкість і є тим, що задають. */
   started:false,
-  beff(){return this.started?this.be:0;},
+  /* Розгін. Стрижень стартує з нуля й іде зі сталим власним прискоренням:
+     β(t) = (t/τ)/√(1 + (t/τ)²). Ця крива сама показує головне про швидкість
+     світла — спершу β росте майже лінійно, а далі все повільніше й до одиниці
+     не доходить ніколи. Розгін триває, доки не дійде до заданої β, після чого
+     стрижень летить рівномірно. Саме за цей час і видно, як він коротшає й
+     повертається: раніше обидва ефекти з'являлися стрибком у мить пуску. */
+  TAU:2.2,        /* розгін триває помітний час: усе діло в тому, щоб побачити його */
+  beff(){
+    if(!this.started) return 0;
+    const u=this.t/this.TAU;
+    return Math.min(this.be,u/Math.sqrt(1+u*u));
+  },
+  /* чи розгін ще триває — від цього залежить підпис на сцені */
+  boosting(){return this.started&&this.beff()<this.be-1e-4;},
   LMAX:120, BMAX:0.85, SLEEP:40,               /* крок шпал у лабораторії, см */
   ha:{x:null}, hl:{x:null}, tipa:null, tipl:null,
   GG:[['be','швидкість β',0,0.85,0.01,CLR.k2,null,'m1vb',2,'c']],
   gam(){return gamOf(this.beff());},
-  lx(){return this.l*Math.cos(this.th*DEG);},   /* поздовжня складова в лабораторії */
-  ly(){return this.l*Math.sin(this.th*DEG);},   /* поперечна — однакова в обох СВ */
-  l0x(){return this.gam()*this.lx();},
-  l0(){return Math.hypot(this.l0x(),this.ly());},
-  th0(){return Math.atan2(this.ly(),this.l0x())/DEG;},
+  /* Ручки задають ВЛАСНІ довжину й кут — саме їх дає умова (l₀ і θ₀), і саме
+     вони не міняються, поки стрижень розганяють. Лабораторні виходять із них
+     скороченням поздовжньої складової: lₓ = l₀cos θ₀/γ, l_y = l₀sin θ₀. Було
+     навпаки — сталими лишалися лабораторні, а власна довжина росла з β; тоді
+     на екрані ніщо не коротшало, тільки привид ставав довшим. */
+  l0x(){return this.l*Math.cos(this.th*DEG);},   /* поздовжня у власній СВ */
+  ly(){return this.l*Math.sin(this.th*DEG);},    /* поперечна — однакова в обох СВ */
+  lx(){return this.l0x()/this.gam();},           /* поздовжня в лабораторії — скорочена */
+  l0(){return this.l;},
+  th0(){return this.th;},
+  lLab(){return Math.hypot(this.lx(),this.ly());},
+  thLab(){return Math.atan2(this.ly(),Math.max(1e-9,this.lx()))/DEG;},
   setTask(){this.be=0.50; this.l=100; this.th=45; this.t=0; this.drift=0;
     this.started=false; this.playing=false; this.updBtn();},
   setMode(m){this.mode=m; if(m==='task') this.setTask(); this.t=0;
@@ -1279,8 +1313,10 @@ const M1={
     $('m1re').onclick=()=>{this.t=0; this.drift=0; this.started=false;
       this.playing=false; this.updBtn();};
     $('m1pp').onclick=()=>{
-      if(!this.started){this.started=true; this.playing=false;}
-      else this.playing=!this.playing;
+      /* Пуск одразу пускає розгін: стрижень не «перемикається» у швидкий
+         стан, а справді набирає швидкість, і кадр за кадром коротшає. */
+      if(!this.started){this.started=true; this.t=0; this.drift=0;}
+      this.playing=!this.playing;
       this.updBtn();};
     this.tipa=makeTip('m1caw'); this.tipl=makeTip('m1clw');
     hover('m1ca',this.ha); hover('m1cl',this.hl);
@@ -1288,8 +1324,8 @@ const M1={
     this.hl.xlab='β'; this.hl.xunit='c'; this.hl.xdec=2;
     this.setTask(); this.syncAns(); this.updBtn();
   },
-  updBtn(){$('m1pp').textContent=!this.started?'▶':(this.playing?'⏸':'▶');
-    $('m1pp').title=!this.started?'пуск':'пауза';},
+  updBtn(){$('m1pp').textContent=this.playing?'⏸':'▶';
+    $('m1pp').title=this.playing?'пауза':(this.started?'далі':'пуск');},
   gcol(b){return gcolOf(b,this.mode==='free'?this.GG.length:0);},
   /* сталий кадр §10: обидві панелі однакові, масштаб — з LMAX */
   /* Одна система відліку — лабораторна. Стрижень спершу лежить у ній
@@ -1312,7 +1348,9 @@ const M1={
     out.push({id:'tip', x:ox+Q.sc*this.lx(), y:oy-Q.sc*this.ly(), r:11,
       color:CLR.ink, hint:'кінець стрижня: довжина і кут у лабораторії',
       move:(px,py)=>{
-        const dx=Math.max(0,(px-ox)/Q.sc), dy=Math.max(0,(oy-py)/Q.sc);
+        /* Ручка стоїть на лабораторному вістрі, а задає власні величини:
+           поздовжню складову треба спершу «розтягнути» назад на γ. */
+        const dx=Math.max(0,(px-ox)/Q.sc)*this.gam(), dy=Math.max(0,(oy-py)/Q.sc);
         const L=clamp(Math.hypot(dx,dy),20,this.LMAX);
         this.l=snap(L,1);
         this.th=clamp(snap(Math.atan2(dy,Math.max(1e-6,dx))/DEG,1),0,90);
@@ -1398,10 +1436,13 @@ const M1={
       g.beginPath(); g.moveTo(bx,yb); g.lineTo(bx+p0,yb-py); g.stroke(); g.setLineDash([]);
       txt(g,'l₀',bx+p0*0.55+6,yb-py*0.55-8,{color:CLR.mut,size:12.5,bold:true});
       if(this.started) txt(g,'був у спокої',bx+p0+8,yb-py-6,{color:CLR.mut,size:10.5,bold:true});
-      /* власний кут — дуга біля тієї самої основи, але від привида */
-      const R0=Math.min(40,Math.max(18,p0*0.42));
+      /* Власний кут — дуга від того самого початку, але помітно більшого
+         радіуса: інакше вона лягає просто на дугу лабораторного кута, і дві
+         літери сідають одна на одну. */
+      const Rlab=Math.min(48,Math.max(20,Q.sc*this.lx()*0.5));
+      const R0=Rlab+26;
       arc(g,bx,yb,R0,-Math.atan2(py,Math.max(1e-6,p0)),0,CLR.mut,1.4);
-      txt(g,'θ₀',bx+R0+6,yb-Math.min(18,R0*0.42),{color:CLR.mut,size:11.5,bold:true});
+      txt(g,'θ₀',bx+R0+7,yb-6,{color:CLR.mut,size:11.5,bold:true});
     }
     arrow(g,bx,yb+18,bx+px,yb+18,CLR.k1,2.2);
     txt(g,'lₓ',bx+px/2,yb+34,{color:CLR.k1,size:11,bold:true,align:'center'});
@@ -1420,7 +1461,7 @@ const M1={
        на кресленні немає зовсім — студент відкриває модуль і бачить лише
        нерухомий стрижень. У спокої лишається сама позначка на осі розгону. */
     {
-      const vl=this.started?Math.max(14,this.be/this.BMAX*Math.min(180,w*0.16)):0;
+      const vl=this.started?Math.max(14,this.beff()/this.BMAX*Math.min(180,w*0.16)):0;
       const vy=yb-py-34;
       if(vl>0) arrow(g,bx,vy,bx+vl,vy,CLR.k2,3);
       else {
@@ -1464,7 +1505,7 @@ const M1={
       const ts=[],y0=[],y1=[];
       for(let i=0;i<=100;i++){
         const be=this.BMAX*i/100, g2=gamOf(be); ts.push(be);
-        y0.push(Math.atan2(this.ly(),g2*this.lx())/DEG); y1.push(this.th);
+        y0.push(this.th); y1.push(Math.atan2(this.ly(),this.l0x()/g2)/DEG);
       }
       const r=drawChart(ba,{tMax:this.BMAX,yMin:0,yMax:95,yLab:'θ, °',xLab:'β = v/c',
         yDec:0,xDec:1,xStep:0.2,hover:this.ha.x,
@@ -1479,7 +1520,7 @@ const M1={
       const ts=[],y0=[],y1=[];
       for(let i=0;i<=100;i++){
         const be=this.BMAX*i/100, g2=gamOf(be); ts.push(be);
-        y0.push(Math.hypot(g2*this.lx(),this.ly())); y1.push(this.l);
+        y0.push(this.l); y1.push(Math.hypot(this.l0x()/g2,this.ly()));
       }
       const r=drawChart(bl,{tMax:this.BMAX,yMin:0,yMax:this.LMAX*2.1,yLab:'l, см',
         xLab:'β = v/c',yDec:0,xDec:1,xStep:0.2,hover:this.hl.x,
@@ -2133,6 +2174,20 @@ function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(
 function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},kv); taskSave(s);}
 
 /* ---- побудова інтерфейсу --------------------------------------------- */
+/* ---- підказки скидаються на старті показу ------------------------------
+   Підказку відкривають, коли застрягли на тому, що зараз на сцені. Щойно
+   глядач натискає пуск — він починає новий захід, і відкриті підказки з
+   попереднього лише заважають: вони вже розповіли те, що тепер треба
+   побачити самому. Тому кнопка пуску згортає їх усі. */
+const HINTRESET={};
+addEventListener('click',e=>{
+  /* кнопка пуску зветься в цій серії або mNplay, або mNpp — ловимо обидві */
+  const b=e.target&&e.target.closest?e.target.closest('button[id$="play"],button[id$="pp"]'):null;
+  if(!b) return;
+  const m=/^(m\d+)(play|pp)$/.exec(b.id);
+  const f=m&&HINTRESET[m[1]];
+  if(f) f();
+},true);
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
@@ -2317,6 +2372,13 @@ function buildTasks(){
     hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
     hbtn.forEach((b,k)=>{b.disabled=k>0;});
     if(saved.h) openHint(saved.h-1);
+    /* пуск показу згортає підказки цього модуля */
+    HINTRESET[mid]=()=>{
+      if(!hints.children.length) return;
+      hints.textContent='';
+      hbtn.forEach((b,k)=>{b.disabled=k>0; b.classList.remove('on');});
+      taskPatch(mid,{h:0});
+    };
 
     /* ---- перевірка ---- */
     function run(){

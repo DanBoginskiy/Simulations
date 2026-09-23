@@ -742,10 +742,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -2359,6 +2370,9 @@ function slGrips(C0,list,st){
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
       hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      /* Для пальця мішенню має бути вся доріжка, а не кружок на повзунку:
+         зона захоплення миші тут саме така, і мішень мусить її повторювати. */
+      hbox:{x:p.x-16,y:p.y-18,w:C.W+32,h:36},
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);

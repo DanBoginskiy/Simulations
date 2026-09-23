@@ -583,10 +583,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -1232,6 +1243,9 @@ function gaugeGrips(C0,list,st){
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
       hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      /* Для пальця мішенню має бути вся доріжка, а не кружок на повзунку:
+         зона захоплення миші тут саме така, і мішень мусить її повторювати. */
+      hbox:{x:p.x-16,y:p.y-18,w:C.W+32,h:36},
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);
@@ -2273,7 +2287,7 @@ const M4={
     this.setTask(); this.syncAns(); this.reset();
   },
   gcol(b){return gcolOf(b,this.GG.length);},
-  GG:[['eta','η — брус важчий у',10,1000,5,CLR.k3,null,'m4vet',0,'']],
+  GG:[['eta','η — брус важчий за кулю у',10,1000,5,CLR.k3,null,'m4vet',0,' разів']],
   geo(b){return frozen(this,b,bb=>{
     const C=this.gcol(bb), H=C.gtop-46;
     /* Стовпчики енергії зі сцени прибрано, тож маятник більше не тулиться
@@ -2398,29 +2412,13 @@ const M4={
       g.beginPath(); g.ellipse(px,py,9,4.5,0,0,7); g.fill();
       arrow(g,Q.px-140,Q.py+L+26,Q.px-140+this.v*Q.kv,Q.py+L+26,CLR.ink,2.5);
       txt(g,'v',Q.px-136+this.v*Q.kv,Q.py+L+20,{color:CLR.ink,size:12,bold:true});
-    /* η — не число з умови, а відношення мас: скільки куль важить брус. Довшу
-       смужку ділимо поділками завширшки з коротшу, і скільки їх уклалося,
-       стільки й η (пункт 6.2 переліку сцен). */
-    {
-      const W=Math.min(120,Q.sc*0.9), x0=Q.px+HW+22, y=Q.py+L*0.18;
-      const uw=W/Math.max(1,this.eta);
-      g.fillStyle='#eceae3';
-      g.beginPath(); g.roundRect(x0,y-4,W,8,4); g.fill();
-      g.fillStyle=CLR.k1; g.globalAlpha=0.5;
-      g.beginPath(); g.roundRect(x0,y-4,W,8,4); g.fill(); g.globalAlpha=1;
-      g.fillStyle=CLR.ink;
-      g.beginPath(); g.roundRect(x0,y+12,Math.max(3,uw),8,4); g.fill();
-      if(uw>4){
-        g.strokeStyle=CLR.sec; g.lineWidth=1;
-        for(let x=x0+uw;x<x0+W-1;x+=uw){
-          g.beginPath(); g.moveTo(x+.5,y-5); g.lineTo(x+.5,y+5); g.stroke();
-        }
-      }
-      txt(g,'брус',x0-7,y+4,{color:CLR.k1,size:10,bold:true,align:'right'});
-      txt(g,'куля',x0-7,y+20,{color:CLR.ink,size:10,bold:true,align:'right'});
-      txt(g,'η',x0+W+8,y+12,{color:CLR.ink,size:13,bold:true});
     }
-    }
+    /* Відношення мас називає сам повзунок: «η — брус важчий за кулю у N разів».
+       Два стовпчики поруч показували те саме, але забирали пів кадру. На самому
+       кресленні лишається підпис біля бруса: у режимі задачі повзунка немає, і
+       без нього величина з умови зникла б зі сцени зовсім. */
+    txt(g,'η — брус важчий за кулю',Q.px+30,Q.py+L*0.24,
+      {color:CLR.k1,size:11.5,bold:true});
     capN(g,this.phase==='fly'?'куля летить до бруса':'куля застрягла — далі йде маятник',12,20,{color:this.phase==='fly'?CLR.ink:CLR.k1,size:12.5,bold:true});
     capN(g,'у брус переходить увесь імпульс і менш ніж один відсоток енергії',12,36,{color:CLR.mut,size:10.5});
     for(const hh of this.grips()) if(hh.id==='l'||hh.id==='v') drawGrip(g,hh,this);
@@ -2840,6 +2838,20 @@ function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(
 function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},kv); taskSave(s);}
 
 /* ---- побудова інтерфейсу --------------------------------------------- */
+/* ---- підказки скидаються на старті показу ------------------------------
+   Підказку відкривають, коли застрягли на тому, що зараз на сцені. Щойно
+   глядач натискає пуск — він починає новий захід, і відкриті підказки з
+   попереднього лише заважають: вони вже розповіли те, що тепер треба
+   побачити самому. Тому кнопка пуску згортає їх усі. */
+const HINTRESET={};
+addEventListener('click',e=>{
+  /* кнопка пуску зветься в цій серії або mNplay, або mNpp — ловимо обидві */
+  const b=e.target&&e.target.closest?e.target.closest('button[id$="play"],button[id$="pp"]'):null;
+  if(!b) return;
+  const m=/^(m\d+)(play|pp)$/.exec(b.id);
+  const f=m&&HINTRESET[m[1]];
+  if(f) f();
+},true);
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
@@ -3024,6 +3036,13 @@ function buildTasks(){
     hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
     hbtn.forEach((b,k)=>{b.disabled=k>0;});
     if(saved.h) openHint(saved.h-1);
+    /* пуск показу згортає підказки цього модуля */
+    HINTRESET[mid]=()=>{
+      if(!hints.children.length) return;
+      hints.textContent='';
+      hbtn.forEach((b,k)=>{b.disabled=k>0; b.classList.remove('on');});
+      taskPatch(mid,{h:0});
+    };
 
     /* ---- перевірка ---- */
     function run(){

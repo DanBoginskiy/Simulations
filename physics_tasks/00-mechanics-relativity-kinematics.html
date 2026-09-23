@@ -595,10 +595,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -1244,6 +1255,9 @@ function gaugeGrips(C0,list,st){
     const p=gpos(C,i), f=(st[m[0]]-m[2])/(m[3]-m[2]);
     return {id:m[0], x:p.x+f*C.W, y:p.y, r:13, bare:true, color:m[5]||CLR.k1, hint:m[1],
       hit:(px,py)=>px>=p.x-16&&px<=p.x+C.W+16&&Math.abs(py-p.y)<=18,
+      /* Для пальця мішенню має бути вся доріжка, а не кружок на повзунку:
+         зона захоплення миші тут саме така, і мішень мусить її повторювати. */
+      hbox:{x:p.x-16,y:p.y-18,w:C.W+32,h:36},
       move:(px,py)=>{
         st[m[0]]=clamp(snap((px-p.x)/C.W*(m[3]-m[2])+m[2],m[4]),m[2],m[3]);
         if(m[6]) m[6].call(st);
@@ -2980,6 +2994,20 @@ function taskSave(st){ try{ localStorage.setItem(LS,JSON.stringify(st)); }catch(
 function taskPatch(mid,kv){const s=taskState(); s[mid]=Object.assign(s[mid]||{},kv); taskSave(s);}
 
 /* ---- побудова інтерфейсу --------------------------------------------- */
+/* ---- підказки скидаються на старті показу ------------------------------
+   Підказку відкривають, коли застрягли на тому, що зараз на сцені. Щойно
+   глядач натискає пуск — він починає новий захід, і відкриті підказки з
+   попереднього лише заважають: вони вже розповіли те, що тепер треба
+   побачити самому. Тому кнопка пуску згортає їх усі. */
+const HINTRESET={};
+addEventListener('click',e=>{
+  /* кнопка пуску зветься в цій серії або mNplay, або mNpp — ловимо обидві */
+  const b=e.target&&e.target.closest?e.target.closest('button[id$="play"],button[id$="pp"]'):null;
+  if(!b) return;
+  const m=/^(m\d+)(play|pp)$/.exec(b.id);
+  const f=m&&HINTRESET[m[1]];
+  if(f) f();
+},true);
 function buildTasks(){
   const st=taskState();
   for(const mid in TASKS){
@@ -3164,6 +3192,13 @@ function buildTasks(){
     hbtn.forEach((b,k)=>b.addEventListener('click',()=>openHint(k)));
     hbtn.forEach((b,k)=>{b.disabled=k>0;});
     if(saved.h) openHint(saved.h-1);
+    /* пуск показу згортає підказки цього модуля */
+    HINTRESET[mid]=()=>{
+      if(!hints.children.length) return;
+      hints.textContent='';
+      hbtn.forEach((b,k)=>{b.disabled=k>0; b.classList.remove('on');});
+      taskPatch(mid,{h:0});
+    };
 
     /* ---- перевірка ---- */
     function run(){

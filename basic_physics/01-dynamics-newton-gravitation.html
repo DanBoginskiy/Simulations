@@ -713,10 +713,21 @@ function syncHits(){
     while(L.childElementCount>list.length) L.removeChild(L.lastChild);
     while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
     for(let i=0;i<list.length;i++){
-      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      const h=list[i], b=L.children[i];
       b.__h=h;
-      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
-      b.style.width=S+'px'; b.style.height=S+'px';
+      if(h.hbox){
+        /* ручка з власною зоною захоплення — доріжка повзунка, відрізок,
+           смуга: мішень повторює саме її, інакше пальцем можна взяти лише
+           кружок, а мишею — усю доріжку, і дві поведінки розходяться */
+        b.style.left=h.hbox.x+'px'; b.style.top=h.hbox.y+'px';
+        b.style.width=h.hbox.w+'px'; b.style.height=h.hbox.h+'px';
+        b.style.borderRadius=Math.min(h.hbox.h,h.hbox.w)/2+'px';
+      } else {
+        const S=Math.max(44,2*(h.r+8));
+        b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+        b.style.width=S+'px'; b.style.height=S+'px';
+        b.style.borderRadius='50%';
+      }
     }
   }
 }
@@ -2499,9 +2510,10 @@ const M5={
       if(rg<Math.max(w,h)*1.4){
         g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([6,4]);
         g.beginPath(); g.arc(cx,cy,rg,0,7); g.stroke(); g.setLineDash([]);
-        /* підпис ставимо на саме коло під кутом 45°: над кадром його не видно */
-        txt(g,'геостаціонарний радіус',cx+rg*0.71+6,cy-rg*0.71-4,
-          {color:'#0d7a55',size:10,bold:true});
+        /* підпис ведемо в лівий нижній бік кола: угорі праворуч стоїть перелік
+           умов, і напис ліз би просто на нього */
+        txt(g,'геостаціонарний радіус',cx-rg*0.71-6,cy+rg*0.71+10,
+          {color:'#0d7a55',size:10,bold:true,align:'right'});
       }
       const circ=o.e<0.02;
       const per=isFinite(o.T)&&Math.abs(o.T-T_EARTH)/T_EARTH<0.02;
