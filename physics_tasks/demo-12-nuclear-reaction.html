@@ -94,7 +94,7 @@ table.read tr:last-child td{border-bottom:none}
 .tip .th{color:var(--mut); margin-bottom:3px}
 .tip div{line-height:1.5}
 .pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
-.pgrid .scene canvas{width:100%; touch-action:none}
+.pgrid .scene canvas{width:100%;}
 .side .panel{padding:12px 14px}
 .duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 .duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
@@ -201,6 +201,14 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .chartbox canvas{height:clamp(160px,46vh,320px)}
 }
 
+
+/* ---- мішені для дотику -------------------------------------------------
+   Палець, покладений будь-де на сцену, має гортати сторінку. Ловлять дотик
+   лише ручки — кожна своїм невидимим кружком поверх полотна. */
+.hits{position:absolute; pointer-events:none; z-index:2}
+.hit{position:absolute; border:0; padding:0; margin:0; background:none;
+  border-radius:50%; pointer-events:auto; touch-action:none;
+  -webkit-tap-highlight-color:transparent}
 </style>
 </head>
 <body>
@@ -350,10 +358,82 @@ if(window.ResizeObserver){
    рухи беруть собі — саме ними ведуть перехрестя. */
 const DRAGCV=new Set();
 function touchRoles(){
+  /* Сцена більше не глушить прокрутку: дотик до неї гортає сторінку, як дотик
+     до будь-якого іншого місця. Ручки ловлять жест власними мішенями (syncHits).
+     Графіки лишають вертикальну прокрутку сторінці, а горизонтальні рухи беруть
+     собі — саме ними ведуть перехрестя. */
   for(const c of document.querySelectorAll('canvas[id]')){
-    c.style.touchAction=DRAGCV.has(c.id)?'none':'pan-y';
+    c.style.touchAction=c.closest('.chartbox')?'pan-y':'auto';
   }
 }
+/* ---- мішені для дотику -------------------------------------------------
+   Полотно — один елемент, і різних touch-action для різних його ділянок не
+   буває: або весь кадр забирає жест собі, або весь віддає сторінці. Через це
+   палець, покладений на порожнє місце сцени, не гортав сторінку. Тепер ручки
+   винесено в окремі DOM-мішені поверх полотна: дотик ловлять тільки вони, а
+   решта сцени лишається звичайною сторінкою. Миша працює як раніше — її
+   обслуговує саме полотно, бо мишею сторінку не гортають. */
+function hitLayer(el){
+  let L=el.__hits;
+  if(!L||!L.isConnected){
+    const par=el.parentNode;
+    if(getComputedStyle(par).position==='static') par.style.position='relative';
+    L=document.createElement('div'); L.className='hits';
+    par.insertBefore(L,el.nextSibling); el.__hits=L;
+  }
+  return L;
+}
+function mkHit(el,G){
+  const b=document.createElement('b'); b.className='hit';
+  const at=e=>{const r=el.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top];};
+  b.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse') return;
+    const h=b.__h; if(!h) return;
+    G.st._grab=h.id; G.st._over=h.id; G.st._froz=null;
+    if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
+    /* кадр заморожуємо ДО першої зміни величини — той самий порядок, що й на полотні */
+    G.listFn();
+    const p=at(e); h.move(p[0],p[1]);
+    if(e.preventDefault) e.preventDefault();
+  });
+  b.addEventListener('pointermove',e=>{
+    if(e.pointerType==='mouse'||G.st._grab==null) return;
+    const p=at(e);
+    for(const h of G.listFn()) if(h.id===G.st._grab){h.move(p[0],p[1]); break;}
+    if(e.preventDefault) e.preventDefault();
+  });
+  const off=()=>{G.st._grab=null; G.st._froz=null;};
+  b.addEventListener('pointerup',off);
+  b.addEventListener('pointercancel',off);
+  return b;
+}
+function syncHits(){
+  for(const G of GRIPS){
+    const el=$(G.id);
+    if(!el||!el.isConnected||!el.getClientRects().length) continue;
+    /* поки ручку тягнуть, шар не чіпаємо: захоплення вказівника тримає жест
+       на тій мішені, яка його почала, і перебудова її просто знищила б */
+    if(G.st._grab!=null) continue;
+    const sec=el.closest('.module');
+    const L=hitLayer(el);
+    if(sec&&!sec.classList.contains('active')){
+      if(L.childElementCount) L.textContent='';
+      continue;
+    }
+    L.style.left=el.offsetLeft+'px'; L.style.top=el.offsetTop+'px';
+    L.style.width=el.offsetWidth+'px'; L.style.height=el.offsetHeight+'px';
+    const list=G.listFn();
+    while(L.childElementCount>list.length) L.removeChild(L.lastChild);
+    while(L.childElementCount<list.length) L.appendChild(mkHit(el,G));
+    for(let i=0;i<list.length;i++){
+      const h=list[i], b=L.children[i], S=Math.max(44,2*(h.r+8));
+      b.__h=h;
+      b.style.left=(h.x-S/2)+'px'; b.style.top=(h.y-S/2)+'px';
+      b.style.width=S+'px'; b.style.height=S+'px';
+    }
+  }
+}
+
 /* ---- підказка «поверніть телефон» --------------------------------------- */
 function rotHint(){
   if(document.querySelector('.rothint')) return;
@@ -791,11 +871,15 @@ function fitScale(w,h,padW,padH,maxX,maxY,nowX,nowY){
   /* Поля лишають місце під підписи, а підписи тепер стискаються разом із
      полотном — отже, стискаються й поля. Без цього на вузькому екрані поле
      з'їдало всю ширину, різниця йшла в мінус і сцена виверталась навиворіт. */
+  w=Math.max(1,w); h=Math.max(1,h);
   const pw=Math.min(padW*TK,w*0.62), ph=Math.min(padH*TK,h*0.62);
   /* Нижньої межі в самого масштабу немає: у сценах, де вісь міряється
-     метрами тисячами (радіус петлі), sc законно менший за одиницю. Від
-     від'ємного значення рятує вже той факт, що поле не більше за 0,62 кадру. */
-  return Math.min((w-pw)/Math.max(1e-6,X),(h-ph)/Math.max(1e-6,Y));
+     метрами тисячами (радіус петлі), sc законно менший за одиницю. Але нулем
+     він бути не має права: масштаб іде в радіус дуги, а від'ємний радіус —
+     це виняток, який убиває весь цикл кадрів, і сторінка застигає. Кадр,
+     менший за свої ж поля, буває — коли модуль відрізав від полотна смугу
+     під повзунки, а полотно й без того низьке. */
+  return Math.max(1e-6,Math.min((w-pw)/Math.max(1e-6,X),(h-ph)/Math.max(1e-6,Y)));
 }
 /* Ручка: {id, x, y, r, color, hint, move(px,py)} — x, y, r у екранних пікселях
    (радіус 13 px — це палець, а не метри), а move() сам переводить піксель назад
@@ -819,6 +903,8 @@ function grip(id,st,listFn){
     return best;
   };
   c.addEventListener('pointerdown',e=>{
+    /* дотик і стилус ідуть через мішені (.hit), полотно лишає їх сторінці */
+    if(e.pointerType!=='mouse') return;
     const p=pos(e), h=pick(p[0],p[1]);
     if(!h) return;
     st._grab=h.id; st._over=h.id; st._froz=null;
@@ -832,6 +918,7 @@ function grip(id,st,listFn){
     if(e.preventDefault) e.preventDefault();
   });
   c.addEventListener('pointermove',e=>{
+    if(e.pointerType!=='mouse') return;
     const p=pos(e);
     if(st._grab!=null){
       for(const h of listFn()) if(h.id===st._grab){h.move(p[0],p[1]); break;}
@@ -1347,11 +1434,11 @@ const M2={
         const qx=this.pa()-this.pp()*Math.cos(a), qy=this.pp()*Math.sin(a);
         ts.push(t2); ys.push(Math.atan2(qy,qx)/DEG);
       }
-      const r=drawChart(ba,{tMax:180,yMin:0,yMax:40,yLab:'°',xLab:'кут протона θ, °',
+      const r=drawChart(ba,{tMax:180,yMin:0,yMax:40,yLab:'φ, °',xLab:'кут протона θ, °',
         xStep:30,yDec:0,hover:this.ha.x,
-        series:[{ts,ys,color:CLR.k3,label:'φ'},
-                {ts:[this.th(),this.th()],ys:[0,40],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipa,r,'°',this.ha,[['кут ядра',CLR.k3],['зараз',CLR.ink]],1);
+        series:[{ts,ys,color:CLR.k3,label:''},
+                {ts:[this.th(),this.th()],ys:[0,40],color:CLR.ink,label:'задано на сцені',dash:[4,3]}]});
+      showTip(this.tipa,r,'°',this.ha,[['кут ядра',CLR.k3],['задано на сцені',CLR.ink]],1);
     }
     const be=cvx('m2ce');
     if(be){
@@ -1363,11 +1450,11 @@ const M2={
         ts.push(t2); ys.push(q*q/(2*this.mO*UMEV));
       }
       const top=Math.max.apply(null,ys)*1.1;
-      const r=drawChart(be,{tMax:180,yMin:0,yMax:top,yLab:'МеВ',xLab:'кут протона θ, °',
+      const r=drawChart(be,{tMax:180,yMin:0,yMax:top,yLab:'енергія ядра, МеВ',xLab:'кут протона θ, °',
         xStep:30,yDec:2,hover:this.he.x,
         series:[{ts,ys,color:CLR.k2,label:'T ядра'},
-                {ts:[this.th(),this.th()],ys:[0,top],color:CLR.ink,label:'зараз',dash:[4,3]}]});
-      showTip(this.tipe,r,' МеВ',this.he,[['енергія ядра',CLR.k2],['зараз',CLR.ink]],3);
+                {ts:[this.th(),this.th()],ys:[0,top],color:CLR.ink,label:'задано на сцені',dash:[4,3]}]});
+      showTip(this.tipe,r,' МеВ',this.he,[['енергія ядра',CLR.k2],['задано на сцені',CLR.ink]],3);
     }
   }
 };
@@ -1389,12 +1476,27 @@ for(const m of Object.values(MODULES)) m.init();
 foldPanels();
 touchRoles();
 (function(){const hs=location.hash.replace('#',''); if(MODULES[hs]) activate(hs);})();
+const LOUD={};
 let LAST=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
   NUMS=[]; CAPS=[];
-  MODULES[ACT].tick(dt);
-  showNums(ACT);
+  /* Виняток усередині кадру не має права спиняти цикл. Раніше одна від'ємна
+     довжина в геометрії — і requestAnimationFrame уже не викликався: сторінка
+     застигала назавжди, без жодного слова студентові. Помилку ховати не
+     можна, тому перша з кожного модуля лишається у window.__err, куди
+     дивляться перевірки; але наступний кадр малюється попри неї. */
+  try{
+    MODULES[ACT].tick(dt);
+    showNums(ACT);
+    syncHits();
+  }catch(e){
+    if(!LOUD[ACT]){
+      LOUD[ACT]=1;
+      (window.__err=window.__err||[]).push(ACT+': '+(e&&e.message||e));
+      if(window.console) console.error(ACT,e);
+    }
+  }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

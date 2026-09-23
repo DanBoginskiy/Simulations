@@ -127,7 +127,7 @@ table.read tr:last-child td{border-bottom:none}
 .tip .th{color:var(--mut); margin-bottom:3px}
 .tip div{line-height:1.5}
 .pgrid{display:grid; grid-template-columns:1fr 292px; gap:14px; align-items:start}
-.pgrid .scene canvas{width:100%; touch-action:none}
+.pgrid .scene canvas{width:100%;}
 .side .panel{padding:12px 14px}
 .duo{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 .duo h4{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); margin-bottom:6px}
@@ -139,7 +139,7 @@ table.read tr:last-child td{border-bottom:none}
 #m1scene{width:100%; aspect-ratio:1246/380; min-height:min(210px,56vw)}
 .m1grid{display:grid; grid-template-columns:330px 1fr; gap:14px}
 /* ============ модуль 2 ============ */
-#m2scene{width:100%; aspect-ratio:940/500; min-height:min(210px,56vw); touch-action:none; cursor:grab}
+#m2scene{width:100%; aspect-ratio:940/500; min-height:min(210px,56vw); cursor:grab}
 /* ============ модуль 3 ============ */
 #m3scene{width:100%; aspect-ratio:940/290; min-height:min(210px,56vw)}
 /* ============ модуль 4 ============ */
@@ -151,7 +151,7 @@ table.read tr:last-child td{border-bottom:none}
 #m3diag{width:100%; height:clamp(160px,32vh,250px)}
 /* ============ модуль 5 ============ */
 .m5grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
-.m5grid canvas{width:100%; height:clamp(200px,min(54vh,92vw),420px); touch-action:none; cursor:grab}
+.m5grid canvas{width:100%; height:clamp(200px,min(54vh,92vw),420px); cursor:grab}
 /* Три глобуси лишаються в ряд аж до телефона: кожен із них круглий, і в
    один стовпчик вони дають три екрани прокрутки замість одного погляду. */
 @media (max-width:560px){.m5grid{grid-template-columns:1fr}}
@@ -215,6 +215,19 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   .scene canvas,.pgrid .scene canvas{height:clamp(200px,84vh,560px); aspect-ratio:auto}
   .chartbox canvas{height:clamp(120px,42vh,230px)}
 }
+
+/* ---- шайба обертання ----------------------------------------------------
+   Сцени цього файла тягнуться з будь-якої точки кадру. Мишею так і лишається,
+   а палець мусить гортати сторінку, тому для дотику в кутку стоїть шайба:
+   тільки вона забирає жест собі. */
+.hits{position:absolute; pointer-events:none; z-index:2}
+.hit{position:absolute; border:0; padding:0; margin:0; background:none;
+  border-radius:50%; pointer-events:auto; touch-action:none;
+  -webkit-tap-highlight-color:transparent}
+.puck{display:none; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.86); border:1.4px dashed #9aa4ae;
+  font:600 15px system-ui,sans-serif; color:#5b6670; cursor:grab}
+@media (pointer:coarse){.puck{display:flex}}
 </style>
 </head>
 <body>
@@ -603,12 +616,12 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <div class="chartrow">
           <div class="chartbox" id="m5c1w">
             <h4>лінійна швидкість точки земної поверхні, м/с</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>v = ωR·cos φ</span><span><span class="chip cI"></span>обрана широта</span></div>
+            <div class="legend sm"><span><span class="chip cA"></span>v = ωR·cos φ</span><span><span class="chip cI"></span>широта, задано на сцені</span></div>
             <canvas id="m5c1"></canvas>
           </div>
           <div class="chartbox" id="m5c2w">
             <h4>висота світила над горизонтом за добу, °</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>sin h = sin φ·sin δ + cos φ·cos δ·cos t</span><span><span class="chip cI"></span>зараз</span></div>
+            <div class="legend sm"><span><span class="chip cC"></span>sin h = sin φ·sin δ + cos φ·cos δ·cos t</span><span><span class="chip cI"></span>задано на сцені</span></div>
             <canvas id="m5c2"></canvas>
           </div>
         </div>
@@ -762,14 +775,65 @@ if(window.ResizeObserver){
   watch();
 }
 /* ---- жест належить тому, хто вміє його прийняти -------------------------
-   Полотно з ручками мусить забирати дотик собі, інакше палець замість ручки
-   тягне сторінку. Полотно без ручок — навпаки: воно не має заважати
-   прокручувати. Графіки лишають вертикальну прокрутку сторінці, а горизонтальні
-   рухи беруть собі — саме ними ведуть перехрестя. */
-const DRAGCV=new Set();
+   Сцена більше не глушить прокрутку: дотик до неї гортає сторінку, як дотик до
+   будь-якого іншого місця. Графіки лишають вертикальну прокрутку сторінці, а
+   горизонтальні рухи беруть собі — саме ними ведуть перехрестя. */
 function touchRoles(){
   for(const c of document.querySelectorAll('canvas[id]')){
-    c.style.touchAction=DRAGCV.has(c.id)?'none':'pan-y';
+    c.style.touchAction=c.closest('.chartbox')?'pan-y':'auto';
+  }
+}
+/* ---- шайба обертання ---------------------------------------------------
+   Тут немає ручок із малою зоною влучання: глобус, небо, сфера, радіус і
+   вільна точка колеса тягнуться з будь-якої точки полотна. Мишею це зручно й
+   лишається як було, але палець на такому полотні не зміг би гортати сторінку.
+   Тому для дотику в куті кадру стоїть шайба — єдине місце, яке забирає жест
+   собі; вона віддає обробникові приріст координат, а не абсолютну точку. */
+const PUCKS=[];
+function hitLayer(el){
+  let L=el.__hits;
+  if(!L||!L.isConnected){
+    const par=el.parentNode;
+    if(getComputedStyle(par).position==='static') par.style.position='relative';
+    L=document.createElement('div'); L.className='hits';
+    par.insertBefore(L,el.nextSibling); el.__hits=L;
+  }
+  return L;
+}
+function mkPuck(P){
+  const b=document.createElement('b'); b.className='hit puck';
+  b.textContent=P.glyph; b.title=P.hint;
+  let px=0,py=0,on=false;
+  b.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse') return;
+    on=true; px=e.clientX; py=e.clientY;
+    if(b.setPointerCapture) b.setPointerCapture(e.pointerId);
+    if(e.preventDefault) e.preventDefault();
+  });
+  b.addEventListener('pointermove',e=>{
+    if(!on) return;
+    P.onDelta(e.clientX-px,e.clientY-py); px=e.clientX; py=e.clientY;
+    if(e.preventDefault) e.preventDefault();
+  });
+  const off=()=>{on=false;};
+  b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off);
+  return b;
+}
+function puck(id,glyph,hint,onDelta){PUCKS.push({id,glyph,hint,onDelta});}
+function syncPucks(){
+  for(const P of PUCKS){
+    const el=$(P.id);
+    if(!el||!el.isConnected||!el.getClientRects().length) continue;
+    const sec=el.closest('.module'), L=hitLayer(el);
+    if(sec&&!sec.classList.contains('active')){
+      if(L.childElementCount) L.textContent='';
+      continue;
+    }
+    L.style.left=el.offsetLeft+'px'; L.style.top=el.offsetTop+'px';
+    L.style.width=el.offsetWidth+'px'; L.style.height=el.offsetHeight+'px';
+    const b=L.firstElementChild||L.appendChild(mkPuck(P)), S=44;
+    b.style.left=(el.offsetWidth-S-8)+'px'; b.style.top=(el.offsetHeight-S-8)+'px';
+    b.style.width=S+'px'; b.style.height=S+'px';
   }
 }
 /* ---- підказка «поверніть телефон» --------------------------------------- */
@@ -1156,15 +1220,21 @@ function sphAxis(g,V,color,labN,labS){
 }
 /* перетягування сфери: dx → азимут камери, dy → нахил */
 function dragSphere(id,st,onDrag){
-  DRAGCV.add(id);
-  const c=$(id); let on=false,px=0,py=0;
-  c.addEventListener('pointerdown',e=>{on=true; c.setPointerCapture(e.pointerId); px=e.clientX; py=e.clientY;});
-  c.addEventListener('pointermove',e=>{
-    if(!on) return;
-    st.view=(st.view+(e.clientX-px)*0.45)%360;
-    st.tilt=Math.max(-80,Math.min(80,st.tilt+(e.clientY-py)*0.3));
-    px=e.clientX; py=e.clientY;
+  const turn=(dx,dy)=>{
+    st.view=(st.view+dx*0.45)%360;
+    st.tilt=Math.max(-80,Math.min(80,st.tilt+dy*0.3));
     if(onDrag) onDrag();
+  };
+  puck(id,'\u2723','обертати сцену',turn);
+  const c=$(id); let on=false,px=0,py=0;
+  c.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='mouse') return;   /* дотик веде шайба в куті кадру */
+    on=true; c.setPointerCapture(e.pointerId); px=e.clientX; py=e.clientY;
+  });
+  c.addEventListener('pointermove',e=>{
+    if(e.pointerType!=='mouse'||!on) return;
+    turn(e.clientX-px,e.clientY-py);
+    px=e.clientX; py=e.clientY;
   });
   const off=()=>{on=false;};
   c.addEventListener('pointerup',off); c.addEventListener('pointercancel',off);
@@ -1463,14 +1533,14 @@ const M1={
     const bx=cvx('m1cx');
     if(bx){
       const [lo,hi]=pad(R.cMin,R.cMax);
-      const r=drawChart(bx,{tMax:T,yMin:lo,yMax:hi,yLab:'м',xDec:T<3?1:0,hover:this.hx.x,
+      const r=drawChart(bx,{tMax:T,yMin:lo,yMax:hi,yLab:'координати, м',xDec:T<3?1:0,hover:this.hx.x,
         series:[{ts:h.ts,ys:h.x,color:CLR.k1,label:'x'},{ts:h.ts,ys:h.y,color:CLR.k2,label:'y'}]});
       showTip(this.tipx,r,'м',this.hx,[['x',CLR.k1],['y',CLR.k2]]);
     }
     const bv=cvx('m1cv');
     if(bv){
       const [lo,hi]=pad(R.vMin,R.vMax);
-      const r=drawChart(bv,{tMax:T,yMin:lo,yMax:hi,yLab:'м/с',xDec:T<3?1:0,hover:this.hv.x,
+      const r=drawChart(bv,{tMax:T,yMin:lo,yMax:hi,yLab:'v, м/с',xDec:T<3?1:0,hover:this.hv.x,
         series:[{ts:h.ts,ys:h.v,color:CLR.ink,label:'|v|'},
                 {ts:h.ts,ys:h.vx,color:CLR.k1,label:'v_x'},
                 {ts:h.ts,ys:h.vy,color:CLR.k2,label:'v_y'}]});
@@ -1479,7 +1549,7 @@ const M1={
     const be=cvx('m1ce');
     if(be){
       const [lo,hi]=pad(R.eMin,R.eMax);
-      const r=drawChart(be,{tMax:T,yMin:lo,yMax:hi,yLab:'Дж',xDec:T<3?1:0,hover:this.he.x,
+      const r=drawChart(be,{tMax:T,yMin:lo,yMax:hi,yLab:'E, Дж',xDec:T<3?1:0,hover:this.he.x,
         series:[{ts:h.ts,ys:h.ek,color:CLR.k1,label:'Eк'},
                 {ts:h.ts,ys:h.ep,color:CLR.k2,label:'Eп'},
                 {ts:h.ts,ys:h.e,color:CLR.ink,label:'E'}]});
@@ -1525,11 +1595,20 @@ const M2={
   init(){
     slider('m2w0','рад/с',1,v=>{this.w0=v; this.reset();});
     slider('m2ep','рад/с²',2,v=>{this.eps=v; this.reset();});
+    /* Точка A лежить на диску, отже її радіус не буває більшим за радіус
+       самого диска. Раніше повзунок це дозволяв: він ішов далі, а Ra стояло
+       на R — ручку ведуть, а на сцені нічого. Тепер верхню межу самого
+       повзунка тримаємо рівною R (пункт 1.2: ручка не виходить за модель). */
     const sRa=slider('m2Ra','м',2,v=>{this.Ra=Math.min(v,this.R); this.reset();});
+    const capRa=()=>{
+      sRa.el.max=String(this.R);
+      if(+sRa.el.value>this.R) sRa.set(this.R);
+    };
     slider('m2R','м',2,v=>{
-      this.R=v;
+      this.R=v; capRa();
       if(this.Ra>v) sRa.set(v); else this.reset();
     });
+    capRa();
     this.sRa=sRa;
     $('m2play').onclick=()=>{
       if(!this.playing&&this.t>=this.T) this.reset();
@@ -1547,7 +1626,10 @@ const M2={
      і на максимальному R обід наїжджав би на його рамку. */
   geo(b){return {cx:b.w*0.40, cy:b.h/2+4, sc:Math.min(b.w*0.32,(b.h-Math.min(56,b.h*0.42))*0.46)/1.2};},
   drag(){
-    DRAGCV.add('m2scene');
+    puck('m2scene','\u2195','вести радіус',(dx,dy)=>{
+      const v=this.Ra-dy*this.R/160;
+      this.sRa.set(Math.max(0.1,Math.min(this.R,Math.round(v*20)/20)));
+    });
     const c=$('m2scene'); let on=false;
     const put=e=>{
       const b=cvx('m2scene'); if(!b) return;
@@ -1555,8 +1637,11 @@ const M2={
       const d=Math.hypot(e.clientX-r.left-cx,e.clientY-r.top-cy)/sc;
       this.sRa.set(Math.max(0.1,Math.min(this.R,Math.round(d*20)/20)));
     };
-    c.addEventListener('pointerdown',e=>{on=true; c.setPointerCapture(e.pointerId); put(e);});
-    c.addEventListener('pointermove',e=>{if(on) put(e);});
+    c.addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='mouse') return;  /* дотик веде шайба в куті кадру */
+      on=true; c.setPointerCapture(e.pointerId); put(e);
+    });
+    c.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&on) put(e);});
     const off=()=>{on=false;};
     c.addEventListener('pointerup',off); c.addEventListener('pointercancel',off);
   },
@@ -1814,8 +1899,8 @@ const M2={
     const bp=cvx('m2cp');
     if(bp){
       const d=Math.max(0.5,(R.pMax-R.pMin)*0.12);
-      const r=drawChart(bp,{tMax:this.T,yMin:R.pMin-d,yMax:R.pMax+d,yLab:'рад',hover:this.hp.x,
-        series:[{ts:h.ts,ys:h.phi,color:CLR.k2,label:'φ'}]});
+      const r=drawChart(bp,{tMax:this.T,yMin:R.pMin-d,yMax:R.pMax+d,yLab:'φ, рад',hover:this.hp.x,
+        series:[{ts:h.ts,ys:h.phi,color:CLR.k2,label:''}]});
       showTip(this.tipp,r,'рад',this.hp,[['φ',CLR.k2]],2);
     }
     const bw=cvx('m2cw');
@@ -1824,7 +1909,7 @@ const M2={
       const hi=Math.max(R.wMax,R.vMax,0);
       const d=Math.max(0.5,(hi-lo)*0.12);
       const r=drawChart(bw,{tMax:this.T,yMin:lo-d,yMax:hi+d,
-        yLab:'рад/с · м/с',hover:this.hw.x,
+        yLab:'ω, рад/с · v, м/с',hover:this.hw.x,
         series:[{ts:h.ts,ys:h.om,color:CLR.k2,label:'ω'},
                 {ts:h.ts,ys:h.va,color:CLR.k1,label:'v_A'},
                 {ts:h.ts,ys:h.vb,color:CLR.ink,label:'v_B'}]});
@@ -1891,7 +1976,11 @@ const M3={
   },
   /* дотик у межах колеса ставить вільну точку C; далі вона тягнеться за пальцем */
   drag(){
-    const c=$('m3scene'); DRAGCV.add('m3scene'); let on=false;
+    const c=$('m3scene'); let on=false;
+    puck('m3scene','\u2723','вести точку C',(dx,dy)=>{
+      this.psiC+=dx*0.02;
+      this.fC=Math.max(0.08,Math.min(1,this.fC-dy*0.006));
+    });
     const put=e=>{
       const b=cvx('m3scene'); if(!b) return;
       const Q=this.geo(b), r=c.getBoundingClientRect();
@@ -1904,8 +1993,11 @@ const M3={
       /* позиція відносно центра: (−ρ sin φ, −ρ cos φ) → φ = atan2(−dx, −dy) */
       this.psiC=Math.atan2(-dx,-dy)-this.th(this.t);
     };
-    c.addEventListener('pointerdown',e=>{put(e); if(on) c.setPointerCapture(e.pointerId);});
-    c.addEventListener('pointermove',e=>{if(on) put(e);});
+    c.addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='mouse') return;  /* дотик веде шайба в куті кадру */
+      put(e); if(on) c.setPointerCapture(e.pointerId);
+    });
+    c.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&on) put(e);});
     const off=()=>{on=false;};
     c.addEventListener('pointerup',off); c.addEventListener('pointercancel',off);
   },
@@ -2108,17 +2200,17 @@ const M3={
     const h=this.hist,T=this.T();
     const bv=cvx('m3cv');
     if(bv){
-      const r=drawChart(bv,{tMax:T,yMin:-0.3*this.vc,yMax:2.35*this.vc,yLab:'м/с',xDec:2,
+      const r=drawChart(bv,{tMax:T,yMin:-0.3*this.vc,yMax:2.35*this.vc,yLab:'|v_P|, м/с',xDec:2,
         hover:this.hv.x,
-        series:[{ts:h.ts,ys:h.v,color:CLR.ink,label:'|v_P|'},
+        series:[{ts:h.ts,ys:h.v,color:CLR.ink,label:''},
                 {ts:h.ts,ys:h.vc,color:CLR.k1,label:'v_c',dash:[5,4]}]});
       showTip(this.tipv,r,'м/с',this.hv,[['|v_P|',CLR.ink],['v_c',CLR.k1]],2);
     }
     const by=cvx('m3cy');
     if(by){
-      const r=drawChart(by,{tMax:T,yMin:-0.15*this.R,yMax:2.3*this.R,yLab:'м',xDec:2,yDec:2,
+      const r=drawChart(by,{tMax:T,yMin:-0.15*this.R,yMax:2.3*this.R,yLab:'y_P, м',xDec:2,yDec:2,
         hover:this.hy.x,
-        series:[{ts:h.ts,ys:h.y,color:CLR.k2,label:'y_P'}]});
+        series:[{ts:h.ts,ys:h.y,color:CLR.k2,label:''}]});
       showTip(this.tipy,r,'м',this.hy,[['y_P',CLR.k2]],2);
     }
   }
@@ -2283,7 +2375,7 @@ const M4={
     const b1=cvx('m4c1');
     if(b1){
       const mx=this.TMAX*(T_SOL-T_SID)/60;
-      const r=drawChart(b1,{tMax:this.TMAX,yMin:-2,yMax:mx*1.08,yLab:'хв',xLab:'доба',xStep:2,
+      const r=drawChart(b1,{tMax:this.TMAX,yMin:-2,yMax:mx*1.08,yLab:'випередження, хв',xLab:'доба',xStep:2,
         hover:this.h1.x,series:[{ts,ys:d1,color:CLR.k3,label:'Δ'}]});
       this.h1.xlab='доба'; this.h1.xunit=''; this.h1.xdec=1;
       showTip(this.tip1,r,'хв',this.h1,[['випередження',CLR.k3]],1);
@@ -2291,8 +2383,8 @@ const M4={
     const b2=cvx('m4c2');
     if(b2){
       const lo=this.CULM0-this.TMAX*(T_SOL-T_SID)/3600;
-      const r=drawChart(b2,{tMax:this.TMAX,yMin:lo-0.15,yMax:this.CULM0+0.15,yLab:'год',xLab:'доба',
-        xStep:2,yDec:1,hover:this.h2.x,series:[{ts,ys:d2,color:CLR.k2,label:'t'}]});
+      const r=drawChart(b2,{tMax:this.TMAX,yMin:lo-0.15,yMax:this.CULM0+0.15,yLab:'t, год',xLab:'доба',
+        xStep:2,yDec:1,hover:this.h2.x,series:[{ts,ys:d2,color:CLR.k2,label:''}]});
       this.h2.xlab='доба'; this.h2.xunit=''; this.h2.xdec=1;
       showTip(this.tip2,r,'год',this.h2,[['кульмінація',CLR.k2]],2);
     }
@@ -2352,11 +2444,11 @@ const M5={
       const ts=[],ys=[];
       for(let i=0;i<=90;i++){ts.push(i); ys.push(OM_E*R_E*Math.cos(i*DEG));}
       const ap=Math.abs(this.phi);
-      const r=drawChart(b1,{tMax:90,yMin:-20,yMax:500,yLab:'м/с',xLab:'широта, °',xStep:15,
+      const r=drawChart(b1,{tMax:90,yMin:-20,yMax:500,yLab:'v, м/с',xLab:'широта, °',xStep:15,
         hover:this.h1.x,
-        series:[{ts,ys,color:CLR.k1,label:'v'},
+        series:[{ts,ys,color:CLR.k1,label:''},
                 {ts:[ap,ap],ys:[-20,OM_E*R_E*Math.cos(ap*DEG)],color:CLR.ink,label:'φ',dash:[4,3]}]});
-      showTip(this.tip1,r,'м/с',this.h1,[['v',CLR.k1],['обрана широта',CLR.ink]],1);
+      showTip(this.tip1,r,'м/с',this.h1,[['v',CLR.k1],['широта, задано на сцені',CLR.ink]],1);
     }
     const b2=cvx('m5c2');
     if(b2){
@@ -2366,8 +2458,8 @@ const M5={
       const r=drawChart(b2,{tMax:24,yMin:-95,yMax:95,yLab:'h, °',xLab:'S, год',xStep:6,
         hover:this.h2.x,
         series:[{ts,ys,color:CLR.k3,label:'h'},
-                {ts:[S,S],ys:[-95,hNow],color:CLR.ink,label:'S',dash:[4,3]}]});
-      showTip(this.tip2,r,'°',this.h2,[['висота h',CLR.k3],['зараз',CLR.ink]],1);
+                {ts:[S,S],ys:[-95,hNow],color:CLR.ink,label:'задано на сцені',dash:[4,3]}]});
+      showTip(this.tip2,r,'°',this.h2,[['висота h',CLR.k3],['задано на сцені',CLR.ink]],1);
     }
   },
   /* Куля кругла, тож її діаметр упирається у вужчий бік полотна — тут у ширину.
@@ -2566,12 +2658,27 @@ touchRoles();
   const hs=location.hash.replace('#','');
   if(MODULES[hs]) activate(hs);
 })();
+const LOUD={};
 let LAST=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-LAST)/1000); LAST=now;
   NUMS=[]; CAPS=[];
-  MODULES[ACT].tick(dt);
-  showNums(ACT);
+  /* Виняток усередині кадру не має права спиняти цикл. Раніше одна від'ємна
+     довжина в геометрії — і requestAnimationFrame уже не викликався: сторінка
+     застигала назавжди, без жодного слова студентові. Помилку ховати не
+     можна, тому перша з кожного модуля лишається у window.__err, куди
+     дивляться перевірки; але наступний кадр малюється попри неї. */
+  try{
+    MODULES[ACT].tick(dt);
+    showNums(ACT);
+    syncPucks();
+  }catch(e){
+    if(!LOUD[ACT]){
+      LOUD[ACT]=1;
+      (window.__err=window.__err||[]).push(ACT+': '+(e&&e.message||e));
+      if(window.console) console.error(ACT,e);
+    }
+  }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
