@@ -1340,11 +1340,26 @@ const M1={
       {color:CLR.mut,size:10.5,align:'right'});
     /* фронти, випущені в минулі миті */
     const NF=13;
+    let r0=0,x0e=0;
     for(let i=0;i<=NF;i++){
       const te=t*i/NF, r=this.v*(t-te), xe=V*te;
       if(r<=0) continue;
+      if(i===0){r0=r; x0e=xe;}
       g.strokeStyle=i===NF?CLR.k2:'rgba(42,120,214,.42)'; g.lineWidth=i===NF?1.6:1.1;
       g.beginPath(); g.arc(SX(xe),SY(this.H),r*Q.sc,0,7); g.stroke();
+    }
+    /* Швидкість звуку задано умовою, і на кресленні вона є саме тут: радіус
+       найстарішого фронту — це шлях, який звук устиг пройти. Підписуємо
+       радіус, а не окрему стрілку збоку: так видно, що v — це швидкість
+       росту фронтів, однакова в усі боки, а не швидкість літака. */
+    {
+      /* На вузькому кадрі радіус буває надто коротким для стрілки — тоді
+         лишається сама літера біля центра фронтів: величина з умови мусить
+         бути на сцені за будь-якої ширини. */
+      const cx0=SX(x0e), cy0=SY(this.H), rr=Math.max(0,r0*Q.sc), a=-Math.PI*0.72;
+      if(rr>14) arrow(g,cx0,cy0,cx0+Math.cos(a)*rr,cy0+Math.sin(a)*rr,CLR.k1,1.6);
+      txt(g,'v',cx0+Math.cos(a)*Math.max(20,rr*0.58)-9,cy0+Math.sin(a)*Math.max(20,rr*0.58),
+        {color:'#1c5cab',size:12.5,bold:true,align:'right'});
     }
     /* конус Маха — обвідна фронтів */
     const th=this.theta();
@@ -1606,7 +1621,7 @@ const M2={
     pillN(g,'λ позаду '+fmt(lb*100,1)+' см',SX(x1)-70,cy-52,
       {color:CLR.sec,size:10.5,bold:true});
     /* авто */
-    const car=(x,dirs,col,tc,lab,f,nm)=>{
+    const car=(x,dirs,col,tc,lab,f,nm,vlab,vv)=>{
       const px=SX(x);
       g.save(); g.translate(px,cy); g.scale(dirs,1);
       g.fillStyle=col===CLR.k1?'rgba(42,120,214,.12)':'rgba(235,104,52,.12)';
@@ -1616,11 +1631,23 @@ const M2={
       g.restore();
       dot(g,px-13,cy+11,5,'#fff',col); dot(g,px+13,cy+11,5,'#fff',col);
       txt(g,lab,px,cy-30,{color:tc,size:11,bold:true,align:'center'});
+      /* Швидкість самого авто — величина з умови: показуємо її стрілкою від
+         авто в бік руху. Масштаб сталий на весь діапазон обох ручок, тож
+         довша стрілка справді означає швидше авто. */
+      if(vlab){
+        const L=Math.max(10,vv/(160/3.6)*46);   /* 160 км/год — верх ручки */
+        arrow(g,px+dirs*28,cy-2,px+dirs*(28+L),cy-2,col,2.2);
+        txt(g,vlab,px+dirs*(28+L)+dirs*4,cy-6,
+          {color:tc,size:11.5,bold:true,align:dirs>0?'left':'right'});
+      }
       /* частота, яку чує водій, — шукана величина */
       pillN(g,'чує '+fmt(f,1)+' Гц',px,cy+62,{color:tc,size:12,bold:true,name:nm});
     };
-    car(x1,1,CLR.k1,'#1c5cab','водій I · сирена '+fmt(this.n10,0)+' Гц',this.nI(),'X\u1d62');
-    car(x2,-s,CLR.k2,'#b8431a','водій II · сирена '+fmt(this.n20,0)+' Гц',this.nII(),'X\u1d62\u1d62');
+    /* Сирени підписані символами з умови: ν₁₀ і ν₂₀ — власні частоти, які
+       задано, а не ті, що чують водії. Раніше тут стояли числа, і після
+       зняття чисел зі сцени від підпису лишалося просто «сирена». */
+    car(x1,1,CLR.k1,'#1c5cab','водій I · сирена ν₁₀',this.nI(),'X\u1d62','v₁',this.v1);
+    car(x2,-s,CLR.k2,'#b8431a','водій II · сирена ν₂₀',this.nII(),'X\u1d62\u1d62','v₂',this.v2);
     const head=this.dir==='head';
     capN(g,head?'авто зближуються':'авто розходяться',12,20,{color:head?CLR.k1:CLR.k2,size:12.5,bold:true});
     capN(g,'попереду кожного авто фронти стиснуті, позаду — розріджені',12,36,{color:CLR.mut,size:10.5});

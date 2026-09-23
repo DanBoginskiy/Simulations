@@ -1377,12 +1377,20 @@ const M1={
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
     g.beginPath(); g.moveTo(bx,yb); g.lineTo(bx+px,yb);
     g.lineTo(bx+px,yb-py); g.stroke(); g.setLineDash([]);
-    /* привид власної довжини — те, чим стрижень був у спокої */
-    if(this.started){
+    /* Привид власної довжини — те, чим стрижень був у спокої. Малюємо його
+       завжди, а не лише після розгону: l₀ і θ₀ задано умовою, і без цього
+       контуру обох величин на кресленні немає зовсім. Підписуємо їх на самому
+       привиді — тоді видно, від чого саме відлічують скорочення. */
+    {
       const p0=Q.sc*this.l0x();
       g.strokeStyle=CLR.mut; g.lineWidth=1.5; g.setLineDash([5,4]);
       g.beginPath(); g.moveTo(bx,yb); g.lineTo(bx+p0,yb-py); g.stroke(); g.setLineDash([]);
-      txt(g,'був у спокої',bx+p0+8,yb-py-6,{color:CLR.mut,size:10.5,bold:true});
+      txt(g,'l₀',bx+p0*0.55+6,yb-py*0.55-8,{color:CLR.mut,size:12.5,bold:true});
+      if(this.started) txt(g,'був у спокої',bx+p0+8,yb-py-6,{color:CLR.mut,size:10.5,bold:true});
+      /* власний кут — дуга біля тієї самої основи, але від привида */
+      const R0=Math.min(40,Math.max(18,p0*0.42));
+      arc(g,bx,yb,R0,-Math.atan2(py,Math.max(1e-6,p0)),0,CLR.mut,1.4);
+      txt(g,'θ₀',bx+R0+6,yb-Math.min(18,R0*0.42),{color:CLR.mut,size:11.5,bold:true});
     }
     arrow(g,bx,yb+18,bx+px,yb+18,CLR.k1,2.2);
     txt(g,'lₓ',bx+px/2,yb+34,{color:CLR.k1,size:11,bold:true,align:'center'});

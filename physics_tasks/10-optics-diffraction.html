@@ -1361,10 +1361,37 @@ const M1={
     for(let k=-118;k<118;k+=5){
       g.beginPath(); g.moveTo(gx+k,gy-9); g.lineTo(gx+k,gy+2); g.stroke();
     }
+    /* Сталу ґратки показуємо розміром між двома сусідніми штрихами: d задано
+       умовою, і без цієї позначки величини на кресленні немає. Штрихи на
+       малюнку — не в масштабі, тому розмір саме показує, що таке d, а не
+       скільки воно. */
+    {
+      const dx0=gx+40, dy0=gy+16;
+      arrow(g,dx0,dy0,dx0+5,dy0,CLR.k2,1.4);
+      arrow(g,dx0+5,dy0,dx0,dy0,CLR.k2,1.4);
+      g.strokeStyle=CLR.k2; g.lineWidth=1; g.setLineDash([2,2]);
+      g.beginPath(); g.moveTo(dx0,gy+2); g.lineTo(dx0,dy0);
+      g.moveTo(dx0+5,gy+2); g.lineTo(dx0+5,dy0); g.stroke(); g.setLineDash([]);
+      txt(g,'d',dx0+11,dy0+4,{color:'#b8431a',size:12,bold:true});
+    }
     txtN(g,fmt(this.nmm,0)+' штрихів/мм',gx,gy-15,
       {color:CLR.ink,size:11,bold:true,align:'center',name:'n'});
     for(const dxi of [-60,0,60]) arrow(g,gx+dxi,gy-44,gx+dxi,gy-12,CLR.k1,1.8);
     txt(g,'світло падає',gx+128,gy-24,{color:CLR.mut,size:10});
+    /* Краї білого світла — саме ті λ₁ і λ₂, що задано умовою. Показуємо їх
+       двома мазками справжнього кольору на падному пучку: без них на сцені
+       немає ні найкоротшої хвилі, ні найдовшої. */
+    {
+      const c1=wlRGB(this.L1), c2=wlRGB(this.L2);
+      const sw=(cc,xx,lab,al)=>{
+        g.fillStyle='rgb('+cc[0]+','+cc[1]+','+cc[2]+')';
+        g.beginPath(); g.roundRect(xx-7,gy-44,14,9,3); g.fill();
+        g.strokeStyle=CLR.axis; g.lineWidth=1; g.stroke();
+        txt(g,lab,xx,gy-49,{color:CLR.sec,size:11,bold:true,align:al});
+      };
+      sw(c1,gx-92,'λ₁','center');
+      sw(c2,gx+92,'λ₂','center');
+    }
     /* ---- плоский екран унизу ---------------------------------------------- */
     g.fillStyle='#e9e8e2'; g.strokeStyle=CLR.axis; g.lineWidth=1.6;
     g.beginPath(); g.rect(SX(-XM),sy,SX(XM)-SX(-XM),15); g.fill(); g.stroke();
@@ -1450,7 +1477,9 @@ const M1={
       }
     }
     txtN(g,'λ = '+fmt(this.lam,0)+' нм',gx+130,gy+16,{color:CLR.ink,size:11,bold:true});
-    capN(g,'плоский екран: x = L·tg θ',12,20,{color:CLR.ink,size:12.5,bold:true});
+    /* Готової формули на сцені задачі не буває: те, що екран плоский, видно
+       з креслення, а переводити кут у координату — робота студента. */
+    capN(g,'екран плоский',12,20,{color:CLR.ink,size:12.5,bold:true});
     capN(g,ovPair?'сусідні спектри вже налазять один на одний'
       :'спектри всіх порядків іще розділені',12,36,{color:CLR.mut,size:10.5});
   },
@@ -1615,6 +1644,16 @@ const M3={
     const fx=Q.fx, fy=Q.fy, R=Q.R;
     for(const dx of [-46,0,46]) arrow(g,fx+dx,fy-R-46,fx+dx,fy-14,CLR.k1,2);
     txt(g,'світло падає по нормалі',fx+60,fy-R-30,{color:CLR.mut,size:10.5});
+    /* Довжина хвилі задана умовою — підписуємо її просто на падному пучку,
+       мазком справжнього кольору: інакше λ на кресленні немає зовсім, хоч уся
+       задача про те, який порядок для неї потрапить у блиск. */
+    {
+      const cc=wlRGB(this.lam);
+      g.fillStyle='rgb('+cc[0]+','+cc[1]+','+cc[2]+')';
+      g.beginPath(); g.roundRect(fx-56,fy-R-52,16,10,3); g.fill();
+      g.strokeStyle=CLR.axis; g.lineWidth=1; g.stroke();
+      txt(g,'λ',fx-36,fy-R-43,{color:CLR.sec,size:12.5,bold:true});
+    }
     g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2;
     g.beginPath(); g.rect(fx-70,fy-12,140,12); g.fill(); g.stroke();
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);

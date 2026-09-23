@@ -1396,6 +1396,9 @@ const M1={
       g.lineTo(cx+(i%2?20:-20)*(i===0||i===nT*2?0:1),yy);
     }
     g.lineTo(cx,yBase-8); g.stroke();
+    /* Жорсткість пружини задано умовою — підписуємо її просто на пружині:
+       без цього k на кресленні немає, хоч від нього залежить уся відповідь. */
+    txt(g,'k',cx-26,(yPlate+yBase)/2+4,{color:'#0d7a55',size:12.5,bold:true,align:'right'});
     /* пластина */
     g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(cx-46,yPlate-9,92,12,3); g.fill(); g.stroke();
@@ -1408,13 +1411,6 @@ const M1={
       const ycl=yPlate-14-fr*Q.drop;
       g.fillStyle='rgba(235,104,52,.30)'; g.strokeStyle=CLR.k2; g.lineWidth=2;
       g.beginPath(); g.arc(cx,ycl,11,0,7); g.fill(); g.stroke();
-      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
-      g.beginPath(); g.moveTo(cx+22,yPlate-14-Q.drop); g.lineTo(cx+22,yPlate-9);
-      g.stroke(); g.setLineDash([]);
-      arrow(g,cx+22,yPlate-14-Q.drop,cx+22,yPlate-10,CLR.k2,1.6);
-      txtN(g,'h = '+fmt(this.hcm,0)+' см',cx+28,yPlate-14-Q.drop/2,
-        {color:'#b8431a',size:10.5,bold:true});
-      txt(g,'шлях падіння стиснено',cx+28,yPlate-2-Q.drop/2,{color:CLR.mut,size:9.5});
       txtN(g,'m = '+fmt(this.m,2)+' кг',cx-16,ycl+4,
         {color:'#b8431a',size:10.5,bold:true,align:'right'});
     } else {
@@ -1422,6 +1418,19 @@ const M1={
       g.beginPath(); g.roundRect(cx-20,yPlate-24,40,15,4); g.fill(); g.stroke();
       txtN(g,'m = '+fmt(this.m,2)+' кг',cx-26,yPlate-14,
         {color:'#b8431a',size:10.5,bold:true,align:'right'});
+    }
+    /* Висота падіння — величина з умови, тож розмір лишається на кресленні й
+       після удару: інакше варто пластиліну долетіти, і h зі сцени зникає, а
+       задача без нього не читається. */
+    {
+      g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
+      g.beginPath(); g.moveTo(cx+22,yPlate-14-Q.drop); g.lineTo(cx+22,yPlate-9);
+      g.stroke(); g.setLineDash([]);
+      arrow(g,cx+22,yPlate-14-Q.drop,cx+22,yPlate-10,CLR.k2,1.6);
+      txt(g,'h',cx+28,yPlate-14-Q.drop/2,{color:'#b8431a',size:12.5,bold:true});
+      txtN(g,'h = '+fmt(this.hcm,0)+' см',cx+40,yPlate-14-Q.drop/2,
+        {color:'#b8431a',size:10.5,bold:true});
+      txt(g,'шлях падіння стиснено',cx+28,yPlate-2-Q.drop/2,{color:CLR.mut,size:9.5});
     }
     /* дві рівноваги — стара й нова */
     const mark=(y,col,tc,lab)=>{
@@ -1610,13 +1619,27 @@ const M2={
       g.fillRect(x0,cy-ch/2+1,x1-x0,ch-2);
     };
     shade(xL+1,px-6,pl); shade(px+6,xR-1,pr);
-    txtN(g,fmt(pl/1000,2)+' кПа',(xL+px)/2,cy-ch/2-10,
-      {color:'#1c5cab',size:11,bold:true,align:'center'});
-    txtN(g,fmt(pr/1000,2)+' кПа',(px+xR)/2,cy-ch/2-10,
-      {color:'#1c5cab',size:11,bold:true,align:'center'});
+    txt(g,'p₁',(xL+px)/2,cy-ch/2-10,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    txt(g,'p₂',(px+xR)/2,cy-ch/2-10,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    txtN(g,fmt(pl/1000,2)+' кПа',(xL+px)/2,cy-ch/2-24,
+      {color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    txtN(g,fmt(pr/1000,2)+' кПа',(px+xR)/2,cy-ch/2-24,
+      {color:'#1c5cab',size:10.5,bold:true,align:'center'});
+    /* Початковий тиск задано умовою: це те P, яке стояло в обох половинах,
+       поки поршень був посередині. Позначаємо саме ту середину — інакше P на
+       кресленні немає зовсім, а p₁ і p₂ без неї нема від чого відлічувати. */
+    {
+      g.strokeStyle=CLR.sec; g.lineWidth=1.4; g.setLineDash([4,3]);
+      g.beginPath(); g.moveTo(cx+.5,cy-ch/2-4); g.lineTo(cx+.5,cy+ch/2+10); g.stroke();
+      g.setLineDash([]);
+      txt(g,'середина: тут в обох половинах був P',cx,cy+ch/2+24,
+        {color:CLR.sec,size:10.5,bold:true,align:'center'});
+    }
     /* поршень */
     g.fillStyle='#e9e6dd'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.roundRect(px-6,cy-ch/2-3,12,ch+6,3); g.fill(); g.stroke();
+    /* Маса поршня задана умовою — підписуємо її просто на ньому. */
+    txt(g,'m',px,cy-ch/2-9,{color:CLR.ink,size:12,bold:true,align:'center'});
     /* насічка — знак того, що поршень можна тягнути */
     g.strokeStyle=CLR.sec; g.lineWidth=1.2;
     for(const dy of [-5,0,5]){
@@ -1892,9 +1915,14 @@ const M3={
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([3,3]);
     g.beginPath(); g.moveTo(px,py); g.lineTo(px,cy+R+18); g.stroke(); g.setLineDash([]);
     dot(g,px,cy+R+18,4,CLR.k1);
-    txt(g,'x = A·cos φ',px,cy+R+34,{color:'#1c5cab',size:10,bold:true,align:'center'});
-    txt(g,'φ = ω₀t',cx+R*0.5*Math.cos(ph/2),cy-R*0.5*Math.sin(ph/2)-6,
-      {color:CLR.sec,size:10,bold:true,align:'center'});
+    /* Готових формул на сцені задачі не буває: те, що зміщення — проєкція
+       точки кола, видно зі штрихової лінії, а записати це — робота студента. */
+    txt(g,'x',px,cy+R+34,{color:'#1c5cab',size:11.5,bold:true,align:'center'});
+    txt(g,'φ',cx+R*0.5*Math.cos(ph/2),cy-R*0.5*Math.sin(ph/2)-6,
+      {color:CLR.sec,size:11.5,bold:true,align:'center'});
+    /* Власний період задано умовою — і це саме повний оберт по колу: точка
+       вертається в те саме місце за T₀. Підписуємо ним саме коло. */
+    txt(g,'повний оберт — T₀',cx,cy-R-40,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     txtN(g,'лишилося '+fmt(this.ratio()*100,1)+' % кола',cx,cy-R-24,
       {color:'#0d7a55',size:11,bold:true,align:'center',name:'частка кола'});
   },

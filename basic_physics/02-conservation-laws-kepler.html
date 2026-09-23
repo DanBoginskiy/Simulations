@@ -2619,11 +2619,16 @@ const M5={
   grips(){
     const b=cvx('m5scene'); if(!b) return [];
     const Q=this.geo(b), rp=this.a*(1-this.e), ra=this.a*(1+this.e);
+    /* Межа моделі — не «трохи більше за нуль», а намальоване Сонце: воно має
+       радіус 12 px, і перигелій, заведений усередину нього, показував би не
+       фізику, а те, що планета летить крізь зорю. Нижню межу міряємо тим самим
+       масштабом, що й креслення, тож вона тримається за будь-якої ширини. */
+    const rMin=Math.max(0.05,16/Q.sc);
     return [
       {id:'per', x:Q.SX(rp), y:Q.SY(0), r:8, color:CLR.k1, hint:'перигелій',
-       move:px=>{this.setRA(clamp((px-Q.cx)/Q.sc,0.05,9),ra);}},
+       move:px=>{this.setRA(clamp((px-Q.cx)/Q.sc,rMin,9),ra);}},
       {id:'aph', x:Q.SX(-ra), y:Q.SY(0), r:8, color:CLR.k2, hint:'афелій',
-       move:px=>{this.setRA(rp,clamp((Q.cx-px)/Q.sc,0.05,9));}}
+       move:px=>{this.setRA(rp,clamp((Q.cx-px)/Q.sc,rMin,9));}}
     ];
   },
   init(){
