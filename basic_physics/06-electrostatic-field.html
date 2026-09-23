@@ -866,6 +866,18 @@ function txt(g,s,x,y,o={}){
   g.fillText(s,x,y);
   return sz;
 }
+/* Знак заряду — геометрією, а не гліфом. У шрифту «+» і «−» мають власні
+   метрики, і поверх намальованого кола вони не сідають у його центр: доводилось
+   зсувати підпис на око, і на іншому кеглі зсув знову йшов набік. Риски,
+   побудовані від того самого центра й радіуса, збігаються з колом завжди. */
+function signMark(g,x,y,r,pos,color){
+  const a=Math.max(3,r*0.5), lw=Math.max(1.8,r*0.2);
+  g.strokeStyle=color; g.lineWidth=lw; g.lineCap='round';
+  g.beginPath();
+  g.moveTo(x-a,y); g.lineTo(x+a,y);
+  if(pos){ g.moveTo(x,y-a); g.lineTo(x,y+a); }
+  g.stroke(); g.lineCap='butt';
+}
 /* ---- числа зі сцени ------------------------------------------------------
    Число на кресленні читається лише тоді, коли кресленню є де дихати. Щойно
    кадр вужчає, воно не зникає, а переїжджає в кутовий блок: сцена лишається
@@ -1091,6 +1103,14 @@ function frozen(st,b,calc){
   const G=calc(b);
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
+}
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
 }
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
@@ -1356,7 +1376,7 @@ const M1={
     }
     /* сам заряд */
     dot(g,cx,cy,15,pos?'rgba(42,120,214,.22)':'rgba(235,104,52,.22)',pos?CLR.k1:CLR.k2);
-    txt(g,pos?'+':'−',cx,cy+6,{color:pos?'#1c5cab':'#b8431a',size:18,bold:true,align:'center'});
+    signMark(g,cx,cy,15,pos,pos?'#1c5cab':'#b8431a');
     txtN(g,fmt(this.Q,1)+' нКл',cx,cy+34,{color:CLR.sec,size:11,bold:true,align:'center'});
     /* пробний заряд */
     const ux=Math.cos(this.ang), uy=Math.sin(this.ang);
@@ -1586,7 +1606,7 @@ const M2={
       g.strokeStyle=CLR.axis; g.lineWidth=1.2; g.setLineDash([3,3]);
       g.beginPath(); g.arc(SX(c.x),SY(c.y),this.Rq(c.q),0,7); g.stroke(); g.setLineDash([]);
       dot(g,SX(c.x),SY(c.y),13,pos?'rgba(42,120,214,.22)':'rgba(235,104,52,.22)',pos?CLR.k1:CLR.k2);
-      txt(g,pos?'+':'−',SX(c.x),SY(c.y)+6,{color:pos?'#1c5cab':'#b8431a',size:17,bold:true,align:'center'});
+      signMark(g,SX(c.x),SY(c.y),13,pos,pos?'#1c5cab':'#b8431a');
       txtN(g,fmt(c.q,1)+' нКл',SX(c.x),SY(c.y)+30,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     }
     /* вектор поля в пробній точці */
@@ -1736,7 +1756,7 @@ const M3={
     /* заряд */
     const pos=this.Q>=0;
     dot(g,cx,cy,13,pos?'rgba(42,120,214,.22)':'rgba(235,104,52,.22)',pos?CLR.k1:CLR.k2);
-    txt(g,pos?'+':'−',cx,cy+6,{color:pos?'#1c5cab':'#b8431a',size:17,bold:true,align:'center'});
+    signMark(g,cx,cy,13,pos,pos?'#1c5cab':'#b8431a');
     txtN(g,'Q = '+fmt(this.Q,1)+' нКл',cx,cy+32,{color:CLR.sec,size:10.5,bold:true,align:'center'});
     /* два шляхи */
     const draw=(path,col)=>{

@@ -774,6 +774,14 @@ if(window.ResizeObserver){
   addEventListener('DOMContentLoaded',watch);
   watch();
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* ---- жест належить тому, хто вміє його прийняти -------------------------
    Сцена більше не глушить прокрутку: дотик до неї гортає сторінку, як дотик до
    будь-якого іншого місця. Графіки лишають вертикальну прокрутку сторінці, а
@@ -1624,7 +1632,17 @@ const M2={
      малюнку, а не лише в числах; кадру вистачає й на вектори поза ободом */
   /* Диск зсунуто ліворуч від середини: праворуч стоїть вікно крупного плану,
      і на максимальному R обід наїжджав би на його рамку. */
-  geo(b){return {cx:b.w*0.40, cy:b.h/2+4, sc:Math.min(b.w*0.32,(b.h-Math.min(56,b.h*0.42))*0.46)/1.2};},
+  /* Диск і вікно «точка A крупно» — одна композиція, і вона стоїть посередині
+     кадру. Раніше вікно тулилося до правого краю, диск стояв на 0,40 ширини, а
+     ліва третина полотна лишалася порожньою: на широкому екрані поля різнилися
+     як 238 проти 10 пікселів. LBL — смуга під підпис «нульовий напрям», що
+     відходить від диска праворуч; без неї підпис ліз би у вікно. */
+  geo(b){
+    const sc=Math.min(b.w*0.32,(b.h-Math.min(56,b.h*0.42))*0.46)/1.2;
+    const IW=Math.min(282,b.w*0.30), rw=this.R*sc, LBL=Math.min(104,b.w*0.13), gap=14;
+    const left=Math.max(8,(b.w-(2*rw+LBL+gap+IW))/2);
+    return {cx:left+rw, cy:b.h/2+4, sc, IW, bx0:Math.min(b.w-IW-8,left+2*rw+LBL+gap)};
+  },
   drag(){
     puck('m2scene','\u2195','вести радіус',(dx,dy)=>{
       const v=this.Ra-dy*this.R/160;
@@ -1658,7 +1676,7 @@ const M2={
   render(){this.scene(); this.table(); this.charts();},
   scene(){
     const b=cvx('m2scene'); if(!b) return;
-    const {g,w,h}=b,{cx,cy,sc}=this.geo(b);
+    const {g,w,h}=b, Q=this.geo(b), {cx,cy,sc}=Q;
     const t=this.t,f=this.phi(t),om=this.om(t);
     g.clearRect(0,0,w,h);
     /* диск */
@@ -1768,8 +1786,8 @@ const M2={
        сцени й накривала диск; тепер обидві частини в одному кадрі, і в них
        спільні осі — та сама τ і та сама n. */
     {
-      const IW=Math.min(282,w*0.30), IH=Math.min(404,h*0.82);
-      const bx0=w-IW-10, by0=40;
+      const IW=Q.IW, IH=Math.min(404,h*0.82);
+      const bx0=Q.bx0, by0=40;
       /* виноска: кружок навколо точки A на диску і лінія до рамки */
       g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
       g.beginPath(); g.arc(PA.x,PA.y,17,0,7); g.stroke();

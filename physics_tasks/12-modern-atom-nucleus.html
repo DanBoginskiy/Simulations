@@ -940,6 +940,14 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
    `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
@@ -1305,7 +1313,7 @@ const M1={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: атоми на рівні n = 5',C.w/2,C.gtop+30,
+      txt(b.g,'величини закріплено умовою — ручок у цьому режимі немає',C.w/2,C.gtop+30,
         {color:CLR.mut,size:10.5,align:'center'});
     }
   },

@@ -961,6 +961,14 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
    `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
@@ -1388,11 +1396,19 @@ const M1={
     const R=Math.min(48,Math.max(20,px*0.5));
     arc(g,bx,yb,R,-Math.atan2(py,Math.max(1e-6,px)),0,CLR.k1,1.6);
     txt(g,'θ',bx+R+8,yb-8,{color:CLR.k1,size:11.5,bold:true});
-    /* вектор швидкості — ним і показано, наскільки розігнано */
-    if(this.started){
-      const vl=Math.max(14,this.be/this.BMAX*Math.min(180,w*0.16));
-      arrow(g,bx,yb-py-34,bx+vl,yb-py-34,CLR.k2,3);
-      txt(g,'v',bx+vl+8,yb-py-30,{color:CLR.k2,size:12,bold:true});
+    /* Вектор швидкості — ним і показано, наскільки розігнано. Стрілку малюємо
+       завжди, навіть у спокої: v задано умовою, і без цього підпису величини
+       на кресленні немає зовсім — студент відкриває модуль і бачить лише
+       нерухомий стрижень. У спокої лишається сама позначка на осі розгону. */
+    {
+      const vl=this.started?Math.max(14,this.be/this.BMAX*Math.min(180,w*0.16)):0;
+      const vy=yb-py-34;
+      if(vl>0) arrow(g,bx,vy,bx+vl,vy,CLR.k2,3);
+      else {
+        g.strokeStyle=CLR.k2; g.lineWidth=2; g.setLineDash([3,3]);
+        g.beginPath(); g.moveTo(bx,vy); g.lineTo(bx+18,vy); g.stroke(); g.setLineDash([]);
+      }
+      txt(g,'v',bx+Math.max(vl,18)+8,vy+4,{color:CLR.k2,size:12,bold:true});
     }
     for(const hh of this.grips()) if(hh.id==='tip') drawGrip(g,hh,this);
   },
@@ -1527,7 +1543,7 @@ const M2={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: β₁ = 0,50 c назустріч β₂ = 0,75 c',C.w/2,C.gtop+30,
+      txt(b.g,'величини закріплено умовою — ручок у цьому режимі немає',C.w/2,C.gtop+30,
         {color:CLR.mut,size:10.5,align:'center'});
     }
   },
@@ -1584,11 +1600,11 @@ const M2={
       if(P===0){
         txt(g,'Лабораторна СВ',x0-20,yT-22,{color:CLR.k1,size:12.5,bold:true});
         txt(g,'спостерігач нерухомий між частинками',x0-20,yT-6,{color:CLR.sec,size:10.5});
-        capN(g,'проміжок скорочується зі швидкістю β₁ + β₂',x0-20,yT+8,{color:CLR.mut,size:10.5});
+        capN(g,'проміжок між частинками скорочується',x0-20,yT+8,{color:CLR.mut,size:10.5});
       } else {
         txt(g,'СВ першої частинки',x0-20,yT-22,{color:CLR.k2,size:12.5,bold:true});
         txt(g,'спостерігач летить разом із першою',x0-20,yT-6,{color:CLR.sec,size:10.5});
-        txt(g,'друга наближається зі швидкістю β',x0-20,yT+8,{color:CLR.mut,size:10.5});
+        txt(g,'друга наближається — ось її швидкість',x0-20,yT+8,{color:CLR.mut,size:10.5});
       }
       /* трек із позначками — орієнтири §7.2 */
       g.strokeStyle=CLR.axis; g.lineWidth=1.5;
@@ -1609,8 +1625,11 @@ const M2={
       let xa,xb;
       if(P===0){ xa=x0+p*this.b1*this.D*sc; xb=x0+(this.D-p*this.b2*this.D)*sc; }
       else { xa=x0+12; xb=x0+12+(this.d0p()-p*this.Tp()*rel)*sc; }
-      this.rocket(g,xa,y,1,CLR.k2,'β₁');
-      this.rocket(g,xb,y,-1,CLR.k3,P===0?'β₂':'β = '+fmt(rel,3)+' c');
+      /* Частинки підписані так само, як їх називає умова: v₁ і v₂. Досі на
+         сцені стояли β₁ і β₂, тобто ті самі швидкості в частках c, — і величин
+         з умови на кресленні не було зовсім. */
+      this.rocket(g,xa,y,1,CLR.k2,'v₁');
+      this.rocket(g,xb,y,-1,CLR.k3,P===0?'v₂':'v відносна');
       /* проміжок */
       const gap=Math.abs(xb-xa)/sc;
       g.strokeStyle=CLR.ink; g.lineWidth=1; g.setLineDash([3,3]);
@@ -1623,7 +1642,7 @@ const M2={
         {color:P?CLR.k2:CLR.k1,size:11,bold:true,align:'right'});
       /* смуга швидкості */
       this.speedo(g,x0,ySpd,Math.max(60,tw-70),P===0?clo:rel,P===0?CLR.sec:CLR.ink,
-        P===0?'швидкість зближення β₁ + β₂':'швидкість другої відносно першої',
+        P===0?'швидкість зближення':'швидкість другої відносно першої',
         P===0?'X':'β');
       if(P===0&&clo>1)
         capN(g,'більше за c — і це не порушує СТВ: це швидкість зміни відстані,',
@@ -1631,7 +1650,7 @@ const M2={
       if(P===0&&clo>1)
         txt(g,'а не швидкість жодного тіла',x0,ySpd+55,{color:'#c0392b',size:10});
       if(P===1)
-        capN(g,'ніколи не досягає c, хоч би якими були β₁ і β₂',x0,ySpd+42,
+        capN(g,'ніколи не досягає c, хоч би якими були v₁ і v₂',x0,ySpd+42,
           {color:CLR.k3,size:10});
       /* Розрахунок швидкості просто під її смугою: символьний запис, потім той
          самий вираз із підставленими числами, потім результат у м/с. Обидві
@@ -1642,15 +1661,15 @@ const M2={
         txt(g,num,x0,fy+16,{color:CLR.sec,size:10.5});
         if(tail) txt(g,tail,x0,fy+31,{color:CLR.mut,size:10});
       };
+      /* Готових формул на сцені задачі не буває: саме їх і треба знайти.
+         Замість запису лишаємо те, що видно з кадру, — чим відрізняються дві
+         системи відліку. Самі формули живуть у підказках. */
       if(P===0)
-        fx2('β_збл = β₁ + β₂',
-          fmt(this.b1,2)+' + '+fmt(this.b2,2)+' = '+fmt(clo,3)+' c',
-          '= '+sci(clo*CLIGHT,3)+' м/с · це швидкість зміни відстані',CLR.sec);
+        fx2('відстань між частинками міряє нерухомий спостерігач',
+          '','',CLR.sec);
       else
-        fx2('β = (β₁ + β₂)/(1 + β₁·β₂)',
-          fmt(clo,3)+' / (1 + '+fmt(this.b1*this.b2,3)+') = '+
-          fmt(clo,3)+' / '+fmt(1+this.b1*this.b2,3)+' = '+fmt(rel,4)+' c',
-          '= '+sci(rel*CLIGHT,3)+' м/с · γ = '+fmt(gamOf(Math.min(0.999999,rel)),3),CLR.ink);
+        fx2('ту саму зустріч міряє годинник першої частинки',
+          '','',CLR.ink);
     }
   },
   table(){

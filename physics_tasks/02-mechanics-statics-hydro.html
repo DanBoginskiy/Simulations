@@ -959,6 +959,14 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
    `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
@@ -1584,8 +1592,11 @@ const M2={
       g.strokeStyle=CLR.k1; g.lineWidth=1.5;
       g.beginPath(); g.moveTo(xl,yWTop+.5); g.lineTo(xr,yWTop+.5); g.stroke();
     }
-    txt(g,'ртуть 13,6',xl+6,yHgTop+18,{color:CLR.sec,size:10,bold:true});
-    if(lev>0.4) txt(g,'вода 1,0',xl+6,yWTop+15,{color:'#1c5cab',size:10,bold:true});
+    /* Рідини підписані мовою умови: не «ртуть 13,6», а ρр — та сама величина,
+       яку далі підставляють у відповідь. Назва речовини лишається поруч, щоб
+       було видно, про що річ, але задану величину називає саме символ. */
+    txt(g,'ρр · ртуть',xl+6,yHgTop+18,{color:CLR.sec,size:10,bold:true});
+    if(lev>0.4) txt(g,'ρв · вода',xl+6,yWTop+15,{color:'#1c5cab',size:10,bold:true});
     /* сам циліндр */
     const cw=1.7*sc, cx0=Q.cx-cw/2;
     /* Де циліндр стояв, поки води не було: пунктирний контур лишається на
@@ -1614,12 +1625,15 @@ const M2={
       };
       dimAt(xd,SY(0),SY(-hg0),CLR.mut,CLR.mut,'h_р₀');
       dimAt(xd+22,SY(0),SY(-hg),CLR.k2,'#b8431a','h_р');
-      txt(g,'Δ = h_р₀ − h_р',Q.cx,SY(this.h-hg0)-16,
+      /* Готової формули на сцені задачі не буває: обидві глибини вже підписані
+         поруч, а те, що Δ — різниця між ними, видно з самої побудови. */
+      txt(g,'підйом Δ',Q.cx,SY(this.h-hg0)-16,
         {color:'#0d7a55',size:11,bold:true,align:'center'});
     }
     g.fillStyle='rgba(11,11,11,.10)'; g.strokeStyle=CLR.ink; g.lineWidth=2.5;
     g.beginPath(); g.rect(cx0,SY(this.h-hg),cw,this.h*sc); g.fill(); g.stroke();
-    txtN(g,'ρ = '+fmt(this.rho,1),Q.cx,SY(this.h-hg)-8,
+    /* Густина тіла — теж величина з умови, і зветься вона там ρст. */
+    txtN(g,'ρст = '+fmt(this.rho,1),Q.cx,SY(this.h-hg)-8,
       {color:CLR.ink,size:11,bold:true,align:'center'});
     /* розміри: скільки в ртуті, скільки у воді, скільки води налито */
     const dim=(x,ya,yb,col,tc,lab)=>{

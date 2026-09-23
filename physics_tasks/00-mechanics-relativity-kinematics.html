@@ -1019,6 +1019,14 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
    `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
@@ -1738,6 +1746,21 @@ const M2={
     txtN(g,'течія u = '+fmt(this.u,1)+' м/с',Q.ux0,Q.uy0-9,{color:'#b8431a',size:11,bold:true});
     arrow(g,Q.vx0,Q.vy0,Q.vx0+this.v*Q.vsc,Q.vy0,CLR.ink,2.5);
     txt(g,'v',Q.vx0+this.v*Q.vsc+8,Q.vy0+4,{color:CLR.ink,size:12,bold:true});
+    /* η — не число з умови, а відношення цих двох швидкостей, і показуємо ми
+       саме його: смугу v ділимо поділками завширшки з u. Скільки поділок
+       уклалося, стільки й η (пункт 6.2 переліку сцен). */
+    {
+      const uw=Math.max(4,this.u*Q.vsc), vw=this.v*Q.vsc;
+      g.strokeStyle=CLR.k2; g.lineWidth=1.2;
+      for(let k=1;k*uw<vw-1;k++){
+        const xx=Q.vx0+k*uw;
+        g.beginPath(); g.moveTo(xx+.5,Q.vy0-7); g.lineTo(xx+.5,Q.vy0+7); g.stroke();
+      }
+      g.strokeStyle=CLR.k2; g.lineWidth=1.6;
+      g.beginPath(); g.moveTo(Q.vx0,Q.vy0+13); g.lineTo(Q.vx0+uw,Q.vy0+13); g.stroke();
+      txt(g,'η — скільки таких u уклалося у v',Q.vx0,Q.vy0+27,
+        {color:CLR.k2,size:10.5,bold:true});
+    }
     txtN(g,'човен відносно води v = '+fmt(this.v,1)+' м/с',Q.vx0,Q.vy0-9,
       {color:CLR.ink,size:11,bold:true});
     for(const hh of this.grips()) drawGrip(g,hh,this);
@@ -2415,6 +2438,25 @@ const M4={
       /* час до першого ж повторного удару — те, що шукають */
       if(n===0) pill(g,'час: X',(a1.x+a2.x)/2,(a1.y+a2.y)/2-24,
         {color:CLR.ink,size:13,bold:true});
+      /* k — не число з умови, а відношення двох швидкостей біля самої дошки:
+         підльоту й відскоку по нормалі. Показуємо їх парою стрілок з однієї
+         точки, а довшу ділимо поділкою завширшки з коротшу: скільки разів
+         коротша вклалася, стільки й 1/k (пункт 6.2 переліку сцен). */
+      if(n===0){
+        const hp=M(xb1,0);
+        const nl=Math.hypot(nx,ny)||1, ux=nx/nl, uy=ny/nl;   /* нормаль у дошку */
+        const LIN=Math.min(54,Math.max(22,this.HMAX*0.5*Math.abs(a1.y-b1.y)/Math.max(1e-6,hd)));
+        const LOUT=LIN*this.k;
+        arrow(g,hp.x-ux*LIN,hp.y-uy*LIN,hp.x,hp.y,CLR.sec,2.2);
+        arrow(g,hp.x,hp.y,hp.x-ux*LOUT,hp.y-uy*LOUT,CLR.k1,2.6);
+        g.strokeStyle=CLR.k1; g.lineWidth=1.2;
+        g.beginPath();
+        g.moveTo(hp.x-ux*LOUT-uy*5,hp.y-uy*LOUT+ux*5);
+        g.lineTo(hp.x-ux*LOUT+uy*5,hp.y-uy*LOUT-ux*5);
+        g.stroke();
+        txt(g,'k',hp.x-ux*LOUT*0.5+uy*9,hp.y-uy*LOUT*0.5-ux*9+4,
+          {color:'#1c5cab',size:12.5,bold:true});
+      }
     }
     /* точка старту й вертикаль вільного падіння */
     const xr=-this.h*Math.sin(A);

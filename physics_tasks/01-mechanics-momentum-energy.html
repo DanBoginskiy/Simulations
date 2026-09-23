@@ -1007,6 +1007,14 @@ function frozen(st,b,calc){
   if(st._grab!=null) st._froz={w:b.w,h:b.h,G};
   return G;
 }
+/* Ліве поле дорівнює правому — креслення стоїть посередині кадру (§5.1
+   переліку сцен). padL і padR — смуги під те, що виходить за саме креслення:
+   мітки на лівій стінці, підпис, що відходить праворуч. Коли креслення не
+   влазить, лишається хоч padL: краще зсув, ніж обрізаний край. */
+function centerX(frameW,contentW,padL,padR){
+  padL=padL||0; padR=(padR==null)?padL:padR;
+  return Math.max(padL,padL+(frameW-padL-padR-contentW)/2);
+}
 /* Сталий масштаб (§10). Кадр підбирається під ВЕРХНЮ МЕЖУ діапазону величин, а не під
    їхні поточні значення. Інакше знаменник масштабу — та сама величина, яку тягнуть, добуток
    `величина × sc` майже сталий, і малюнок не змінюється: студент крутить ручку, а на екрані
@@ -1286,6 +1294,35 @@ const M1={
   /* Що таке η — просто на кресленні. Вага пілота внизу й угорі — два
      стовпчики; довший ділимо поділками завширшки з коротший, і кратність
      видно оком, без жодної формули. */
+  /* На телефоні смуга η не влазить — під нею просто немає кадру. Але сама
+     величина з умови на сцені лишитись мусить, інакше задача стає нечитною
+     саме там, де її найчастіше й відкривають. Тому в короткому кадрі η
+     показано коротко: два стовпчики поруч із петлею, довший поділено
+     поділками завширшки з коротший. */
+  etaMark(g,Q){
+    const Nhi=this.N(0), Nlo=Math.max(0,this.N(Math.PI));
+    /* На найвужчому кадрі вікно пілота саме мале, але смужки мусять лишитися
+       читними — інакше η знову зникає з креслення. */
+    const W=Math.max(38,Math.min(76,Q.pr*0.9)), x0=Q.px0-W/2, y=Q.py0+Q.pr*0.78;
+    const k=W/Math.max(1e-9,Nhi);
+    const bar=(yy,val,col)=>{
+      g.fillStyle='#eceae3';
+      g.beginPath(); g.roundRect(x0,yy-4,W,8,4); g.fill();
+      g.fillStyle=col; g.globalAlpha=0.5;
+      g.beginPath(); g.roundRect(x0,yy-4,Math.max(3,Math.min(W,val*k)),8,4); g.fill();
+      g.globalAlpha=1;
+    };
+    bar(y,Nhi,CLR.k2);
+    bar(y+14,Nlo,CLR.k1);
+    const ws=Nlo*k;
+    if(ws>5){
+      g.strokeStyle=CLR.sec; g.lineWidth=1;
+      for(let x=x0+ws;x<x0+W-1;x+=ws){
+        g.beginPath(); g.moveTo(x+0.5,y-5); g.lineTo(x+0.5,y+5); g.stroke();
+      }
+    }
+    txt(g,'η',x0+W+7,y+11,{color:CLR.ink,size:12.5,bold:true});
+  },
   etaStrip(g,Q,w){
     const y=Q.stripY, Nhi=this.N(0), Nlo=this.N(Math.PI);
     const x0=96, W=Math.min(330,w*0.30), k=W/Math.max(1e-9,Nhi);
@@ -1390,7 +1427,7 @@ const M1={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'числа з умови задачі: R = 1 км, v = 140 м/с, маса пілота 80 кг',
+      txt(b.g,'величини закріплено умовою — ручок у цьому режимі немає',
         C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
     }
     $('m1vv').textContent=fmt(this.v,0)+' м/с';
@@ -1458,6 +1495,7 @@ const M1={
     txt(g,'X',px+tx*56,py+ty*56+4,{color:CLR.k1,size:13,bold:true,align:'center'});
     dot(g,px,py,4,CLR.k2);
     if(Q.SB>0) this.etaStrip(g,Q,w);
+    else this.etaMark(g,Q);
     this.pilot(g,Q,ph,N);
     capN(g,'мертва петля зі сталою швидкістю',12,20,{color:CLR.k1,size:12.5,bold:true});
     capN(g,'вага пілота міняється по колу, маса — ні',12,36,{color:CLR.mut,size:10.5});
@@ -2036,7 +2074,7 @@ const M3={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: у першій дошці куля втрачає 10 % швидкості',
+      txt(b.g,'величини закріплено умовою — ручок у цьому режимі немає',
         C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
     }
     $('m3vet').textContent=fmt(this.eta*100,1)+' %';
@@ -2283,7 +2321,7 @@ const M4={
       b.g.clearRect(0,C.gtop,C.w,C.h-C.gtop);
       b.g.strokeStyle=CLR.grid; b.g.lineWidth=1;
       b.g.beginPath(); b.g.moveTo(8,C.gtop+8.5); b.g.lineTo(C.w-8,C.gtop+8.5); b.g.stroke();
-      txt(b.g,'умова задачі: брус у 200 разів важчий за кулю',
+      txt(b.g,'величини закріплено умовою — ручок у цьому режимі немає',
         C.w/2,C.gtop+30,{color:CLR.mut,size:10.5,align:'center'});
     }
     $('m4vet').textContent=fmt(this.eta,0);

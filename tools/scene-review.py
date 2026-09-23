@@ -145,15 +145,18 @@ window.__R={clash:[],dup:[],num:[]};
     return dc.apply(this,arguments);
   };
   /* Усі написи сцени за один кадр: дублі й числа в коді не видно. */
-  const wrap=n=>{
-    const f=window[n]; if(typeof f!=='function') return;
-    window[n]=function(g,t){
-      try{ if(g===__CUR) __SEEN.push(String(t)); }catch(e){}
-      return f.apply(this,arguments);
-    };
-  };
+  /* Перехоплюємо не txt(), а сам fillText: у physics_tasks txt() спершу зрізає
+     з рядка числа («v = 12,3 м/с» → «v»), і, читаючи його доводи, ми бачили б
+     на сцені числа, яких там немає. Місце теж записуємо: txtN і pillN самі
+     кличуть txt, тож один підпис інакше потрапляв би до списку двічі й
+     виглядав дублем. Дубль — це рядок, намальований у двох різних точках. */
   window.__SEEN=[]; window.__CUR=null;
-  wrap('txt'); wrap('pill'); wrap('txtN'); wrap('pillN');
+  const P=CanvasRenderingContext2D.prototype, ft=P.fillText, st=P.strokeText;
+  P.fillText=function(t,x,y){
+    try{ if(this===__CUR) __SEEN.push([String(t),Math.round(x||0),Math.round(y||0)]); }catch(e){}
+    return ft.apply(this,arguments);
+  };
+  P.strokeText=function(t,x,y){ return st.apply(this,arguments); };
 })();
 window.__scan=function(id){
   const b=(typeof cvx==='function')?cvx(id):null; if(!b) return null;
@@ -164,12 +167,47 @@ window.__scan=function(id){
   try{ draw.call(M); }catch(e){ __CUR=null; return {err:String(e&&e.message||e)}; }
   __CUR=null;
   const seen=__SEEN.slice();
-  const cnt={}; for(const t of seen){ const k=t.trim(); if(k) cnt[k]=(cnt[k]||0)+1; }
-  return {dup:Object.keys(cnt).filter(k=>cnt[k]>1&&k.length<=22),
-          num:seen.filter(t=>/\d/.test(t)),
-          all:seen.length};
+  const at={};
+  for(const [t,x,y] of seen){
+    const k=t.trim(); if(!k) continue;
+    (at[k]=at[k]||[]).push([x,y]);
+  }
+  const dup=[];
+  for(const k in at){
+    /* «+», «−», «→», «0» повторюються законно: це знаки різних зарядів і
+       поділки, а не та сама величина, названа двічі. Дубль — це підпис із
+       літерою, довший за один знак. */
+    if(k.length>22||k.length<2||!/[A-Za-zА-Яа-яІіЇїЄєҒґ]/.test(k)) continue;
+    const ps=at[k];
+    let far=false;
+    for(let i=0;i<ps.length&&!far;i++) for(let j=i+1;j<ps.length;j++)
+      if(Math.hypot(ps[i][0]-ps[j][0],ps[i][1]-ps[j][1])>6){far=true; break;}
+    if(far) dup.push(k);
+  }
+  return {dup,num:seen.filter(([t])=>/\d/.test(t)).map(([t])=>t),
+          labels:seen.map(([t])=>t),all:seen.length};
 };
-/* Межі намальованого — без заголовка вгорі й смуги повзунків унизу. */
+/* Межі намальованого — без заголовка вгорі й смуги ручок унизу. Де ця смуга
+   починається, знає сам модуль: gcol(b).gtop. Стала величина тут не годиться —
+   у половині модулів саме внизу кадру й лежить креслення (доріжка, підлога),
+   і відрізавши смугу на око, ми міряли б поля не того, що видно. */
+/* Пункт 6.1: кожна величина з умови мусить бути на кресленні. Що саме задано
+   студентові, точно знає сама задача — TASKS[mid].vars[].s; шукану позначають
+   на сцені літерою X. */
+window.__given=function(mid){
+  try{
+    if(typeof TASKS==='undefined'||!TASKS[mid]) return null;
+    return (TASKS[mid].vars||[]).map(v=>v.s);
+  }catch(e){ return null; }
+};
+window.__gtop=function(id){
+  try{
+    const M=MODULES[ACT]; if(!M.gcol) return null;
+    const b=cvx(id); if(!b) return null;
+    const C=M.gcol(b);
+    return (C&&isFinite(C.gtop))?C.gtop:null;
+  }catch(e){ return null; }
+};
 window.__ink=function(id,top,bot){
   const el=document.getElementById(id); if(!el) return null;
   const g=el.getContext('2d'), W=el.width, H=el.height;
@@ -203,17 +241,54 @@ def runtime(rel,sizes=SIZES):
                 out.append(('%dx%d'%(w,h),m,'—','виняток у scene(): '+r['err']))
             elif r:
                 for d in r['dup']:
-                    out.append(('%dx%d'%(w,h),m,'3.1','напис двічі на сцені: %r'%d))
+                    # перелік на розгляд, не вирок: див. межу пункту 3.1 у SCENE-REVIEW.md
+                    out.append(('%dx%d'%(w,h),m,'3.1?','напис двічі на сцені (на розгляд): %r'%d))
                 if tasks:
-                    for t in r['num'][:4]:
-                        out.append(('%dx%d'%(w,h),m,'6.4','число на сцені задачі: %r'%t))
+                    # 6.4: готова формула на сцені задачі — це вже відповідь
+                    for t in (r.get('labels') or []):
+                        u=t.strip()
+                        if len(u)<5 or len(u)>48: continue
+                        if '=' not in u and '√' not in u: continue
+                        if not re.search(r'[A-Za-zА-Яа-яα-ωΑ-Ω]',u): continue
+                        # «X = τ₁/τ₂» — це означення шуканої величини, якого
+                        # вимагає 6.1, а не готовий розв'язок: ліворуч сам X.
+                        if re.match(r'^X[₀-₉0-9]?\s*=',u): continue
+                        if re.search(r'[=√^]\s*[^\s]', u) and re.search(r'[+\-·*/()]|√', u):
+                            out.append(('%dx%d'%(w,h),m,'6.4','формула на сцені задачі: %r'%u))
+                    # Поділка лінійки чи кінець шкали — не «число з умови»:
+                    # підстановкою з них відповідь не виходить. Шукаємо саме
+                    # значення — число разом з одиницею або зі знаком рівності.
+                    VAL=re.compile(r'\d.*(=|\b(м|см|мм|км|кг|г|с|мс|К|°|Па|кПа|Н|Дж|В|А|Ом|Гц|нм|мкм|моль|%)\b)')
+                    for t in sorted({u for u in (r['num'] or []) if VAL.search(u)})[:4]:
+                        out.append(('%dx%d'%(w,h),m,'6.4','число з умови на сцені задачі: %r'%t))
+                    gv=p.js("JSON.stringify(__given('%s'))"%m)
+                    gv=json.loads(gv) if gv and gv!='null' else None
+                    if gv is not None:
+                        blob=' '.join(r.get('labels') or [])
+                        miss=[v for v in gv if v and v not in blob]
+                        for v in miss:
+                            out.append(('%dx%d'%(w,h),m,'6.1','величини з умови немає на сцені: %r'%v))
+                        if 'X' not in blob:
+                            out.append(('%dx%d'%(w,h),m,'6.1','шукану величину не позначено на сцені літерою X'))
             # 5.1 центрування: поля зліва й справа без заголовка й повзунків
-            k=p.js("JSON.stringify(__ink('%sscene',46,%d)||null)"%(m,110 if w<900 else 150))
+            gt=p.js("__gtop('%sscene')"%m)
+            k=p.js("JSON.stringify(__ink('%sscene',46,%s)||null)"
+                   %(m,('Math.max(0,el0h-%g)'%gt) if gt else '0'))
+            if gt:
+                k=p.js("JSON.stringify((function(){const el=document.getElementById('%sscene');"
+                       "return __ink('%sscene',46,Math.max(0,el.getBoundingClientRect().height-%g))})()||null)"
+                       %(m,m,gt))
             k=json.loads(k) if k else None
             if k and not k.get('empty') and k['w']>0:
                 l,rr=k['left'],k['right']
-                if l+rr>16 and abs(l-rr)/max(1,l+rr)>0.28:
-                    out.append(('%dx%d'%(w,h),m,'5.1','креслення зсунуте: поля %d і %d px'%(round(l),round(rr))))
+                # Межа з переліку: різниця полів понад 12 % ширини кадру.
+                # Відносна межа тут не годиться — при полях 13 і 7 px вона
+                # спрацьовує, хоч креслення просто заповнює кадр.
+                if abs(l-rr)>0.12*k['w']:
+                    # перелік на розгляд: у межі намальованого входять і підписи,
+                    # і смуги вибору — див. межу пункту 5.1 у SCENE-REVIEW.md
+                    out.append(('%dx%d'%(w,h),m,'5.1?','поля не рівні, глянути на знімок: %d і %d px при ширині %d'
+                                %(round(l),round(rr),round(k['w']))))
         for c in json.loads(p.js("JSON.stringify(__R.clash)")):
             out.append(('%dx%d'%(w,h),c[0],'3.5','підписи осей зійшлися: «%s» + «%s» у %d px'%(c[1],c[2],c[3])))
         for e in json.loads(p.js("JSON.stringify(window.__err||[])")):
@@ -345,9 +420,19 @@ def main():
             rows+=runtime(f)
         if not no_sweep:
             rows+=sweep(f)
-        total+=len(rows)
-        print('%-52s %s'%(f,'OK' if not rows else '%d зауважень'%len(rows)))
-        for a,b,c,t in rows: print('    %-9s %-6s %-5s %s'%(a,b,c,t))
+        # Та сама вада на трьох ширинах — це одна вада. Складаємо ширини в один
+        # рядок: інакше звіт утричі довший, а працювати з ним утричі важче.
+        agg={}
+        for a,b,c,t in rows:
+            k=(b,c,re.sub(r'\d+','№',t))
+            g=agg.setdefault(k,{'w':[],'t':t})
+            if a not in g['w']: g['w'].append(a)
+            g['t']=t     # числа лишаємо від найширшого кадру — він іде останнім
+        total+=len(agg)
+        print('%-52s %s'%(f,'OK' if not agg else '%d зауважень'%len(agg)))
+        for (b,c,_),g in agg.items():
+            w=','.join(x for x in g['w'] if x!='—') or '—'
+            print('    %-26s %-6s %-5s %s'%(w,b,c,g['t']))
     print('---- усього зауважень: %d у %d файлах'%(total,len(files)))
     return 1 if total else 0
 
