@@ -224,9 +224,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
 
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
-  <p class="caption">Магнітне поле створює не заряд, а <b>рух</b> заряду — тобто струм.
-  Лінії індукції завжди замкнені: у магнітного поля немає «зарядів», на яких вони починалися б.
-  Напрям задає правило свердлика.</p>
+  <p class="caption">Навколо прямого струму лінії індукції — концентричні кола;
+  їхній напрям дає правило свердлика, а сама індукція спадає обернено пропорційно
+  до відстані від дроту.</p>
 
   <div class="pgrid">
     <div class="scene">
@@ -243,13 +243,13 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
         <canvas id="m1scene"></canvas>
       </div>
       <div class="panel">
-        <h3>Як спадає поле</h3>
+        <h3>Як індукція залежить від відстані та струму</h3>
         <div class="chartrow">
-          <div class="chartbox" id="m1cbw"><h4>індукція від відстані до провідника, мТл</h4>
-            <div class="legend sm"><span><span class="chip cC"></span>B = μ₀I/2πr</span><span><span class="chip cI"></span>обрана відстань</span></div>
+          <div class="chartbox" id="m1cbw"><h4 id="m1cbT">Залежність індукції магнітного поля від відстані до дроту</h4>
+            <div class="legend sm"><span><span class="chip cC"></span>B = μ₀I/2πr</span><span><span class="chip cI"></span>відстань, задана на сцені</span></div>
             <canvas id="m1cb"></canvas></div>
-          <div class="chartbox" id="m1ciw"><h4>індукція від сили струму, мТл</h4>
-            <div class="legend sm"><span><span class="chip cA"></span>пряма пропорційність</span><span><span class="chip cI"></span>обраний I</span></div>
+          <div class="chartbox" id="m1ciw"><h4>Залежність індукції магнітного поля від сили струму</h4>
+            <div class="legend sm"><span><span class="chip cA"></span>B = μ₀I/2πr</span><span><span class="chip cI"></span>струм, заданий на сцені</span></div>
             <canvas id="m1ci"></canvas></div>
         </div>
       </div>
@@ -1336,7 +1336,7 @@ const M1={
       /* Усі три масштаби — від верхньої межі 20 см із clamp() у grips(), а не від
          поточного радіуса (§10): інакше виток і соленоїд мали б на екрані той самий
          розмір при будь-якому R, і залежність B від R була б невидима. */
-      scW:Math.min(bb.w*0.36,bb.h*0.42)/20,
+      scW:Math.min(bb.w*0.36,bb.h*0.42)/12,
       scL:Math.min(bb.w*0.3,bb.h*0.34)/20,
       scS:Math.min(bb.w*0.34,bb.h*0.34)/20,
       ix:bb.w*0.07, iy:bb.h-42,
@@ -1348,11 +1348,15 @@ const M1={
     /* струм не має розміру в кресленні поля — йому дано власну стрілку,
        довжина якої і є силою струму */
     const out=[{id:'I', x:Q.ix, y:Q.iy-this.I*2.2, r:8, color:CLR.k1, hint:'сила струму',
-      move:(px,py)=>{this.I=clamp(snap((Q.iy-py)/2.2,0.5),0.5,50);}}];
+      move:(px,py)=>{this.I=clamp(snap((Q.iy-py)/2.2,0.5),2,20);}}];
     if(this.kind==='wire'){
       out.push({id:'r', x:Q.cx+this.r*Q.scW, y:Q.cy, r:9, bare:true, color:CLR.ink,
         hint:'точка спостереження',
-        move:px=>{this.r=clamp(snap((px-Q.cx)/Q.scW,0.5),0.5,20);}});
+        /* Нижня межа — не косметика: побудова B = μ₀I/2πr чинна для НЕСКІНЧЕННО
+           тонкого дроту, тож точка спостереження не має права заходити на сам
+           провідник. Верхню межу звужено, щоб стрілка індукції лишалася
+           лінійною по всьому діапазону, без обрізання. */
+        move:px=>{this.r=clamp(snap((px-Q.cx)/Q.scW,0.5),1.5,12);}});
     } else if(this.kind==='loop'){
       out.push({id:'R', x:Q.cx+this.R*Q.scL, y:Q.cy, r:9, color:CLR.k1, hint:'радіус витка',
         move:px=>{this.R=clamp(snap((px-Q.cx)/Q.scL,0.5),1,20);}});
@@ -1384,23 +1388,46 @@ const M1={
     if(this.kind==='wire'){
       /* провідник перпендикулярний до площини — «на нас» */
       const sc=Q.scW;
-      for(const rr of [4,8,12,16,20]){
-        g.strokeStyle=CLR.k3; g.lineWidth=rr<=this.r?1.8:1.2;
-        g.globalAlpha=rr<=this.r?0.8:0.4;
+      for(const rr of [2,4,6,9,12]){
+        const near=Math.abs(rr-this.r)<1.0;
+        g.strokeStyle=CLR.k3; g.lineWidth=near?2:1.2;
+        g.globalAlpha=near?0.85:0.32;
         g.beginPath(); g.arc(cx,cy,rr*sc,0,7); g.stroke(); g.globalAlpha=1;
-        /* наконечник показує напрям обходу */
-        const a=-Math.PI/4;
-        arrow(g,cx+Math.cos(a-0.12*dir)*rr*sc,cy+Math.sin(a-0.12*dir)*rr*sc,
-                cx+Math.cos(a+0.12*dir)*rr*sc,cy+Math.sin(a+0.12*dir)*rr*sc,CLR.k3,1.6);
       }
-      dot(g,cx,cy,10,'rgba(42,120,214,.2)',CLR.k1);
-      txt(g,'⊙',cx,cy+6,{color:'#1c5cab',size:16,bold:true,align:'center'});
-      txt(g,'струм на нас',cx,cy+34,{color:'#1c5cab',size:11,bold:true,align:'center'});
-      /* точка спостереження */
-      const px=cx+this.r*sc, py=cy;
+      /* Наконечник — один, на колі крізь точку спостереження. Напрям обходу
+         однаковий на всіх колах, і п'ять однакових стрілок нічого не давали,
+         крім шуму. Для струму «на нас» обхід іде ПРОТИ годинникової стрілки:
+         кут на полотні при цьому спадає, бо вісь y дивиться вниз. Раніше тут
+         стояв протилежний знак — і поле було намальоване навспак. */
+      {
+        const a=-Math.PI/4, d=0.15*dir, R=this.r*sc;
+        arrow(g,cx+Math.cos(a+d)*R,cy+Math.sin(a+d)*R,
+                cx+Math.cos(a-d)*R,cy+Math.sin(a-d)*R,CLR.k3,2.2);
+      }
+      /* Переріз дроту — геометрично, а не гліфом ⊙: у шрифті кружок і крапка
+         мають власні метрики, і центри не збігалися. */
+      g.fillStyle='#fff'; g.strokeStyle=CLR.k1; g.lineWidth=2;
+      g.beginPath(); g.arc(cx,cy,9,0,7); g.fill(); g.stroke();
+      g.fillStyle=CLR.k1; g.beginPath(); g.arc(cx,cy,3,0,7); g.fill();
+      /* підпис ліворуч від дроту: під ним іде розмір r, і по центру вони
+         лягали один на одного */
+      txt(g,'струм на нас',cx-16,cy+5,{color:'#1c5cab',size:11,bold:true,align:'right'});
+      /* ---- індукція ----------------------------------------------------
+         Одна стрілка не показувала ні спаду з відстанню, ні росту зі струмом:
+         її довжину різала стеля, і на робочих значеннях вона стояла незмінна.
+         Тепер масштаб сталий на весь діапазон ручок (ніде не обрізає), а поруч
+         стоять бліді стрілки на фіксованих відстанях — спад як 1/r видно
+         сходинкою, не міняючи жодної ручки. */
+      const kB=6.37e5, Bat=rr=>MU0*this.I/(2*Math.PI*rr*1e-2);
+      for(const rr of [2,4,8]){
+        if(Math.abs(rr-this.r)<0.4) continue;
+        const gx=cx+rr*sc;
+        g.globalAlpha=0.3; arrow(g,gx,cy,gx,cy-Bat(rr)*kB,CLR.k2,2); g.globalAlpha=1;
+      }
+      const px=cx+this.r*sc, py=cy, LB=this.B()*kB;
       dot(g,px,py,5,CLR.ink,'#fff');
-      arrow(g,px,py,px,py-Math.min(60,this.B()*4e5),CLR.k3,2.5);
-      txt(g,'B',px+8,py-Math.min(60,this.B()*4e5)-4,{color:'#0d7a55',size:12,bold:true});
+      arrow(g,px,py,px,py-LB,CLR.k2,3.5);
+      txt(g,'B',px+10,py-LB-4,{color:'#b8431a',size:13.5,bold:true});
       g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(cx,cy+22); g.lineTo(px,cy+22); g.stroke(); g.setLineDash([]);
       pillN(g,'r = '+fmt(this.r,1)+' см',(cx+px)/2,cy+42,{color:CLR.sec,size:11});
@@ -1484,13 +1511,6 @@ const M1={
       g.beginPath(); g.moveTo(Q.nx,Q.ny); g.lineTo(Q.nx+this.n*0.05,Q.ny); g.stroke();
       txt(g,'намотка',Q.nx-8,Q.ny+4,{color:CLR.mut,size:10,align:'right'});
     }
-    /* стовпчик індукції */
-    const bx=w*0.86, bh=h*0.5;
-    const Bmax=MU0*5000*50;
-    const fh=bh*Math.min(1,this.B()/Bmax*40);
-    g.fillStyle='rgba(27,175,122,.18)'; g.fillRect(bx-24,cy+bh/2-fh,48,fh);
-    g.strokeStyle=CLR.k3; g.lineWidth=2; g.strokeRect(bx-24,cy+bh/2-fh,48,fh);
-    txtN(g,fmt(this.B()*1000,3)+' мТл',bx,cy+bh/2-fh-8,{color:'#0d7a55',size:11.5,bold:true,align:'center'});
     const nm={wire:['поле навколо прямого струму',CLR.k1,'лінії — концентричні кола; напрям дає правило свердлика'],
       loop:['поле колового витка',CLR.k2,'усередині витка лінії згущуються — поле там найсильніше'],
       sol:['поле соленоїда',CLR.k3,'усередині довгого соленоїда поле однорідне й не залежить від радіуса']}[this.kind];
@@ -1522,28 +1542,42 @@ const M1={
   charts(){
     const bb=cvx('m1cb');
     if(bb){
+      /* Крива показує саме ту конфігурацію, яку обрано на сцені. Раніше тут
+         завжди стояв закон прямого дроту — навіть тоді, коли на сцені був
+         виток або соленоїд, і графік суперечив кресленню. */
+      const W=this.kind==='wire'
+        ? {x:'r, см', lo:1.5, hi:12, step:2, cur:this.r,
+           t:'Залежність індукції магнітного поля від відстані до дроту',
+           f:r=>MU0*this.I/(2*Math.PI*r*1e-2)}
+        : this.kind==='loop'
+        ? {x:'R, см', lo:1, hi:20, step:4, cur:this.R,
+           t:'Залежність індукції в центрі витка від його радіуса',
+           f:R=>MU0*this.I/(2*R*1e-2)}
+        : {x:'R, см', lo:1, hi:20, step:4, cur:this.R,
+           t:'Залежність індукції в соленоїді від його радіуса — її немає',
+           f:()=>MU0*this.n*this.I};
+      $('m1cbT').textContent=W.t;
       const ts=[],ys=[];
-      for(let i=0;i<=70;i++){const r=0.5+19.5*i/70; ts.push(r); ys.push(MU0*this.I/(2*Math.PI*r*1e-2)*1000);}
-      const hi=Math.max(...ys)*1.1;
-      const r=drawChart(bb,{tMax:20,yMin:0,yMax:hi,yLab:'мТл',xLab:'r, см',xStep:4,yDec:3,
-        hover:this.hb.x,
-        series:[{ts,ys,color:CLR.k3,label:'B'},
-                {ts:[this.r,this.r],ys:[0,MU0*this.I/(2*Math.PI*this.r*1e-2)*1000],
-                 color:CLR.ink,label:'r',dash:[4,3]}]});
-      showTip(this.tipb,r,'мТл',this.hb,[['B',CLR.k3],['обрана r',CLR.ink]],4);
+      for(let i=0;i<=70;i++){const x=W.lo+(W.hi-W.lo)*i/70; ts.push(x); ys.push(W.f(x)*1000);}
+      const hi=Math.max(...ys)*1.1||1;
+      const r=drawChart(bb,{tMin:W.lo,tMax:W.hi,yMin:0,yMax:hi,yLab:'B, мТл',xLab:W.x,
+        xStep:W.step,yDec:3,hover:this.hb.x,
+        series:[{ts,ys,color:CLR.k3,label:''},
+                {ts:[W.cur,W.cur],ys:[0,W.f(W.cur)*1000],color:CLR.ink,label:'',dash:[4,3]}]});
+      showTip(this.tipb,r,'мТл',this.hb,[['B',CLR.k3],['задано на сцені',CLR.ink]],4);
     }
     const bi=cvx('m1ci');
     if(bi){
       const ts=[],ys=[];
       const f=I=>this.kind==='wire'?MU0*I/(2*Math.PI*this.r*1e-2)
         :this.kind==='loop'?MU0*I/(2*this.R*1e-2):MU0*this.n*I;
-      for(let i=0;i<=50;i++){const I=50*i/50; ts.push(I); ys.push(f(I)*1000);}
-      const hi=Math.max(1e-6,f(50)*1000)*1.1;
-      const r=drawChart(bi,{tMax:50,yMin:0,yMax:hi,yLab:'мТл',xLab:'I, А',xStep:10,yDec:2,
+      for(let i=0;i<=50;i++){const I=20*i/50; ts.push(I); ys.push(f(I)*1000);}
+      const hi=Math.max(1e-6,f(20)*1000)*1.1;
+      const r=drawChart(bi,{tMax:20,yMin:0,yMax:hi,yLab:'B, мТл',xLab:'I, А',xStep:4,yDec:3,
         hover:this.hi.x,
-        series:[{ts,ys,color:CLR.k1,label:'B'},
-                {ts:[this.I,this.I],ys:[0,f(this.I)*1000],color:CLR.ink,label:'I',dash:[4,3]}]});
-      showTip(this.tipi,r,'мТл',this.hi,[['B',CLR.k1],['обраний I',CLR.ink]],3);
+        series:[{ts,ys,color:CLR.k1,label:''},
+                {ts:[this.I,this.I],ys:[0,f(this.I)*1000],color:CLR.ink,label:'',dash:[4,3]}]});
+      showTip(this.tipi,r,'мТл',this.hi,[['B',CLR.k1],['задано на сцені',CLR.ink]],3);
     }
   }
 };
@@ -2802,6 +2836,13 @@ const M6={
     const pa=this.seg(0.02,0.18), pb=this.seg(0.20,0.34), pp=this.seg(0.36,0.50);
     const pr=this.seg(0.52,0.68), pc=this.seg(0.70,0.88);
     const O=P(0,0,0);
+    /* Повертається ПЕРШИЙ множник, а площина й другий стоять. На початку
+       кроку «поворот» перший лежить на другому: кут між ними нульовий,
+       площа нульова, добуток нульовий. Поки перший відходить, росте все
+       троє одразу — саме це й треба побачити. */
+    const aAng=(pr>0&&pc<=0)?a*(1-pr):0;      /* поточний напрям першого */
+    const aBet=a-aAng;                        /* поточний кут між множниками */
+    const A=[this.LA*Math.cos(aAng),this.LA*Math.sin(aAng)];
     g.clearRect(0,0,w,h);
     /* площина множників — сітка в косій проєкції */
     g.strokeStyle=CLR.grid; g.lineWidth=1;
@@ -2813,29 +2854,38 @@ const M6={
     }
     /* паралелограм на множниках: його площа і є модуль добутку */
     if(pp>0){
-      const A=[this.LA,0], B=[this.LB*Math.cos(a),this.LB*Math.sin(a)];
+      const B=[this.LB*Math.cos(a),this.LB*Math.sin(a)];
       const q=[P(0,0,0),P(A[0],A[1],0),P(A[0]+B[0]*pp,A[1]+B[1]*pp,0),P(B[0]*pp,B[1]*pp,0)];
-      g.fillStyle='rgba(27,175,122,.16)'; g.beginPath();
+      g.fillStyle='rgba(27,175,122,.14)'; g.beginPath();
       q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));
       g.closePath(); g.fill();
       g.strokeStyle='rgba(27,175,122,.55)'; g.lineWidth=1.4; g.stroke();
-      if(pp>0.9){
-        const cm=P((A[0]+B[0])/2,(A[1]+B[1])/2,0);
-        pillN(g,'площа = '+fmt(V.A,1)+'·'+fmt(V.B,2)+'·sin α',cm[0],cm[1]+4,
-          {color:'#0d7a55',size:10.5,bold:true});
+      /* Штрихування — щоб модуль добутку читався саме як ПЛОЩА. Поки перший
+         множник повертається, заштрихована ділянка росте разом із довжиною
+         добутку: два боки однієї події, а не два різні твердження. */
+      g.save();
+      g.beginPath(); q.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));
+      g.closePath(); g.clip();
+      const xs=q.map(p=>p[0]), ys=q.map(p=>p[1]);
+      const yA=Math.min.apply(null,ys), yB=Math.max.apply(null,ys), hh=yB-yA;
+      g.strokeStyle='rgba(27,175,122,.5)'; g.lineWidth=1;
+      for(let x=Math.min.apply(null,xs)-hh;x<Math.max.apply(null,xs);x+=10){
+        g.beginPath(); g.moveTo(x,yA); g.lineTo(x+hh,yB); g.stroke();
       }
+      g.restore();
     }
     /* дуга кута між множниками */
     if(pb>0.2){
       const rr=0.34;
       g.strokeStyle=CLR.sec; g.lineWidth=1.6; g.beginPath();
       for(let i=0;i<=24;i++){
-        const th=a*i/24, p=P(rr*Math.cos(th),rr*Math.sin(th),0);
+        const th=aAng+aBet*i/24, p=P(rr*Math.cos(th),rr*Math.sin(th),0);
         i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);
       }
       g.stroke();
-      const pm=P(0.46*Math.cos(a/2),0.46*Math.sin(a/2),0);
-      txtN(g,'α = '+fmt(this.al,0)+'°',pm[0],pm[1]+4,{color:CLR.sec,size:11.5,bold:true,align:'center'});
+      const mid=aAng+aBet/2, pm=P(0.46*Math.cos(mid),0.46*Math.sin(mid),0);
+      txtN(g,'α = '+fmt(aBet/DEG,0)+'°',pm[0],pm[1]+4,
+        {color:CLR.sec,size:11.5,bold:true,align:'center'});
     }
     const vec=(p,col,txc,lab,wd)=>{
       arrow(g,O[0],O[1],p[0],p[1],col,wd||2.6);
@@ -2843,7 +2893,7 @@ const M6={
         {color:txc,size:12,bold:true,align:p[0]>O[0]?'left':'right'});
     };
     /* множники */
-    if(pa>0) vec(P(this.LA*pa,0,0),CLR.k1,'#1c5cab',V.na);
+    if(pa>0) vec(P(A[0]*pa,A[1]*pa,0),CLR.k1,'#1c5cab',V.na);
     if(pb>0) vec(P(this.LB*pb*Math.cos(a),this.LB*pb*Math.sin(a),0),CLR.k2,'#b8431a',V.nb);
     /* поворот від першого множника до другого: саме його «повторює» права рука */
     if(pr>0){
@@ -2865,8 +2915,12 @@ const M6={
     if(pr>0) helix(g,Q,0.24,0.03,0.03+pr*(LC-0.08),2.6,this.ta*2.2,
                    'rgba(27,175,122,.80)',3,Math.min(1,pr*1.6));
     /* результат: перпендикуляр до площини, довжина ∝ sin α */
-    if(pc>0){
-      const Lc=0.88*sn*pc*sg;
+    if(pr>0){
+      /* Довжина добутку йде за поточним кутом: на початку повороту вона
+         нульова, наприкінці — ab·sin α. Крок «результат» лише дописує підпис
+         і прямий кут, а сам вектор виростає разом із поворотом. */
+      const grow=pc>0?1:Math.sin(aBet)/Math.max(1e-6,sn);
+      const Lc=0.88*sn*grow*(pc>0?pc:1)*sg;
       const p=P(0,0,Lc);
       g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([4,3]);
       g.beginPath(); g.moveTo(O[0],O[1]); g.lineTo(P(0,0,sg*0.98)[0],P(0,0,sg*0.98)[1]);
@@ -2882,7 +2936,7 @@ const M6={
       /* У від’ємного заряду поряд стоять два зелені вектори: сам добуток і
          протилежна до нього сила. Повна формула на обох читалася б як помилка,
          тож силі лишаємо саму назву. */
-      vec(p,CLR.k3,'#0d7a55',sg<0?cn:V.nc,3.2);
+      vec(p,CLR.k3,'#0d7a55',pc>0?(sg<0?cn:V.nc):cn,3.2);
       /* прямий кут між результатом і площиною */
       const k=0.13, c1=P(k,0,0), c2=P(k,0,sg*k), c3=P(0,0,sg*k);
       g.strokeStyle=CLR.axis; g.lineWidth=1.2;
@@ -2892,6 +2946,11 @@ const M6={
           {color:'#1c5cab',size:10.5,bold:true});
     }
     dot(g,O[0],O[1],3.5,CLR.sec);
+    /* Головний вираз модуля — великим кеглем просто на кресленні. Раніше він
+       був плашкою 10,5 px поверх паралелограма: саме те, заради чого й
+       будується вся сцена, читалося найдрібнішим шрифтом на ній. */
+    txt(g,V.lc.replace(/<[^>]+>/g,''),w/2,54,
+      {color:'#0d7a55',size:21,bold:true,align:'center'});
     /* ---- вид з вістря ------------------------------------------------------
        Правило можна переказати словами, а можна дати подивитися. Вічко стоїть
        на кадрі від самого початку й наповнюється разом із побудовою: спершу
