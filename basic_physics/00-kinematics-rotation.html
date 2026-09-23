@@ -1787,7 +1787,9 @@ const M2={
       g.strokeStyle=CLR.sec; g.lineWidth=1; g.setLineDash([3,3]);
       g.beginPath(); g.moveTo(cx,cy); g.lineTo(PB2.x,PB2.y); g.stroke(); g.setLineDash([]);
       const am=(ax+ax2)/2;
-      pill(g,'ds = R·dφ',cx+Math.cos(am)*(this.R*sc+30),cy+Math.sin(am)*(this.R*sc+30),
+      /* Підпис дуги ставимо всередину диска: зовні вздовж радіуса йдуть
+         дотичні стрілки швидкостей, і всі три написи збивалися в купу. */
+      pill(g,'ds = R·dφ',cx+Math.cos(am)*(this.R*sc-30),cy+Math.sin(am)*(this.R*sc-30),
         {color:'#b8431a',size:11,bold:true});
     }
     /* ---- точка A крупно: усе про прискорення в одному вікні ---------------
@@ -1800,10 +1802,10 @@ const M2={
     {
       const IW=Q.IW, IH=Math.min(404,h*0.82);
       const bx0=Q.bx0, by0=40;
-      /* виноска: кружок навколо точки A на диску і лінія до рамки */
+      /* Кружок навколо точки A лишається як вказівка, про яку саме точку
+         йдеться; лінію до рамки прибрано — вона перетинала півсцени. */
       g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
       g.beginPath(); g.arc(PA.x,PA.y,17,0,7); g.stroke();
-      g.beginPath(); g.moveTo(PA.x+17,PA.y-6); g.lineTo(bx0,by0+IH*0.36); g.stroke();
       g.setLineDash([]);
       g.fillStyle='#fff'; g.strokeStyle=CLR.axis; g.lineWidth=1;
       g.beginPath(); g.roundRect(bx0,by0,IW,IH,10); g.fill(); g.stroke();
@@ -1853,54 +1855,70 @@ const M2={
         txt(g,'v',icx+vx*0.62,icy-9,{color:'#1c5cab',size:12,bold:true,align:'center'});
       }
       dot(g,icx,icy,5.5,CLR.k1,'#fff');
-      /* ---- нижня частина: звідки вони беруться ----------------------------
-         Обидві швидкості відкладено з однієї точки. У кадрі, зв'язаному з
-         точкою, τ горизонтальна, а n вертикальна — тому розклад Δv на складові
-         це просто катети прямокутного трикутника: горизонтальний дає приріст
-         модуля (звідки aτ), вертикальний — поворот напряму (звідки an). */
-      const sepY=by0+206;
+      /* ---- нижня частина: звідки береться доцентрове ----------------------
+         Класична побудова, і вона ж найкоротший доказ. Ліворуч — трикутник
+         O–A–B: два радіуси R і кут φ між ними, хорда AB ≈ Δs = v·Δt. Праворуч —
+         трикутник швидкостей: v(t) і v(t+Δt) однакові за модулем і повернуті
+         на той самий кут φ, третя сторона — Δv. Обидва трикутники рівнобедрені
+         з однаковим кутом при вершині, отже подібні: Δv/v = Δs/R. Поділивши на
+         Δt, маємо a = v²/R — і воно дивиться туди ж, куди Δv, тобто до центра.
+         Кут φ беремо помітним (не справжнім приростом за кадр), інакше обидва
+         трикутники вироджуються в відрізки й доводити нічим. */
+      const sepY=by0+188;
       g.strokeStyle=CLR.grid; g.lineWidth=1;
       g.beginPath(); g.moveTo(bx0+10,sepY); g.lineTo(bx0+IW-10,sepY); g.stroke();
-      txt(g,'звідки вони беруться',bx0+10,sepY+18,{color:CLR.sec,size:11,bold:true});
-      txt(g,'обидві швидкості — з однієї точки',bx0+10,sepY+31,{color:CLR.mut,size:9.5});
-      const dphi2=this.phi(t+DT)-this.phi(t), om2=this.om(t+DT);
-      const V1x=om*this.Ra, V1y=0;
-      const V2x=om2*this.Ra*Math.cos(dphi2), V2y=om2*this.Ra*Math.sin(dphi2);
-      const vmax=Math.max(Math.hypot(V1x,V1y),Math.hypot(V2x,V2y));
-      const dx0=bx0+IW*0.26, dy0=by0+IH-96;
-      if(vmax>1e-4){
-        const ks=(IW*0.34)/vmax;
-        const P1={x:dx0+V1x*ks, y:dy0-V1y*ks};
-        const P2={x:dx0+V2x*ks, y:dy0-V2y*ks};
-        const Pc={x:P2.x, y:P1.y};          /* кут розкладу: τ — по горизонталі */
-        dot(g,dx0,dy0,3,CLR.sec);
-        arrow(g,dx0,dy0,P1.x,P1.y,CLR.k1,2.2);
-        /* підпис над самою стрілкою: під нею проходить катет розкладу */
-        txt(g,'v(t)',(dx0+P1.x)/2,P1.y-7,{color:'#1c5cab',size:10.5,bold:true,align:'center'});
-        arrow(g,dx0,dy0,P2.x,P2.y,CLR.mut,2.2);
-        txt(g,'v(t+dt)',P2.x+(V2x<0?-6:6),P2.y-7,
-          {color:CLR.mut,size:10.5,bold:true,align:V2x<0?'right':'left'});
-        g.strokeStyle=CLR.axis; g.lineWidth=1; g.setLineDash([3,3]);
-        g.beginPath(); g.moveTo(P1.x,P1.y); g.lineTo(Pc.x,Pc.y); g.lineTo(P2.x,P2.y);
-        g.stroke(); g.setLineDash([]);
-        if(Math.abs(Pc.x-P1.x)>4) arrow(g,P1.x,P1.y,Pc.x,Pc.y,CLR.k3,2.2);
-        if(Math.abs(P2.y-Pc.y)>4) arrow(g,Pc.x,Pc.y,P2.x,P2.y,CLR.k3,2.2);
-        arrow(g,P1.x,P1.y,P2.x,P2.y,CLR.ink,2.4);
-        txt(g,'Δv',(P1.x+P2.x)/2+10,(P1.y+P2.y)/2-4,{color:CLR.ink,size:11,bold:true});
-        /* катети надто короткі, щоб підписати їх просто на місці, — легенда
-           йде окремим рядком під кресленням */
-        txt(g,'катет уздовж τ → aτ · катет упоперек → an',bx0+10,dy0+22,
-          {color:'#0d7a55',size:9.5,bold:true});
-      } else {
-        txt(g,'поки ω = 0, швидкості немає',dx0,dy0-10,{color:CLR.mut,size:10});
+      txt(g,'звідки береться доцентрове',bx0+10,sepY+16,{color:CLR.sec,size:11,bold:true});
+      {
+        const PH=0.62;                         /* кут φ на кресленні */
+        const halfW=(IW-30)/2, topY=sepY+30, triH=Math.max(54,by0+IH-84-topY);
+        const RR=Math.min(halfW*0.46,triH*0.86);
+        /* ліворуч: два радіуси й хорда */
+        const ox1=bx0+12+halfW*0.5, oy1=topY+triH;
+        const pA={x:ox1+Math.cos(-Math.PI/2-PH/2)*RR, y:oy1+Math.sin(-Math.PI/2-PH/2)*RR};
+        const pB={x:ox1+Math.cos(-Math.PI/2+PH/2)*RR, y:oy1+Math.sin(-Math.PI/2+PH/2)*RR};
+        g.strokeStyle=CLR.k1; g.lineWidth=2;
+        g.beginPath(); g.moveTo(ox1,oy1); g.lineTo(pA.x,pA.y);
+        g.moveTo(ox1,oy1); g.lineTo(pB.x,pB.y); g.stroke();
+        g.strokeStyle=CLR.k2; g.lineWidth=2.4;
+        g.beginPath(); g.moveTo(pA.x,pA.y); g.lineTo(pB.x,pB.y); g.stroke();
+        arc(g,ox1,oy1,RR*0.34,-Math.PI/2-PH/2,-Math.PI/2+PH/2,CLR.sec,1.6);
+        dot(g,ox1,oy1,3,CLR.sec); dot(g,pA.x,pA.y,3.5,CLR.k1); dot(g,pB.x,pB.y,3.5,CLR.k1);
+        txt(g,'O',ox1-5,oy1+13,{color:CLR.mut,size:10,align:'right'});
+        txt(g,'A',pA.x-6,pA.y-4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+        txt(g,'B',pB.x+5,pB.y-4,{color:'#1c5cab',size:10.5,bold:true});
+        txt(g,'R',(ox1+pA.x)/2-7,(oy1+pA.y)/2+4,{color:'#1c5cab',size:11,bold:true,align:'right'});
+        txt(g,'R',(ox1+pB.x)/2+6,(oy1+pB.y)/2+4,{color:'#1c5cab',size:11,bold:true});
+        txt(g,'φ',ox1+3,oy1-RR*0.42,{color:CLR.sec,size:11,bold:true});
+        txt(g,'Δs',(pA.x+pB.x)/2,pA.y-7,{color:'#b8431a',size:11,bold:true,align:'center'});
+        /* праворуч: той самий кут між двома однаковими швидкостями */
+        const ox2=bx0+18+halfW+halfW*0.5, oy2=topY+triH;
+        const qA={x:ox2+Math.cos(-Math.PI/2-PH/2)*RR, y:oy2+Math.sin(-Math.PI/2-PH/2)*RR};
+        const qB={x:ox2+Math.cos(-Math.PI/2+PH/2)*RR, y:oy2+Math.sin(-Math.PI/2+PH/2)*RR};
+        arrow(g,ox2,oy2,qA.x,qA.y,CLR.k1,2.4);
+        arrow(g,ox2,oy2,qB.x,qB.y,CLR.mut,2.4);
+        arrow(g,qA.x,qA.y,qB.x,qB.y,CLR.ink,2.6);
+        arc(g,ox2,oy2,RR*0.34,-Math.PI/2-PH/2,-Math.PI/2+PH/2,CLR.sec,1.6);
+        dot(g,ox2,oy2,3,CLR.sec);
+        txt(g,'v(t)',qA.x-6,qA.y-4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+        txt(g,'v(t+Δt)',qB.x+5,qB.y-4,{color:CLR.mut,size:10.5,bold:true});
+        txt(g,'φ',ox2+3,oy2-RR*0.42,{color:CLR.sec,size:11,bold:true});
+        txt(g,'Δv',(qA.x+qB.x)/2,qA.y-7,{color:CLR.ink,size:11.5,bold:true,align:'center'});
+        /* Δv дивиться до центра — саме це й робить прискорення доцентровим */
+        /* Δv дивиться туди ж, куди й радіус на середину дуги, — до центра.
+           Стрілку ведемо від вершини трикутника вниз, під нього, щоб вона не
+           лягала ні на дугу кута, ні на самі швидкості. */
+        arrow(g,ox2,oy2+8,ox2,oy2+24,CLR.k3,1.8);
+        txt(g,'Δv — до центра',ox2+7,oy2+22,{color:'#0d7a55',size:9.5,bold:true});
       }
-      /* числа — під обома кресленнями */
-      txtN(g,'v = ωR_A = '+fmt(Math.abs(vS),2)+' м/с',bx0+10,by0+IH-40,
-        {color:'#1c5cab',size:10.5,bold:true});
-      txtN(g,'aτ = εR_A = '+fmt(Math.abs(atS),2)+' м/с² — уздовж τ',bx0+10,by0+IH-25,
+      txt(g,'трикутники подібні: Δv / v = Δs / R',bx0+10,by0+IH-56,
+        {color:CLR.sec,size:10.5,bold:true});
+      txt(g,'Δs = v·Δt  ⟹  a = Δv/Δt = v²/R — до центра',bx0+10,by0+IH-42,
         {color:'#0d7a55',size:10.5,bold:true});
-      txtN(g,'an = ω²R_A = '+fmt(anS,2)+' м/с² — уздовж n',bx0+10,by0+IH-10,
-        {color:'#0d7a55',size:10.5,bold:true});
+      /* числа — під кресленнями */
+      txtN(g,'v = ωR_A = '+fmt(Math.abs(vS),2)+' м/с · an = ω²R_A = '+fmt(anS,2)+' м/с²',
+        bx0+10,by0+IH-24,{color:'#1c5cab',size:10,bold:true});
+      txtN(g,'aτ = εR_A = '+fmt(Math.abs(atS),2)+' м/с² — уздовж τ',bx0+10,by0+IH-10,
+        {color:'#0d7a55',size:10,bold:true});
       g.restore();
     }
     capN(g,'обертання навколо нерухомої осі',12,20,{color:CLR.k2,size:12.5,bold:true});
