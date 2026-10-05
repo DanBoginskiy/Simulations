@@ -85,16 +85,21 @@ canvas{display:block}
 .sl output{font-variant-numeric:tabular-nums; color:var(--ink); min-width:74px; text-align:right}
 .grp[hidden]{display:none}
 /* key-value readouts */
-.kv{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
-  padding:5px 0; border-bottom:1px dashed var(--grid)}
+/* Дві колонки сіткою, а не flex: у flex довга назва стискала колонку значень
+   до кількох літер, і число розсипалося на рядки. Сітка дає значенню стільки,
+   скільки йому треба, і підтискає його лише тоді, коли місця справді нема. */
+.kv{display:grid; grid-template-columns:minmax(42%,1fr) auto; align-items:baseline;
+  gap:4px 12px; padding:5px 0; border-bottom:1px dashed var(--grid)}
 .kv:last-child{border-bottom:none}
 /* display:flex перебиває приховування атрибутом hidden — повертаємо його */
 .kv[hidden]{display:none}
-.kv span{color:var(--sec)}
+.kv span{color:var(--sec); min-width:0}
 .kv b{font-variant-numeric:tabular-nums; font-weight:600; text-align:right;
   /* Довге словесне значення з nowrap роздувало бічну колонку й давало
-     горизонтальну прокрутку всієї сторінки. Переносимо по пробілах. */
-  white-space:normal; overflow-wrap:anywhere}
+     горизонтальну прокрутку всієї сторінки. Переносимо по пробілах — але
+     саме по пробілах: з overflow-wrap:anywhere колонку значень стискало до
+     одного символу, і «55°» розпадалося на «5», «5» і «°». */
+  white-space:normal; overflow-wrap:break-word}
 .badge{display:inline-block;  font-weight:600; color:var(--sec);
   border:1px solid var(--axis); border-radius:99px; padding:1px 7px; margin-left:6px; vertical-align:1px}
 .badge[hidden]{display:none}
@@ -298,7 +303,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <div class="kv"><span><var>I</var> — сила струму<span class="badge">стрілка струму</span></span><b id="m1vI"></b></div>
         <div class="kv"><span><var>r</var> — відстань до точки спостереження<span class="badge">точка спостереження</span></span><b id="m1vr"></b></div>
         <div class="kv"><span><var>R</var> — радіус витка або соленоїда<span class="badge">край витка</span></span><b id="m1vR"></b></div>
-        <div class="kv"><span><var>n</var> — витків на метр (для соленоїда)<span class="badge">смуга намотки</span></span><b id="m1vn"></b></div>
+        <div class="kv"><span><var>n</var> — витків на метр<span class="badge">смуга намотки</span></span><b id="m1vn"></b></div>
       </div>
       <div class="panel">
         <h3>Індукція поля</h3>
@@ -310,7 +315,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Як реагує поле</h3>
         <div class="kv"><span>подвоїти струм</span><b id="m1kI2"></b></div>
-        <div class="kv"><span>відсунутися вдвічі далі (прямий провідник)<span class="badge">B меншає вдвічі</span></span><b id="m1kr2"></b></div>
+        <div class="kv"><span>удвічі далі від дроту<span class="badge">B меншає вдвічі</span></span><b id="m1kr2"></b></div>
         <div class="kv"><span>у центрі витка</span><b id="m1kLoop"></b></div>
         <div class="kv"><span>усередині соленоїда<span class="badge">поле однорідне</span></span><b id="m1kSol"></b></div>
         <div class="formulas" id="m1fx"></div>
@@ -367,7 +372,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <h3 id="m2kvh">Величини</h3>
         <div id="m2kvOne">
           <div class="kv"><span>сила Ампера <var>F</var> = <var>BIl</var>·sin <var>α</var></span><b id="m2kF"></b></div>
-          <div class="kv"><span>складова струму, перпендикулярна до <var>B</var></span><b id="m2kIp"></b></div>
+          <div class="kv"><span>складова струму ⟂ <var>B</var></span><b id="m2kIp"></b></div>
           <div class="kv"><span>напрям сили</span><b id="m2kDir"></b></div>
           <div class="kv"><span>при <var>α</var> = 0 сили немає<span class="badge">струм уздовж поля</span></span><b id="m2kZero"></b></div>
           <div class="kv"><span>максимум при <var>α</var> = 90°</span><b id="m2kMax"></b></div>
@@ -479,20 +484,20 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <div class="kv"><span><var>E</var> — напруженість поля селектора<span class="badge">шкала E</span></span><b id="m4vE"></b></div>
         <div class="kv"><span><var>B</var><sub>1</sub> — поле селектора<span class="badge">шкала B₁</span></span><b id="m4vB1"></b></div>
         <div class="kv"><span><var>B</var><sub>2</sub> — поле камери розділення<span class="badge">шкала B₂</span></span><b id="m4vB2"></b></div>
-        <div class="kv"><span>масові числа ізотопів: перший<span class="badge">точка виходу</span></span><b id="m4vA1"></b></div>
+        <div class="kv"><span>масове число, перший ізотоп<span class="badge">точка виходу</span></span><b id="m4vA1"></b></div>
         <div class="kv"><span>другий ізотоп<span class="badge">точка виходу</span></span><b id="m4vA2"></b></div>
       </div>
       <div class="panel">
         <h3>Селектор швидкостей</h3>
         <div class="kv"><span>умова прольоту <var>qE</var> = <var>qvB</var><sub>1</sub></span><b id="m4kCond"></b></div>
         <div class="kv"><span>відібрана швидкість <span class="tx" data-tex="v = \dfrac{E}{B}"></span><sub>1</sub></span><b id="m4kv"></b></div>
-        <div class="kv"><span>швидкість не залежить від маси й заряду<span class="badge">лише від полів</span></span><b id="m4kNo"></b></div>
+        <div class="kv"><span>не залежить від маси й заряду<span class="badge">лише від полів</span></span><b id="m4kNo"></b></div>
       </div>
       <div class="panel">
         <h3>Камера розділення</h3>
-        <div class="kv"><span>радіус для першого ізотопа</span><b id="m4kr1"></b></div>
+        <div class="kv"><span>радіус першого ізотопа</span><b id="m4kr1"></b></div>
         <div class="kv"><span>радіус для другого</span><b id="m4kr2"></b></div>
-        <div class="kv"><span>відстань між слідами на детекторі</span><b id="m4kd"></b></div>
+        <div class="kv"><span>відстань між слідами</span><b id="m4kd"></b></div>
         <div class="kv"><span>роздільна здатність <var>A</var>/Δ<var>A</var></span><b id="m4kres"></b></div>
         <div class="kv"><span>чи розділяються ізотопи</span><b id="m4kVerd"></b></div>
         <div class="formulas" id="m4fx"></div>
@@ -526,17 +531,17 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="kv"><span>швидкість частинок сонячного вітру<span class="badge">шкала швидкості</span></span><b id="m5vv"></b></div>
+        <div class="kv"><span>швидкість сонячного вітру<span class="badge">шкала швидкості</span></span><b id="m5vv"></b></div>
         <div class="kv"><span>густина потоку частинок<span class="badge">шкала густини</span></span><b id="m5vn"></b></div>
-        <div class="kv"><span><var>L</var> — на якій оболонці захоплені частинки<span class="badge">шкала оболонки</span></span><b id="m5vL"></b></div>
+        <div class="kv"><span><var>L</var> — оболонка захоплення<span class="badge">шкала оболонки</span></span><b id="m5vL"></b></div>
       </div>
       <div class="panel">
         <h3>Магнітне поле Землі</h3>
-        <div class="kv"><span>індукція біля екватора на поверхні</span><b>30 мкТл</b></div>
+        <div class="kv"><span>індукція на екваторі</span><b>30 мкТл</b></div>
         <div class="kv"><span>біля полюсів</span><b>60 мкТл</b></div>
         <div class="kv"><span>індукція на оболонці <var>L</var></span><b id="m5kB"></b></div>
         <div class="kv"><span>радіус оболонки</span><b id="m5kR"></b></div>
-        <div class="kv"><span>широта, де оболонка торкається поверхні</span><b id="m5kLat"></b></div>
+        <div class="kv"><span>широта торкання оболонки</span><b id="m5kLat"></b></div>
       </div>
       <div class="panel" id="m5pDyn" hidden>
         <h3>Геодинамо: звідки поле</h3>
@@ -557,7 +562,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <div class="kv"><span>швидкість</span><b id="m5kv"></b></div>
         <div class="kv"><span>кінетична енергія протона</span><b id="m5kE"></b></div>
         <div class="kv"><span>ларморівський радіус <var>mv</var>/<var>qB</var></span><b id="m5kr"></b></div>
-        <div class="kv"><span>період обертання навколо лінії поля</span><b id="m5kT"></b></div>
+        <div class="kv"><span>період обертання</span><b id="m5kT"></b></div>
         <div class="kv"><span>де висипаються частинки<span class="badge">там і сяйво</span></span><b id="m5kAur"></b></div>
         <div class="formulas">радіус обертання набагато менший за розмір магнітосфери — тому частинка «намотується» на лінію поля й повторює її форму</div>
       </div>
@@ -617,9 +622,9 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <h3>Результат</h3>
         <div class="kv"><span>sin <var>α</var></span><b id="m6ksin"></b></div>
         <div class="kv"><span id="m6lc">|<var>c</var>| = |<var>a</var>||<var>b</var>|·sin <var>α</var></span><b id="m6kc"></b></div>
-        <div class="kv"><span>площа паралелограма на <var>a</var> і <var>b</var><span class="badge">це те саме число</span></span><b id="m6karea"></b></div>
+        <div class="kv"><span>площа паралелограма<span class="badge">це те саме число</span></span><b id="m6karea"></b></div>
         <div class="kv"><span>напрям <var>c</var></span><b id="m6kdir"></b></div>
-        <div class="kv"><span>перевірка <var>c</var> ⟂ <var>a</var> і <var>c</var> ⟂ <var>b</var></span><b id="m6kperp"></b></div>
+        <div class="kv"><span>перевірка <var>c</var> ⟂ <var>a</var>, <var>b</var></span><b id="m6kperp"></b></div>
         <div class="formulas" id="m6fx"></div>
       </div>
       <div class="panel">
@@ -2021,7 +2026,7 @@ const M2={
     $('m2va').textContent=fmt(this.a,0)+'°';
     $('m2kF').textContent=fmt(F,4)+' Н';
     $('m2kIp').textContent=fmt(this.I*Math.sin(this.a*DEG),3)+' А';
-    $('m2kDir').textContent=this.a<1||this.a>179?'сили немає':'перпендикулярно до провідника й до B';
+    $('m2kDir').textContent=this.a<1||this.a>179?'сили немає':'⟂ провіднику і ⟂ B';
     $('m2kZero').textContent='0,0000 Н';
     $('m2kMax').textContent=fmt(this.B*this.I*this.l*1e-2,4)+' Н';
     $('m2fx').innerHTML=tex('F=BIl\\sin\\alpha')+' = '+fmt(this.B,2)+'·'+fmt(this.I,1)+'·'+fmt(this.l*1e-2,3)+
@@ -2507,13 +2512,13 @@ const M4={
     $('m4vA2').textContent=fmt(this.A2,0);
     $('m4kCond').textContent='E = vB₁';
     $('m4kv').textContent=fmt(v/1000,1)+' км/с';
-    $('m4kNo').textContent=fmt(v/1000,1)+' км/с для будь-якого іона';
+    $('m4kNo').textContent=fmt(v/1000,1)+' км/с';
     $('m4kr1').textContent=fmt(r1*100,2)+' см';
     $('m4kr2').textContent=fmt(r2*100,2)+' см';
     $('m4kd').textContent=fmt(d*100,2)+' см';
     const dA=Math.abs(this.A2-this.A1);
     $('m4kres').textContent=dA<1?'ізотопи однакові':fmt(Math.min(this.A1,this.A2)/dA,1);
-    $('m4kVerd').textContent=d*100>0.5?'так, сліди розділені':'ні, сліди зливаються';
+    $('m4kVerd').textContent=d*100>0.5?'так, розділені':'ні, сліди зливаються';
     $('m4fx').innerHTML=tex('v=\\dfrac{E}{B_1}')+' = '+fmt(this.E,0)+'·10³ / '+fmt(this.B1,3)+' = <b>'+
       fmt(v/1000,1)+' км/с</b> &nbsp;·&nbsp; '+tex('r=\\dfrac{mv}{qB_2}');
   },
@@ -2924,7 +2929,10 @@ const M6={
   /* Демонстрація має два режими. Автоматичний прокручує всі п'ять кроків
      підряд; покроковий спиняється на кожному, поки не натиснуть «далі» —
      саме він і потрібен, коли правило пояснюють, а не просто показують. */
-  manual:false, step:0,
+  /* Відкривається модуль на першому кроці, а не на порожній сітці: відколи
+     показ не стартує сам, нульовий час малював самі лише клітинки — умови на
+     сцені не було видно взагалі (пункт 6.5 переліку сцен). */
+  manual:true, step:0,
   STEPU:[0.18,0.34,0.50,0.68,0.88],
   h1:{x:null}, h2:{x:null}, tip1:null, tip2:null,
   CYC:9,                                   /* тривалість повного показу, с */
@@ -3008,7 +3016,7 @@ const M6={
       this.manual=false; this.playing=!this.playing;
       $('m6play').textContent=this.playing?'⏸':'▶';
     };
-    $('m6re').onclick=()=>{this.t=0; this.step=0;};
+    $('m6re').onclick=()=>{this.t=0; this.step=0; stop();};
     this.tip1=makeTip('m6c1w'); this.tip2=makeTip('m6c2w');
     hover('m6c1',this.h1); hover('m6c2',this.h2);
     this.h1.xlab='α'; this.h1.xunit='°'; this.h1.xdec=0;
@@ -3227,8 +3235,8 @@ const M6={
     $('m6val').textContent=fmt(this.al,0)+'°';
     $('m6ksin').textContent=fmt(sn,3);
     $('m6kc').textContent=(V.sci?sci(C,3):fmt(C,2))+' '+V.uc;
-    $('m6karea').textContent=fmt(V.A*V.B*sn,2)+' (у тих самих одиницях)';
-    $('m6kdir').textContent=this.sgn()>0?'уздовж перпендикуляра до площини'
+    $('m6karea').textContent=fmt(V.A*V.B*sn,2)+' од.';
+    $('m6kdir').textContent=this.sgn()>0?'⟂ площині <var>a</var>, <var>b</var>'
       :'проти перпендикуляра — бо заряд від’ємний';
     $('m6kperp').textContent='так, за побудовою';
     $('m6fx').innerHTML='|'+V.nc.split('=').pop().trim()+'| = '+fmt(V.A,2)+'·'+fmt(V.B,2)+
