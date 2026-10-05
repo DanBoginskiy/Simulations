@@ -75,9 +75,21 @@ window.__state=function(mid){
 };
 window.__panel=function(mid){
   const sec=document.getElementById(mid); if(!sec) return [];
+  /* Беремо самі числа, а не текст цілком: розмітка формул може змінитися
+     (наприклад, символьну частину почне малювати KaTeX), а числа — ні. Саме
+     вони тут і є предметом звірки. Дубль MathML, який KaTeX кладе поруч із
+     версткою, прибираємо, інакше кожне число порахувалося б двічі. */
+  const cl=sec.cloneNode(true);
+  /* Символьний запис — не число. Індекс μ₀ чи показник v² складаються з тих
+     самих цифр, але жодного обчислення за ними немає: обчислене значення код
+     завжди подає через fmt() звичайним текстом. Тому символьні вузли —
+     формули KaTeX і старий запис через <var>/<i>/<sub>/<sup> — відкидаємо. */
+  for(const m of cl.querySelectorAll('.katex,var,i,sub,sup,[data-tex]')) m.remove();
   const out=[];
-  for(const el of sec.querySelectorAll('b,.kv b,td,output,.numrow b'))
-    { const s=(el.textContent||'').trim(); if(/\d/.test(s)) out.push(s); }
+  for(const el of cl.querySelectorAll('b,.kv b,td,output,.numrow b')){
+    const n=(el.textContent||'').match(/\d+(?:[.,]\d+)?/g);
+    if(n) out.push(n.join('|'));
+  }
   return out;
 };
 /* У задачі числа сховані, доки не показано відповідь: щоб порівнювати було що,
