@@ -2877,6 +2877,22 @@ const M5={
   }
 };
 
+/* ⊙ і ⊗ — вектор на глядача й від нього. Малюємо геометрією, а не гліфом:
+   у шрифту в цих знаків власні метрики, і поверх намальованого кола вони не
+   сідають у його центр (SCENE-REVIEW §3.2). */
+function oxo(g,x,y,r,toward,color){
+  g.fillStyle='#fff'; g.strokeStyle=color; g.lineWidth=2;
+  g.beginPath(); g.arc(x,y,r,0,7); g.fill(); g.stroke();
+  if(toward){ g.fillStyle=color; g.beginPath(); g.arc(x,y,r*0.32,0,7); g.fill(); }
+  else{
+    const d=r*0.68;
+    g.lineWidth=1.8; g.beginPath();
+    g.moveTo(x-d,y-d); g.lineTo(x+d,y+d);
+    g.moveTo(x+d,y-d); g.lineTo(x-d,y+d);
+    g.stroke();
+  }
+}
+
 /* ===================== свердлик ===================== */
 /* Різьба свердлика навколо осі z: поворот і поступ одночасно — те саме, що
    робить гвинт у дошці. Задні ділянки блідніші, інакше витки читаються як
@@ -3147,16 +3163,36 @@ const M6={
       if(pa>0) arrow(g,dx,dy,dx+sq*0.95*pa,dy,CLR.k1,2);
       if(pb>0) arrow(g,dx,dy,dx+sq*0.82*pb*Math.cos(a),dy-sq*0.82*pb*Math.sin(a),CLR.k2,2);
       if(pr>0){
+        /* Дуга повороту з наконечником: без нього видно, що поворот є, але не
+           видно, у який бік він іде, — а саме бік і вирішує знак добутку.
+           Напрям тут не на око: вісь z векторного добутку a × b дорівнює
+           |a||b|sin α, і при 0 < α < 180° вона додатна, тобто добуток іде на
+           глядача, а поворот від a до b видно проти годинникової стрілки. */
+        const rr=sq*0.42;
         g.strokeStyle=CLR.k3; g.lineWidth=2;
-        g.beginPath(); g.arc(dx,dy,sq*0.42,0,-a*pr,true); g.stroke();
+        g.beginPath(); g.arc(dx,dy,rr,0,-a*pr,true); g.stroke();
+        const th=a*pr, t0=th*0.94;
+        arrow(g,dx+rr*Math.cos(t0),dy-rr*Math.sin(t0),
+                dx+rr*Math.cos(th),dy-rr*Math.sin(th),CLR.k3,2);
       }
       if(pc>0){
         g.globalAlpha=Math.min(1,pc*1.6);
-        dot(g,dx,dy,7,'#fff','#0d7a55');
-        dot(g,dx,dy,2.6,CLR.k3);
+        /* ⊙ — вектор іде на глядача, ⊗ — від нього. Це та сама мова, якою далі
+           позначають поле в задачах, тож вона має з'явитися вже тут. */
+        oxo(g,dx,dy,7.5,true,'#0d7a55');
         g.globalAlpha=1;
       }
-      txt(g,'вид з вістря '+prod,dx,dy-RD-6,
+      /* У від'ємного заряду сила протилежна до добутку: у цьому ж вічку поруч
+         стоїть ⊗ — те саме місце, той самий погляд, протилежний знак. */
+      if(pc>0&&sg<0){
+        /* ліворуч унизу: там порожньо — a йде праворуч, b угору-праворуч */
+        const ox2=dx-RD*0.60, oy2=dy+RD*0.50;
+        g.globalAlpha=Math.min(1,pc*1.6);
+        oxo(g,ox2,oy2,6.5,false,'#1c5cab');
+        txt(g,cn,ox2-10,oy2+4,{color:'#1c5cab',size:10.5,bold:true,align:'right'});
+        g.globalAlpha=1;
+      }
+      txt(g,'вид назустріч '+prod,dx,dy-RD-6,
         {color:CLR.k3,size:10,bold:true,align:'center',max:RD*2.6});
       if(pr>0.5) txt(g,'поворот проти годинникової',dx,dy+RD+12,
         {color:CLR.mut,size:9.5,align:'center',max:RD*2.6});
