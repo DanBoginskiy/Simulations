@@ -106,7 +106,6 @@ table.read tr:last-child td{border-bottom:none}
 /* ============ сітки й полотна цієї теми ============ */
 #m1scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 #m2scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
-#m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .cS{background:var(--sec)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
@@ -303,13 +302,8 @@ details.condbox .cond{margin:10px 0 0}
 <body>
 <div class="wrap">
 <header>
-  <h1>Дифракція на ґратці<small>задача 2.6 компенсаційного курсу · ешелета</small></h1>
+  <h1>Дифракція на ґратці<small>задача 2.6 компенсаційного курсу</small></h1>
 </header>
-<nav class="tabs" id="tabs">
-  <button data-m="m1" class="active">1 · Перекриття порядків</button>
-  <button data-m="m3">2 · Ешелета</button>
-</nav>
-
 <!-- ================= МОДУЛЬ 1 ================= -->
 <section class="module active" id="m1">
   <p class="caption">Перекриття спектрів — практична проблема спектроскопії, яку текстове
@@ -342,20 +336,6 @@ details.condbox .cond{margin:10px 0 0}
     
 </section>
 
-<section class="module" id="m3">
-  <p class="caption">Звичайна ґратка більшу частину світла віддає в нульовий порядок, де спектра
-  немає зовсім. Ешелета — ґратка з пилкоподібним профілем: кожна грань нахилена так, щоб дзеркально
-  відбивати саме в той порядок, який і потрібен. Енергія йде туди, де її використовують.</p>
-  <p class="cond">Ґратку-ешелету зі сталою <b>d</b> нарізано з кутом блиску <b>γ</b>. Визначити
-  порядок <b class="want">m</b>, у який піде майже вся енергія для світла з довжиною хвилі <b>λ</b>, і кут,
-  під яким його спостерігають.</p>
-  <div class="panel">
-    <div class="toolbar">
-      <button class="ibtn" id="m3re" title="заново">↺</button>
-    </div>
-    <canvas id="m3scene"></canvas>
-  </div>
-</section>
 
 
 <footer>Допоміжний матеріал з оптики · дифракційна ґратка · умова головних максимумів · роздільна здатність</footer>
@@ -370,7 +350,7 @@ details.condbox .cond{margin:10px 0 0}
      --k1  сама ґратка: густота штрихів, період d
      --k2  червоний край спектра й число щілин N
      --k3  фіолетовий край спектра й довжина хвилі джерела
-     --want шукане: число повних спектрів, кут Θ, довжина хвилі
+     --want шукане: число повних спектрів
      --ink  решта побудови, що не має власної ролі
      --sec нульовий порядок, падаюче світло, випадок N = 2
    ===================================================================== */
@@ -1580,176 +1560,7 @@ const M1={
 
 /* ===================== завантаження ===================== */
 
-/* ===================== МОДУЛЬ 3 · ешелета ===================== */
-const M3={
-  mode:'free', nmm:300, gam:12, lam:550, showAns:true,
-  hi:{x:null},
-  GG:[['nmm','штрихів на мм',100,900,10,CLR.k1,null,'m3vn',0,''],
-      ['gam','кут блиску γ, °',2,30,0.5,CLR.k2,null,'m3vg',1,''],
-      ['lam','хвиля λ, нм',400,700,5,CLR.k3,null,'m3vl',0,'']],
-  d(){return 1e6/this.nmm;},                   /* стала ґратки, нм */
-  /* нормальне падіння: d·sin θ = mλ */
-  ang(m){const t=m*this.lam/this.d(); return Math.abs(t)<=1?Math.asin(t):null;},
-  /* Дзеркальний напрям від нахиленої грані: падаючи по нормалі до ґратки,
-     промінь відбивається від грані під кутом 2γ до неї. Саме туди й «дивиться»
-     кожна сходинка, і саме там огинальна має максимум. */
-  thBlaze(){return 2*this.gam*DEG;},
-  /* Огинальна однієї грані: sinc² від різниці синусів; ширина задається
-     проєкцією грані d·cos γ. */
-  env(th){
-    const a=Math.PI*this.d()*Math.cos(this.gam*DEG)/this.lam*
-            (Math.sin(th)-Math.sin(this.thBlaze()));
-    return Math.abs(a)<1e-9?1:Math.pow(Math.sin(a)/a,2);
-  },
-  orders(){
-    const out=[];
-    for(let m=-6;m<=6;m++){
-      const th=this.ang(m);
-      if(th===null) continue;
-      out.push({m,th,I:this.env(th)});
-    }
-    return out;
-  },
-  best(){
-    let b=null;
-    for(const o of this.orders()) if(!b||o.I>b.I) b=o;
-    return b;
-  },
-  setTask(){this.nmm=300; this.gam=12; this.lam=550;},
-  setMode(m){this.mode=m; if(m==='task') this.setTask();},
-  syncAns(){},
-  init(){
-    grip('m3scene',this,()=>this.grips());
-    $('m3re').onclick=()=>this.setTask();
-    this.setTask();
-  },
-  gcol(b){return gcolOf(b,this.GG.length);},
-  geo(b){return frozen(this,b,bb=>{
-    const C=this.gcol(bb), H=C.gtop-52;
-    /* Профіль ліворуч великим планом, віяло порядків — праворуч від нього. */
-    const teeth=5, tw=Math.min(bb.w*0.075,96), ty=52+H*0.72;
-    /* креслення — посередині кадру, а не притиснуте до лівого краю */
-    return {C,H,teeth,tw,ty,px:bb.w*0.19,
-      fx:bb.w*0.65,fy:52+H*0.56,R:Math.min(bb.w*0.34,H*0.46)};
-  });},
-  grips(){return this.mode==='free'?gaugeGrips(this.gcol(cvx('m3scene')),this.GG,this):[];},
-  tick(){this.render();},
-  render(){this.scene(); this.gdraw();},
-  gdraw(){
-    const b=cvx('m3scene'); if(!b) return;
-    const C=this.gcol(b);
-    gaugeCol(b.g,C,this.GG,this);
-    for(const hh of gaugeGrips(C,this.GG,this)) drawGrip(b.g,hh,this);
-  },
-  scene(){
-    const b=cvx('m3scene'); if(!b) return;
-    const {g,w}=b, Q=this.geo(b), H=Q.C.gtop;
-    g.clearRect(0,0,w,H);
-    const gm=this.gam*DEG, tw=Q.tw, th=tw*Math.tan(gm);
-    /* ---- пилкоподібний профіль ---- */
-    g.strokeStyle=CLR.ink; g.lineWidth=2.6; g.lineJoin='round';
-    g.fillStyle='rgba(11,11,11,.07)';
-    g.beginPath();
-    g.moveTo(Q.px,Q.ty);
-    for(let k=0;k<Q.teeth;k++){
-      const x0=Q.px+k*tw;
-      g.lineTo(x0+tw,Q.ty-th);
-      g.lineTo(x0+tw,Q.ty);
-    }
-    g.lineTo(Q.px+Q.teeth*tw,Q.ty+26); g.lineTo(Q.px,Q.ty+26); g.closePath();
-    g.fill(); g.stroke();
-    /* стала ґратки — розмір по одному зубцю */
-    const xA=Q.px+2*tw, xB=xA+tw;
-    arrow(g,xA,Q.ty+40,xB,Q.ty+40,CLR.k1,1.5);
-    arrow(g,xB,Q.ty+40,xA,Q.ty+40,CLR.k1,1.5);
-    txt(g,'d',(xA+xB)/2,Q.ty+56,{color:'#1c5cab',size:12,bold:true,align:'center'});
-    /* кут блиску між гранню й площиною ґратки */
-    const cx=xA, cy=Q.ty;
-    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+tw,cy); g.stroke(); g.setLineDash([]);
-    arc(g,cx,cy,tw*0.52,-gm,0,CLR.k2,1.6);
-    txt(g,'γ',cx+tw*0.62,cy-tw*0.16,{color:'#b8431a',size:12,bold:true});
-    /* нормаль до грані */
-    const mx=cx+tw*0.5, my=cy-th*0.5;
-    arrow(g,mx,my,mx+52*Math.sin(gm),my-52*Math.cos(gm),CLR.mut,1.6);
-    txt(g,'нормаль грані',mx+56*Math.sin(gm)+6,my-52*Math.cos(gm),
-      {color:CLR.mut,size:10.5});
-    /* ---- падаючий пучок і віяло порядків ---- */
-    const fx=Q.fx, fy=Q.fy, R=Q.R;
-    /* Ґратку у віялі порядків малюємо тим самим пилкоподібним профілем, що й
-       ліворуч: світло падає саме на грані ешелети. Гладенька смужка на її
-       місці казала, що грані тут ні до чого, хоч уся задача про їхній нахил. */
-    const fW=150, fN=5, ftw=fW/fN, fth=ftw*Math.tan(gm), fx0=fx-fW/2;
-    const faceY=x=>fy-((x-fx0)%ftw+ftw)%ftw/ftw*fth;
-    for(const dx of [-2*ftw,-ftw,0,ftw,2*ftw]){
-      const xx=fx+dx-ftw*0.5;
-      if(xx<fx0||xx>fx0+fW) continue;
-      arrow(g,xx,fy-R-46,xx,faceY(xx)-3,CLR.k1,2);
-    }
-    txt(g,'світло падає по нормалі',fx+60,fy-R-30,{color:CLR.mut,size:10.5});
-    /* Довжина хвилі задана умовою — підписуємо її просто на падному пучку,
-       мазком справжнього кольору: інакше λ на кресленні немає зовсім, хоч уся
-       задача про те, який порядок для неї потрапить у блиск. */
-    {
-      const cc=wlRGB(this.lam);
-      g.fillStyle='rgb('+cc[0]+','+cc[1]+','+cc[2]+')';
-      g.beginPath(); g.roundRect(fx-56,fy-R-52,16,10,3); g.fill();
-      g.strokeStyle=CLR.axis; g.lineWidth=1; g.stroke();
-      txt(g,'λ',fx-36,fy-R-43,{color:CLR.sec,size:12.5,bold:true});
-    }
-    g.fillStyle='rgba(11,11,11,.08)'; g.strokeStyle=CLR.ink; g.lineWidth=2;
-    g.lineJoin='round';
-    g.beginPath();
-    g.moveTo(fx0,fy);
-    for(let k=0;k<fN;k++){
-      const xx=fx0+k*ftw;
-      g.lineTo(xx+ftw,fy-fth);
-      g.lineTo(xx+ftw,fy);
-    }
-    g.lineTo(fx0+fW,fy+14); g.lineTo(fx0,fy+14); g.closePath();
-    g.fill(); g.stroke();
-    g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
-    g.beginPath(); g.moveTo(fx,fy); g.lineTo(fx,fy+R+16); g.stroke(); g.setLineDash([]);
-    txt(g,'нормаль ґратки',fx+6,fy+R+30,{color:CLR.mut,size:10.5});
-    /* дзеркальний напрям грані — туди й «дивиться» ешелета */
-    const tb=this.thBlaze();
-    g.strokeStyle=CLR.k2; g.lineWidth=1.6; g.setLineDash([6,4]);
-    g.beginPath(); g.moveTo(fx,fy);
-    g.lineTo(fx+Math.sin(tb)*(R+26),fy+Math.cos(tb)*(R+26)); g.stroke(); g.setLineDash([]);
-    txt(g,'дзеркальний напрям грані',fx+Math.sin(tb)*(R+32),fy+Math.cos(tb)*(R+32)+4,
-      {color:'#b8431a',size:10.5,bold:true});
-    /* самі порядки: товщина променя — частка енергії, що в нього пішла */
-    const B=this.best();
-    for(const o of this.orders()){
-      const on=B&&o.m===B.m;
-      const ex=fx+Math.sin(o.th)*R, ey=fy+Math.cos(o.th)*R;
-      g.strokeStyle=on?CLR.k3:CLR.sec;
-      g.globalAlpha=on?1:0.28+0.55*o.I;
-      g.lineWidth=1+7*o.I;
-      g.beginPath(); g.moveTo(fx,fy); g.lineTo(ex,ey); g.stroke();
-      g.globalAlpha=1;
-      /* підписуємо лише ті порядки, які взагалі щось несуть: слабкі так
-         тісно, що їхні підписи лягають один на одного */
-      /* Підпис найяскравішого порядку ставимо не на кінці променя, а на
-         ньому самому: кінець віяла впирається в нижній край кадру, і «X»
-         там просто зрізало б. */
-      if(on)
-        pill(g,'m',fx+Math.sin(o.th)*R*0.68,fy+Math.cos(o.th)*R*0.68+4,
-          {color:CLR.want,size:17,bold:true,raw:true});
-      else if(o.I>0.02||Math.abs(o.m)<=1)
-        txt(g,'m'+(o.m<0?'\u2212':'')+Math.abs(o.m),
-          fx+Math.sin(o.th)*(R+26),fy+Math.cos(o.th)*(R+26)+4,
-          {color:CLR.mut,size:10.5,align:'center',raw:true});
-    }
-    capN(g,'ешелета: енергія йде в обраний порядок',12,20,{color:CLR.k3,size:12.5,bold:true});
-    capN(g,'кут блиску нахиляє грані так, щоб дзеркальний відбиток збігся з потрібним порядком',
-      12,36,{color:CLR.mut,size:10.5});
-    if(B) txt(g,'найяскравіший порядок — той, що лежить у дзеркальному напрямі грані',
-      12,52,{color:'#0d7a55',size:10.5,bold:true});
-  }
-};
-
-const MODULES={m1:M1,m3:M3};
+const MODULES={m1:M1};
 let ACT='m1';
 function activate(id){
   if(!MODULES[id]) return;
@@ -2365,27 +2176,6 @@ TASKS.m1={
     'тобто <i>m</i> ≤ <i>d</i>/<i>λ</i>₂. Порядків стільки, скільки цілих у цьому '+
     'відношенні: <b><i class="want">N</i> = ⌊d/λ₂⌋</b>. Нульовий порядок — біла смуга посередині — спектра '+
     'не дає зовсім, бо в ньому всі кольори збігаються.'
-  ]
-};
-TASKS.m3={
-  vars:[{s:'d',dim:'L',lo:1e-6,hi:1e-5,t:'стала ґратки, м'},
-        {s:'γ',alias:['gamma','gam'],dim:'1',lo:0.03,hi:0.52,t:'кут блиску, рад'},
-        {s:'λ',alias:['lambda','lam'],dim:'L',lo:4e-7,hi:7e-7,t:'довжина хвилі, м'}],
-  parts:[
-    {what:'порядок m',dim:'1',ref:e=>e.d*Math.sin(2*e['γ'])/e['λ']},
-    {what:'кут спостереження',dim:'1',ref:e=>2*e['γ']}
-  ],
-  hints:[
-    'Звичайна ґратка розкидає енергію по всіх порядках майже порівну, і найяскравіший — '+
-    'нульовий, у якому спектра немає. Ешелета нахиляє грані так, щоб <b>дзеркальний '+
-    'відблиск</b> від них потрапив не в нуль, а в потрібний порядок.',
-    'Падіння по нормалі до ґратки; грань нахилена на <i>γ</i>, тож дзеркально відбитий '+
-    'від неї промінь іде під кутом <b>2<i>γ</i></b> до нормалі ґратки. Сама ж умова '+
-    'максимумів не змінилася: <i>d</i>·sin<i>θ</i> = <i>mλ</i>.',
-    'Прирівнюємо напрям дзеркального відблиску до напряму порядку: '+
-    '<i>d</i>·sin2<i>γ</i> = <i>mλ</i> ⇒ <b><i class="want">m</i> = d·sin(2γ)/λ</b>, і спостерігають '+
-    'його під кутом <b>2γ</b> до нормалі. Ґратку нарізають так, щоб це число вийшло '+
-    'цілим; якщо воно дробове, майже вся енергія піде в найближчий цілий порядок.'
   ]
 };
 
