@@ -8,7 +8,7 @@
 :root{
   --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
   --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
-  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a; --want:#7a3fc4;
 }
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
@@ -109,6 +109,10 @@ table.read tr:last-child td{border-bottom:none}
 #m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
+/* Шукане виділяємо кольором скрізь однаково: в умові, у підказках, на сцені
+   й у підписі рядка відповіді. Жирність іде на додачу до кольору — щоб його
+   було видно й без кольору взагалі. */
+.want{color:var(--want); font-weight:600}
 .cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
   background:var(--card); border-radius:0 8px 8px 0;
   padding:11px 14px 11px 13px; margin:0 0 12px}
@@ -226,7 +230,7 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
   <p class="caption">Абсолютна вологість за ніч не змінюється — змінюється лише крива насичення.
   Щойно вона опускається нижче за пару, що вже є в повітрі, надлишок випадає росою.</p>
 
-      <p class="cond">Увечері температура повітря була <b>t₁</b> при відносній вологості <b>φ₁</b>, а під ранок знизилася до <b>t₂</b>. Визначити масу роси <b>X</b>, що випала з кожного кубометра повітря.</p>
+      <p class="cond">Увечері температура повітря була <b>t₁</b> при відносній вологості <b>φ₁</b>, а під ранок знизилася до <b>t₂</b>. Визначити масу роси <b class="want">m</b>, що випала з кожного кубометра повітря.</p>
 
       <div class="panel">
         <div class="toolbar">
@@ -267,7 +271,9 @@ footer{color:var(--mut); font-size:12px; margin-top:26px; text-align:center}
            вологість, рідина в колбі
      --k2  те, що йде геть або гріє: пара, температура, надлишок вологи
      --k3  межа й перехід: лід, крива насичення, крайовий кут, ртуть
-     --ink результат: шукана величина й сам зразок
+     --want шукане: величина, яку просить знайти умова — у неї
+            власна роль, і колір власний
+     --ink  результат: сам зразок
      --sec пройдена траєкторія, штрих [2,3]
    ===================================================================== */
 
@@ -283,7 +289,8 @@ const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
   closest(){return null;},contains(){return false;},focus(){},click(){},
   getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
 function $(id){return document.getElementById(id)||NULLEL;}
-const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',want:'#7a3fc4',
+  ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
 const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
@@ -1317,7 +1324,7 @@ const M2={
       arrow(g,cx+gw*0.48,y2,cx+gw*0.48,y1,CLR.k2,2);
       arrow(g,cx+gw*0.48,y1,cx+gw*0.48,y2,CLR.k2,2);
       /* надлишок пари, що випадає росою, — шукана маса */
-      pill(g,'X — надлишок',cx+gw*0.5,(y1+y2)/2+4,{color:'#b8431a',size:11.5,bold:true});
+      pill(g,'m — надлишок',cx+gw*0.5,(y1+y2)/2+4,{color:CLR.want,size:11.5,bold:true});
     }
     txt(g,'г/м³',cx-6,gy-7,{color:CLR.mut,size:10,align:'right'});
     const reached=T<=td+1e-9;

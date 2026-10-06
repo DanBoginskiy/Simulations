@@ -8,7 +8,7 @@
 :root{
   --paper:#f9f9f7; --card:#fcfcfb; --ink:#0b0b0b; --sec:#52514e; --mut:#898781;
   --grid:#e1e0d9; --axis:#c3c2b7; --line:rgba(11,11,11,.10);
-  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a;
+  --k1:#2a78d6; --k2:#eb6834; --k3:#1baf7a; --want:#7a3fc4;
 }
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{background:var(--paper); color:var(--ink);
@@ -109,6 +109,10 @@ table.read tr:last-child td{border-bottom:none}
 #m3scene{width:100%; aspect-ratio:1298/620; min-height:min(210px,56vw)}
 .ansbox{margin-top:10px}
 .ansbox[hidden]{display:none}
+/* Шукане виділяємо кольором скрізь однаково: в умові, у підказках, на сцені
+   й у підписі рядка відповіді. Жирність іде на додачу до кольору — щоб його
+   було видно й без кольору взагалі. */
+.want{color:var(--want); font-weight:600}
 .cond{color:var(--ink); font-size:14px; border-left:3px solid var(--k1);
   background:var(--card); border-radius:0 8px 8px 0;
   padding:11px 14px 11px 13px; margin:0 0 12px}
@@ -235,7 +239,7 @@ details.condbox .cond{margin:10px 0 0}
 .fxline{display:flex; flex-wrap:wrap; gap:10px; align-items:center;
   border:1px solid var(--line); border-radius:8px; background:#fff; padding:12px 14px}
 .fxline.act{border-color:var(--k1); box-shadow:inset 3px 0 0 var(--k1)}
-.fxlab{font:600 12.5px/1 system-ui,sans-serif; color:var(--sec); flex:0 0 auto}
+.fxlab{font:600 12.5px/1 system-ui,sans-serif; color:var(--want); flex:0 0 auto}
 .fxpack{display:flex; flex-direction:column; gap:8px}
 .fx{flex:1 1 200px; min-width:0; font:19px/1.3 'Times New Roman',Georgia,serif;
   color:var(--ink); overflow-x:auto; padding:2px 0}
@@ -348,7 +352,7 @@ details.condbox .cond{margin:10px 0 0}
   але тиск уже інший, і на діаграмі <var>P</var>–<var>V</var> це видно як ламану,
   що не замикається.</p>
 
-      <p class="cond">Повітря у відкритому вертикальному циліндрі під рухомим поршнем нагрівають від <b>t₁</b> до <b>t₂</b>. Атмосферний тиск <b>P</b>, площа основи <b>S</b>. Визначити відстань <b>X</b>, на яку переміститься поршень, якщо спочатку він був на <b>l</b> від основи, і масу <b>m</b>, яку треба покласти на поршень, аби повернути його назад при незмінній температурі.</p>
+      <p class="cond">Повітря у відкритому вертикальному циліндрі під рухомим поршнем нагрівають від <b>t₁</b> до <b>t₂</b>. Атмосферний тиск <b>P</b>, площа основи <b>S</b>. Визначити відстань <b class="want">Δl</b>, на яку переміститься поршень, якщо спочатку він був на <b>l</b> від основи, і масу <b>m</b>, яку треба покласти на поршень, аби повернути його назад при незмінній температурі.</p>
 
       <div class="panel">
         <div class="toolbar">
@@ -373,7 +377,9 @@ details.condbox .cond{margin:10px 0 0}
      --k1  те, що можна відкачати або перепустити: водень, тиск, об'єм
      --k2  те, що гріє й тисне: температура, ізобара, показник процесу
      --k3  те, що не пускає й не пропускає: гелій, гиря
-     --ink результат: шукана величина, сам поршень, стан газу
+     --want шукане: величина, яку просить знайти умова — у неї
+            власна роль, і колір власний
+     --ink  результат: сам поршень, стан газу
      --sec пройдена траєкторія, штрих [2,3]
    ===================================================================== */
 
@@ -389,7 +395,8 @@ const NULLEL={textContent:'',innerHTML:'',value:'',hidden:false,dataset:{},
   closest(){return null;},contains(){return false;},focus(){},click(){},
   getBoundingClientRect(){return {width:0,height:0,left:0,top:0,right:0,bottom:0};}};
 function $(id){return document.getElementById(id)||NULLEL;}
-const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
+const CLR={k1:'#2a78d6',k2:'#eb6834',k3:'#1baf7a',want:'#7a3fc4',
+  ink:'#0b0b0b',sec:'#52514e',mut:'#898781',
   grid:'#e1e0d9',axis:'#c3c2b7',paper:'#fcfcfb',ground:'#f3f2ee',
   water:'#e2edfa',drop:'#86b6ef'};
 const fmt=(n,d=1)=>(+n).toFixed(d).replace('.',',').replace('-','−');
@@ -1484,8 +1491,8 @@ const M1={
         {color:CLR.ink,size:13,bold:true,align:'center',name:nm});
     };
     /* обидва тиски після дифузії — це і є відповідь задачі */
-    gauge2(X(0.5),q.p1,'ліва половина',CLR.k1,'#1c5cab','X₁');
-    gauge2(X(1.5),q.p2,'права половина',CLR.k2,'#b8431a','X₂');
+    gauge2(X(0.5),q.p1,'ліва половина',CLR.k1,CLR.want,'P₁');
+    gauge2(X(1.5),q.p2,'права половина',CLR.k2,CLR.want,'P₂');
     /* Склад половин видно з самих молекул, тож замість лічильників —
        легенда кольору: числа зі сцени прибрано, а картинка лишилася. */
     dot(g,X(0.5)-52,Q.by+13,3.2,CLR.k1);
@@ -2396,8 +2403,8 @@ function buildTasks(){
 TASKS.m1={
   vars:[{s:'P₀',alias:['P0'],dim:'M/(L*T^2)',lo:5e4,hi:2e5,t:'початковий тиск суміші, Па'}],
   parts:[
-    {what:'тиск X₁ ліворуч',dim:'M/(L*T^2)',ref:e=>0.75*e['P₀']},
-    {what:'тиск X₂ праворуч',dim:'M/(L*T^2)',ref:e=>0.25*e['P₀']}
+    {what:'тиск P₁ ліворуч',dim:'M/(L*T^2)',ref:e=>0.75*e['P₀']},
+    {what:'тиск P₂ праворуч',dim:'M/(L*T^2)',ref:e=>0.25*e['P₀']}
   ],
   hints:[
     'Гази не заважають один одному: кожен тисне так, ніби іншого немає. Дивіться на '+
@@ -2409,7 +2416,7 @@ TASKS.m1={
     'зменшується вдвічі — з кожного боку.',
     'Водень: <i>P</i>₀/2 → <i>P</i>₀/4 ліворуч і <i>P</i>₀/4 праворуч. Гелій лишається '+
     'зліва з <i>P</i>₀/2. Складаємо парціальні тиски в кожній половині: '+
-    '<b>X₁ = P₀/2 + P₀/4 = 3P₀/4</b> ліворуч і <b>X₂ = P₀/4</b> праворуч. '+
+    '<b><i class="want">P₁</i> = P₀/2 + P₀/4 = 3P₀/4</b> ліворуч і <b><i class="want">P₂</i> = P₀/4</b> праворуч. '+
     'Мембрана тримає різницю <i>P</i>₀/2 — саме стільки дає гелій.'
   ]
 };
@@ -2421,7 +2428,7 @@ TASKS.m3={
         {s:'P',dim:'M/(L*T^2)',lo:9e4,hi:1.1e5,t:'атмосферний тиск, Па'},
         {s:'S',dim:'L^2',lo:1e-3,hi:2e-2,t:'площа основи, м²'}],
   parts:[
-    {what:'зміщення X',dim:'L',ref:e=>e.l*((e['t₂']+273)/(e['t₁']+273)-1)},
+    {what:'зміщення Δl',dim:'L',ref:e=>e.l*((e['t₂']+273)/(e['t₁']+273)-1)},
     {what:'маса m',dim:'M',ref:e=>e.P*e.S*((e['t₂']+273)/(e['t₁']+273)-1)/e.g}
   ],
   hints:[
@@ -2433,7 +2440,7 @@ TASKS.m3={
     'до кожної треба додати 273. Повернення поршня назад — уже ізотерма при <i>t</i>₂: '+
     '<i>PV</i> = const.',
     'Нагрівання: <i>l</i>₂ = <i>l</i>·<i>T</i>₂/<i>T</i>₁ ⇒ '+
-    '<b>X = l·((t₂+273)/(t₁+273) − 1)</b>. Стиснення до початкової висоти при '+
+    '<b><i class="want">Δl</i> = l·((t₂+273)/(t₁+273) − 1)</b>. Стиснення до початкової висоти при '+
     '<i>T</i>₂: <i>P</i>₂<i>l</i> = <i>P</i>·<i>l</i>₂ ⇒ '+
     '<i>P</i>₂ = <i>P</i>·<i>T</i>₂/<i>T</i>₁. Надлишок тиску створює гиря: '+
     '<i>P</i>₂ − <i>P</i> = <i>mg</i>/<i>S</i> ⇒ '+
