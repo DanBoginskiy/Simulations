@@ -2461,7 +2461,7 @@ const M4={
     const b=cvx('m4scene'); if(!b) return [];
     const Q=this.geo(b), cam=this.camOf(Q), A=this.al*DEG;
     const M=(xi,eta)=>Q.M(xi-cam,eta);
-    const xa=cam+Q.viewXi*0.08, O=M(xa,0);
+    const O=M(0,0);
     const xr=-this.h*Math.sin(A);
     const P0=M(xr,this.h*Math.cos(A));
     /* точка на дузі кута: тягнеш її — нахиляється сама дошка (§19) */
@@ -2469,20 +2469,22 @@ const M4={
     /* вертикаль лабораторії в повернутих осях нахилена — тому h читаємо
        через cos α, інакше та сама ручка давала б різні висоти в двох режимах */
     const kh=Q.sc*(Q.rot?Math.cos(A):1);
-    const O0=M(0,0);
     /* точку старту видно, лише поки камера не поїхала: далі висоту міняють
        після ↺ — обіцяти жест, якого не видно, не можна (§15) */
     const hVisible=xr>cam-1.0&&xr<cam+Q.viewXi;
+    /* те саме для кута: відколи дуга стоїть у точці удару, вона їде з кадру
+       разом із нею — і ручка не має лишатися там, де дуги вже не видно */
+    const alVisible=0>cam-1.0&&0<cam+Q.viewXi;
     return [
       hVisible?{id:'h', x:P0.x, y:P0.y, r:10, bare:true, color:CLR.ink, hint:'висота падіння',
        move:(px,py)=>{
-         this.h=clamp(snap((O0.y-py)/kh,0.05),this.HMIN,this.HMAX); this.reset();}}:null,
-      {id:'al', x:O.x+(R+16)*Math.cos(A), y:O.y+sg*(R+16)*Math.sin(A),
+         this.h=clamp(snap((O.y-py)/kh,0.05),this.HMIN,this.HMAX); this.reset();}}:null,
+      alVisible?{id:'al', x:O.x+(R+16)*Math.cos(A), y:O.y+sg*(R+16)*Math.sin(A),
        r:10, color:CLR.k3, hint:'кут нахилу дошки',
        move:(px,py)=>{
          this.al=clamp(snap(sg*Math.atan2(py-O.y,Math.max(8,px-O.x))/DEG,1),
            this.ALMIN,this.ALMAX);
-         this.reset();}}
+         this.reset();}}:null
     ].filter(Boolean).concat(gaugeGrips(this.gcol(b),this.GG,this));
   },
   tick(dt){
@@ -2545,8 +2547,13 @@ const M4={
       g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(q.x,q.y); g.stroke();
       txtN(g,fmt(x,stp<1?1:0),q.x+(Q.rot?0:6),q.y+11,{color:CLR.mut,size:9.5,align:'center'});
     }
-    /* горизонт і дуга кута нахилу — біля лівого краю вікна, щоб не поїхали з кадру */
-    const sg=Q.rot?-1:1, R=58, xa=cam+Q.viewXi*0.08, nO=M(xa,0);
+    /* Горизонт і дуга кута стоять у точці першого удару — там, де дошку
+       перетинає вертикаль падіння, і звідки міряють h. Раніше вершину дуги
+       прив'язували до краю кадру (cam + 0,08·viewXi), тож варто було камері
+       поїхати за кулькою — і позначка кута повзла дошкою, відірвавшись від
+       будь-якої точки побудови. Кут нахилу однаковий уздовж усієї дошки, але
+       його позначка має стояти на місці. */
+    const sg=Q.rot?-1:1, R=58, nO=M(0,0);
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([4,3]);
     g.beginPath(); g.moveTo(nO.x,nO.y); g.lineTo(nO.x+92,nO.y+(Q.rot?-92*Math.tan(A):0));
     g.stroke(); g.setLineDash([]);
