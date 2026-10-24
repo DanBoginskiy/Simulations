@@ -126,6 +126,95 @@ def page_numbers(rel):
     p.close()
     return out
 
+
+# ----------------------------------------------------------- файл 00 ------
+def ref_00_action(T=2.0, m=1.0):
+    """Дія на справжній траєкторії кидка й коефіцієнт при ε²."""
+    S0 = -m*G*G*T**3/24
+    c2 = m*math.pi**2/(4*T)
+    return S0, c2
+
+def ref_00_cycloid(Bx=2.0, By=1.0):
+    from scipy.optimize import brentq
+    f = lambda th: (th-math.sin(th)) - (Bx/By)*(1-math.cos(th))
+    th = brentq(f, 1e-6, 2*math.pi-1e-6)
+    a = By/(1-math.cos(th))
+    return th, a, math.sqrt(a/G)*th
+
+def ref_00_line(Bx=2.0, By=1.0):
+    L = math.hypot(Bx, By)
+    return math.sqrt(2*L/(G*By/L))
+
+def ref_00_hoop(R=0.2, w=10.0):
+    wc = math.sqrt(G/R)
+    th0 = math.acos(G/(w*w*R))
+    return wc, math.degrees(th0), w*math.sin(th0)
+
+def ref_00_similar(lam=2.0):
+    return [lam**(1-k/2) for k in (2, 1, -1)]
+
+def page_00():
+    from cdp import Page
+    p = Page(); p.metrics(1440, 1000, dpr=1)
+    p.goto('file://' + os.path.join(ROOT, 'Theoretical-Mechanics/00-least-action.html'), 2.2)
+    p.js("window.requestAnimationFrame=function(){return 0;};")
+    def num(e):
+        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.').replace('\u00b1', '')
+        import re as _re
+        m = _re.search(r'-?\d+(?:\.\d+)?', t)
+        return float(m.group(0)) if m else float('nan')
+    out = {}
+    p.js("activate('m1'); M1.mode='grav'; M1.T=2; M1.n=[0,0,0,0,0]; M1.render();"); time.sleep(0.3)
+    out['S0'] = num("document.getElementById('m1kS0').textContent")
+    out['c2'] = p.js("(function(){M1.mode='grav';M1.T=2;return M1.c2();})()")
+    out['Tsign'] = p.js("""(function(){M1.mode='osc';M1.w=2;
+      let lo=0.5,hi=4; for(let i=0;i<60;i++){const mi=(lo+hi)/2; M1.T=mi;
+        (M1.c2()>0)?lo=mi:hi=mi;} return (lo+hi)/2;})()""")
+    p.js("activate('m2'); M2.Bx=2; M2.By=1; M2.reset(); M2.render();"); time.sleep(0.3)
+    out['cyc'] = num("document.getElementById('m2kC').textContent")
+    out['line'] = num("document.getElementById('m2kL').textContent")
+    out['thB'] = p.js("M2.cyc().th"); out['a'] = p.js("M2.cyc().a")
+    p.js("activate('m3'); M3.w=10; M3.reset(); M3.render();"); time.sleep(0.3)
+    out['wc'] = num("document.getElementById('m3kwc').textContent")
+    out['th0'] = abs(num("document.getElementById('m3kth0').textContent.replace('\u00b1','')"))
+    out['wsm'] = num("document.getElementById('m3kws').textContent")
+    out['rat'] = []
+    for md in ('osc', 'grav', 'kepler'):
+        p.js("activate('m4'); M4.mode='%s'; M4.lam=2; M4.reset(); M4.render();" % md)
+        time.sleep(0.2)
+        out['rat'].append(num("document.getElementById('m4kR').textContent"))
+    out['vir'] = p.js("""(function(){const r=[];
+      for(const md of ['osc','grav','kepler']){
+        M4.mode=md; M4.lam=2; M4.reset(); M4.playing=true;
+        for(let i=0;i<4000;i++) M4.tick(0.05);
+        const mT=M4.accT/M4.acc, mU=M4.accU/M4.acc;
+        r.push(Math.abs(2*mT-M4.kOf()*mU)/Math.max(1e-12,Math.abs(mU))*100);
+      } return r;})()""")
+    p.close()
+    return out
+
+def main_00():
+    pg = page_00()
+    S0, c2 = ref_00_action()
+    thB, a, tc = ref_00_cycloid()
+    tl = ref_00_line()
+    wc, th0, wsm = ref_00_hoop()
+    rat = ref_00_similar()
+    chk('м1 · дія на справжній S₀ = −mg²T³/24', S0, pg['S0'], 5e-3, 'Дж·с')
+    chk('м1 · коефіцієнт при ε²: mπ²/(4T)', c2, pg['c2'], 1e-3, 'Дж·с/м²')
+    chk('м1 · зміна знака при T = π/ω (ω = 2)', math.pi/2, pg['Tsign'], 1e-3, 'с')
+    chk('м2 · параметр циклоїди θ_B', thB, pg['thB'], 1e-3, 'рад')
+    chk('м2 · параметр циклоїди a', a, pg['a'], 1e-4, 'м')
+    chk('м2 · час спуску циклоїдою', tc, pg['cyc'], 1e-3, 'с')
+    chk('м2 · час спуску прямою', tl, pg['line'], 1e-3, 'с')
+    chk('м3 · поріг ω_c = √(g/R)', wc, pg['wc'], 5e-3, 'рад/с')
+    chk('м3 · рівновага θ₀ при ω = 10', th0, pg['th0'], 0.05, '°')
+    chk('м3 · частота малих коливань ω·sin θ₀', wsm, pg['wsm'], 5e-3, 'рад/с')
+    for nm, r, g_ in zip(('k = 2', 'k = 1', 'k = −1'), rat, pg['rat']):
+        chk('м4 · t′/t при λ = 2, ' + nm, r, g_, 5e-4)
+    for nm, v in zip(('k = 2', 'k = 1', 'k = −1'), pg['vir']):
+        ROWS.append(('м4 · нев\u2019язка віріалу за 20 обходів, ' + nm, 0.0, v, 1.0, '%', v < 1.0))
+
 def main():
     rel = 'Theoretical-Mechanics/03-small-oscillations.html'
     T0, r30, r90 = ref_m1()
@@ -169,5 +258,21 @@ def main():
     print('---- розбіжностей:', bad)
     sys.exit(1 if bad else 0)
 
+def report():
+    w = max(len(r[0]) for r in ROWS)
+    bad = 0
+    print('%-*s %14s %14s  %s' % (w, 'що', 'очікувано', 'на сторінці', 'вердикт'))
+    for name, ref, got, tol, unit, ok in ROWS:
+        f = lambda v: ('%.6g' % v) if abs(v) >= 1e-4 or v == 0 else ('%.3e' % v)
+        print('%-*s %14s %14s  %s' % (w, name, f(ref)+' '+unit, f(got)+' '+unit,
+                                      'збігається' if ok else 'РОЗБІЖНІСТЬ'))
+        bad += 0 if ok else 1
+    print('---- розбіжностей:', bad)
+    sys.exit(1 if bad else 0)
+
 if __name__ == '__main__':
-    main()
+    which = sys.argv[1] if len(sys.argv) > 1 else '03'
+    if which == '00':
+        main_00(); report()
+    else:
+        main()
