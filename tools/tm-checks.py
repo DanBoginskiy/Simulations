@@ -317,6 +317,67 @@ def main_01():
     ROWS.append(('м4 · |A| = mαe — розкид за прогін', 0.0, pg['Aspread'], 1e-6, '',
                  pg['Aspread'] < 1e-6))
 
+
+# ----------------------------------------------------------- файл 02 ------
+def ref_02():
+    th_max = math.degrees(math.asin(1.0/1.5))
+    th1max = math.degrees(math.asin(1.0/2.0))
+    chi_ruth = math.degrees(2*math.atan(0.5/1.0))
+    chi_ball = math.degrees(math.pi - 2*math.asin(0.5))
+    ratio = (math.sin(math.radians(75))**4)/(math.sin(math.radians(15))**4)
+    return th_max, th1max, chi_ruth, chi_ball, ratio
+
+def page_02():
+    from cdp import Page
+    import re as _re
+    p = Page(); p.metrics(1440, 1000, dpr=1)
+    p.goto('file://' + os.path.join(ROOT,
+           'Theoretical-Mechanics/02-decay-collisions-scattering.html'), 2.2)
+    p.js("window.requestAnimationFrame=function(){return 0;};")
+    def num(e):
+        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.')
+        m = _re.search(r'-?\d+(?:\.\d+)?', t)
+        return float(m.group(0)) if m else float('nan')
+    out = {}
+    p.js("activate('m1'); M1.V=1.5; M1.render();"); time.sleep(0.3)
+    out['thmax'] = num("document.getElementById('m1kTh').textContent")
+    p.js("activate('m2'); M2.mr=2; M2.render();"); time.sleep(0.3)
+    out['th1max'] = num("document.getElementById('m2kMax').textContent")
+    out['sum'] = p.js("""(function(){M2.mr=1;let w=0;
+      for(let i=1;i<180;i++){M2.chi=i*DEG;
+        w=Math.max(w,Math.abs((M2.th1()+M2.th2())/DEG-90));}
+      return w;})()""")
+    p.js("activate('m3'); M3.mode='rep'; M3.b=0.5; M3.rho=1; M3.render();"); time.sleep(0.3)
+    out['ruth'] = num("document.getElementById('m3kchi').textContent")
+    out['ratio'] = num("document.getElementById('m3kratio').textContent")
+    p.js("M3.mode='ball'; M3.a=1; M3.rho=0.5; M3.render();"); time.sleep(0.2)
+    out['ball'] = num("document.getElementById('m3kchi').textContent")
+    out['chi2'] = p.js("""(function(){const r=[];
+      for(const c of [['rep',0.5,1,1.2],['att',0.5,1,1.2],['ball',0.5,1,1.2],
+                      ['rep',1.2,1,1.6],['ball',0.5,1.8,1.6],['rep',0.1,1,1.6]]){
+        M3.mode=c[0]; M3.b=c[1]; M3.a=c[2]; M3.W=c[3];
+        M3.q.free=true; M3.q.apply(-1); M3.render(); M3.render();
+        r.push([c[0],M3._chi2,M3._dof]);
+      } return r;})()""")
+    p.close()
+    return out
+
+def main_02():
+    pg = page_02()
+    th_max, th1max, chi_ruth, chi_ball, ratio = ref_02()
+    chk('м1 · θ_max = arcsin(v₀/V) при V = 1,5', th_max, pg['thmax'], 0.05, '°')
+    chk('м2 · θ₁max = arcsin(m₂/m₁) при m₁/m₂ = 2', th1max, pg['th1max'], 0.05, '°')
+    ROWS.append(('м2 · θ₁ + θ₂ = 90° при m₁ = m₂ для всіх χ', 0.0, pg['sum'], 1e-6,
+                 '° відхилення', pg['sum'] < 1e-6))
+    chk('м3 · Резерфорд: χ при α/mv² = 0,5, ρ = 1', chi_ruth, pg['ruth'], 0.05, '°')
+    chk('м3 · тверда куля: χ при ρ = a/2', chi_ball, pg['ball'], 0.05, '°')
+    chk('м3 · у скільки разів 30° частіше за 150°', ratio, pg['ratio'], 0.1)
+    from scipy.stats import chi2 as _C
+    for nm, c, d in pg['chi2']:
+        q = float(_C.ppf(0.95, max(1, d)))
+        ROWS.append(('м3 · χ² Монте-Карло, %s (%d бінів, 95 %% = %.1f)' % (nm, d, q),
+                     q, c, None, '', c <= q))
+
 def main():
     rel = 'Theoretical-Mechanics/03-small-oscillations.html'
     T0, r30, r90 = ref_m1()
@@ -378,5 +439,7 @@ if __name__ == '__main__':
         main_00(); report()
     elif which == '01':
         main_01(); report()
+    elif which == '02':
+        main_02(); report()
     else:
         main()
