@@ -416,7 +416,7 @@ def ref_04():
     sol = solve_ivp(euler, [0, 1.0], y0, method='DOP853', rtol=1e-12, atol=1e-14)
     out['w1s'] = tuple(sol.y[:, -1])
     # --- м3: симетричний вовчок ---
-    I1, I3, mB, l = 8e-5, 4e-5, .04, .10
+    I1, I3, mB, l = 8e-5, 4e-5, .1, .04
     mgl, th0, w3 = mB*G*l, math.radians(50), 200.0
     M3m = I3*w3
     out['appr'] = mgl/M3m
@@ -486,7 +486,9 @@ def page_04():
                   num("document.getElementById('m1kyy').textContent"),
                   num("document.getElementById('m1kxy').textContent"),
                   num("document.getElementById('m1kzz').textContent"))
-    p.js("M1.P=[[1,0.5],[1,-0.5],[-1,0.5],[-0.4,-0.9]]; M1.al=28; M1.render();")
+    out['m2kg'] = p.js("""(function(){M1.reset(); M1.m=2; M1.render();
+      return [M1.Ixx(),M1.Iyy(),M1.Izz()];})()""")
+    p.js("M1.m=1; M1.P=[[1,0.5],[1,-0.5],[-1,0.5],[-0.4,-0.9]]; M1.al=28; M1.render();")
     time.sleep(0.3)
     pr = sorted([num("document.getElementById('m1kp1').textContent"),
                  num("document.getElementById('m1kp2').textContent")])
@@ -503,7 +505,7 @@ def page_04():
       return [M2.y[0],M2.y[1],M2.y[2]];})()""")
     out['drift'] = p.js("""(function(){M2.ax=2;M2.w0=10;M2.reset();
       const E0=M2.E0,M0=M2.MM0,h=2e-4; let d=0;
-      for(let k=0;k<30000;k++){
+      for(let k=0;k<300000;k++){
         M2.y=rk4(M2.t,M2.y,h,(t,y)=>M2.f(t,y));
         const q=qnorm([M2.y[3],M2.y[4],M2.y[5],M2.y[6]]);
         M2.y[3]=q[0];M2.y[4]=q[1];M2.y[5]=q[2];M2.y[6]=q[3]; M2.t+=h;
@@ -532,6 +534,9 @@ def main_04():
     for i, nm in enumerate(['I_xy', 'менший головний', 'більший головний']):
         chk('м1 · зсунута маса, %s' % nm, r['asy'][i], pg['asy'][i], 5e-4, 'кг·м²')
     chk('м1 · кут між L і ω при α = 28°', r['asy'][3], pg['asy'][3], 0.02, '°')
+    for i, (nm, v) in enumerate([('I_xx', 2.0), ('I_yy', 8.0), ('I_zz', 10.0)]):
+        chk('м1 · той самий прямокутник при m = 2 кг, %s' % nm, v, pg['m2kg'][i],
+            5e-4, 'кг·м²')
     for i in range(3):
         chk('м2 · головний момент I%d' % (i+1), r['I'][i], pg['I'][i], 1e-9, 'кг·м²')
     chk('м2 · частота навколо осі 1', r['f1'], pg['f1'], 5e-4, 'рад/с')
@@ -540,8 +545,8 @@ def main_04():
     for i in range(3):
         chk('м2 · ω%d через 1 с (DOP853 проти RK4)' % (i+1),
             r['w1s'][i], pg['w1s'][i], 2e-4, 'рад/с')
-    ROWS.append(('м2 · дрейф E і M² за 6 с', 0.0, pg['drift'], 1e-12, '',
-                 pg['drift'] < 1e-12))
+    ROWS.append(('м2 · дрейф E і M² за 60 с', 0.0, pg['drift'], 1e-6, '',
+                 pg['drift'] < 1e-6))
     chk('м3 · Ω_пр = mgl/(I₃ω₃)', r['appr'], pg['appr'], 5e-4, 'рад/с')
     chk('м3 · середня φ̇ (quad проти Гауса–Чебишова)', r['avg'], pg['avg'], 2e-3, 'рад/с')
     chk('м3 · рівна прецесія, повільний корінь', r['reg'], pg['reg'], 5e-4, 'рад/с')

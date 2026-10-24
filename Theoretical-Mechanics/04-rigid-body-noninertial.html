@@ -342,7 +342,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
       <div class="panel">
         <h3>Що задано на сцені</h3>
         <div class="kv"><span>положення мас<span class="badge">тягніть кульки</span></span><b id="m1vp"></b></div>
-        <div class="kv"><span>кожна маса</span><b>1 кг</b></div>
+        <div class="kv"><span>кожна маса<span class="badge">кільце на ободі</span></span><b id="m1vm"></b></div>
         <div class="kv"><span>напрям осі <var>α</var><span class="badge">вістря ω</span></span><b id="m1va"></b></div>
       </div>
       <div class="panel">
@@ -412,7 +412,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
     <div class="side">
       <div class="panel">
         <h3>Що задано на сцені</h3>
-        <div class="kv"><span>початковий напрям <var>ω</var><span class="badge">перемикач угорі</span></span><b id="m2vax"></b></div>
+        <div class="kv"><span>початковий напрям <var>ω</var><span class="badge">точка на еліпсоїді</span></span><b id="m2vax"></b></div>
         <div class="kv"><span>|<var>ω</var>|<span class="badge">шкала на сцені</span></span><b id="m2vw"></b></div>
         <div class="kv"><span>брусок 10×6×2 см</span><b><var>m</var> = 0,1 кг</b></div>
       </div>
@@ -485,7 +485,7 @@ footer{color:var(--mut);  margin-top:26px; text-align:center}
         <div class="kv"><span><var>θ</var><sub>0</sub> — початковий нахил<span class="badge">тягніть вісь</span></span><b id="m3vth"></b></div>
         <div class="kv"><span><var>ω</var><sub>3</sub> — власне обертання<span class="badge">шкала на сцені</span></span><b id="m3vw3"></b></div>
         <div class="kv"><span>початковий поштовх</span><b id="m3vpre"></b></div>
-        <div class="kv"><span><var>I</var><sub>1</sub> · <var>I</var><sub>3</sub>, 10⁻⁵ кг·м²</span><b>8 · 4</b></div>
+        <div class="kv"><span><var>m</var> = 0,1 кг, <var>l</var> = 4 см</span><b><var>I</var><sub>1</sub> · <var>I</var><sub>3</sub> = 8 · 4 (10⁻⁵)</b></div>
       </div>
       <div class="panel">
         <h3>Величини</h3>
@@ -1686,7 +1686,7 @@ function root(g,a,b,it){
    за кадр — підпис про це з'являється сам. */
 const M1={
   P:[[1,0.5],[1,-0.5],[-1,0.5],[-1,-0.5]], m:1, al:28,
-  XM:1.6, YM:1.1, RMIN:0.14,
+  XM:1.6, YM:1.1, RMIN:0.14, MLO:0.25, MHI:4,
   hc:{x:null}, tip:null, pred:null, q:null,
   Ixx(){let s=0; for(const p of this.P) s+=p[1]*p[1]; return this.m*s;},
   Iyy(){let s=0; for(const p of this.P) s+=p[0]*p[0]; return this.m*s;},
@@ -1722,7 +1722,9 @@ const M1={
     const f=A*c*c+2*C*c*s+B*s*s;
     return f>1e-9?K/Math.sqrt(f):1e5;
   },
-  reset(){this.P=[[1,0.5],[1,-0.5],[-1,0.5],[-1,-0.5]]; this.al=28;},
+  /* радіус кружка маси несе її величину: площа кружка пропорційна m */
+  mr(){return 7+5*Math.sqrt(this.m);},
+  reset(){this.P=[[1,0.5],[1,-0.5],[-1,0.5],[-1,-0.5]]; this.al=28; this.m=1;},
   init(){
     grip('m1scene',this,()=>this.grips());
     $('m1sym').onclick=()=>{this.reset();};
@@ -1749,7 +1751,7 @@ const M1={
     const b=cvx('m1scene'); if(!b) return [];
     const Q=this.geo(b);
     const out=this.P.map((p,i)=>({id:'p'+i, x:Q.lx+p[0]*Q.sc, y:Q.cy-p[1]*Q.sc,
-      r:11, bare:true, color:CLR.k1, hint:'маса '+(i+1),
+      r:this.mr(), bare:true, color:CLR.k1, hint:'маса '+(i+1),
       move:(px,py)=>{
         let x=clamp((px-Q.lx)/Q.sc,-this.XM,this.XM);
         let y=clamp((Q.cy-py)/Q.sc,-this.YM,this.YM);
@@ -1759,6 +1761,16 @@ const M1={
         if(r<this.RMIN){const a=r>1e-6?Math.atan2(y,x):0.6; x=this.RMIN*Math.cos(a); y=this.RMIN*Math.sin(a);}
         this.P[i]=[x,y];
       }}));
+    /* Величина маси розміру в кресленні не має, зате має його кружок, яким
+        масу малюють. Тому її беруть не повзунком у колонці, а кільцем на
+        ободі першого кружка: тягнеш обід — ростуть усі чотири (§19). */
+    const P0=this.P[0], mx=Q.lx+P0[0]*Q.sc, my=Q.cy-P0[1]*Q.sc;
+    out.push({id:'m', x:mx+this.mr()+7, y:my, r:8, color:CLR.k3,
+      hint:'величина маси m',
+      move:(px,py)=>{
+        const d=Math.max(0,Math.hypot(px-mx,py-my)-7);
+        this.m=clamp(snap(Math.pow(Math.max(0,d-7)/5,2),0.05),this.MLO,this.MHI);
+      }});
     const a=this.al*DEG;
     out.push({id:'al', x:Q.rx+Q.LW*Math.cos(a), y:Q.cy-Q.LW*Math.sin(a),
       r:10, color:CLR.k2, hint:'напрям осі обертання α',
@@ -1808,10 +1820,15 @@ const M1={
     g.beginPath();
     ord.forEach((k,i)=>{const p=this.P[k]; i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]));});
     g.closePath(); g.stroke();
+    const mrad=this.mr();
     for(const p of this.P){
-      dot(g,X(p[0]),Y(p[1]),8,CLR.k1,'#fff');
+      dot(g,X(p[0]),Y(p[1]),mrad,CLR.k1,'#fff');
       txt(g,'m',X(p[0]),Y(p[1])+4,{color:'#fff',size:10.5,bold:true,align:'center'});
     }
+    /* обід, за який тягнуть величину маси */
+    g.strokeStyle=CLR.k3; g.lineWidth=1.4; g.setLineDash([3,3]);
+    g.beginPath(); g.arc(X(this.P[0][0]),Y(this.P[0][1]),mrad+7,0,7); g.stroke();
+    g.setLineDash([]);
     /* ---- права половина: еліпс інерції, ω і L ---- */
     txt(g,'еліпс інерції: ω і L',Q.rx,h-16,{color:CLR.sec,size:11,bold:true,align:'center'});
     g.strokeStyle=CLR.grid; g.lineWidth=1; g.setLineDash([5,4]);
@@ -1860,6 +1877,7 @@ const M1={
     const pr=this.prin();
     const xm=Math.max(...this.P.map(p=>Math.abs(p[0]))), ym=Math.max(...this.P.map(p=>Math.abs(p[1])));
     $('m1vp').textContent=fmt(2*xm,2)+' × '+fmt(2*ym,2)+' м';
+    $('m1vm').textContent=fmt(this.m,2)+' кг';
     $('m1va').textContent=fmt(this.al,1)+'°';
     $('m1kxx').textContent=fmt(this.Ixx(),4)+' кг·м²';
     $('m1kyy').textContent=fmt(this.Iyy(),4)+' кг·м²';
@@ -1966,10 +1984,44 @@ const M2={
   });},
   gcol(b){return {x0:b.w*0.05, dx:40, yb:b.h-18, H:36};},
   GL:[['w0','|ω|',4,16,0.5,'#eb6834']],
+  /* Орти камери у просторі тіла. Вони потрібні, щоб перекласти рух пальця по
+     екрану назад у напрям ω: горизонталь екрана — це eR, вертикаль — eU, а
+     те, чого не видно (глибина), — eV. Усі три ортонормовані, що звіряється
+     просто скалярними добутками. */
+  cam(){
+    const r=this.view*DEG, t=this.tilt*DEG;
+    const cr=Math.cos(r), sr=Math.sin(r), ct=Math.cos(t), st=Math.sin(t);
+    return {R:[sr,cr,0], U:[-st*cr,st*sr,ct], V:[ct*cr,-ct*sr,st]};
+  },
+  setW(d){
+    const n=Math.hypot(d[0],d[1],d[2])||1;
+    this.y=[this.w0*d[0]/n,this.w0*d[1]/n,this.w0*d[2]/n,1,0,0,0];
+    this.t=0; this.tr=[]; this.pol=[]; this.run=false;
+    this.E0=this.ener(this.y); this.MM0=this.mom2(this.y);
+    $('m2play').textContent='▶';
+  },
   grips(){
     const b=cvx('m2scene'); if(!b) return [];
+    const Q=this.geo(b), I=this.Ii();
+    const E=this.ener(this.y);
+    const s=[Math.sqrt(2*E/I[0]),Math.sqrt(2*E/I[1]),Math.sqrt(2*E/I[2])];
+    const kk=0.92/Math.max(s[0],s[1],s[2]);
+    const W={rot:this.view,tilt:this.tilt,R:Q.R,cx:Q.rx,cy:Q.cy};
+    const pn=proj3([this.y[0]*kk,this.y[1]*kk,this.y[2]*kk],W);
+    /* Початковий напрям ω беруть просто з еліпсоїда: палець тягне точку по
+       його поверхні. Перемикач осей лишається як три готові пресети. */
+    const out=[{id:'wdir', x:pn.x, y:pn.y, r:10, color:CLR.k2,
+      hint:'початковий напрям ω',
+      move:(px,py)=>{
+        const C=this.cam();
+        const a=(px-W.cx)/Q.R, c=(W.cy-py)/Q.R;
+        const n2=a*a+c*c, e=n2<1?Math.sqrt(1-n2):0;
+        this.setW([a*C.R[0]+c*C.U[0]+e*C.V[0],
+                   a*C.R[1]+c*C.U[1]+e*C.V[1],
+                   a*C.R[2]+c*C.U[2]+e*C.V[2]]);
+      }}];
     const L=[['w0','|ω|',4,16,0.5,CLR.k2,function(){M2.reset();}]];
-    return gaugeGrips(this.gcol(b),L,this);
+    return out.concat(gaugeGrips(this.gcol(b),L,this));
   },
   tick(dt){
     if(this.run){
@@ -2112,7 +2164,7 @@ const M2={
     }
     const pn=proj3([this.y[0]*kk,this.y[1]*kk,this.y[2]*kk],W);
     dot(g,pn.x,pn.y,5,'#fff',CLR.k2);
-    txt(g,'ω',pn.x+8,pn.y+4,{color:'#b8431a',size:12.5,bold:true});
+    txt(g,'ω',pn.x+9,pn.y+15,{color:'#b8431a',size:12.5,bold:true});
     gaugeCol(g,this.gcol(b),this.GL,this);
     txtN(g,'t = '+fmt(this.t,2)+' с',w-12,h-14,{color:CLR.mut,size:11,align:'right'});
     rotPill(g,w,h);
@@ -2182,8 +2234,8 @@ const M2={
    Межа моделі: вовчок без тертя, вістря закріплене, нутація не згасає —
    справжній вовчок за кілька секунд переходить до рівної прецесії. */
 const M3={
-  I1:8e-5, I3:4e-5, mB:0.04, l:0.10,
-  th0:50*DEG, w3:200, pre:'cusp', run:false, t:0, view:28, tilt:20,
+  I1:8e-5, I3:4e-5, mB:0.1, l:0.04,
+  th0:30*DEG, w3:200, pre:'cusp', run:false, t:0, view:28, tilt:20,
   SLOW:0.25,
   y:[0,0,0,0], tr:[], path:[],
   hc:{x:null}, h2:{x:null}, tipc:null, tip2:null, pred:null, q:null,
@@ -2476,7 +2528,7 @@ const M4={
   lat:50.45, sp:1, frame:'earth', run:false, t:0, view:18, tilt:24,
   l:10, OME:7.292e-5, A:0.9,
   SHELF:[['×1',1,'реальний час'],['×60',60,'1 хв за с'],['×600',600,'10 хв за с'],
-         ['×2000',2000,'33 хв за с']],
+         ['×5000',5000,'83 хв за с']],
   hc:{x:null}, tip:null, pred:null, q:null,
   w0(){return Math.sqrt(G/this.l);},
   T(){return 2*Math.PI/this.w0();},
