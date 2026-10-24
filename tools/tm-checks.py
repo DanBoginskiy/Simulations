@@ -565,66 +565,60 @@ def main_04():
 # ----------------------------------------------------------- файл 05 ------
 def ref_05():
     """Гамільтонова механіка — усе через numpy/scipy, без коду сторінки."""
-    from scipy.integrate import quad
+    from scipy.integrate import quad, solve_ivp
     from scipy.special import ellipk as _K
+    from scipy.optimize import brentq
     out = {}
     # --- м1: період фінітного руху ---
-    def period(U, dU, E, a, b):
+    def period(U, E, a, b):
         cm, hh = (a+b)/2, (b-a)/2
         f = lambda x: hh*math.cos(x)/math.sqrt(max(1e-18, 2*(E-U(cm+hh*math.sin(x)))))
         return 2*quad(f, -math.pi/2, math.pi/2, limit=400)[0]
     out['Tosc'] = 2*math.pi
-    th0 = 1.6
-    out['Tpend'] = 4*float(_K(math.sin(th0/2)**2))
+    out['Tpend'] = 4*float(_K(math.sin(1.6/2)**2))
     Uc = lambda q: q*q/2 - q**3/3
-    qc = -0.42
-    Ec = Uc(qc)
-    from scipy.optimize import brentq
+    qc = -0.42; Ec = Uc(qc)
     qr = brentq(lambda q: Uc(q)-Ec, 0.01, 0.999)
-    out['Tcub'] = period(Uc, None, Ec, qc, qr)
+    out['Tcub'] = period(Uc, Ec, qc, qr)
     out['Ecub'] = Ec
-    # --- м2: вільна частинка зсувається, площа точна аналітично ---
-    out['det'] = 1.0
-    # --- м3: дія й частота ---
-    def J_pend(A):
-        E = 1-math.cos(A)
-        f = lambda x: math.sqrt(max(0.0, 2*(E-(1-math.cos(A*math.sin(x))))))*A*math.cos(x)
-        return quad(f, -math.pi/2, math.pi/2, limit=400)[0]/math.pi
-    out['J90']  = J_pend(math.pi/2)
-    out['w90']  = 2*math.pi/(4*float(_K(math.sin(math.pi/4)**2)))
-    out['J150'] = J_pend(math.radians(150))
-    out['w150'] = 2*math.pi/(4*float(_K(math.sin(math.radians(75))**2)))
-    out['Josc'] = 1.4**2/2          # J = E для осцилятора з A = 1,4
-    # --- м4: головна функція Гамільтона ---
-    m, g, w = 1.0, G, 1.0
-    SS = {
-        'free': (lambda q, t: m*q*q/(2*t),
-                 lambda q, t: m*q/t,
-                 lambda q: 0.0,
-                 lambda q, t: q/t),                      # швидкість прильоту
-        'grav': (lambda q, t: m*q*q/(2*t) - 0.5*m*g*t*q - m*g*g*t**3/24,
-                 lambda q, t: m*q/t - 0.5*m*g*t,
-                 lambda q: m*g*q,
-                 lambda q, t: q/t - 0.5*g*t),
-        'osc':  (lambda q, t: m*w*q*q/(2*math.tan(w*t)),
-                 lambda q, t: m*w*q/math.tan(w*t),
-                 lambda q: m*w*w*q*q/2,
-                 lambda q, t: w*q/math.tan(w*t)),
-    }
-    rows = []
-    for nm, (S, dSq, U, v) in SS.items():
-        for (q, t) in [(1.6, 1.2), (-2.5, 0.8), (3.0, 2.2)]:
-            d = 1e-6
-            dSt = (S(q, t+d)-S(q, t-d))/(2*d)
-            p_ = dSq(q, t)
-            rows.append((nm, q, t, S(q, t), p_, m*v(q, t), dSt + p_*p_/(2*m) + U(q)))
-    out['hj'] = rows
-    out['Sgrav0'] = -m*g*g/24.0              # q = 0, t = 1 с
+    # --- м2: Ліувілль із тертям і без ---
+    #   площа фазової хмари росте як e^(tr A · t); для гамільтонової системи
+    #   слід нуль, для маятника з тертям — рівно −2γ
+    out['liou'] = {'osc': 1.0, 'pend': 1.0,
+                   'damp10': math.exp(-2*0.1*10.0)}
+    # --- м3: дія–кут і адіабатичний інваріант ---
+    m, om, A = 1.0, 2.0, 1.2
+    out['Ejp'] = 0.5*m*om*om*A*A
+    out['Jjp'] = out['Ejp']/om                     # J = E/ω точно
+    #   маятник, нитку якого вкорочують: θ̈ = −(g/l)θ − 2(l̇/l)θ̇
+    L0, L1, T = 1.0, 0.5, 60.0
+    ld = (L1-L0)/T
+    def pend(t, y):
+        l = L0 + ld*min(t, T)
+        return [y[1], -G/l*y[0] - 2*(ld if t < T else 0.0)/l*y[1]]
+    sol = solve_ivp(pend, [0, T], [0.12, 0.0], method='DOP853',
+                    rtol=1e-11, atol=1e-13)
+    th, thd = sol.y[0][-1], sol.y[1][-1]
+    E1 = 0.5*m*L1*L1*thd*thd + 0.5*m*G*L1*th*th
+    E0 = 0.5*m*G*L0*0.12**2
+    out['Jrat'] = (E1/math.sqrt(G/L1))/(E0/math.sqrt(G/L0))
+    out['amprat'] = math.sqrt(2*E1/(m*G*L1))/0.12
+    out['ampth'] = (L0/L1)**0.75                   # θ₀ ∝ l^(−3/4)
+    # --- м4: віяло кидків, вкорочена дія, парабола безпеки ---
+    v0, mm = 10.0, 1.0
+    out['Hmax'] = v0*v0/(2*G)
+    out['Dmax'] = v0*v0/G
+    out['R45']  = v0*math.cos(math.pi/4)*(2*v0*math.sin(math.pi/4)/G)
+    #   W = ∫ m v² dσ береться прямим інтегруванням, а не формулою сторінки
+    def Wq(a, s):
+        f = lambda t: mm*(v0*v0 - 2*G*(v0*math.sin(a)*t - 0.5*G*t*t))
+        return quad(f, 0, s, limit=200)[0]
+    out['W'] = [(a, s, Wq(math.radians(a), s))
+                for a, s in [(20, 0.4), (45, 0.7), (70, 1.1), (110, 1.3), (150, 0.5)]]
     return out
 
 def page_05():
     from cdp import Page
-    import re as _re
     p = Page(); p.metrics(1440, 1000, dpr=1)
     p.goto('file://' + os.path.join(ROOT,
            'Theoretical-Mechanics/05-hamiltonian-mechanics.html'), 2.4)
@@ -640,29 +634,42 @@ def page_05():
       for(let k=0;k<60000;k++){const r=verlet(q,v,h,x=>-S.dU(x)); q=r[0]; v=r[1];
         d=Math.max(d,Math.abs((v*v/2+S.U(q)-M1.H0)/M1.H0));}
       return d;})()""")
-    out['liou'] = p.js("""(function(){const r=[];
-      for(const s of ['free','osc','pend']){
-        activate('m2'); M2.sys=s;
-        M2.cq=(s==='free'?0.2:(s==='osc'?1.1:1.0)); M2.cp=(s==='free'?0.9:1.1);
-        M2.reset(); M2.run=true;
-        for(let i=0;i<360;i++) M2.tick(0.0167);
-        r.push([s, M2.det, shoelace(M2.pts)/M2.A0, M2.peri()/M2.P0]);
-      } return r;})()""")
-    out['m3'] = p.js("""(function(){activate('m3');
-      const r={};
-      M3.sys='osc'; M3.A=1.4; r.Josc=M3.J(); r.wosc=M3.dHdJ();
-      M3.sys='pend'; M3.A=Math.PI/2; r.J90=M3.J(); r.w90=M3.dHdJ(); r.t90=2*Math.PI/M3.T();
-      M3.A=150*DEG; r.J150=M3.J(); r.w150=M3.dHdJ(); r.t150=2*Math.PI/M3.T();
-      return r;})()""")
-    out['m4'] = p.js("""(function(){activate('m4'); const r=[];
-      for(const s of ['free','grav','osc']){
-        M4.sys=s;
-        for(const c of [[1.6,1.2],[-2.5,0.8],[3.0,2.2]]){
-          M4.q=c[0]; M4.tt=c[1];
-          r.push([s,c[0],c[1],M4.Sv(c[0],c[1]),M4.p(),M4.pTraj(),M4.res()]);
+    out['liou'] = p.js("""(function(){const r={};
+      for(const s of ['osc','pend','damp']){
+        activate('m2'); M2.sys=s; M2.gam=0.1;
+        M2.cq=(s==='osc'?1.1:1.0); M2.cp=1.1; M2.r=0.3; M2.reset(); M2.run=true;
+        const nmax=(s==='damp')?Math.round(10/(4e-3)):Math.round(12/(4e-3));
+        const h=4e-3;
+        for(let k=0;k<nmax;k++){
+          for(let i=0;i<M2.pts.length;i++) M2.pts[i]=M2.step(M2.pts[i],h);
+          M2.stepM(h); M2.t+=h;
+          if(k%5===0) M2.refine();
         }
+        r[s]=[M2.det, shoelace(M2.pts)/M2.A0, M2.Ath(), M2.t, M2.peri()/M2.P0];
+      } return r;})()""")
+    out['m3jp'] = p.js("""(function(){activate('m3'); M3.mode='jp'; M3.reset();
+      return [M3.Ejp(), M3.Jjp(), M3.Ejp()/M3.om];})()""")
+    out['m3ad'] = p.js("""(function(){activate('m3'); M3.mode='ad'; M3.reset();
+      const J0=M3.J(), a0=M3.amp(); M3.run=true;
+      const h=1e-3;
+      while(M3.t<60){
+        const ld=(M3.L1-M3.L0)/M3.TPROG;
+        M3.l=M3.L0+(M3.L1-M3.L0)*Math.min(1,M3.t/M3.TPROG);
+        const f=(tt,y)=>[y[1],-G/M3.l*y[0]-2*ld/M3.l*y[1]];
+        const y=rk4(M3.t,[M3.th,M3.thd],h,f);
+        M3.th=y[0]; M3.thd=y[1]; M3.t+=h;
       }
-      M4.sys='grav'; M4.q=0; M4.tt=1; r.push(['S0',0,1,M4.Sv(0,1),0,0,0]);
+      return [M3.J()/J0, M3.amp()/a0, M3.l, Math.pow(M3.L0/M3.L1,0.75)];})()""")
+    out['m4'] = p.js("""(function(){activate('m4'); M4.v0=10;
+      const r={ang:[],W:[]};
+      for(const a of [20,45,70,110,150]){
+        M4.al=a*DEG; M4.s=M4.tFly(M4.al)*0.45; r.ang.push([a,M4.front90()]);
+      }
+      for(const c of [[20,0.4],[45,0.7],[70,1.1],[110,1.3],[150,0.5]])
+        r.W.push([c[0],c[1],M4.W(c[0]*DEG,c[1])]);
+      M4.al=45*DEG;
+      r.H=M4.Hmax(); r.D=M4.Dmax();
+      r.R45=M4.v0*Math.cos(Math.PI/4)*M4.tFly(Math.PI/4);
       return r;})()""")
     p.close()
     return out
@@ -676,33 +683,32 @@ def main_05():
     chk('м1 · кубічна яма: T проти quad', r['Tcub'], pg['Tcub'], 1e-4, 'с')
     ROWS.append(('м1 · дрейф H за 12 с Верле', 0.0, pg['drift'], 1e-7, '',
                  pg['drift'] < 1e-7))
-    for nm, det, area, per in pg['liou']:
-        ROWS.append(('м2 · %s: визначник Якобі через 7,2 с' % nm, 1.0, det, 1e-9, '',
-                     abs(det-1) < 1e-9))
-        ROWS.append(('м2 · %s: площа хмари, частка' % nm, 1.0, area, 1e-5, '',
-                     abs(area-1) < 1e-5))
-    ROWS.append(('м2 · маятник розтягує межу (периметр × )', 2.0, pg['liou'][2][3],
-                 None, '', pg['liou'][2][3] > 2.0))
-    m3 = pg['m3']
-    chk('м3 · осцилятор A = 1,4: J = E', r['Josc'], m3['Josc'], 1e-6, 'Дж·с')
-    chk('м3 · осцилятор: ∂H/∂J = ω₀', 1.0, m3['wosc'], 1e-5, 'рад/с')
-    chk('м3 · маятник 90°: J проти quad', r['J90'], m3['J90'], 1e-5, 'Дж·с')
-    chk('м3 · маятник 90°: ∂H/∂J проти 2π/4K', r['w90'], m3['w90'], 2e-4, 'рад/с')
-    chk('м3 · маятник 90°: 2π/T на сторінці', r['w90'], m3['t90'], 1e-6, 'рад/с')
-    chk('м3 · маятник 150°: J проти quad', r['J150'], m3['J150'], 1e-5, 'Дж·с')
-    chk('м3 · маятник 150°: ∂H/∂J проти 2π/4K', r['w150'], m3['w150'], 2e-3, 'рад/с')
-    ref = {(a, b, c): (d, e, f, h) for a, b, c, d, e, f, h in r['hj']}
-    for row in pg['m4']:
-        nm, q, t, S, p_, pt, res = row
-        if nm == 'S0':
-            chk('м4 · однорідне поле, q = 0, t = 1 с: S = −mg²t³/24',
-                r['Sgrav0'], S, 1e-6, 'Дж·с')
-            continue
-        R = ref[(nm, q, t)]
-        chk('м4 · %s (q=%g, t=%g): S' % (nm, q, t), R[0], S, 1e-6, 'Дж·с')
-        chk('м4 · %s (q=%g, t=%g): ∂S/∂q проти mq̇' % (nm, q, t), R[1], pt, 1e-6, 'кг·м/с')
-        ROWS.append(('м4 · %s (q=%g, t=%g): нев\'язка ГЯ' % (nm, q, t), 0.0, abs(res),
-                     2e-7, 'Дж', abs(res) < 2e-7))
+    for nm, lab in [('osc', 'осцилятор'), ('pend', 'маятник'), ('damp', 'маятник із тертям')]:
+        det, area, ath, t, per = pg['liou'][nm]
+        ref = r['liou']['damp10'] if nm == 'damp' else 1.0
+        chk('м2 · %s: визначник Якобі' % lab, ref, det, 1e-7, '')
+        chk('м2 · %s: площа хмари проти теорії' % lab, ref, area, 2e-3, '')
+        chk('м2 · %s: теорія на сторінці' % lab, ref, ath, 1e-9, '')
+    ROWS.append(('м2 · маятник без тертя розтягує межу (периметр × )', 2.0,
+                 pg['liou']['pend'][4], None, '', pg['liou']['pend'][4] > 2.0))
+    chk('м3 · осцилятор m = 1, ω = 2, A = 1,2: E', r['Ejp'], pg['m3jp'][0], 1e-9, 'Дж')
+    chk('м3 · осцилятор: J = E/ω', r['Jjp'], pg['m3jp'][1], 1e-9, 'Дж·с')
+    jr, ar, lf, ath = pg['m3ad']
+    chk('м3 · адіабата l: 1 → 0,5 м — кінцева довжина', 0.5, lf, 1e-6, 'м')
+    chk('м3 · адіабата: J/J₀ проти DOP853', r['Jrat'], jr, 2e-3, '')
+    ROWS.append(('м3 · адіабата: J змінилася менше ніж на 1 %', 1.0, jr, 0.01, '',
+                 abs(jr-1) < 0.01))
+    chk('м3 · адіабата: амплітуда × проти теорії l^(−3/4)', r['ampth'], ar, 5e-3, '')
+    chk('м3 · адіабата: амплітуда × проти DOP853', r['amprat'], ar, 5e-3, '')
+    for a, ang in pg['m4']['ang']:
+        ROWS.append(('м4 · кут фронту до траєкторії при α = %d°' % a, 90.0, ang,
+                     1e-3, '°', abs(ang-90) < 1e-3))
+    ref = {(a, s): W for a, s, W in r['W']}
+    for a, s, W in pg['m4']['W']:
+        chk('м4 · W(α = %d°, s = %g) проти quad' % (a, s), ref[(a, s)], W, 1e-6, 'Дж·с')
+    chk('м4 · парабола безпеки: висота v₀²/2g', r['Hmax'], pg['m4']['H'], 1e-6, 'м')
+    chk('м4 · парабола безпеки: дальність v₀²/g', r['Dmax'], pg['m4']['D'], 1e-6, 'м')
+    chk('м4 · дальність кидка під 45° = v₀²/g', r['R45'], pg['m4']['R45'], 1e-6, 'м')
 
 
 def main():
