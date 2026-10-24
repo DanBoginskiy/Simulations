@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Контрольні числа серії «Теоретична фізика».
+
+Два незалежні джерела однієї й тієї самої величини:
+
+  еталон  — numpy/scipy тут, у цьому файлі: власні формули, власні
+            інтегратори, жодного рядка з коду сторінки;
+  сторінка — те, що показано студентові, прочитане з живого документа
+            через CDP при вимкненому requestAnimationFrame і сталому
+            кроці часу.
+
+Збіг цих двох чисел і є перевіркою. Допуск указано біля кожного рядка;
+де допуску немає, числа мають збігтися до останнього показаного знака.
+
+  python3 tools/tm-checks.py 03
+"""
+import sys, os, time, json, math
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import numpy as np
+from scipy.special import ellipk as K_m          # K(m), параметр m = k²
+from scipy.integrate import solve_ivp
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+G = 9.81
+
+ROWS = []
+def chk(name, ref, got, tol=None, unit=''):
+    ok = (abs(ref-got) <= tol) if tol is not None else (abs(ref-got) <= 5e-4*max(1, abs(ref)))
+    ROWS.append((name, ref, got, tol, unit, ok))
+
+# ---------------------------------------------------------------- еталони --
+def ref_m1():
+    T0 = 2*math.pi*math.sqrt(1.0/G)
+    r = lambda th: 2/math.pi*float(K_m(math.sin(math.radians(th)/2)**2))
+    return T0, r(30), r(90)
+
+def ref_m1_drift():
+    """Дрейф енергії симплектичного Верле за 100 періодів."""
+    l, th0 = 1.0, math.radians(30)
+    T0 = 2*math.pi*math.sqrt(l/G); h = T0/4000
+    q, v = th0, 0.0
+    E0 = G*l*(1-math.cos(q)) + 0.5*l*l*v*v
+    acc = lambda x: -G/l*math.sin(x)
+    worst = 0.0
+    for _ in range(int(100*T0/h)):
+        a0 = acc(q); q = q + v*h + 0.5*a0*h*h
+        v = v + 0.5*(a0+acc(q))*h
+        worst = max(worst, abs(G*l*(1-math.cos(q))+0.5*l*l*v*v - E0)/E0)
+    return worst
+
+def ref_m2():
+    w0 = 2*math.pi
+    return 2*math.pi/abs(w0-0.9*w0), 1.0/(2*w0)
+
+def ref_m3():
+    l, m, k = 0.5, 0.2, 0.5
+    w1 = math.sqrt(G/l); w2 = math.sqrt(G/l + 2*k/m)
+    Tb = 2*math.pi/(w2-w1)
+    return w1, w2, Tb, Tb/2
+
+def ref_m4():
+    l, a, Om = 0.2, 0.01, 300.0
+    Oc = math.sqrt(2*G*l)/a
+    w_up = math.sqrt(a*a*Om*Om/(2*l*l) - G/l)
+    w_dn = math.sqrt(a*a*Om*Om/(2*l*l) + G/l)
+    return Oc, Oc/(2*math.pi), w_up, w_dn
+
+def ref_m4_full():
+    """Частота повільних коливань повної моделі навколо вершини — лічена
+       незалежно, щоб звірити з ефективним потенціалом (допуск 3 %)."""
+    l, a, Om = 0.2, 0.01, 300.0
+    f = lambda t, y: [y[1], -(G - a*Om*Om*math.cos(Om*t))/l*math.sin(y[0])]
+    y0 = [math.radians(170), 0.0]
+    sol = solve_ivp(f, [0, 4.0], y0, max_step=2*math.pi/Om/60, rtol=1e-10, atol=1e-12,
+                    dense_output=True)
+    ts = np.linspace(0, 4.0, 40001)
+    ph = sol.sol(ts)[0]
+    slow = np.convolve(ph, np.ones(201)/201, mode='same')[200:-200]  # знімаємо тремтіння
+    tt = ts[200:-200]
+    d = slow - math.pi
+    sgn = np.sign(d); cr = np.where(np.diff(sgn) != 0)[0]
+    if len(cr) < 3: return float('nan')
+    per = 2*(tt[cr[-1]] - tt[cr[0]])/(len(cr)-1)
+    return 2*math.pi/per
+
+def ref_m5():
+    w0 = 2*math.pi; h = 0.1
+    return h*w0/2, h*w0/4
+
+# ---------------------------------------------------------------- сторінка --
+def page_numbers(rel):
+    from cdp import Page
+    p = Page(); p.metrics(1440, 1000, dpr=1)
+    p.goto('file://' + os.path.join(ROOT, rel), 2.0)
+    p.js("window.requestAnimationFrame=function(){return 0;};")
+    out = {}
+    def num(expr):
+        v = p.js(expr)
+        return float(str(v).replace('−', '-').replace(',', '.')
+                     .replace(' ', ' ').split(' ')[0])
+    p.js("activate('m1'); M1.th0=30; M1.reset(); M1.render();"); time.sleep(0.3)
+    out['T0'] = num("document.getElementById('m1kT0').textContent")
+    out['r30'] = num("document.getElementById('m1kR').textContent")
+    p.js("M1.th0=90; M1.reset(); M1.render();"); time.sleep(0.2)
+    out['r90'] = num("document.getElementById('m1kR').textContent")
+    p.js("activate('m2'); M2.rg=0.90; M2.reset(); M2.render();"); time.sleep(0.3)
+    out['Tb2'] = num("document.getElementById('m2kTb').textContent")
+    out['slope'] = num("document.getElementById('m2kS').textContent")/100.0
+    p.js("activate('m3'); M3.k=0.5; M3.reset(); M3.render();"); time.sleep(0.3)
+    out['w1'] = num("document.getElementById('m3kw1').textContent")
+    out['w2'] = num("document.getElementById('m3kw2').textContent")
+    out['Tb3'] = num("document.getElementById('m3kTb').textContent")
+    out['Th3'] = num("document.getElementById('m3kTh').textContent")
+    p.js("activate('m4'); M4.a=0.01; M4.Om=300; M4.p0=170; M4.reset(); M4.render();"); time.sleep(0.3)
+    out['Oc'] = num("document.getElementById('m4kOc').textContent")
+    out['Ohz'] = float(p.js("document.getElementById('m4kOc').textContent")
+                       .split('=')[1].replace('−','-').replace(',','.').split(' ')[1])
+    out['wup'] = num("document.getElementById('m4kWu').textContent")
+    out['wdn'] = num("document.getElementById('m4kWd').textContent")
+    p.js("activate('m5'); M5.rg=2.0; M5.h=0.1; M5.reset(); M5.render();"); time.sleep(0.3)
+    out['half'] = num("document.getElementById('m5kW').textContent")
+    out['incr'] = num("document.getElementById('m5kS').textContent")
+    out['drift'] = p.js("""(function(){M1.th0=30;M1.reset();M1.playing=true;
+      for(let i=0;i<40000;i++){M1.tick(0.016);} return M1.drift;})()""")
+    p.close()
+    return out
+
+def main():
+    rel = 'Theoretical-Mechanics/03-small-oscillations.html'
+    T0, r30, r90 = ref_m1()
+    Tb2, slope = ref_m2()
+    w1, w2, Tb3, Th3 = ref_m3()
+    Oc, Ohz, wup, wdn = ref_m4()
+    half, incr = ref_m5()
+    pg = page_numbers(rel)
+
+    chk('м1 · T₀ = 2π√(l/g)', T0, pg['T0'], 5e-4, 'с')
+    chk('м1 · T/T₀ при θ₀ = 30°', r30, pg['r30'], 1e-4)
+    chk('м1 · T/T₀ при θ₀ = 90°', r90, pg['r90'], 1e-4)
+    chk('м2 · період биття при γ = 0,9ω₀', Tb2, pg['Tb2'], 5e-2, 'с')
+    chk('м2 · нахил огинаючої при резонансі', slope, pg['slope'], 5e-5, 'м/с')
+    chk('м3 · ω₁ = √(g/l)', w1, pg['w1'], 5e-3, 'рад/с')
+    chk('м3 · ω₂ = √(g/l + 2k/m)', w2, pg['w2'], 5e-3, 'рад/с')
+    chk('м3 · період биття', Tb3, pg['Tb3'], 5e-2, 'с')
+    chk('м3 · повне перекачування енергії', Th3, pg['Th3'], 5e-2, 'с')
+    chk('м4 · поріг Ω_c = √(2gl)/a', Oc, pg['Oc'], 0.5, 'рад/с')
+    chk('м4 · той самий поріг у герцах', Ohz, pg['Ohz'], 0.05, 'Гц')
+    chk('м4 · частота навколо вершини', wup, pg['wup'], 5e-3, 'рад/с')
+    chk('м4 · частота навколо низу', wdn, pg['wdn'], 5e-3, 'рад/с')
+    chk('м5 · напівширина зони hω₀/2', half, pg['half'], 5e-4, 'рад/с')
+    chk('м5 · інкремент у центрі зони hω₀/4', incr, pg['incr'], 5e-4, 'с⁻¹')
+
+    wf = ref_m4_full()
+    ROWS.append(('м4 · повна модель проти ефективної', wup, wf,
+                 0.03*wup, 'рад/с', abs(wf-wup) <= 0.03*wup))
+    dref = ref_m1_drift()
+    ROWS.append(('м1 · дрейф енергії за 100 періодів (еталон)', 0.0, dref, 1e-6, '', dref < 1e-6))
+    ROWS.append(('м1 · дрейф енергії на сторінці', 0.0, pg['drift'], 1e-6, '', pg['drift'] < 1e-6))
+
+    w = max(len(r[0]) for r in ROWS)
+    bad = 0
+    print('%-*s %14s %14s  %s' % (w, 'що', 'очікувано', 'на сторінці', 'вердикт'))
+    for name, ref, got, tol, unit, ok in ROWS:
+        f = lambda v: ('%.6g' % v) if abs(v) >= 1e-4 or v == 0 else ('%.3e' % v)
+        print('%-*s %14s %14s  %s' % (w, name, f(ref)+' '+unit, f(got)+' '+unit,
+                                      'збігається' if ok else 'РОЗБІЖНІСТЬ'))
+        bad += 0 if ok else 1
+    print('---- розбіжностей:', bad)
+    sys.exit(1 if bad else 0)
+
+if __name__ == '__main__':
+    main()

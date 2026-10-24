@@ -410,7 +410,9 @@ def main():
     only_run='--runtime' in sys.argv
     no_sweep=only_static or '--no-sweep' in sys.argv
     os.chdir(ROOT)
-    files=args or (sorted(glob.glob('basic_physics/*.html'))+sorted(glob.glob('physics_tasks/*.html')))
+    files=args or (sorted(glob.glob('basic_physics/*.html'))
+                   +sorted(glob.glob('physics_tasks/*.html'))
+                   +sorted(glob.glob('Theoretical-Mechanics/*.html')))
     total=0
     for f in files:
         rows=[]
