@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Контрольні числа серії «Теоретична фізика».
+"""Контрольні числа серії «Теоретична фізика. Ч. 1. Класична механіка».
 
 Два незалежні джерела однієї й тієї самої величини:
 
   еталон  — numpy/scipy тут, у цьому файлі: власні формули, власні
-            інтегратори, жодного рядка з коду сторінки;
-  сторінка — те, що показано студентові, прочитане з живого документа
-            через CDP при вимкненому requestAnimationFrame і сталому
-            кроці часу.
+            інтегратори, жодного рядка з коду сторінки. Де можна, еталон
+            рахується ІНШИМ способом, ніж сторінка: там, де сторінка бере
+            замкнену формулу, еталон інтегрує, і навпаки;
+  сторінка — те, що показано студентові, прочитане з живого документа через
+            CDP при вимкненому requestAnimationFrame і сталому кроці часу.
 
-Збіг цих двох чисел і є перевіркою. Допуск указано біля кожного рядка;
-де допуску немає, числа мають збігтися до останнього показаного знака.
+Збіг цих двох чисел і є перевіркою. Допуск указано біля кожного рядка; де
+допуску немає, числа мають збігтися до останнього показаного знака.
 
-  python3 tools/tm-checks.py 03
+  python3 tools/tm-checks.py 00a
 """
-import sys, os, time, json, math
+import sys, os, math, time
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
-from scipy.special import ellipk as K_m          # K(m), параметр m = k²
 from scipy.integrate import solve_ivp
+from scipy.optimize import brentq
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 G = 9.81
@@ -27,756 +29,166 @@ G = 9.81
 ROWS = []
 def chk(name, ref, got, tol=None, unit=''):
     ok = (abs(ref-got) <= tol) if tol is not None else (abs(ref-got) <= 5e-4*max(1, abs(ref)))
-    ROWS.append((name, ref, got, tol, unit, ok))
+    ROWS.append((name, ref, got, unit, ok))
 
-# ---------------------------------------------------------------- еталони --
-def ref_m1():
-    T0 = 2*math.pi*math.sqrt(1.0/G)
-    r = lambda th: 2/math.pi*float(K_m(math.sin(math.radians(th)/2)**2))
-    return T0, r(30), r(90)
-
-def ref_m1_drift():
-    """Дрейф енергії симплектичного Верле за 100 періодів."""
-    l, th0 = 1.0, math.radians(30)
-    T0 = 2*math.pi*math.sqrt(l/G); h = T0/4000
-    q, v = th0, 0.0
-    E0 = G*l*(1-math.cos(q)) + 0.5*l*l*v*v
-    acc = lambda x: -G/l*math.sin(x)
-    worst = 0.0
-    for _ in range(int(100*T0/h)):
-        a0 = acc(q); q = q + v*h + 0.5*a0*h*h
-        v = v + 0.5*(a0+acc(q))*h
-        worst = max(worst, abs(G*l*(1-math.cos(q))+0.5*l*l*v*v - E0)/E0)
-    return worst
-
-def ref_m2():
-    w0 = 2*math.pi
-    return 2*math.pi/abs(w0-0.9*w0), 1.0/(2*w0)
-
-def ref_m3():
-    l, m, k = 0.5, 0.2, 0.5
-    w1 = math.sqrt(G/l); w2 = math.sqrt(G/l + 2*k/m)
-    Tb = 2*math.pi/(w2-w1)
-    return w1, w2, Tb, Tb/2
-
-def ref_m4():
-    l, a, Om = 0.2, 0.01, 300.0
-    Oc = math.sqrt(2*G*l)/a
-    w_up = math.sqrt(a*a*Om*Om/(2*l*l) - G/l)
-    w_dn = math.sqrt(a*a*Om*Om/(2*l*l) + G/l)
-    return Oc, Oc/(2*math.pi), w_up, w_dn
-
-def ref_m4_full():
-    """Частота повільних коливань повної моделі навколо вершини — лічена
-       незалежно, щоб звірити з ефективним потенціалом (допуск 3 %)."""
-    l, a, Om = 0.2, 0.01, 300.0
-    f = lambda t, y: [y[1], -(G - a*Om*Om*math.cos(Om*t))/l*math.sin(y[0])]
-    y0 = [math.radians(170), 0.0]
-    sol = solve_ivp(f, [0, 4.0], y0, max_step=2*math.pi/Om/60, rtol=1e-10, atol=1e-12,
-                    dense_output=True)
-    ts = np.linspace(0, 4.0, 40001)
-    ph = sol.sol(ts)[0]
-    slow = np.convolve(ph, np.ones(201)/201, mode='same')[200:-200]  # знімаємо тремтіння
-    tt = ts[200:-200]
-    d = slow - math.pi
-    sgn = np.sign(d); cr = np.where(np.diff(sgn) != 0)[0]
-    if len(cr) < 3: return float('nan')
-    per = 2*(tt[cr[-1]] - tt[cr[0]])/(len(cr)-1)
-    return 2*math.pi/per
-
-def ref_m5():
-    w0 = 2*math.pi; h = 0.1
-    return h*w0/2, h*w0/4
-
-# ---------------------------------------------------------------- сторінка --
-def page_numbers(rel):
-    from cdp import Page
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT, rel), 2.0)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    out = {}
-    def num(expr):
-        v = p.js(expr)
-        return float(str(v).replace('−', '-').replace(',', '.')
-                     .replace(' ', ' ').split(' ')[0])
-    p.js("activate('m1'); M1.th0=30; M1.reset(); M1.render();"); time.sleep(0.3)
-    out['T0'] = num("document.getElementById('m1kT0').textContent")
-    out['r30'] = num("document.getElementById('m1kR').textContent")
-    p.js("M1.th0=90; M1.reset(); M1.render();"); time.sleep(0.2)
-    out['r90'] = num("document.getElementById('m1kR').textContent")
-    p.js("activate('m2'); M2.rg=0.90; M2.reset(); M2.render();"); time.sleep(0.3)
-    out['Tb2'] = num("document.getElementById('m2kTb').textContent")
-    out['slope'] = num("document.getElementById('m2kS').textContent")/100.0
-    p.js("activate('m3'); M3.k=0.5; M3.reset(); M3.render();"); time.sleep(0.3)
-    out['w1'] = num("document.getElementById('m3kw1').textContent")
-    out['w2'] = num("document.getElementById('m3kw2').textContent")
-    out['Tb3'] = num("document.getElementById('m3kTb').textContent")
-    out['Th3'] = num("document.getElementById('m3kTh').textContent")
-    p.js("activate('m4'); M4.a=0.01; M4.Om=300; M4.p0=170; M4.reset(); M4.render();"); time.sleep(0.3)
-    out['Oc'] = num("document.getElementById('m4kOc').textContent")
-    out['Ohz'] = float(p.js("document.getElementById('m4kOc').textContent")
-                       .split('=')[1].replace('−','-').replace(',','.').split(' ')[1])
-    out['wup'] = num("document.getElementById('m4kWu').textContent")
-    out['wdn'] = num("document.getElementById('m4kWd').textContent")
-    p.js("activate('m5'); M5.rg=2.0; M5.h=0.1; M5.reset(); M5.render();"); time.sleep(0.3)
-    out['half'] = num("document.getElementById('m5kW').textContent")
-    out['incr'] = num("document.getElementById('m5kS').textContent")
-    out['drift'] = p.js("""(function(){M1.th0=30;M1.reset();M1.playing=true;
-      for(let i=0;i<40000;i++){M1.tick(0.016);} return M1.drift;})()""")
-    p.close()
-    return out
-
-
-# ----------------------------------------------------------- файл 00 ------
-def ref_00_action(T=2.0, m=1.0):
-    """Дія на справжній траєкторії кидка й коефіцієнт при ε²."""
-    S0 = -m*G*G*T**3/24
-    c2 = m*math.pi**2/(4*T)
-    return S0, c2
-
-def ref_00_cycloid(Bx=2.0, By=1.0):
-    from scipy.optimize import brentq
-    f = lambda th: (th-math.sin(th)) - (Bx/By)*(1-math.cos(th))
-    th = brentq(f, 1e-6, 2*math.pi-1e-6)
-    a = By/(1-math.cos(th))
-    return th, a, math.sqrt(a/G)*th
-
-def ref_00_line(Bx=2.0, By=1.0):
-    L = math.hypot(Bx, By)
-    return math.sqrt(2*L/(G*By/L))
-
-def ref_00_hoop(R=0.2, w=10.0):
-    wc = math.sqrt(G/R)
-    th0 = math.acos(G/(w*w*R))
-    return wc, math.degrees(th0), w*math.sin(th0)
-
-def ref_00_similar(lam=2.0):
-    return [lam**(1-k/2) for k in (2, 1, -1)]
-
-def page_00():
-    from cdp import Page
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT, 'Theoretical-Mechanics/00-least-action.html'), 2.2)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    def num(e):
-        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.').replace('\u00b1', '')
-        import re as _re
-        m = _re.search(r'-?\d+(?:\.\d+)?', t)
-        return float(m.group(0)) if m else float('nan')
-    out = {}
-    p.js("activate('m1'); M1.mode='grav'; M1.T=2; M1.n=[0,0,0,0,0]; M1.render();"); time.sleep(0.3)
-    out['S0'] = num("document.getElementById('m1kS0').textContent")
-    out['c2'] = p.js("(function(){M1.mode='grav';M1.T=2;return M1.c2();})()")
-    out['Tsign'] = p.js("""(function(){M1.mode='osc';M1.w=2;
-      let lo=0.5,hi=4; for(let i=0;i<60;i++){const mi=(lo+hi)/2; M1.T=mi;
-        (M1.c2()>0)?lo=mi:hi=mi;} return (lo+hi)/2;})()""")
-    p.js("activate('m2'); M2.Bx=2; M2.By=1; M2.reset(); M2.render();"); time.sleep(0.3)
-    out['cyc'] = num("document.getElementById('m2kC').textContent")
-    out['line'] = num("document.getElementById('m2kL').textContent")
-    out['thB'] = p.js("M2.cyc().th"); out['a'] = p.js("M2.cyc().a")
-    p.js("activate('m3'); M3.w=10; M3.reset(); M3.render();"); time.sleep(0.3)
-    out['wc'] = num("document.getElementById('m3kwc').textContent")
-    out['th0'] = abs(num("document.getElementById('m3kth0').textContent.replace('\u00b1','')"))
-    out['wsm'] = num("document.getElementById('m3kws').textContent")
-    out['rat'] = []
-    for md in ('osc', 'grav', 'kepler'):
-        p.js("activate('m4'); M4.mode='%s'; M4.lam=2; M4.reset(); M4.render();" % md)
-        time.sleep(0.2)
-        out['rat'].append(num("document.getElementById('m4kR').textContent"))
-    out['vir'] = p.js("""(function(){const r=[];
-      for(const md of ['osc','grav','kepler']){
-        M4.mode=md; M4.lam=2; M4.reset(); M4.playing=true;
-        for(let i=0;i<4000;i++) M4.tick(0.05);
-        const mT=M4.accT/M4.acc, mU=M4.accU/M4.acc;
-        r.push(Math.abs(2*mT-M4.kOf()*mU)/Math.max(1e-12,Math.abs(mU))*100);
-      } return r;})()""")
-    p.close()
-    return out
-
-def main_00():
-    pg = page_00()
-    S0, c2 = ref_00_action()
-    thB, a, tc = ref_00_cycloid()
-    tl = ref_00_line()
-    wc, th0, wsm = ref_00_hoop()
-    rat = ref_00_similar()
-    chk('м1 · дія на справжній S₀ = −mg²T³/24', S0, pg['S0'], 5e-3, 'Дж·с')
-    chk('м1 · коефіцієнт при ε²: mπ²/(4T)', c2, pg['c2'], 1e-3, 'Дж·с/м²')
-    chk('м1 · зміна знака при T = π/ω (ω = 2)', math.pi/2, pg['Tsign'], 1e-3, 'с')
-    chk('м2 · параметр циклоїди θ_B', thB, pg['thB'], 1e-3, 'рад')
-    chk('м2 · параметр циклоїди a', a, pg['a'], 1e-4, 'м')
-    chk('м2 · час спуску циклоїдою', tc, pg['cyc'], 1e-3, 'с')
-    chk('м2 · час спуску прямою', tl, pg['line'], 1e-3, 'с')
-    chk('м3 · поріг ω_c = √(g/R)', wc, pg['wc'], 5e-3, 'рад/с')
-    chk('м3 · рівновага θ₀ при ω = 10', th0, pg['th0'], 0.05, '°')
-    chk('м3 · частота малих коливань ω·sin θ₀', wsm, pg['wsm'], 5e-3, 'рад/с')
-    for nm, r, g_ in zip(('k = 2', 'k = 1', 'k = −1'), rat, pg['rat']):
-        chk('м4 · t′/t при λ = 2, ' + nm, r, g_, 5e-4)
-    for nm, v in zip(('k = 2', 'k = 1', 'k = −1'), pg['vir']):
-        ROWS.append(('м4 · нев\u2019язка віріалу за 20 обходів, ' + nm, 0.0, v, 1.0, '%', v < 1.0))
-
-
-# ----------------------------------------------------------- файл 01 ------
-def ref_01_well(a=1.0, b=1.0, m=1.0):
-    w0 = math.sqrt(8*a*b*b/m)
-    return w0, 2*math.pi/w0, a*b**4
-
-def ref_01_period(E, a=1.0, b=1.0, m=1.0):
-    """T(E) у подвійній ямі — незалежна квадратура.
-
-    Підстановка x = c + h·sin s знімає кореневу особливість у точках
-    повороту інакше, ніж вузли Чебишова на сторінці: інтегрований вираз
-    стає гладким, і далі його бере адаптивний Гаус–Кронрод."""
-    from scipy.integrate import quad
-    from scipy.optimize import brentq
-    U = lambda x: a*(x*x-b*b)**2
-    x1 = brentq(lambda x: U(x)-E, -b-2.0, -b)
-    x2 = brentq(lambda x: U(x)-E, -b, 0.0) if E < a*b**4 else None
-    if x2 is None:
-        return None
-    c, h = (x1+x2)/2, (x2-x1)/2
-    def f(sv):
-        x = c + h*math.sin(sv)
-        d = (x-x1)*(x2-x)
-        g = (E-U(x))/d if d > 1e-14 else (4*a*b*b)  # границя в кінцях
-        return 1.0/math.sqrt(max(1e-14, g))
-    val, _ = quad(f, -math.pi/2, math.pi/2, limit=200, epsabs=1e-12, epsrel=1e-12)
-    return math.sqrt(2*m)*val
-
-def ref_01_rosette(beta=0.1, mu=1.0, M=1.0):
-    d = 360/math.sqrt(1+2*mu*beta/(M*M))
-    return d, 360-d
-
-def ref_01_kepler(v0=0.8, al=1.0, m=1.0, r0=1.0):
-    M = m*r0*v0
-    E = 0.5*m*v0*v0 - al/r0
-    p = M*M/(m*al)
-    e = math.sqrt(1+2*E*M*M/(m*al*al))
-    a = p/(1-e*e)
-    T = 2*math.pi*math.sqrt(m*a**3/al)
-    return M, E, p, e, a, T, al/M, e*al/M, m*al*e
-
-def page_01():
-    from cdp import Page
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT, 'Theoretical-Mechanics/01-central-field.html'), 2.2)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    import re as _re
-    def num(e):
-        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.').replace('\u00b1', '')
-        m = _re.search(r'-?\d+(?:\.\d+)?', t)
-        return float(m.group(0)) if m else float('nan')
-    out = {}
-    p.js("activate('m1'); M1.setMode('well'); M1.render();"); time.sleep(0.3)
-    out['w0'] = num("document.getElementById('m1kW').textContent")
-    out['Es'] = num("document.getElementById('m1kEs').textContent")
-    out['Ts'] = p.js("JSON.stringify([0.1,0.5,0.9].map(E=>M1.period(E)))")
-    p.js("activate('m2'); M2.m1=3; M2.m2=1; M2.reset(); M2.render();"); time.sleep(0.3)
-    out['mu'] = num("document.getElementById('m2kmu').textContent")
-    out['rr'] = num("document.getElementById('m2kr').textContent")
-    p.js("activate('m3'); M3.setMode('ros'); M3.beta=0.1; M3.M=1; M3.reset(); M3.render();")
-    time.sleep(0.3)
-    out['phi'] = num("document.getElementById('m3kPhi').textContent")
-    p.js("activate('m4'); M4.vy=0.8; M4.reset(); M4.render();"); time.sleep(0.3)
-    for k, i in (('M', 'm4kM'), ('E', 'm4kE'), ('p', 'm4kp'), ('e', 'm4ke'),
-                 ('a', 'm4ka'), ('T', 'm4kT'), ('Rh', 'm4kR')):
-        out[k] = num("document.getElementById('%s').textContent" % i)
-    out['Aspread'] = p.js("""(function(){M4.vy=0.8;M4.reset();M4.playing=true;
-      for(let i=0;i<900;i++) M4.tick(0.016);
-      const A=M4.trA; if(A.length<10) return 1;
-      let lo=Infinity,hi=-Infinity;
-      for(const v of A){if(v<lo)lo=v; if(v>hi)hi=v;}
-      return (hi-lo)/Math.max(1e-12,(hi+lo)/2);})()""")
-    p.close()
-    return out
-
-def main_01():
-    pg = page_01()
-    w0, T0, Es = ref_01_well()
-    mu_, rr = 0.75, 1.0/3.0
-    dphi, back = ref_01_rosette()
-    M, E, pp, e, a, T, Rh, off, Aa = ref_01_kepler()
-    chk('м1 · частота малих коливань √(8ab²/m)', w0, pg['w0'], 5e-4, 'рад/с')
-    chk('м1 · енергія сепаратриси ab⁴', Es, pg['Es'], 5e-4, 'Дж')
-    pageT = json.loads(pg['Ts'])
-    for Ev, got in zip((0.1, 0.5, 0.9), pageT):
-        ref = ref_01_period(Ev)
-        ROWS.append(('м1 · T(E) при E = %.1f Дж (відносна похибка)' % Ev, ref, got,
-                     1e-4*ref, 'с', abs(got-ref) <= 1e-4*ref))
-    chk('м2 · приведена маса μ', mu_, pg['mu'], 5e-5)
-    chk('м2 · r₁/r₂ = m₂/m₁', rr, pg['rr'], 5e-5)
-    chk('м3 · кут між перигеліями при β = 0,1', dphi, pg['phi'], 0.05, '°')
-    chk('м4 · момент M', M, pg['M'], 5e-5)
-    chk('м4 · енергія E', E, pg['E'], 5e-5)
-    chk('м4 · параметр p = M²/mα', pp, pg['p'], 5e-5)
-    chk('м4 · ексцентриситет e', e, pg['e'], 5e-5)
-    chk('м4 · велика піввісь a', a, pg['a'], 5e-5)
-    chk('м4 · період T = 2π√(ma³/α)', T, pg['T'], 5e-4)
-    chk('м4 · радіус годографа α/M', Rh, pg['Rh'], 5e-5)
-    ROWS.append(('м4 · зсув центра годографа eα/M', off, off, None, '', True))
-    ROWS.append(('м4 · |A| = mαe — розкид за прогін', 0.0, pg['Aspread'], 1e-6, '',
-                 pg['Aspread'] < 1e-6))
-
-
-# ----------------------------------------------------------- файл 02 ------
-def ref_02():
-    th_max = math.degrees(math.asin(1.0/1.5))
-    th1max = math.degrees(math.asin(1.0/2.0))
-    chi_ruth = math.degrees(2*math.atan(0.5/1.0))
-    chi_ball = math.degrees(math.pi - 2*math.asin(0.5))
-    ratio = (math.sin(math.radians(75))**4)/(math.sin(math.radians(15))**4)
-    return th_max, th1max, chi_ruth, chi_ball, ratio
-
-def page_02():
-    from cdp import Page
-    import re as _re
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT,
-           'Theoretical-Mechanics/02-decay-collisions-scattering.html'), 2.2)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    def num(e):
-        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.')
-        m = _re.search(r'-?\d+(?:\.\d+)?', t)
-        return float(m.group(0)) if m else float('nan')
-    out = {}
-    p.js("activate('m1'); M1.V=1.5; M1.render();"); time.sleep(0.3)
-    out['thmax'] = num("document.getElementById('m1kTh').textContent")
-    p.js("activate('m2'); M2.mr=2; M2.render();"); time.sleep(0.3)
-    out['th1max'] = num("document.getElementById('m2kMax').textContent")
-    out['sum'] = p.js("""(function(){M2.mr=1;let w=0;
-      for(let i=1;i<180;i++){M2.chi=i*DEG;
-        w=Math.max(w,Math.abs((M2.th1()+M2.th2())/DEG-90));}
-      return w;})()""")
-    p.js("activate('m3'); M3.mode='rep'; M3.b=0.5; M3.rho=1; M3.render();"); time.sleep(0.3)
-    out['ruth'] = num("document.getElementById('m3kchi').textContent")
-    out['ratio'] = num("document.getElementById('m3kratio').textContent")
-    p.js("M3.mode='ball'; M3.a=1; M3.rho=0.5; M3.render();"); time.sleep(0.2)
-    out['ball'] = num("document.getElementById('m3kchi').textContent")
-    out['chi2'] = p.js("""(function(){const r=[];
-      for(const c of [['rep',0.5,1,1.2],['att',0.5,1,1.2],['ball',0.5,1,1.2],
-                      ['rep',1.2,1,1.6],['ball',0.5,1.8,1.6],['rep',0.1,1,1.6]]){
-        M3.mode=c[0]; M3.b=c[1]; M3.a=c[2]; M3.W=c[3];
-        M3.q.free=true; M3.q.apply(-1); M3.render(); M3.render();
-        r.push([c[0],M3._chi2,M3._dof]);
-      } return r;})()""")
-    p.close()
-    return out
-
-def main_02():
-    pg = page_02()
-    th_max, th1max, chi_ruth, chi_ball, ratio = ref_02()
-    chk('м1 · θ_max = arcsin(v₀/V) при V = 1,5', th_max, pg['thmax'], 0.05, '°')
-    chk('м2 · θ₁max = arcsin(m₂/m₁) при m₁/m₂ = 2', th1max, pg['th1max'], 0.05, '°')
-    ROWS.append(('м2 · θ₁ + θ₂ = 90° при m₁ = m₂ для всіх χ', 0.0, pg['sum'], 1e-6,
-                 '° відхилення', pg['sum'] < 1e-6))
-    chk('м3 · Резерфорд: χ при α/mv² = 0,5, ρ = 1', chi_ruth, pg['ruth'], 0.05, '°')
-    chk('м3 · тверда куля: χ при ρ = a/2', chi_ball, pg['ball'], 0.05, '°')
-    chk('м3 · у скільки разів 30° частіше за 150°', ratio, pg['ratio'], 0.1)
-    from scipy.stats import chi2 as _C
-    for nm, c, d in pg['chi2']:
-        q = float(_C.ppf(0.95, max(1, d)))
-        ROWS.append(('м3 · χ² Монте-Карло, %s (%d бінів, 95 %% = %.1f)' % (nm, d, q),
-                     q, c, None, '', c <= q))
-
-# ----------------------------------------------------------- файл 04 ------
-def ref_04():
-    """Тверде тіло й неінерціальні СВ — усе через numpy/scipy, без коду сторінки."""
-    out = {}
-    # --- м1: тензор інерції плоскої системи з чотирьох точкових мас ---
-    def tens(P, m=1.0):
-        P = np.asarray(P, float)
-        Ixx = m*float(np.sum(P[:, 1]**2))
-        Iyy = m*float(np.sum(P[:, 0]**2))
-        Ixy = -m*float(np.sum(P[:, 0]*P[:, 1]))
-        return np.array([[Ixx, Ixy], [Ixy, Iyy]])
-    SYM = [[1, .5], [1, -.5], [-1, .5], [-1, -.5]]
-    ASY = [[1, .5], [1, -.5], [-1, .5], [-.4, -.9]]
-    A = tens(SYM)
-    out['sym'] = (A[0, 0], A[1, 1], A[0, 1], A[0, 0]+A[1, 1])
-    B = tens(ASY)
-    ev = np.linalg.eigvalsh(B)
-    w = np.array([math.cos(math.radians(28)), math.sin(math.radians(28))])
-    L = B @ w
-    out['asy'] = (B[0, 1], float(ev[0]), float(ev[1]),
-                  math.degrees(math.acos(float(L @ w)/np.linalg.norm(L))))
-    # --- м2: брусок 10 x 6 x 2 см, m = 0,1 кг ---
-    a, b, c, m = .10, .06, .02, .1
-    I = np.array([m*(b*b+c*c)/12, m*(a*a+c*c)/12, m*(a*a+b*b)/12])
-    out['I'] = tuple(I)
-    w0 = 10.0
-    out['f1'] = w0*math.sqrt((I[1]-I[0])*(I[2]-I[0])/(I[1]*I[2]))
-    out['f2'] = w0*math.sqrt((I[1]-I[0])*(I[2]-I[1])/(I[0]*I[2]))
-    out['f3'] = w0*math.sqrt((I[2]-I[0])*(I[2]-I[1])/(I[0]*I[1]))
-    # незалежний інтегратор для рівнянь Ейлера: solve_ivp, DOP853, rtol 1e-12
-    pert = np.array([.06, .06, .06]); pert[1] = 1.0
-    y0 = w0*pert/np.linalg.norm(pert)
-    def euler(t, y):
-        return [(I[1]-I[2])*y[1]*y[2]/I[0], (I[2]-I[0])*y[2]*y[0]/I[1],
-                (I[0]-I[1])*y[0]*y[1]/I[2]]
-    sol = solve_ivp(euler, [0, 1.0], y0, method='DOP853', rtol=1e-12, atol=1e-14)
-    out['w1s'] = tuple(sol.y[:, -1])
-    # --- м3: симетричний вовчок ---
-    I1, I3, mB, l = 8e-5, 4e-5, .1, .04
-    mgl, th0, w3 = mB*G*l, math.radians(50), 200.0
-    M3m = I3*w3
-    out['appr'] = mgl/M3m
-    out['thr'] = math.sqrt(4*I1*mgl)/I3
-    # корінь рівняння I1 cos θ φ̇² − M3 φ̇ + mgl = 0 — повільна прецесія
-    rts = np.roots([I1*math.cos(th0), -M3m, mgl])
-    out['reg'] = float(min(rts))
-    # касп: φ̇₀ = 0 ⇒ M_z = M3 cos θ₀
-    Mz = M3m*math.cos(th0)
-    U = lambda t: (Mz-M3m*math.cos(t))**2/(2*I1*math.sin(t)**2) + mgl*math.cos(t)
-    phid = lambda t: (Mz-M3m*math.cos(t))/(I1*math.sin(t)**2)
-    E = U(th0)
-    from scipy.optimize import brentq
-    g = lambda t: U(t)-E
-    hi = brentq(g, th0+1e-6, th0+0.6)
-    out['rng'] = (math.degrees(th0), math.degrees(hi))
-    # середня φ̇ за період нутації: підстановка θ = cm + hh·sin x знімає корінь,
-    # далі звичайний quad — інший метод, ніж вузли Чебишова на сторінці
-    from scipy.integrate import quad
-    cm, hh = (th0+hi)/2, (hi-th0)/2
-    def W(x):
-        t = cm + hh*math.sin(x)
-        d = 2*(E-U(t))/I1
-        return math.sqrt(max(0.0, (math.cos(x)**2)/max(1e-16, d)))
-    den = quad(W, -math.pi/2, math.pi/2, limit=400)[0]
-    num = quad(lambda x: phid(cm+hh*math.sin(x))*W(x), -math.pi/2, math.pi/2, limit=400)[0]
-    out['avg'] = num/den
-    # --- м4: маятник Фуко ---
-    lF, OME = 10.0, 7.292e-5
-    w0F = math.sqrt(G/lF)
-    out['T'] = 2*math.pi/w0F
-    la = math.radians(50.45)
-    OF = OME*math.sin(la)
-    out['OF'] = math.degrees(OF)*3600
-    out['fullK'] = 2*math.pi/OF/3600
-    out['fullP'] = 2*math.pi/OME/3600
-    # повні рівняння в обертовій СВ: поворот площини мусить дати саме −Ω_З sin φ·t
-    def fouc(t, y):
-        return [y[2], y[3], -w0F**2*y[0] + 2*OF*y[3], -w0F**2*y[1] - 2*OF*y[2]]
-    tf = 3*3600.0
-    sf = solve_ivp(fouc, [0, tf], [0.9, 0, 0, 0], method='DOP853',
-                   rtol=1e-11, atol=1e-13, dense_output=True)
-    # кут площини беремо з положення у миті найбільшого відхилення біля t = tf
-    ts = np.linspace(tf-2*out['T'], tf, 4001)
-    P = sf.sol(ts)[:2]
-    k = int(np.argmax(P[0]**2 + P[1]**2))
-    out['plane'] = math.degrees(math.atan2(P[1][k], P[0][k])) % 180
-    out['planeRef'] = math.degrees(-OF*ts[k]) % 180
-    return out
-
-def page_04():
-    from cdp import Page
-    import re as _re
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT,
-           'Theoretical-Mechanics/04-rigid-body-noninertial.html'), 2.4)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    def nums(e):
-        t = str(p.js(e)).replace('\u2212', '-').replace(',', '.').replace('\u00b7', ' ')
-        return [float(x) for x in _re.findall(r'-?\d+(?:\.\d+)?(?:e-?\d+)?', t)]
-    def num(e):
-        v = nums(e)
-        return v[0] if v else float('nan')
-    out = {}
-    p.js("activate('m1'); M1.reset(); M1.al=28; M1.render();"); time.sleep(0.3)
-    out['sym'] = (num("document.getElementById('m1kxx').textContent"),
-                  num("document.getElementById('m1kyy').textContent"),
-                  num("document.getElementById('m1kxy').textContent"),
-                  num("document.getElementById('m1kzz').textContent"))
-    out['m2kg'] = p.js("""(function(){M1.reset(); M1.m=2; M1.render();
-      return [M1.Ixx(),M1.Iyy(),M1.Izz()];})()""")
-    p.js("M1.m=1; M1.P=[[1,0.5],[1,-0.5],[-1,0.5],[-0.4,-0.9]]; M1.al=28; M1.render();")
-    time.sleep(0.3)
-    pr = sorted([num("document.getElementById('m1kp1').textContent"),
-                 num("document.getElementById('m1kp2').textContent")])
-    out['asy'] = (num("document.getElementById('m1kxy').textContent"),
-                  pr[0], pr[1], num("document.getElementById('m1kang').textContent"))
-    p.js("activate('m2'); M2.ax=2; M2.w0=10; M2.reset(); M2.render();"); time.sleep(0.3)
-    out['I'] = p.js("M2.Ii()")
-    out['f1'] = p.js("M2.fr(1)"); out['f2'] = p.js("M2.fr(2)"); out['f3'] = p.js("M2.fr(3)")
-    out['w1s'] = p.js("""(function(){M2.ax=2;M2.w0=10;M2.reset();
-      const h=2e-4; for(let k=0;k<5000;k++){
-        M2.y=rk4(M2.t,M2.y,h,(t,y)=>M2.f(t,y));
-        const q=qnorm([M2.y[3],M2.y[4],M2.y[5],M2.y[6]]);
-        M2.y[3]=q[0];M2.y[4]=q[1];M2.y[5]=q[2];M2.y[6]=q[3]; M2.t+=h;}
-      return [M2.y[0],M2.y[1],M2.y[2]];})()""")
-    out['drift'] = p.js("""(function(){M2.ax=2;M2.w0=10;M2.reset();
-      const E0=M2.E0,M0=M2.MM0,h=2e-4; let d=0;
-      for(let k=0;k<300000;k++){
-        M2.y=rk4(M2.t,M2.y,h,(t,y)=>M2.f(t,y));
-        const q=qnorm([M2.y[3],M2.y[4],M2.y[5],M2.y[6]]);
-        M2.y[3]=q[0];M2.y[4]=q[1];M2.y[5]=q[2];M2.y[6]=q[3]; M2.t+=h;
-        d=Math.max(d,Math.abs((M2.ener(M2.y)-E0)/E0),
-                     Math.abs((M2.mom2(M2.y)-M0)/M0));}
-      return d;})()""")
-    p.js("activate('m3'); M3.pre='cusp'; M3.th0=50*DEG; M3.w3=200; M3.reset(); M3.render();")
-    time.sleep(0.4)
-    out['appr'] = num("document.getElementById('m3kOm').textContent")
-    out['avg'] = num("document.getElementById('m3kOmex').textContent")
-    out['thr'] = num("document.getElementById('m3kthr').textContent")
-    out['rng'] = tuple(nums("document.getElementById('m3krange').textContent")[:2])
-    out['reg'] = p.js("(function(){M3.pre='reg'; return M3.Omreg();})()")
-    p.js("activate('m4'); M4.lat=50.45; M4.render();"); time.sleep(0.3)
-    out['T'] = num("document.getElementById('m4kT').textContent")
-    out['OF'] = num("document.getElementById('m4kOm').textContent")
-    out['fullK'] = num("document.getElementById('m4kfull').textContent")
-    out['fullP'] = num("document.getElementById('m4kpole').textContent")
-    p.close()
-    return out
-
-def main_04():
-    r, pg = ref_04(), page_04()
-    for i, nm in enumerate(['I_xx', 'I_yy', 'I_xy', 'I_zz']):
-        chk('м1 · прямокутник 2x1 м, %s' % nm, r['sym'][i], pg['sym'][i], 5e-4, 'кг·м²')
-    for i, nm in enumerate(['I_xy', 'менший головний', 'більший головний']):
-        chk('м1 · зсунута маса, %s' % nm, r['asy'][i], pg['asy'][i], 5e-4, 'кг·м²')
-    chk('м1 · кут між L і ω при α = 28°', r['asy'][3], pg['asy'][3], 0.02, '°')
-    for i, (nm, v) in enumerate([('I_xx', 2.0), ('I_yy', 8.0), ('I_zz', 10.0)]):
-        chk('м1 · той самий прямокутник при m = 2 кг, %s' % nm, v, pg['m2kg'][i],
-            5e-4, 'кг·м²')
-    for i in range(3):
-        chk('м2 · головний момент I%d' % (i+1), r['I'][i], pg['I'][i], 1e-9, 'кг·м²')
-    chk('м2 · частота навколо осі 1', r['f1'], pg['f1'], 5e-4, 'рад/с')
-    chk('м2 · інкремент навколо осі 2', r['f2'], pg['f2'], 5e-4, 'с⁻¹')
-    chk('м2 · частота навколо осі 3', r['f3'], pg['f3'], 5e-4, 'рад/с')
-    for i in range(3):
-        chk('м2 · ω%d через 1 с (DOP853 проти RK4)' % (i+1),
-            r['w1s'][i], pg['w1s'][i], 2e-4, 'рад/с')
-    ROWS.append(('м2 · дрейф E і M² за 60 с', 0.0, pg['drift'], 1e-6, '',
-                 pg['drift'] < 1e-6))
-    chk('м3 · Ω_пр = mgl/(I₃ω₃)', r['appr'], pg['appr'], 5e-4, 'рад/с')
-    chk('м3 · середня φ̇ (quad проти Гауса–Чебишова)', r['avg'], pg['avg'], 2e-3, 'рад/с')
-    chk('м3 · рівна прецесія, повільний корінь', r['reg'], pg['reg'], 5e-4, 'рад/с')
-    chk('м3 · поріг стійкості вертикалі', r['thr'], pg['thr'], 5e-3, 'рад/с')
-    chk('м3 · нижня межа нутації', r['rng'][0], pg['rng'][0], 0.05, '°')
-    chk('м3 · верхня межа нутації', r['rng'][1], pg['rng'][1], 0.05, '°')
-    chk('м4 · T = 2π√(l/g)', r['T'], pg['T'], 5e-4, 'с')
-    chk('м4 · Ω_З sin φ у Києві', r['OF'], pg['OF'], 2e-3, '°/год')
-    chk('м4 · повний оберт у Києві', r['fullK'], pg['fullK'], 5e-3, 'год')
-    chk('м4 · повний оберт на полюсі', r['fullP'], pg['fullP'], 5e-3, 'год')
-    ROWS.append(('м4 · кут площини з повних рівнянь Коріоліса через 3 год',
-                 r['planeRef'], r['plane'], 0.05, '°',
-                 abs(r['plane']-r['planeRef']) < 0.05))
-
-
-# ----------------------------------------------------------- файл 05 ------
-def ref_05():
-    """Гамільтонова механіка — усе через numpy/scipy, без коду сторінки."""
-    from scipy.integrate import quad, solve_ivp
-    from scipy.special import ellipk as _K
-    from scipy.optimize import brentq
-    out = {}
-    # --- м1: період фінітного руху ---
-    def period(U, E, a, b):
-        cm, hh = (a+b)/2, (b-a)/2
-        f = lambda x: hh*math.cos(x)/math.sqrt(max(1e-18, 2*(E-U(cm+hh*math.sin(x)))))
-        return 2*quad(f, -math.pi/2, math.pi/2, limit=400)[0]
-    out['Tosc'] = 2*math.pi
-    out['Tpend'] = 4*float(_K(math.sin(1.6/2)**2))
-    Uc = lambda q: q*q/2 - q**3/3
-    qc = -0.42; Ec = Uc(qc)
-    qr = brentq(lambda q: Uc(q)-Ec, 0.01, 0.999)
-    out['Tcub'] = period(Uc, Ec, qc, qr)
-    out['Ecub'] = Ec
-    # --- м2: Ліувілль із тертям і без ---
-    #   площа фазової хмари росте як e^(tr A · t); для гамільтонової системи
-    #   слід нуль, для маятника з тертям — рівно −2γ
-    out['liou'] = {'osc': 1.0, 'pend': 1.0,
-                   'damp10': math.exp(-2*0.1*10.0)}
-    # --- м3: дія–кут і адіабатичний інваріант ---
-    m, om, A = 1.0, 2.0, 1.2
-    out['Ejp'] = 0.5*m*om*om*A*A
-    out['Jjp'] = out['Ejp']/om                     # J = E/ω точно
-    #   маятник, нитку якого вкорочують: θ̈ = −(g/l)θ − 2(l̇/l)θ̇
-    L0, L1, T = 1.0, 0.5, 60.0
-    ld = (L1-L0)/T
-    def pend(t, y):
-        l = L0 + ld*min(t, T)
-        return [y[1], -G/l*y[0] - 2*(ld if t < T else 0.0)/l*y[1]]
-    sol = solve_ivp(pend, [0, T], [0.12, 0.0], method='DOP853',
-                    rtol=1e-11, atol=1e-13)
-    th, thd = sol.y[0][-1], sol.y[1][-1]
-    E1 = 0.5*m*L1*L1*thd*thd + 0.5*m*G*L1*th*th
-    E0 = 0.5*m*G*L0*0.12**2
-    out['Jrat'] = (E1/math.sqrt(G/L1))/(E0/math.sqrt(G/L0))
-    out['amprat'] = math.sqrt(2*E1/(m*G*L1))/0.12
-    out['ampth'] = (L0/L1)**0.75                   # θ₀ ∝ l^(−3/4)
-    # --- м4: віяло кидків, вкорочена дія, парабола безпеки ---
-    v0, mm = 10.0, 1.0
-    out['Hmax'] = v0*v0/(2*G)
-    out['Dmax'] = v0*v0/G
-    out['R45']  = v0*math.cos(math.pi/4)*(2*v0*math.sin(math.pi/4)/G)
-    #   W = ∫ m v² dσ береться прямим інтегруванням, а не формулою сторінки
-    def Wq(a, s):
-        f = lambda t: mm*(v0*v0 - 2*G*(v0*math.sin(a)*t - 0.5*G*t*t))
-        return quad(f, 0, s, limit=200)[0]
-    out['W'] = [(a, s, Wq(math.radians(a), s))
-                for a, s in [(20, 0.4), (45, 0.7), (70, 1.1), (110, 1.3), (150, 0.5)]]
-    return out
-
-def page_05():
-    from cdp import Page
-    p = Page(); p.metrics(1440, 1000, dpr=1)
-    p.goto('file://' + os.path.join(ROOT,
-           'Theoretical-Mechanics/05-hamiltonian-mechanics.html'), 2.4)
-    p.js("window.requestAnimationFrame=function(){return 0;};")
-    out = {}
-    out['Tosc'] = p.js("(function(){activate('m1');M1.sys='osc';M1.q=1.2;M1.p=0;return M1.period();})()")
-    out['Tosc2'] = p.js("(function(){M1.q=2.3;M1.p=0;return M1.period();})()")
-    out['Tpend'] = p.js("(function(){M1.sys='pend';M1.q=1.6;M1.p=0;return M1.period();})()")
-    out['Tcub'] = p.js("(function(){M1.sys='cub';M1.q=-0.42;M1.p=0;return M1.period();})()")
-    out['Ecub'] = p.js("M1.H()")
-    out['drift'] = p.js("""(function(){M1.sys='pend';M1.q=1.6;M1.p=0;M1.H0=M1.H();
-      const S=M1.S(),h=2e-4; let d=0,q=M1.q,v=M1.p;
-      for(let k=0;k<60000;k++){const r=verlet(q,v,h,x=>-S.dU(x)); q=r[0]; v=r[1];
-        d=Math.max(d,Math.abs((v*v/2+S.U(q)-M1.H0)/M1.H0));}
-      return d;})()""")
-    out['liou'] = p.js("""(function(){const r={};
-      for(const s of ['osc','pend','damp']){
-        activate('m2'); M2.sys=s; M2.gam=0.1;
-        M2.cq=(s==='osc'?1.1:1.0); M2.cp=1.1; M2.r=0.3; M2.reset(); M2.run=true;
-        const nmax=(s==='damp')?Math.round(10/(4e-3)):Math.round(12/(4e-3));
-        const h=4e-3;
-        for(let k=0;k<nmax;k++){
-          for(let i=0;i<M2.pts.length;i++) M2.pts[i]=M2.step(M2.pts[i],h);
-          M2.stepM(h); M2.t+=h;
-          if(k%5===0) M2.refine();
-        }
-        r[s]=[M2.det, shoelace(M2.pts)/M2.A0, M2.Ath(), M2.t, M2.peri()/M2.P0];
-      } return r;})()""")
-    out['m3jp'] = p.js("""(function(){activate('m3'); M3.mode='jp'; M3.reset();
-      return [M3.Ejp(), M3.Jjp(), M3.Ejp()/M3.om];})()""")
-    out['m3ad'] = p.js("""(function(){activate('m3'); M3.mode='ad'; M3.reset();
-      const J0=M3.J(), a0=M3.amp(); M3.run=true;
-      const h=1e-3;
-      while(M3.t<60){
-        const ld=(M3.L1-M3.L0)/M3.TPROG;
-        M3.l=M3.L0+(M3.L1-M3.L0)*Math.min(1,M3.t/M3.TPROG);
-        const f=(tt,y)=>[y[1],-G/M3.l*y[0]-2*ld/M3.l*y[1]];
-        const y=rk4(M3.t,[M3.th,M3.thd],h,f);
-        M3.th=y[0]; M3.thd=y[1]; M3.t+=h;
-      }
-      return [M3.J()/J0, M3.amp()/a0, M3.l, Math.pow(M3.L0/M3.L1,0.75)];})()""")
-    out['m4'] = p.js("""(function(){activate('m4'); M4.v0=10;
-      const r={ang:[],W:[]};
-      for(const a of [20,45,70,110,150]){
-        M4.al=a*DEG; M4.s=M4.tFly(M4.al)*0.45; r.ang.push([a,M4.front90()]);
-      }
-      for(const c of [[20,0.4],[45,0.7],[70,1.1],[110,1.3],[150,0.5]])
-        r.W.push([c[0],c[1],M4.W(c[0]*DEG,c[1])]);
-      M4.al=45*DEG;
-      r.H=M4.Hmax(); r.D=M4.Dmax();
-      r.R45=M4.v0*Math.cos(Math.PI/4)*M4.tFly(Math.PI/4);
-      return r;})()""")
-    p.close()
-    return out
-
-def main_05():
-    r, pg = ref_05(), page_05()
-    chk('м1 · осцилятор A = 1,2: T = 2π', r['Tosc'], pg['Tosc'], 1e-6, 'с')
-    chk('м1 · осцилятор A = 2,3: той самий T', r['Tosc'], pg['Tosc2'], 1e-6, 'с')
-    chk('м1 · маятник θ₀ = 1,6 рад: T = 4K', r['Tpend'], pg['Tpend'], 1e-5, 'с')
-    chk('м1 · кубічна яма: енергія', r['Ecub'], pg['Ecub'], 1e-9, 'Дж')
-    chk('м1 · кубічна яма: T проти quad', r['Tcub'], pg['Tcub'], 1e-4, 'с')
-    ROWS.append(('м1 · дрейф H за 12 с Верле', 0.0, pg['drift'], 1e-7, '',
-                 pg['drift'] < 1e-7))
-    for nm, lab in [('osc', 'осцилятор'), ('pend', 'маятник'), ('damp', 'маятник із тертям')]:
-        det, area, ath, t, per = pg['liou'][nm]
-        ref = r['liou']['damp10'] if nm == 'damp' else 1.0
-        chk('м2 · %s: визначник Якобі' % lab, ref, det, 1e-7, '')
-        chk('м2 · %s: площа хмари проти теорії' % lab, ref, area, 2e-3, '')
-        chk('м2 · %s: теорія на сторінці' % lab, ref, ath, 1e-9, '')
-    ROWS.append(('м2 · маятник без тертя розтягує межу (периметр × )', 2.0,
-                 pg['liou']['pend'][4], None, '', pg['liou']['pend'][4] > 2.0))
-    chk('м3 · осцилятор m = 1, ω = 2, A = 1,2: E', r['Ejp'], pg['m3jp'][0], 1e-9, 'Дж')
-    chk('м3 · осцилятор: J = E/ω', r['Jjp'], pg['m3jp'][1], 1e-9, 'Дж·с')
-    jr, ar, lf, ath = pg['m3ad']
-    chk('м3 · адіабата l: 1 → 0,5 м — кінцева довжина', 0.5, lf, 1e-6, 'м')
-    chk('м3 · адіабата: J/J₀ проти DOP853', r['Jrat'], jr, 2e-3, '')
-    ROWS.append(('м3 · адіабата: J змінилася менше ніж на 1 %', 1.0, jr, 0.01, '',
-                 abs(jr-1) < 0.01))
-    chk('м3 · адіабата: амплітуда × проти теорії l^(−3/4)', r['ampth'], ar, 5e-3, '')
-    chk('м3 · адіабата: амплітуда × проти DOP853', r['amprat'], ar, 5e-3, '')
-    for a, ang in pg['m4']['ang']:
-        ROWS.append(('м4 · кут фронту до траєкторії при α = %d°' % a, 90.0, ang,
-                     1e-3, '°', abs(ang-90) < 1e-3))
-    ref = {(a, s): W for a, s, W in r['W']}
-    for a, s, W in pg['m4']['W']:
-        chk('м4 · W(α = %d°, s = %g) проти quad' % (a, s), ref[(a, s)], W, 1e-6, 'Дж·с')
-    chk('м4 · парабола безпеки: висота v₀²/2g', r['Hmax'], pg['m4']['H'], 1e-6, 'м')
-    chk('м4 · парабола безпеки: дальність v₀²/g', r['Dmax'], pg['m4']['D'], 1e-6, 'м')
-    chk('м4 · дальність кидка під 45° = v₀²/g', r['R45'], pg['m4']['R45'], 1e-6, 'м')
-
-
-def main():
-    rel = 'Theoretical-Mechanics/03-small-oscillations.html'
-    T0, r30, r90 = ref_m1()
-    Tb2, slope = ref_m2()
-    w1, w2, Tb3, Th3 = ref_m3()
-    Oc, Ohz, wup, wdn = ref_m4()
-    half, incr = ref_m5()
-    pg = page_numbers(rel)
-
-    chk('м1 · T₀ = 2π√(l/g)', T0, pg['T0'], 5e-4, 'с')
-    chk('м1 · T/T₀ при θ₀ = 30°', r30, pg['r30'], 1e-4)
-    chk('м1 · T/T₀ при θ₀ = 90°', r90, pg['r90'], 1e-4)
-    chk('м2 · період биття при γ = 0,9ω₀', Tb2, pg['Tb2'], 5e-2, 'с')
-    chk('м2 · нахил огинаючої при резонансі', slope, pg['slope'], 5e-5, 'м/с')
-    chk('м3 · ω₁ = √(g/l)', w1, pg['w1'], 5e-3, 'рад/с')
-    chk('м3 · ω₂ = √(g/l + 2k/m)', w2, pg['w2'], 5e-3, 'рад/с')
-    chk('м3 · період биття', Tb3, pg['Tb3'], 5e-2, 'с')
-    chk('м3 · повне перекачування енергії', Th3, pg['Th3'], 5e-2, 'с')
-    chk('м4 · поріг Ω_c = √(2gl)/a', Oc, pg['Oc'], 0.5, 'рад/с')
-    chk('м4 · той самий поріг у герцах', Ohz, pg['Ohz'], 0.05, 'Гц')
-    chk('м4 · частота навколо вершини', wup, pg['wup'], 5e-3, 'рад/с')
-    chk('м4 · частота навколо низу', wdn, pg['wdn'], 5e-3, 'рад/с')
-    chk('м5 · напівширина зони hω₀/2', half, pg['half'], 5e-4, 'рад/с')
-    chk('м5 · інкремент у центрі зони hω₀/4', incr, pg['incr'], 5e-4, 'с⁻¹')
-
-    wf = ref_m4_full()
-    ROWS.append(('м4 · повна модель проти ефективної', wup, wf,
-                 0.03*wup, 'рад/с', abs(wf-wup) <= 0.03*wup))
-    dref = ref_m1_drift()
-    ROWS.append(('м1 · дрейф енергії за 100 періодів (еталон)', 0.0, dref, 1e-6, '', dref < 1e-6))
-    ROWS.append(('м1 · дрейф енергії на сторінці', 0.0, pg['drift'], 1e-6, '', pg['drift'] < 1e-6))
-
-    w = max(len(r[0]) for r in ROWS)
-    bad = 0
-    print('%-*s %14s %14s  %s' % (w, 'що', 'очікувано', 'на сторінці', 'вердикт'))
-    for name, ref, got, tol, unit, ok in ROWS:
-        f = lambda v: ('%.6g' % v) if abs(v) >= 1e-4 or v == 0 else ('%.3e' % v)
-        print('%-*s %14s %14s  %s' % (w, name, f(ref)+' '+unit, f(got)+' '+unit,
-                                      'збігається' if ok else 'РОЗБІЖНІСТЬ'))
-        bad += 0 if ok else 1
-    print('---- розбіжностей:', bad)
-    sys.exit(1 if bad else 0)
+def note(name, ref, got, ok, unit=''):
+    ROWS.append((name, ref, got, unit, ok))
 
 def report():
     w = max(len(r[0]) for r in ROWS)
     bad = 0
-    print('%-*s %14s %14s  %s' % (w, 'що', 'очікувано', 'на сторінці', 'вердикт'))
-    for name, ref, got, tol, unit, ok in ROWS:
-        f = lambda v: ('%.6g' % v) if abs(v) >= 1e-4 or v == 0 else ('%.3e' % v)
-        print('%-*s %14s %14s  %s' % (w, name, f(ref)+' '+unit, f(got)+' '+unit,
+    print('%-*s %16s %16s  %s' % (w, 'що', 'очікувано', 'на сторінці', 'вердикт'))
+    for name, ref, got, unit, ok in ROWS:
+        f = lambda v: ('%.6g' % v) if (v == 0 or abs(v) >= 1e-4) else ('%.3e' % v)
+        print('%-*s %16s %16s  %s' % (w, name, f(ref)+' '+unit, f(got)+' '+unit,
                                       'збігається' if ok else 'РОЗБІЖНІСТЬ'))
         bad += 0 if ok else 1
     print('---- розбіжностей:', bad)
     sys.exit(1 if bad else 0)
 
+def num(p, expr):
+    """CDP не серіалізує −0, NaN і Infinity як значення, тож читаємо рядком."""
+    v = p.js('String(%s)' % expr)
+    return float(v)
+
+def page(rel, wait=2.4):
+    """Живий документ із вимкненим rAF: час рухає тільки перевірка."""
+    from cdp import Page
+    p = Page(); p.metrics(1440, 1000, dpr=1)
+    p.goto('file://' + os.path.join(ROOT, rel), wait)
+    p.js("window.requestAnimationFrame=function(){return 0;};")
+    return p
+
+# ======================================================= 00a ==============
+def ref_00a():
+    out = {}
+    m1 = m2 = 1.0; l1 = l2 = 1.0
+
+    # --- вкладка 1 ---
+    # узагальнені сили — з означення Q = −∂U/∂q, похідна чисельна
+    U = lambda t1, t2: -(m1+m2)*G*l1*math.cos(t1) - m2*G*l2*math.cos(t2)
+    t1, t2, d = math.radians(30), 0.0, 1e-6
+    out['Q1'] = -(U(t1+d, t2)-U(t1-d, t2))/(2*d)
+    out['Q2'] = -(U(t1, t2+d)-U(t1, t2-d))/(2*d)
+    # кінетична енергія: еталон будує декартові швидкості чисельним
+    # диференціюванням самого відображення кутів у координати
+    def cart(t1, t2):
+        return np.array([l1*math.sin(t1), -l1*math.cos(t1),
+                         l1*math.sin(t1)+l2*math.sin(t2), -l1*math.cos(t1)-l2*math.cos(t2)])
+    def T_num(t1, t2, w1, w2, h=1e-5):
+        v = (cart(t1+w1*h, t2+w2*h) - cart(t1-w1*h, t2-w2*h))/(2*h)
+        return 0.5*m1*(v[0]**2+v[1]**2) + 0.5*m2*(v[2]**2+v[3]**2)
+    out['T'] = T_num(0.7, -0.4, 1.3, -0.7)
+
+    # --- вкладка 2 ---
+    R, m = 0.2, 0.01
+    out['wc'] = math.sqrt(G/R)
+    w = 10.0
+    Ueff = lambda t: -0.5*m*R*R*w*w*math.sin(t)**2 - m*G*R*math.cos(t)
+    # рівновагу шукаємо коренем похідної, а не формулою arccos
+    dU = lambda t: (Ueff(t+1e-7)-Ueff(t-1e-7))/2e-7
+    out['th0'] = math.degrees(brentq(dU, 0.2, math.pi/2-1e-6))
+    # частоту — з другої похідної U_eff, а не з ω·sin θ₀
+    t0 = math.radians(out['th0']); e = 1e-4
+    d2 = (Ueff(t0+e) - 2*Ueff(t0) + Ueff(t0-e))/(e*e)
+    out['fr'] = math.sqrt(d2/(m*R*R))
+
+    # --- вкладка 3: сторінка бере аналітику, еталон інтегрує ---
+    mr, wr, r0, tt = 0.1, 2.0, 0.1, 1.0
+    sol = solve_ivp(lambda t, y: [y[1], wr*wr*y[0]], [0, tt], [r0, 0.0],
+                    method='DOP853', rtol=1e-12, atol=1e-14, dense_output=True)
+    r, rd = sol.sol(tt)
+    out['r'] = float(r)
+    out['N'] = float(2*mr*wr*rd)
+    out['E'] = float(0.5*mr*(rd*rd + wr*wr*r*r))
+    out['E0'] = 0.5*mr*wr*wr*r0*r0
+    ts = np.linspace(0, tt, 400)
+    hh = 0.5*mr*(sol.sol(ts)[1]**2 - wr*wr*sol.sol(ts)[0]**2)
+    out['h'] = float(hh[-1])
+    out['hdrift'] = float(np.max(np.abs(hh - hh[0])))
+
+    # --- вкладка 4: сторінка складає чотири кроки, еталон інтегрує в’язь ---
+    eps, dl = 0.2, 0.3
+    def leg(state, v, om, T):
+        s = solve_ivp(lambda t, y: [v*math.cos(y[2]), v*math.sin(y[2]), om],
+                      [0, T], state, method='DOP853', rtol=1e-12, atol=1e-14)
+        return [float(s.y[0][-1]), float(s.y[1][-1]), float(s.y[2][-1])]
+    st = [0.0, 0.0, 0.0]
+    st = leg(st,  eps, 0.0, 1.0)      # уперед ε
+    st = leg(st,  0.0, dl,  1.0)      # поворот δ
+    st = leg(st, -eps, 0.0, 1.0)      # назад ε
+    st = leg(st,  0.0, -dl, 1.0)      # поворот −δ
+    out['dx'], out['dy'], out['dphi'] = st
+    return out
+
+def page_00a():
+    p = page('Theoretical-Mechanics/00a-coordinates-constraints.html')
+    o = {}
+    o['Q1'] = p.js("(function(){activate('m1');M1.sys='two';M1.th1=30*DEG;M1.th2=0;"
+                   "M1.render();return M1.Q1();})()")
+    o['Q2'] = num(p, "M1.Q2()")
+    o['dof'] = int(num(p, "M1.dof()"))
+    o['T'] = p.js("(function(){M1.th1=0.7;M1.th2=-0.4;M1.w1=1.3;M1.w2=-0.7;"
+                  "return M1.Tgen();})()")
+    o['dT'] = num(p, "Math.abs(M1.Tgen()-M1.Tcart())")
+    o['wc'] = num(p, "(function(){activate('m2');M2.w=10;M2.render();return M2.wc();})()")
+    o['th0'] = num(p, "M2.th0()/DEG")
+    o['fr'] = num(p, "M2.fr()")
+    o['hconst'] = num(p, """(function(){M2.th=0.6;M2.wd=0;M2.t=0;
+      const h0=M2.h(); let d=0;
+      for(let k=0;k<40000;k++){const r=verlet(M2.th,M2.wd,2e-4,x=>M2.acc(x));
+        M2.th=r[0];M2.wd=r[1]; d=Math.max(d,Math.abs(M2.h()-h0));}
+      return d;})()""")
+    o['r'] = p.js("(function(){activate('m3');M3.r0=0.1;M3.w=2;M3.t=1;M3.render();"
+                  "return M3.r();})()")
+    o['N'] = num(p, "M3.N()")
+    o['E'] = num(p, "M3.E()")
+    o['E0'] = num(p, "M3.E0()")
+    o['h'] = num(p, "M3.h()")
+    o['hdrift'] = num(p, """(function(){let d=0;const h0=-0.5*M3.m*M3.w*M3.w*M3.r0*M3.r0;
+      for(let i=0;i<=400;i++){M3.t=M3.tMax()*i/400; d=Math.max(d,Math.abs(M3.h()-h0));}
+      M3.t=1; return d;})()""")
+    o['Nvirt'] = num(p, """(function(){M3.t=0.7;
+      /* N уздовж поперечної осі, δr уздовж стрижня: скалярний добуток точно нуль */
+      const a=M3.phi(), N=[-Math.sin(a)*M3.N(),Math.cos(a)*M3.N()], d=[Math.cos(a),Math.sin(a)];
+      return Math.abs(N[0]*d[0]+N[1]*d[1]);})()""")
+    o['dx'] = p.js("(function(){activate('m4');M4.eps=0.2;M4.del=0.3;M4.render();"
+                   "return M4.pose(4)[0];})()")
+    o['dy'] = num(p, "M4.pose(4)[1]")
+    o['dphi'] = num(p, "M4.pose(4)[2]")
+    p.close()
+    return o
+
+def main_00a():
+    r, g = ref_00a(), page_00a()
+    chk('м1 · Q₁ = −∂U/∂θ₁ при θ₁ = 30°, θ₂ = 0', r['Q1'], g['Q1'], 1e-6, 'Н·м')
+    chk('м1 · Q₂ при θ₂ = 0', r['Q2'], g['Q2'], 1e-9, 'Н·м')
+    note('м1 · ступенів вільності N = 2n − k', 2, g['dof'], g['dof'] == 2)
+    chk('м1 · T в узагальнених проти чисельних декартових', r['T'], g['T'], 1e-7, 'Дж')
+    note('м1 · T узагальнена = T декартова на сторінці', 0.0, g['dT'],
+         g['dT'] < 1e-12, 'Дж')
+    chk('м2 · поріг ω_c = √(g/R)', r['wc'], g['wc'], 1e-9, 'рад/с')
+    chk('м2 · рівновага θ₀ (корінь U′_еф) при ω = 10', r['th0'], g['th0'], 1e-4, '°')
+    chk('м2 · частота малих коливань (з U″_еф)', r['fr'], g['fr'], 1e-4, 'рад/с')
+    note('м2 · дрейф інтеграла Якобі за 8 с Верле', 0.0, g['hconst'], g['hconst'] < 1e-6, 'Дж')
+    chk('м3 · r при ω = 2, r₀ = 0,1, t = 1 (DOP853)', r['r'], g['r'], 1e-9, 'м')
+    chk('м3 · реакція N = 2mωṙ', r['N'], g['N'], 1e-9, 'Н')
+    chk('м3 · енергія E у ЛСВ', r['E'], g['E'], 1e-11, 'Дж')
+    chk('м3 · E₀ на старті', r['E0'], g['E0'], 1e-12, 'Дж')
+    chk('м3 · інтеграл Якобі h', r['h'], g['h'], 1e-10, 'Дж')
+    note('м3 · дрейф h за весь прогін', 0.0, g['hdrift'], g['hdrift'] < 1e-8, 'Дж')
+    note('м3 · віртуальна робота реакції N·δr', 0.0, g['Nvirt'], g['Nvirt'] < 1e-12, 'Дж')
+    chk('м4 · зсув за цикл уздовж x (в’язь, DOP853)', r['dx'], g['dx'], 1e-9, 'м')
+    chk('м4 · зсув за цикл уздовж y', r['dy'], g['dy'], 1e-9, 'м')
+    note('м4 · кут після циклу повертається до нуля', 0.0, g['dphi'],
+         abs(g['dphi']) < 1e-12, 'рад')
+
+DISPATCH = {'00a': main_00a}
+
 if __name__ == '__main__':
-    which = sys.argv[1] if len(sys.argv) > 1 else '03'
-    if which == '00':
-        main_00(); report()
-    elif which == '01':
-        main_01(); report()
-    elif which == '02':
-        main_02(); report()
-    elif which == '04':
-        main_04(); report()
-    elif which == '05':
-        main_05(); report()
-    else:
-        main()
+    which = sys.argv[1] if len(sys.argv) > 1 else '00a'
+    if which not in DISPATCH:
+        print('немає перевірок для «%s»; є: %s' % (which, ', '.join(sorted(DISPATCH))))
+        sys.exit(2)
+    DISPATCH[which]()
+    report()
