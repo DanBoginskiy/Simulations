@@ -18,6 +18,25 @@
 """
 import sys, os, math, time
 
+# Еталон рахується на numpy/scipy. На цій машині типовий python3 — свіжий
+# homebrew без них, а потрібні пакети стоять під /usr/bin/python3. Щоб
+# документована команда «python3 tools/tm-checks.py 00a» працювала, скрипт
+# один раз перезапускає сам себе під тим інтерпретатором, де numpy є.
+def _need_numpy():
+    try:
+        import numpy  # noqa: F401
+        return
+    except ImportError:
+        pass
+    for alt in ('/usr/bin/python3', '/Library/Developer/CommandLineTools/usr/bin/python3'):
+        if not os.path.exists(alt) or os.path.realpath(alt) == os.path.realpath(sys.executable):
+            continue
+        if os.system('%s -c "import numpy, scipy" 2>/dev/null' % alt) == 0:
+            os.execv(alt, [alt, os.path.abspath(__file__)] + sys.argv[1:])
+    sys.exit('потрібні numpy і scipy: python3 -m pip install --user numpy scipy')
+
+_need_numpy()
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -183,7 +202,153 @@ def main_00a():
     note('м4 · кут після циклу повертається до нуля', 0.0, g['dphi'],
          abs(g['dphi']) < 1e-12, 'рад')
 
-DISPATCH = {'00a': main_00a}
+# ======================================================= 00b ==============
+def ref_00b():
+    from scipy.integrate import quad, solve_ivp
+    from scipy.optimize import brentq
+    out = {}
+    m = 1.0
+
+    # --- вкладка 1: дія на справжній траєкторії береться квадратурою,
+    #     а не замкненою формулою, яку показує сторінка
+    T = 2.0
+    x = lambda t: 0.5*G*t*(T-t)
+    v = lambda t: 0.5*G*(T-2*t)
+    out['S0'] = quad(lambda t: 0.5*m*v(t)**2 - m*G*x(t), 0, T, limit=200)[0]
+    #     коефіцієнт при ε² — із другої різниці самої дії
+    def S_eps(e, w=0.0):
+        f  = lambda t: x(t) + e*math.sin(math.pi*t/T)
+        fd = lambda t: v(t) + e*math.pi/T*math.cos(math.pi*t/T)
+        U  = (lambda q: m*G*q) if w == 0 else (lambda q: 0.5*m*w*w*q*q)
+        return quad(lambda t: 0.5*m*fd(t)**2 - U(f(t)), 0, T, limit=200)[0]
+    h = 1e-3
+    out['c2'] = (S_eps(h) - 2*S_eps(0.0) + S_eps(-h))/(h*h)/2
+    #     зміна знака коефіцієнта для осцилятора: корінь, а не формула π/ω
+    co = lambda TT: m*TT/4*(math.pi**2/TT**2 - 4.0)
+    out['Tsign'] = brentq(co, 0.5, 4.0)
+
+    # --- вкладка 2: брахістохрона
+    k = 2.0/1.0
+    thB = brentq(lambda th: (th-math.sin(th)) - k*(1-math.cos(th)), 0.5, 2*math.pi-1e-9)
+    a = 1.0/(1-math.cos(thB))
+    out['thB'], out['a'] = thB, a
+    out['tcyc'] = math.sqrt(a/G)*thB
+    L = math.hypot(2.0, 1.0)
+    out['tline'] = math.sqrt(2*L/(G*(1.0/L)))
+
+    # --- вкладка 3: різниця дій
+    V, dx, T3 = 1.0, 2.0, 2.0
+    out['dS'] = m*V*dx + 0.5*m*V*V*T3
+
+    # --- вкладка 4: лійка і поле B
+    r0 = 0.2
+    out['vcirc'] = math.sqrt(G*r0)               # v² = gr·ctg 45°
+    out['wcirc'] = out['vcirc']/r0
+    out['w_half'] = out['wcirc']*4               # φ̇ ∝ 1/r²
+    #     поле B: інтегруємо рівняння руху й дивимося на канонічний імпульс
+    sol = solve_ivp(lambda t, y: [y[2], y[3], y[3], -y[2]], [0, 12.0],
+                    [1.5, 0.0, 0.0, -1.0], method='DOP853',
+                    rtol=1e-12, atol=1e-14, dense_output=True)
+    ts = np.linspace(0, 12.0, 2000)
+    Y = sol.sol(ts)
+    Lz = Y[0]*Y[3] - Y[1]*Y[2]
+    r2 = Y[0]**2 + Y[1]**2
+    pc = Lz + 0.5*r2
+    out['pcan'] = float(pc[0])
+    out['pdrift'] = float(np.max(np.abs(pc - pc[0])))
+    out['Lzspan'] = float(np.max(Lz) - np.min(Lz))
+
+    # --- вкладка 5: подібність
+    out['sim'] = {kk: 2.0**(1 - kk/2) for kk in (2, 1, -1)}
+    return out
+
+def page_00b():
+    p = page('Theoretical-Mechanics/00b-least-action-symmetries.html', 2.6)
+    o = {}
+    o['S0'] = num(p, "(function(){activate('m1');M1.sys='grav';M1.T=2;M1.eps=0;"
+                     "M1.nodes=[0,0,0,0,0];M1.render();return M1.S0();})()")
+    o['Squad'] = num(p, "M1.S()")
+    o['c2'] = num(p, "M1.c2()")
+    o['Tsign'] = num(p, "(function(){M1.sys='osc';M1.w=2;return Math.PI/M1.w;})()")
+    o['thB'] = num(p, "(function(){activate('m2');M2.bx=2;M2.by=1;M2.render();"
+                      "return M2.thB();})()")
+    o['a'] = num(p, "M2.aCyc()")
+    o['tcyc'] = num(p, "M2.time('cyc')")
+    o['tline'] = num(p, "M2.time('line')")
+    o['dS'] = num(p, "(function(){activate('m3');M3.V=1;M3.eps=0;M3.render();"
+                     "return M3.S2()-M3.S();})()")
+    o['dS_e'] = num(p, "(function(){M3.eps=0.8;return M3.S2()-M3.S();})()")
+    o['dSth'] = num(p, "M3.dTheory()")
+    o['vcirc'] = num(p, "(function(){activate('m4');M4.sys='funnel';M4.reset();"
+                        "M4.render();return M4.v0;})()")
+    o['wcirc'] = num(p, "M4.wphi()")
+    o['w_half'] = num(p, "M4.p0/(M4.m*0.1*0.1)")
+    o['pdrift'] = num(p, """(function(){M4.sys='funnel';M4.reset();M4.r=0.3;
+      M4.p0=M4.m*0.3*1.2;M4.rd=0;const p0=M4.pphi();let d=0;
+      for(let i=0;i<60000;i++){const r=verlet(M4.r,M4.rd,2e-4,x=>M4.accR(x));
+        M4.r=r[0];M4.rd=r[1]; d=Math.max(d,Math.abs(M4.pphi()-p0));}
+      return d;})()""")
+    o['pcan'] = num(p, "(function(){M4.sys='mag';M4.reset();return M4.pcan();})()")
+    o['pcanDrift'] = num(p, """(function(){M4.sys='mag';M4.reset();const p0=M4.pcan();
+      let d=0,s=[M4.bx,M4.by,M4.bvx,M4.bvy],t=0;
+      for(let i=0;i<60000;i++){s=rk4(t,s,2e-4,(tt,y)=>[y[2],y[3],y[3],-y[2]]);t+=2e-4;
+        M4.bx=s[0];M4.by=s[1];M4.bvx=s[2];M4.bvy=s[3];
+        d=Math.max(d,Math.abs(M4.pcan()-p0));}
+      return d;})()""")
+    o['LzSpan'] = num(p, """(function(){M4.sys='mag';M4.reset();
+      let lo=1e9,hi=-1e9,s=[M4.bx,M4.by,M4.bvx,M4.bvy],t=0;
+      for(let i=0;i<60000;i++){s=rk4(t,s,2e-4,(tt,y)=>[y[2],y[3],y[3],-y[2]]);t+=2e-4;
+        M4.bx=s[0];M4.by=s[1];M4.bvx=s[2];M4.bvy=s[3];
+        const L=M4.Lz(); if(L<lo)lo=L; if(L>hi)hi=L;}
+      return hi-lo;})()""")
+    o['sim'] = {}
+    for kk in (2, 1, -1):
+        o['sim'][kk] = num(p, """(function(){activate('m5');M5.k=%d;M5.lam=2;M5.reset();
+          const h=2e-4;
+          while((!M5.A.per||!M5.B.per)&&M5.t<400){M5.step(M5.A,h);M5.step(M5.B,h);M5.t+=h;}
+          return M5.B.per/M5.A.per;})()""" % kk)
+    o['vir'] = num(p, """(function(){activate('m5');M5.k=2;M5.lam=2;M5.reset();
+      const h=2e-4;
+      while(M5.t<20*2*Math.PI){M5.step(M5.A,h);M5.step(M5.B,h);
+        const v=Math.hypot(M5.A.v[0],M5.A.v[1]);
+        M5.sumT+=0.5*v*v*h; M5.sumU+=M5.Upot(M5.A.p)*h; M5.nAvg+=h; M5.t+=h;}
+      return M5.virRes();})()""")
+    p.close()
+    return o
+
+def main_00b():
+    r, g = ref_00b(), page_00b()
+    chk('м1 · S₀ = −mg²T³/24 проти квадратури', r['S0'], g['S0'], 1e-6, 'Дж·с')
+    chk('м1 · та сама дія, порахована сторінкою по кривій', r['S0'], g['Squad'], 1e-4, 'Дж·с')
+    chk('м1 · коефіцієнт при ε² (друга різниця)', r['c2'], g['c2'], 1e-5, 'Дж·с/м²')
+    chk('м1 · зміна знака коефіцієнта при ω = 2', r['Tsign'], g['Tsign'], 1e-6, 'с')
+    chk('м2 · параметр циклоїди θ_B', r['thB'], g['thB'], 1e-6, 'рад')
+    chk('м2 · параметр циклоїди a', r['a'], g['a'], 1e-6, 'м')
+    chk('м2 · час спуску циклоїдою (аналітика проти квадратури)',
+        r['tcyc'], g['tcyc'], 1e-3, 'с')
+    chk('м2 · час спуску прямою', r['tline'], g['tline'], 1e-3, 'с')
+    note('м2 · циклоїда швидша за пряму', 1.0, g['tline']/g['tcyc'],
+         g['tcyc'] < g['tline'], 'раза')
+    chk('м3 · S′ − S при ε = 0', r['dS'], g['dS'], 1e-9, 'Дж·с')
+    chk('м3 · те саме при ε = 0,8 — не залежить від форми', r['dS'], g['dS_e'], 1e-9, 'Дж·с')
+    chk('м3 · формула mVΔx + ½mV²T на сторінці', r['dS'], g['dSth'], 1e-12, 'Дж·с')
+    chk('м4 · колова орбіта лійки: v = √(gr) при r = 0,2', r['vcirc'], g['vcirc'], 1e-6, 'м/с')
+    chk('м4 · та сама орбіта: φ̇', r['wcirc'], g['wcirc'], 1e-6, 'рад/с')
+    chk('м4 · φ̇ при вдвічі меншому r — учетверо більша', r['w_half'], g['w_half'], 1e-6, 'рад/с')
+    note('м4 · дрейф p_φ у лійці за 12 с', 0.0, g['pdrift'], g['pdrift'] < 1e-8)
+    chk('м4 · поле B: p_φ = ½qB(d² − R²) при d = 0,5, R = 1',
+        r['pcan'], g['pcan'], 1e-9, '')
+    note('м4 · поле B: дрейф канонічного p_φ за 12 с', 0.0, g['pcanDrift'],
+         g['pcanDrift'] < 1e-9)
+    note('м4 · поле B: механічний mr²φ̇ НЕ сталий — розмах',
+         r['Lzspan'], g['LzSpan'],
+         abs(g['LzSpan']-r['Lzspan']) < 1e-3 and g['LzSpan'] > 0.5)
+    for kk in (2, 1, -1):
+        chk('м5 · t′/t при λ = 2, k = %d' % kk, r['sim'][kk], g['sim'][kk], 2e-3)
+    note('м5 · нев’язка віріалу за 20 обходів, k = 2', 0.0, g['vir'], g['vir'] < 1.0, '%')
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
