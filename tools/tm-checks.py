@@ -980,7 +980,150 @@ def main_05b():
     chk('м3 · кут між фронтом S₀ і траєкторією', r['perp'], g['perp'], 1e-2, '°')
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a, '05b': main_05b}
+# ======================================================= 01 ===============
+def ref_01():
+    """Еталон для 01: період квадратурою scipy, задача двох тіл прогоном,
+    кут між перигеліями з прогону, кеплерові сталі з інтегрування."""
+    from scipy.integrate import quad
+    out = {}
+
+    # --- вкладка 1: подвійна яма ---
+    m, a, b = 1.0, 1.0, 1.0
+    U = lambda x: a*(x*x-b*b)**2
+    out['w0'] = math.sqrt(8*a*b*b/m)
+    out['T0'] = 2*math.pi/out['w0']
+    out['Esep'] = a*b**4
+    def period(E):
+        # точки повороту правої ями
+        x1 = brentq(lambda x: U(x)-E, 1e-6, b)
+        x2 = brentq(lambda x: U(x)-E, b, 3.0)
+        f = lambda x: 1/math.sqrt(max(1e-18, E-U(x)))
+        return math.sqrt(2*m)*quad(f, x1, x2, points=[x1, x2], limit=400)[0]
+    out['T045'] = period(0.45)
+    out['T099'] = period(0.99*out['Esep'])
+
+    # --- вкладка 2: двоє тіл ---
+    m1, m2 = 3.0, 1.0
+    out['mu'] = m1*m2/(m1+m2)
+    out['rr'] = m2/m1
+
+    # --- вкладка 3: розетка, кут між перигеліями з прогону ---
+    mu, al, M, beta = 1.0, 1.0, 1.0, 0.1
+    out['dphi'] = 2*math.pi/math.sqrt(1+2*mu*beta/(M*M))
+    Ueff = lambda r: -al/r + beta/(r*r) + M*M/(2*mu*r*r)
+    dU = lambda r: (Ueff(r+1e-7)-Ueff(r-1e-7))/2e-7
+    E = -0.4
+    rmin = brentq(lambda r: Ueff(r)-E, 0.3, 1.2)
+    def rhs(t, y):
+        r, rd, ph = y
+        return [rd, -dU(r)/mu, M/(mu*r*r)]
+    ev = lambda t, y: y[1]
+    ev.direction = 1
+    sol = solve_ivp(rhs, [1e-9, 40], [rmin, 0.0, 0.0], method='DOP853',
+                    rtol=1e-12, atol=1e-14, events=ev)
+    te = sol.t_events[0]
+    ye = sol.y_events[0]
+    out['dphiNum'] = float(ye[1][2]-ye[0][2]) if len(ye) > 1 else float('nan')
+
+    # --- вкладка 4: Кеплер ---
+    alk, mk = 1.0, 1.0
+    r0, v0 = np.array([1.0, 0.0]), np.array([0.0, 0.8])
+    Ek = 0.5*mk*v0@v0 - alk/np.linalg.norm(r0)
+    Mk = mk*(r0[0]*v0[1]-r0[1]*v0[0])
+    out['E'] = Ek; out['M'] = Mk
+    out['p'] = Mk*Mk/(mk*alk)
+    out['e'] = math.sqrt(1 + 2*Ek*Mk*Mk/(mk*alk*alk))
+    out['a'] = alk/(2*abs(Ek))
+    out['T'] = 2*math.pi*math.sqrt(mk*out['a']**3/alk)
+    out['hodR'] = alk/abs(Mk)
+    out['hodOff'] = out['e']*alk/abs(Mk)
+    out['A'] = mk*alk*out['e']
+    # |A| уздовж прогону: мусить стояти
+    def kep(t, y):
+        d = math.hypot(y[0], y[1])
+        return [y[2], y[3], -alk*y[0]/(mk*d**3), -alk*y[1]/(mk*d**3)]
+    sk = solve_ivp(kep, [0, out['T']], [1.0, 0.0, 0.0, 0.8], method='DOP853',
+                   rtol=1e-13, atol=1e-15, t_eval=np.linspace(0, out['T'], 2001))
+    Ax = mk*sk.y[3]*Mk - mk*alk*sk.y[0]/np.hypot(sk.y[0], sk.y[1])
+    Ay = -mk*sk.y[2]*Mk - mk*alk*sk.y[1]/np.hypot(sk.y[0], sk.y[1])
+    out['Adrift'] = float(np.abs(np.hypot(Ax, Ay) - out['A']).max())
+    return out
+
+
+def page_01():
+    p = page('Theoretical-Mechanics/01-central-field.html', 2.6)
+    o = {}
+    o['w0'] = num(p, "(function(){activate('m1');M1.sys='well';M1.E=0.45;M1.x=1;"
+                     "M1.reset();M1.render();return M1.w0();})()")
+    o['T0'] = num(p, "2*Math.PI/M1.w0()")
+    o['Esep'] = num(p, "M1.Esep()")
+    o['T045'] = num(p, "M1.period(0.45)")
+    o['T099'] = num(p, "M1.period(0.99*M1.Esep())")
+    o['mu'] = num(p, "(function(){activate('m2');M2.m1=3;M2.m2=1;M2.reset();"
+                     "M2.render();return M2.mu();})()")
+    o['rr'] = num(p, "M2.m2/M2.m1")
+    o['dphi'] = num(p, "(function(){activate('m3');M3.sys='ros';M3.beta=0.1;"
+                       "M3.M=1;M3.E=-0.4;M3.reset();M3.render();"
+                       "return M3.dphiTheory();})()")
+    o['rmin'] = num(p, "M3.turn()[0]")
+    o['rmax'] = num(p, "M3.turn()[1]")
+    o['E'] = num(p, "(function(){activate('m4');M4.v=[0,0.8];M4.reset();"
+                    "M4.render();return M4.En();})()")
+    o['M'] = num(p, "M4.Mom()")
+    o['p'] = num(p, "M4.par()")
+    o['e'] = num(p, "M4.ecc()")
+    o['a'] = num(p, "M4.semi()")
+    o['T'] = num(p, "M4.per()")
+    o['hodR'] = num(p, "M4.al/Math.abs(M4.Mom())")
+    o['hodOff'] = num(p, "M4.ecc()*M4.al/Math.abs(M4.Mom())")
+    o['A'] = num(p, "(function(){const A=M4.LRL(); return Math.hypot(A[0],A[1]);})()")
+    o['Adrift'] = num(p, """(function(){M4.v=[0,0.8];M4.reset();
+      const h=1e-4,n=Math.round(M4.per()/h),A0=M4.A0;let d=0;
+      for(let i=0;i<n;i++){
+        const y=rk4(0,[M4.r[0],M4.r[1],M4.v[0],M4.v[1]],h,(tt,s)=>{
+          const dd=Math.hypot(s[0],s[1]);
+          const aa=-M4.al/(M4.m*dd*dd*dd);
+          return [s[2],s[3],aa*s[0],aa*s[1]];});
+        M4.r=[y[0],y[1]];M4.v=[y[2],y[3]];
+        if(i%97===0){const A=M4.LRL(); d=Math.max(d,Math.abs(Math.hypot(A[0],A[1])-A0));}}
+      return d;})()""")
+    p.close()
+    return o
+
+
+def main_01():
+    r, g = ref_01(), page_01()
+    chk('м1 · частота малих коливань √(8ab²/m)', r['w0'], g['w0'], 1e-6, 'рад/с')
+    chk('м1 · T₀ малих коливань', r['T0'], g['T0'], 1e-6, 'с')
+    chk('м1 · енергія сепаратриси ab⁴', r['Esep'], g['Esep'], 1e-12, 'Дж')
+    chk('м1 · T(E) при E = 0,45 (quad проти Гауса–Чебишова)',
+        r['T045'], g['T045'], 1e-4, 'с')
+    # зростання біля сепаратриси логарифмічне, тож вимагаємо саме зростання,
+    # а не якоїсь наперед заданої кратності
+    note('м1 · T(E) при E = 0,99·E_сеп росте', r['T099'], g['T099'],
+         abs(g['T099']/r['T099']-1) < 1e-3 and g['T099'] > 1.5*g['T045'], 'с')
+    chk('м2 · приведена маса μ', r['mu'], g['mu'], 1e-12, 'кг')
+    chk('м2 · r₁/r₂ = m₂/m₁', r['rr'], g['rr'], 1e-12)
+    chk('м3 · кут між перигеліями 2π/√(1 + 2μβ/M²)',
+        r['dphi']/DEGP, g['dphi']/DEGP, 1e-6, '°')
+    note('м3 · той самий кут із прогону', r['dphi']/DEGP, r['dphiNum']/DEGP,
+         abs(r['dphiNum']-r['dphi']) < 2e-3, '°')
+    note('м3 · точки повороту 1,0 і 1,5', 1.0, g['rmin'], abs(g['rmin']-1.0) < 1e-4)
+    note('м3 · друга точка повороту', 1.5, g['rmax'], abs(g['rmax']-1.5) < 1e-4)
+    chk('м4 · E при v₀ = (0; 0,8)', r['E'], g['E'], 1e-12)
+    chk('м4 · M', r['M'], g['M'], 1e-12)
+    chk('м4 · параметр p = M²/mα', r['p'], g['p'], 1e-12)
+    chk('м4 · ексцентриситет e', r['e'], g['e'], 1e-9)
+    chk('м4 · велика піввісь a', r['a'], g['a'], 1e-9)
+    chk('м4 · період T = 2π√(ma³/α)', r['T'], g['T'], 1e-6, 'с')
+    chk('м4 · радіус годографа α/M', r['hodR'], g['hodR'], 1e-12)
+    chk('м4 · зсув центра годографа eα/M', r['hodOff'], g['hodOff'], 1e-9)
+    chk('м4 · |A| = mαe', r['A'], g['A'], 1e-9)
+    note('м4 · дрейф |A| за оберт', 0.0, g['Adrift'], g['Adrift'] < 1e-6)
+    note('м4 · те саме в еталоні', 0.0, r['Adrift'], r['Adrift'] < 1e-9)
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a, '05b': main_05b, '01': main_01}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
