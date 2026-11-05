@@ -735,7 +735,132 @@ def main_04():
          abs(r['turnNum']-r['rate']) < 0.05, '°/год')
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04}
+# ====================================================== 05a ===============
+def ref_05a():
+    """Еталон для 05a: Лежандр чисельним диференціюванням, період маятника
+    квадратурою, площа фазової плями — прогоном матриці Якобі потоку."""
+    out = {}
+
+    # --- вкладка 1 ---
+    Lq = lambda v: 0.5*v*v
+    Lr = lambda v: -math.sqrt(1-v*v)
+    d = 1e-6
+    v = 2.0
+    out['pq'] = (Lq(v+d)-Lq(v-d))/(2*d)
+    out['Hq'] = out['pq']*v - Lq(v)
+    v = 0.8
+    out['pr'] = (Lr(v+d)-Lr(v-d))/(2*d)
+    out['Hr'] = out['pr']*v - Lr(v)
+    out['Hr2'] = math.sqrt(out['pr']**2 + 1)
+
+    # --- вкладка 2: період маятника квадратурою по координаті ---
+    m, l = 1.0, 1.0
+    mgl = m*G*l
+    out['mgl'] = mgl
+    out['T0'] = 2*math.pi*math.sqrt(l/G)
+    def period(E):
+        if E < mgl:                      # лібрація
+            th0 = math.acos(max(-1, min(1, -E/mgl)))
+            f = lambda u: 1/math.sqrt(max(1e-18, math.cos(u)-math.cos(th0)))
+            # підстановка sin u/2 = sin θ₀/2 · sin ψ прибирає особливість
+            k = math.sin(th0/2)
+            g2 = lambda ps: 1/math.sqrt(max(1e-18, 1-k*k*math.sin(ps)**2))
+            from scipy.integrate import quad
+            I = quad(g2, 0, math.pi/2, limit=200)[0]
+            return 4*math.sqrt(l/G)*I
+        from scipy.integrate import quad
+        f = lambda q: 1/math.sqrt(max(1e-18, 2*(E+mgl*math.cos(q))/(m*l*l)))
+        return 2*quad(f, 0, math.pi, limit=400)[0]
+    out['T14'] = period(-mgl*math.cos(1.4))
+    out['Tnear'] = period(mgl*0.995)
+    out['Trot'] = period(mgl*1.5)
+
+    # --- вкладка 3: площа плями через матрицю Якобі потоку ---
+    # dJ/dt = A(t)·J, A — матриця лінеаризації; det J і є множник площі
+    def run(gam, T, pend):
+        def rhs(t, y):
+            q, p = y[0], y[1]
+            J = np.array(y[2:6]).reshape(2, 2)
+            aq = (-G*math.sin(q)) if pend else (-q)
+            dq, dp = p, aq - 2*gam*p
+            k = (-G*math.cos(q)) if pend else (-1.0)
+            A = np.array([[0.0, 1.0], [k, -2*gam]])
+            dJ = A@J
+            return [dq, dp] + list(dJ.reshape(4))
+        y0 = [0.0, 1.6, 1, 0, 0, 1]
+        s = solve_ivp(rhs, [0, T], y0, method='DOP853', rtol=1e-12, atol=1e-14)
+        J = np.array(s.y[2:6, -1]).reshape(2, 2)
+        return float(np.linalg.det(J))
+    out['detFree'] = run(0.0, 20.0, True)
+    out['detFric'] = run(0.1, 10.0, True)
+    out['expFric'] = math.exp(-2*0.1*10)
+    return out
+
+
+def page_05a():
+    p = page('Theoretical-Mechanics/05a-hamilton-phase-space.html', 2.6)
+    o = {}
+    o['pq'] = num(p, "(function(){activate('m1');M1.sys='quad';M1.v=2;"
+                     "M1.render();return M1.P(2);})()")
+    o['Hq'] = num(p, "M1.H(2)")
+    o['back'] = num(p, "(function(){M1.v=2;return M1.Lback();})()")
+    o['Lq'] = num(p, "M1.L(2)")
+    o['pr'] = num(p, "(function(){M1.sys='rel';M1.v=0.8;M1.render();return M1.P(0.8);})()")
+    o['Hr'] = num(p, "M1.H(0.8)")
+    o['nc'] = num(p, "(function(){M1.sys='nc';M1.v=0;M1.render();return M1.nRoots(0);})()")
+    o['mgl'] = num(p, "(function(){activate('m2');M2.reset();M2.render();return M2.mgl();})()")
+    o['T0'] = num(p, "M2.T0()")
+    o['T14'] = num(p, "M2.period(-M2.mgl()*Math.cos(1.4))")
+    o['Tnear'] = num(p, "M2.period(M2.mgl()*0.995)")
+    o['Trot'] = num(p, "M2.period(M2.mgl()*1.5)")
+    o['dH'] = num(p, """(function(){M2.q0=1.4;M2.p0=0;M2.reset();
+      const h=2e-4,n=Math.round(20*M2.T0()/h),H0=M2.Hof(M2.q,M2.p);let d=0;
+      for(let i=0;i<n;i++){const r=verlet(M2.q,M2.p,h,x=>-G*Math.sin(x));
+        M2.q=r[0];M2.p=r[1];
+        if(i%499===0) d=Math.max(d,Math.abs(M2.Hof(M2.q,M2.p)-H0));}
+      return d;})()""")
+    o['Sfree'] = num(p, """(function(){activate('m3');M3.sys='pend';M3.cq=0;M3.cp=1.6;
+      M3.rad=0.3;M3.reset();
+      const T=20*2*Math.PI*Math.sqrt(1/G),h=1e-3,n=Math.round(T/h);
+      for(let i=0;i<n;i++){M3.step(M3.bnd,h);M3.t+=h;
+        if(i%20===0) M3.densify();}
+      return shoelace(M3.bnd)/M3.S0;})()""")
+    o['Sfric'] = num(p, """(function(){M3.sys='fric';M3.gam=0.1;M3.cq=0;M3.cp=1.6;
+      M3.rad=0.3;M3.reset();
+      const h=1e-3,n=10000;
+      for(let i=0;i<n;i++){M3.step(M3.bnd,h);M3.t+=h;
+        if(i%20===0) M3.densify();}
+      return shoelace(M3.bnd)/M3.S0;})()""")
+    p.close()
+    return o
+
+
+def main_05a():
+    r, g = ref_05a(), page_05a()
+    chk('м1 · ½mv² при v = 2: p = ∂L/∂v', r['pq'], g['pq'], 1e-6)
+    chk('м1 · той самий випадок: H = pv − L', r['Hq'], g['Hq'], 1e-6)
+    note('м1 · подвійне перетворення вертає L', g['Lq'], g['back'],
+         abs(g['back']-g['Lq']) < 1e-9)
+    chk('м1 · релятивістська при v = 0,8: p', r['pr'], g['pr'], 1e-5)
+    chk('м1 · та сама: H', r['Hr'], g['Hr'], 1e-5)
+    note('м1 · H = √(p²c² + m²c⁴) тим самим числом', r['Hr2'], g['Hr'],
+         abs(g['Hr']-r['Hr2']) < 1e-9)
+    note('м1 · неопукла L: один нахил — три v', 3.0, g['nc'], g['nc'] == 3)
+    chk('м2 · енергія сепаратриси mgl', r['mgl'], g['mgl'], 1e-12, 'Дж')
+    chk('м2 · T₀ малих коливань', r['T0'], g['T0'], 1e-9, 'с')
+    chk('м2 · період лібрації при q₀ = 1,4 (K(k) проти квадратури)',
+        r['T14'], g['T14'], 1e-4, 'с')
+    chk('м2 · період біля сепаратриси (E = 0,995·mgl)', r['Tnear'], g['Tnear'], 2e-3, 'с')
+    chk('м2 · період ротації при E = 1,5·mgl', r['Trot'], g['Trot'], 1e-3, 'с')
+    note('м2 · дрейф H за 20 періодів', 0.0, g['dH'], g['dH'] < 1e-6, 'Дж')
+    note('м3 · площа плями за 20 періодів без тертя', r['detFree'], g['Sfree'],
+         abs(g['Sfree']-1) < 0.01)
+    chk('м3 · площа з тертям γ = 0,1 за 10 с', r['expFric'], g['Sfric'], 5e-3)
+    note('м3 · та сама частка з детермінанта Якобі', r['expFric'], r['detFric'],
+         abs(r['detFric']-r['expFric']) < 1e-6)
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
