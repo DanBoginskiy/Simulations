@@ -860,7 +860,127 @@ def main_05a():
          abs(r['detFric']-r['expFric']) < 1e-6)
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a}
+# ====================================================== 05b ===============
+def ref_05b():
+    """Еталон для 05b: дія як інтеграл по контуру, адіабатичний прогін
+    рівнянь зі змінною довжиною, парабола безпеки й фронти дії."""
+    from scipy.integrate import quad
+    out = {}
+
+    # --- вкладка 1: J як площа контуру, а не як E/ω ---
+    m, w0, E = 1.0, 2.0, 2.0
+    a = math.sqrt(2*E/(m*w0*w0))
+    f = lambda q: math.sqrt(max(0.0, 2*m*(E - 0.5*m*w0*w0*q*q)))
+    out['J'] = 2*quad(f, -a, a, limit=200)[0]/(2*math.pi)
+    out['Jform'] = E/w0
+    # адіабатичний маятник: прогін рівняння зі змінною довжиною
+    L0, L1, TAD, th0 = 1.0, 0.5, 60.0, 0.35
+    lof = lambda t: max(L1, L0 + (L1-L0)*t/TAD)
+    def rhs(t, y):
+        th, thd = y
+        l = lof(t)
+        ld = (L1-L0)/TAD if t < TAD else 0.0
+        return [thd, -G/l*math.sin(th) - 2*ld/l*thd]
+    sol = solve_ivp(rhs, [0, TAD], [th0, 0.0], method='DOP853',
+                    rtol=1e-12, atol=1e-14, t_eval=np.linspace(0, TAD, 60001))
+    th = sol.y[0]
+    # амплітуда наприкінці — максимум за останні два періоди
+    Tend = 2*math.pi*math.sqrt(L1/G)
+    sel = sol.t > TAD - 2*Tend
+    out['ampEnd'] = float(np.abs(th[sel]).max())
+    out['ampTheory'] = th0*math.pow(L1/L0, -0.75)
+    # J на початку й у кінці
+    J0 = 0.5*m*math.sqrt(G)*math.pow(L0, 1.5)*th0**2
+    J1 = 0.5*m*math.sqrt(G)*math.pow(L1, 1.5)*out['ampEnd']**2
+    out['Jratio'] = J1/J0
+
+    # --- вкладка 2: замикання при 3/2 ---
+    wx, r = 1.0, 1.5
+    T = 2*math.pi*2/wx
+    out['Tclose'] = T
+    out['closeErr'] = max(abs(math.cos(wx*T) - 1), abs(math.cos(r*wx*T) - 1))
+
+    # --- вкладка 3: парабола безпеки й перпендикулярність фронтів ---
+    v0 = 10.0
+    out['hMax'] = v0*v0/(2*G)
+    out['dMax'] = v0*v0/G
+    S0 = lambda al, t: v0*v0*t - G*v0*math.sin(al)*t*t + G*G*t**3/3
+    def tOfS(al, S):
+        lo, hi = 0.0, 2*v0*math.sin(al)/G
+        if S0(al, hi) < S: return None
+        for _ in range(60):
+            mid = (lo+hi)/2
+            if S0(al, mid) < S: lo = mid
+            else: hi = mid
+        return (lo+hi)/2
+    al = math.radians(35); t = 2*v0*math.sin(al)/G*0.5
+    Sv = S0(al, t); d = 1e-4
+    p1 = [v0*math.cos(al-d)*tOfS(al-d, Sv), v0*math.sin(al-d)*tOfS(al-d, Sv)
+          - G*tOfS(al-d, Sv)**2/2]
+    p2 = [v0*math.cos(al+d)*tOfS(al+d, Sv), v0*math.sin(al+d)*tOfS(al+d, Sv)
+          - G*tOfS(al+d, Sv)**2/2]
+    fr = [p2[0]-p1[0], p2[1]-p1[1]]
+    v = [v0*math.cos(al), v0*math.sin(al) - G*t]
+    c = (fr[0]*v[0]+fr[1]*v[1])/(math.hypot(*fr)*math.hypot(*v))
+    out['perp'] = math.degrees(math.acos(min(1, abs(c))))
+    return out
+
+
+def page_05b():
+    p = page('Theoretical-Mechanics/05b-canonical-action-angle.html', 2.6)
+    o = {}
+    o['J'] = num(p, "(function(){activate('m1');M1.sys='osc';M1.E=2;M1.reset();"
+                    "M1.render();return M1.Jnow();})()")
+    o['amp'] = num(p, """(function(){M1.sys='ad';M1.reset();
+      const h=2e-4,n=Math.round(60/h);let mx=0;
+      for(let i=0;i<n;i++){
+        const l0=M1.l; M1.t+=h; M1.l=M1.lOf(M1.t);
+        const ld=(M1.l-l0)/h;
+        const a=-G/M1.l*Math.sin(M1.th)-2*ld/M1.l*M1.thd;
+        M1.thd+=a*h; M1.th+=M1.thd*h;
+        if(M1.t>60-2*2*Math.PI*Math.sqrt(0.5/G)) mx=Math.max(mx,Math.abs(M1.th));}
+      return mx;})()""")
+    o['Jdrift'] = num(p, "Math.abs(M1.Jnow()/M1.J0-1)")
+    o['Tclose'] = num(p, "(function(){activate('m2');M2.r=1.5;M2.reset();"
+                         "M2.render();return M2.Tclose();})()")
+    o['frac'] = num(p, "(function(){const f=M2.frac(); return f?f[1]:0;})()")
+    o['irr'] = num(p, "(function(){M2.r=Math.SQRT2;return M2.frac()?1:0;})()")
+    o['hMax'] = num(p, "(function(){activate('m3');M3.v0=10;M3.al=45*DEG;"
+                       "M3.render();return M3.hMax();})()")
+    o['dMax'] = num(p, "M3.dMax()")
+    o['tan45'] = num(p, "M3.tanX()")
+    o['tanY45'] = num(p, "M3.tanY()")
+    o['perp'] = num(p, "(function(){M3.al=35*DEG;return M3.perp();})()")
+    p.close()
+    return o
+
+
+def main_05b():
+    r, g = ref_05b(), page_05b()
+    chk('м1 · J осцилятора: контурний інтеграл проти E/ω', r['J'], g['J'], 1e-6, 'Дж·с')
+    note('м1 · та сама дія за формулою E/ω', r['Jform'], r['J'],
+         abs(r['J']-r['Jform']) < 1e-6, 'Дж·с')
+    chk('м1 · амплітуда після вкорочення l: 1 → 0,5 м',
+        r['ampEnd'], g['amp'], 5e-3, 'рад')
+    note('м1 · вона ж за θ₀ ∝ l^(−3/4)', r['ampTheory'], r['ampEnd'],
+         abs(r['ampEnd']/r['ampTheory']-1) < 0.02, 'рад')
+    note('м1 · J зберігся з точністю до 1 %', 1.0, r['Jratio'],
+         abs(r['Jratio']-1) < 0.01)
+    note('м1 · дрейф J на сторінці', 0.0, g['Jdrift'], g['Jdrift'] < 0.01)
+    chk('м2 · період замикання при ω_y/ω_x = 3/2', r['Tclose'], g['Tclose'], 1e-9, 'с')
+    note('м2 · замикання точне', 0.0, r['closeErr'], r['closeErr'] < 1e-9)
+    note('м2 · знаменник нескоротного дробу 3/2', 2.0, g['frac'], g['frac'] == 2)
+    note('м2 · √2 розпізнано як ірраціональне', 0.0, g['irr'], g['irr'] == 0)
+    chk('м3 · найвища точка параболи безпеки', r['hMax'], g['hMax'], 1e-9, 'м')
+    chk('м3 · найбільша дальність', r['dMax'], g['dMax'], 1e-9, 'м')
+    note('м3 · під 45° дотик сідає рівно на землю', 0.0, g['tanY45'],
+         abs(g['tanY45']) < 1e-9, 'м')
+    note('м3 · і рівно на найбільшій дальності', r['dMax'], g['tan45'],
+         abs(g['tan45']-r['dMax']) < 1e-9, 'м')
+    chk('м3 · кут між фронтом S₀ і траєкторією', r['perp'], g['perp'], 1e-2, '°')
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a, '05b': main_05b}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
