@@ -1543,12 +1543,18 @@ function frame2d(g,B){
   const X=v=>B.x+(v-B.xMin)/(B.xMax-B.xMin)*B.w;
   const Y=v=>B.y+B.h-(v-B.yMin)/(B.yMax-B.yMin)*B.h;
   const sx=niceStep((B.xMax-B.xMin)/4), sy=niceStep((B.yMax-B.yMin)/4);
+  /* На вузькому кадрі числа поділок злипаються в суцільний рядок, тож
+     підписуємо через одну-дві: сітка лишається, читаність вертається. */
+  const stepPx=sx/(B.xMax-B.xMin)*B.w;
+  const nx=Math.max(1,Math.ceil(34/Math.max(1,stepPx)));
   g.lineWidth=1;
-  for(let v=Math.ceil(B.xMin/sx)*sx;v<=B.xMax+1e-9;v+=sx){
+  let ix=0;
+  for(let v=Math.ceil(B.xMin/sx)*sx;v<=B.xMax+1e-9;v+=sx,ix++){
     g.strokeStyle=Math.abs(v)<1e-9?CLR.axis:CLR.grid;
     g.beginPath(); g.moveTo(X(v)+.5,B.y); g.lineTo(X(v)+.5,B.y+B.h); g.stroke();
-    txt(g,fmt(Math.abs(v)<1e-9?0:v,B.xDec==null?0:B.xDec),X(v),B.y+B.h+13,
-      {color:CLR.mut,size:10,align:'center'});
+    if(ix%nx===0)
+      txt(g,fmt(Math.abs(v)<1e-9?0:v,B.xDec==null?0:B.xDec),X(v),B.y+B.h+13,
+        {color:CLR.mut,size:10,align:'center'});
   }
   for(let v=Math.ceil(B.yMin/sy)*sy;v<=B.yMax+1e-9;v+=sy){
     g.strokeStyle=Math.abs(v)<1e-9?CLR.axis:CLR.grid;

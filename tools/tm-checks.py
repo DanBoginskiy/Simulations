@@ -348,7 +348,203 @@ def main_00b():
     note('м5 · нев’язка віріалу за 20 обходів, k = 2', 0.0, g['vir'], g['vir'] < 1.0, '%')
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b}
+# ======================================================= 03 ===============
+def ref_03():
+    """Еталон для вкладок 03. Скрізь, де сторінка бере замкнену формулу,
+    еталон інтегрує рівняння руху, і навпаки."""
+    out = {}
+
+    # --- вкладка 1: період точного маятника вимірюємо прогоном, а не K(k) ---
+    l = 1.0
+    def period(th0):
+        f = lambda t, y: [y[1], -G/l*math.sin(y[0])]
+        ev = lambda t, y: y[1]            # повернення швидкості до нуля
+        ev.direction = 1; ev.terminal = False
+        s = solve_ivp(f, [1e-9, 20], [th0, 0.0], method='DOP853',
+                      rtol=1e-12, atol=1e-14, events=ev)
+        # перша подія ẏ = 0 з додатним напрямом — це півперіод
+        return 2*float(s.t_events[0][0])
+    out['T0'] = period(1e-4)
+    out['T30'] = period(math.radians(30))
+    out['T90'] = period(math.radians(90))
+
+    # --- вкладка 2: биття й нахил на резонансі — із чисельного розв'язку ---
+    w0, fm = 2*math.pi, 1.0
+    def forced(gam, tend, n=40001):
+        f = lambda t, y: [y[1], -w0*w0*y[0] + fm*math.cos(gam*t)]
+        tt = np.linspace(0, tend, n)
+        s = solve_ivp(f, [0, tend], [0.0, 0.0], method='DOP853',
+                      rtol=1e-12, atol=1e-14, t_eval=tt)
+        return tt, s.y[0]
+    tt, x = forced(0.9*w0, 20.0)
+    # нуль огинаючої — мить, коли сама величина обертається на нуль разом
+    # з усіма сусідніми піками; шукаємо її як мінімум |x| у вікні [5; 15] с
+    sel = (tt > 5) & (tt < 15)
+    out['Tbeat'] = float(tt[sel][int(np.argmin(np.abs(x[sel])))])
+    tt, x = forced(w0, 12.0)
+    pk = [(tt[i], abs(x[i])) for i in range(1, len(x)-1)
+          if abs(x[i]) > abs(x[i-1]) and abs(x[i]) > abs(x[i+1])]
+    pk = [q for q in pk if q[1] > 1e-3]
+    out['slope'] = np.polyfit([q[0] for q in pk], [q[1] for q in pk], 1)[0]
+
+    # --- вкладка 3: частоти мод із власних чисел матриці, биття з прогону ---
+    l3, m3, k3 = 0.5, 0.2, 0.5
+    M = np.array([[G/l3 + k3/m3, -k3/m3], [-k3/m3, G/l3 + k3/m3]])
+    ev = np.sqrt(np.sort(np.linalg.eigvalsh(M)))
+    out['w1'], out['w2'] = float(ev[0]), float(ev[1])
+    f3 = lambda t, y: [y[2], y[3],
+                       -(G/l3)*y[0] - (k3/m3)*(y[0]-y[1]),
+                       -(G/l3)*y[1] - (k3/m3)*(y[1]-y[0])]
+    s = solve_ivp(f3, [0, 20], [0.06, 0.0, 0.0, 0.0], method='DOP853',
+                  rtol=1e-12, atol=1e-14, t_eval=np.linspace(0, 20, 40001))
+    # Лівий маятник завмирає тоді, коли дві нормальні координати стають у
+    # протифазі: x₁ = (Q₁ + Q₂)/2. Фазу кожної беремо з інтегрованої
+    # траєкторії, а не з формули π/Δω, — це й робить еталон незалежним.
+    Q1 = s.y[0]+s.y[1]; Q2 = s.y[0]-s.y[1]
+    Q1d = s.y[2]+s.y[3]; Q2d = s.y[2]-s.y[3]
+    ph1 = np.unwrap(np.arctan2(-Q1d/out['w1'], Q1))
+    ph2 = np.unwrap(np.arctan2(-Q2d/out['w2'], Q2))
+    out['Ttrans'] = float(np.interp(math.pi, ph2-ph1, s.t))
+
+    # --- вкладка 4: складки — зі зміни кількості додатних коренів кубіки ---
+    w0n, beta, lam, f4 = 1.0, 0.5, 0.05, 0.1
+    kap = 3*beta/(8*w0n); R = f4*f4/(4*w0n*w0n)
+    out['kap'] = kap
+    out['bmax'] = f4/(2*w0n*lam)
+    out['gpeak'] = w0n + kap*out['bmax']**2
+    def nroots(eps):
+        c = [kap*kap, -2*kap*eps, eps*eps+lam*lam, -R]
+        rr = np.roots(c)
+        return sum(1 for z in rr if abs(z.imag) < 1e-9 and z.real > 0)
+    es = np.linspace(0.05, 0.30, 25001)
+    cnt = np.array([nroots(e) for e in es])
+    idx = np.where(np.diff(cnt) != 0)[0]
+    out['g1'] = w0n + float(es[idx[0]])
+    out['g2'] = w0n + float(es[idx[-1]+1])
+
+    # --- вкладка 5, Капіца: частоти з другої похідної U_eff чисельно ---
+    l5, a5, O5 = 0.2, 0.01, 300.0
+    out['Oc'] = brentq(lambda O: a5*a5*O*O - 2*G*l5, 1.0, 1e4)
+    U = lambda f: -G*l5*math.cos(f) + a5*a5*O5*O5/4*math.sin(f)**2
+    e = 1e-5
+    d2top = (U(math.pi+e) - 2*U(math.pi) + U(math.pi-e))/(e*e)
+    d2bot = (U(e) - 2*U(0) + U(-e))/(e*e)
+    out['wtop'] = math.sqrt(d2top)/l5
+    out['wbot'] = math.sqrt(d2bot)/l5
+    # повна модель: повільне коливання біля вершини, тремтіння прибране
+    # ковзним середнім по періоду вібрації
+    h = 2e-5; n = int(2.4/h)
+    f5 = lambda t, y: [y[1], -(G - a5*O5*O5*math.cos(O5*t))/l5*math.sin(y[0])]
+    s = solve_ivp(f5, [0, 2.4], [math.pi+0.15, 0.0], method='DOP853',
+                  rtol=1e-11, atol=1e-13, t_eval=np.linspace(0, 2.4, n))
+    d = s.y[0] - math.pi
+    w = max(3, int(2*math.pi/O5/h))
+    sm = np.convolve(d, np.ones(w)/w, mode='same')[w:-w]
+    ts = s.t[w:-w]
+    zc = [i for i in range(1, len(sm)) if sm[i-1] > 0 >= sm[i]]
+    # дві сусідні однонапрямлені нулі — це повний період повільного руху
+    out['wtop_full'] = 2*math.pi/(ts[zc[1]]-ts[zc[0]]) if len(zc) > 1 else float('nan')
+
+    # --- вкладка 5, параметричний: інкремент із прогону рівняння Матьє ---
+    w0p, hmod = 2*math.pi, 0.1
+    fm2 = lambda t, y, gam: [y[1], -w0p*w0p*(1+hmod*math.cos(gam*t))*y[0]]
+    s = solve_ivp(lambda t, y: fm2(t, y, 2*w0p), [0, 30], [0.08, 0.0],
+                  method='DOP853', rtol=1e-12, atol=1e-14,
+                  t_eval=np.linspace(0, 30, 60001))
+    a = np.abs(s.y[0]); tt = s.t
+    pk = [(tt[i], a[i]) for i in range(1, len(a)-1)
+          if a[i] > a[i-1] and a[i] > a[i+1] and tt[i] > 4]
+    out['incr'] = float(np.polyfit([q[0] for q in pk],
+                                   [math.log(q[1]) for q in pk], 1)[0])
+    out['halfw'] = hmod*w0p/2
+    return out
+
+
+def page_03():
+    p = page('Theoretical-Mechanics/03-oscillations.html', 2.6)
+    o = {}
+    o['T0'] = num(p, "(function(){activate('m1');M1.th0=30*DEG;M1.reset();"
+                     "M1.render();return M1.T0();})()")
+    o['T30'] = num(p, "M1.T()")
+    o['r30'] = num(p, "M1.ratio(30*DEG)")
+    o['r90'] = num(p, "M1.ratio(90*DEG)")
+    o['T90'] = num(p, "M1.T0()*M1.ratio(90*DEG)")
+    # дрейф енергії точного маятника за 100 періодів його власним інтегратором
+    o['dE1'] = num(p, """(function(){M1.th0=30*DEG;M1.reset();
+      const h=1e-4,n=Math.round(100*M1.T()/h),E0=M1.En(M1.ex);let d=0;
+      for(let i=0;i<n;i++){const r=verlet(M1.ex.th,M1.ex.w,h,x=>-G/M1.l*Math.sin(x));
+        M1.ex.th=r[0];M1.ex.w=r[1];
+        if(i%97===0) d=Math.max(d,Math.abs(M1.En(M1.ex)-E0));}
+      return d/E0;})()""")
+    o['Tbeat'] = num(p, "(function(){activate('m2');M2.r=0.9;M2.reset();"
+                        "M2.render();return M2.Tb();})()")
+    o['A2'] = num(p, "M2.A()")
+    o['slope'] = num(p, "M2.slope()")
+    o['w1'] = num(p, "(function(){activate('m3');M3.k=0.5;M3.x1=0.06;M3.x2=0;"
+                     "M3.reset();M3.render();return M3.w1();})()")
+    o['w2'] = num(p, "M3.w2()")
+    o['Tbeat3'] = num(p, "M3.Tbeat()")
+    o['Ttrans'] = num(p, "M3.Ttrans()")
+    o['dE3'] = num(p, """(function(){M3.reset();
+      const h=1e-4,n=Math.round(100*2*Math.PI/M3.w1()/h),E0=M3.E1()+M3.E2();let d=0;
+      for(let i=0;i<n;i++){const s=M3.s,a0=M3.acc(s.a,s.b);
+        const na=s.a+s.va*h+0.5*a0[0]*h*h, nb=s.b+s.vb*h+0.5*a0[1]*h*h;
+        const a1=M3.acc(na,nb);
+        s.va+=0.5*(a0[0]+a1[0])*h; s.vb+=0.5*(a0[1]+a1[1])*h; s.a=na; s.b=nb;
+        if(i%97===0) d=Math.max(d,Math.abs(M3.E1()+M3.E2()-E0));}
+      return d/E0;})()""")
+    o['kap'] = num(p, "(function(){activate('m4');M4.reset();M4.render();return M4.kap();})()")
+    o['bmax'] = num(p, "M4.bMax()")
+    o['gpeak'] = num(p, "M4.w0+M4.kap()*M4.bMax()*M4.bMax()")
+    o['g1'] = num(p, "M4.w0+M4.folds().e1")
+    o['g2'] = num(p, "M4.w0+M4.folds().e2")
+    o['Oc'] = num(p, "(function(){activate('m5');M5.mode='kap';M5.a=0.01;M5.O=300;"
+                     "M5.reset();M5.render();return M5.Oc();})()")
+    o['wtop'] = num(p, "M5.wTop()")
+    o['wbot'] = num(p, "M5.wBot()")
+    o['halfw'] = num(p, "(function(){M5.mode='par';M5.h=0.1;M5.r=2;M5.reset();"
+                        "return M5.halfW();})()")
+    o['incr'] = num(p, "M5.h*M5.w0()/4")
+    p.close()
+    return o
+
+
+def main_03():
+    r, g = ref_03(), page_03()
+    chk('м1 · T₀ = 2π√(l/g) проти прогону при θ₀ → 0', r['T0'], g['T0'], 1e-4, 'с')
+    chk('м1 · T при θ₀ = 30° (K(k) проти прогону)', r['T30'], g['T30'], 1e-4, 'с')
+    chk('м1 · T при θ₀ = 90°', r['T90'], g['T90'], 1e-4, 'с')
+    chk('м1 · T/T₀ при 30°', r['T30']/r['T0'], g['r30'], 1e-4)
+    chk('м1 · T/T₀ при 90°', r['T90']/r['T0'], g['r90'], 1e-4)
+    note('м1 · дрейф E за 100 періодів', 0.0, g['dE1'], g['dE1'] < 1e-6)
+    chk('м2 · період биття при γ = 0,9ω₀', r['Tbeat'], g['Tbeat'], 3e-3, 'с')
+    chk('м2 · нахил огинаючої на резонансі', r['slope'], g['slope'], 1e-3, 'м/с')
+    chk('м3 · ω₁ (власні числа проти √(g/l))', r['w1'], g['w1'], 1e-9, 'рад/с')
+    chk('м3 · ω₂ (власні числа проти √(g/l + 2k/m))', r['w2'], g['w2'], 1e-9, 'рад/с')
+    chk('м3 · період биття 2π/(ω₂ − ω₁)',
+        2*math.pi/(r['w2']-r['w1']), g['Tbeat3'], 1e-6, 'с')
+    chk('м3 · повна передача енергії (прогін проти π/Δω)',
+        r['Ttrans'], g['Ttrans'], 3e-3, 'с')
+    note('м3 · дрейф E₁ + E₂ за 100 періодів', 0.0, g['dE3'], g['dE3'] < 1e-6)
+    chk('м4 · κ = 3β/8ω₀', r['kap'], g['kap'], 1e-12)
+    chk('м4 · b_max = f/2ω₀λ', r['bmax'], g['bmax'], 1e-12)
+    chk('м4 · частота вершини хребта', r['gpeak'], g['gpeak'], 1e-12)
+    chk('м4 · ліва складка (кубіка проти dε/db)', r['g1'], g['g1'], 1e-3)
+    chk('м4 · права складка', r['g2'], g['g2'], 1e-3)
+    chk('м5 · поріг Капіци Ω_c = √(2gl)/a', r['Oc'], g['Oc'], 1e-6, 'рад/с')
+    # друга похідна тут чисельна, тож допуск — її власна похибка, не нуль
+    chk('м5 · частота біля вершини (друга похідна U_eff)',
+        r['wtop'], g['wtop'], 1e-3, 'рад/с')
+    chk('м5 · частота біля низу', r['wbot'], g['wbot'], 1e-3, 'рад/с')
+    note('м5 · повна модель проти ефективної біля вершини',
+         r['wtop'], r['wtop_full'],
+         abs(r['wtop_full']-r['wtop'])/r['wtop'] < 0.03, 'рад/с')
+    chk('м5 · півширина язика hω₀/2', r['halfw'], g['halfw'], 1e-9, 'рад/с')
+    chk('м5 · інкремент у центрі зони (прогін Матьє проти hω₀/4)',
+        r['incr'], g['incr'], 5e-3, 'с⁻¹')
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
