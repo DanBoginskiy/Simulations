@@ -1123,7 +1123,108 @@ def main_01():
     note('м4 · те саме в еталоні', 0.0, r['Adrift'], r['Adrift'] < 1e-9)
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a, '05b': main_05b, '01': main_01}
+# ======================================================= 02 ===============
+def ref_02():
+    """Еталон для 02: кінематика розпаду й зіткнення із замкнених формул,
+    кут розсіяння — прогоном рівнянь руху, Монте-Карло — критерієм χ²."""
+    out = {}
+    v0, V = 1.0, 1.5
+    out['thmax'] = math.degrees(math.asin(v0/V))
+
+    mr = 2.0
+    out['th1max'] = math.degrees(math.asin(1/mr))
+    # сума кутів при рівних масах — для кількох χ
+    out['sums'] = []
+    for chd in (30, 70, 110, 150):
+        ch = math.radians(chd)
+        th1 = math.degrees(math.atan2(math.sin(ch), math.cos(ch)+1.0))
+        th2 = math.degrees((math.pi-ch)/2)
+        out['sums'].append(th1+th2)
+
+    # Резерфорд: кут прогоном рівнянь руху з далекого старту
+    al, rho = 0.5, 1.0
+    def rhs(t, y):
+        d = max(1e-9, math.hypot(y[0], y[1]))
+        k = al/d**3
+        return [y[2], y[3], k*y[0], k*y[1]]
+    ev = lambda t, y: math.hypot(y[0], y[1]) - 600
+    ev.terminal = True; ev.direction = 1
+    sol = solve_ivp(rhs, [0, 2000], [-400.0, rho, 1.0, 0.0], method='DOP853',
+                    rtol=1e-12, atol=1e-14, events=ev)
+    vx, vy = sol.y[2, -1], sol.y[3, -1]
+    out['chiNum'] = math.degrees(math.atan2(vy, vx))
+    out['chiForm'] = math.degrees(2*math.atan(al/rho))
+
+    a, rb = 1.0, 0.5
+    out['chiBall'] = math.degrees(math.pi - 2*math.asin(rb/a))
+    return out
+
+
+def page_02():
+    p = page('Theoretical-Mechanics/02-decay-collisions-scattering.html', 2.8)
+    o = {}
+    o['thmax'] = num(p, "(function(){activate('m1');M1.V=1.5;M1.reset();"
+                        "M1.render();return M1.thMax()/DEG;})()")
+    o['nsol'] = num(p, "(function(){M1.chi=1.2;return M1.nSol();})()")
+    o['vcm'] = num(p, "M1.v0")
+    o['th1max'] = num(p, "(function(){activate('m2');M2.mr=2;M2.render();"
+                         "return M2.th1max()/DEG;})()")
+    o['sums'] = [num(p, "(function(){M2.mr=1;return (M2.th1(%f)+M2.th2(%f))/DEG;})()"
+                     % (math.radians(c), math.radians(c)))
+                 for c in (30, 70, 110, 150)]
+    o['chiNum'] = num(p, "(function(){activate('m3');M3.sys='rep';M3.a1=0.5;"
+                         "M3.rho=1;M3.reset();M3.render();"
+                         "return Math.abs(M3.probe().chi)/DEG;})()")
+    o['chiForm'] = num(p, "2*Math.atan(M3.a1/M3.rho)/DEG")
+    o['chiBall'] = num(p, "(function(){M3.sys='ball';M3.rho=0.5;M3.reset();"
+                          "return M3.chi(0.5)/DEG;})()")
+    # гістограма Монте-Карло й очікувані числа з формули — для критерію χ²
+    o['mc'] = p.js("""(function(){M3.sys='rep';M3.a1=0.5;M3.wid=2.2;M3.reset();
+      const M=M3.mkMC(), out=[];
+      for(let i=0;i<M.NB;i++) out.push(M.h[i]);
+      return JSON.stringify({h:out, N:M.N, NB:M.NB, RM:M.RM, a1:M3.a1});})()""")
+    p.close()
+    return o
+
+
+def main_02():
+    import json
+    from scipy.stats import chi2 as chi2d
+    r, g = ref_02(), page_02()
+    chk('м1 · найбільший кут вильоту arcsin(v₀/V) при V = 1,5',
+        r['thmax'], g['thmax'], 1e-6, '°')
+    note('м1 · при V > v₀ одному θ відповідають дві швидкості', 2.0, g['nsol'],
+         g['nsol'] == 2)
+    note('м1 · |v| у СЦМ однакова для всіх напрямів', 1.0, g['vcm'],
+         abs(g['vcm']-1) < 1e-12)
+    chk('м2 · θ₁max при m₁/m₂ = 2', r['th1max'], g['th1max'], 1e-6, '°')
+    for i, c in enumerate((30, 70, 110, 150)):
+        chk('м2 · θ₁ + θ₂ при рівних масах, χ = %d°' % c,
+            r['sums'][i], g['sums'][i], 1e-9, '°')
+    chk('м3 · кут розсіяння: прогін проти 2·arctg(α/mv²ρ)',
+        r['chiForm'], g['chiNum'], 0.1, '°')
+    note('м3 · той самий прогін в еталоні', r['chiForm'], r['chiNum'],
+         abs(r['chiNum']-r['chiForm']) < 0.1, '°')
+    chk('м3 · тверда куля, ρ = a/2', r['chiBall'], g['chiBall'], 1e-9, '°')
+    # критерій χ²: очікувані числа — точні, з ρ(χ) = α/tg(χ/2)
+    d = json.loads(g['mc'])
+    al, RM, N, NB = d['a1'], d['RM'], d['N'], d['NB']
+    rho = lambda c: min(RM, al/math.tan(c/2)) if c > 1e-9 else RM
+    chis, obs, exp = 0.0, 0, 0
+    k = 0
+    for i in range(NB):
+        c1 = i/NB*math.pi; c2 = (i+1)/NB*math.pi
+        E = N*(rho(max(c1, 1e-9))**2 - rho(c2)**2)/RM**2
+        O = d['h'][i]
+        if E < 5: continue
+        chis += (O-E)**2/E; k += 1
+        obs += O; exp += E
+    lim = chi2d.ppf(0.95, max(1, k-1))
+    note('м3 · Монте-Карло проти формули: χ² на %d бінах' % k, lim, chis,
+         chis < lim)
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04, '05a': main_05a, '05b': main_05b, '01': main_01, '02': main_02}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
