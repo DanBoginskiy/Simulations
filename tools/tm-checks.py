@@ -43,6 +43,7 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import brentq
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEGP = math.pi/180
 G = 9.81
 
 ROWS = []
@@ -544,7 +545,197 @@ def main_03():
         r['incr'], g['incr'], 5e-3, 'с⁻¹')
 
 
-DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03}
+# ======================================================= 04 ===============
+def ref_04():
+    """Еталон для вкладок 04: власні числа numpy, прогін рівнянь Ейлера,
+    прогін рівнянь вовчка й прогін рівнянь Коріоліса — скрізь іншим
+    маршрутом, ніж замкнені формули сторінки."""
+    out = {}
+
+    # --- вкладка 1: тензор прямокутника 2×1, 4 маси по 1 кг ---
+    pts = [(-1, -0.5), (1, -0.5), (1, 0.5), (-1, 0.5)]
+    Ixx = sum(1.0*y*y for _, y in pts)
+    Iyy = sum(1.0*x*x for x, _ in pts)
+    Ixy = -sum(1.0*x*y for x, y in pts)
+    A = np.array([[Ixx, Ixy], [Ixy, Iyy]])
+    ev, evec = np.linalg.eigh(A)
+    out['Ixx'], out['Iyy'], out['Izz'] = Ixx, Iyy, Ixx+Iyy
+    out['I1'], out['I2'] = float(ev[0]), float(ev[1])
+    out['psi'] = math.degrees(math.atan2(evec[1, 0], evec[0, 0])) % 180
+
+    # --- вкладка 2: комутатор двох поворотів ---
+    def R(axis, a):
+        c, s = math.cos(a), math.sin(a)
+        if axis == 'x': return np.array([[1,0,0],[0,c,-s],[0,s,c]])
+        return np.array([[c,0,s],[0,1,0],[-s,0,c]])
+    def gap(t):
+        C = R('y',t)@R('x',t)@np.linalg.inv(R('x',t)@R('y',t))
+        return math.acos(max(-1, min(1, (np.trace(C)-1)/2)))
+    out['gap90'] = gap(math.pi/2)
+    out['gap01'] = gap(0.1)
+    out['det'] = float(np.linalg.det(R('y',math.pi/2)@R('x',math.pi/2)))
+
+    # --- вкладка 3: брусок, рівняння Ейлера ---
+    m, a, b, c = 0.1, 0.10, 0.06, 0.02
+    I = np.array([m*(b*b+c*c)/12, m*(a*a+c*c)/12, m*(a*a+b*b)/12])
+    out['I'] = I.tolist()
+    w = 10.0
+    out['inc'] = w*math.sqrt((I[1]-I[0])*(I[2]-I[1])/(I[0]*I[2]))
+    out['f1'] = w*math.sqrt((I[1]-I[0])*(I[2]-I[0])/(I[1]*I[2]))
+    out['f3'] = w*math.sqrt((I[2]-I[0])*(I[2]-I[1])/(I[0]*I[1]))
+    # інкремент незалежно: прогін із малим збуренням і нахил ln|ω₁| у часі
+    def euler(t, y):
+        return [(I[1]-I[2])*y[1]*y[2]/I[0],
+                (I[2]-I[0])*y[2]*y[0]/I[1],
+                (I[0]-I[1])*y[0]*y[1]/I[2]]
+    # збурення беремо дуже малим, щоб лінійний режим тривав довше: на
+    # хвості експоненти нахил уже псують нелінійні члени
+    e = 1e-10*w
+    s3 = solve_ivp(euler, [0, 3.0], [e, w, e], method='DOP853',
+                   rtol=1e-13, atol=1e-22, t_eval=np.linspace(0, 3.0, 6001))
+    la = np.log(np.abs(s3.y[0]))
+    sel = (s3.t > 0.5) & (s3.t < 2.5)
+    out['incNum'] = float(np.polyfit(s3.t[sel], la[sel], 1)[0])
+    # частота навколо осі 1 — із того самого прогону, але іншого старту
+    s1 = solve_ivp(euler, [0, 4.0], [w, e, e], method='DOP853',
+                   rtol=1e-12, atol=1e-16, t_eval=np.linspace(0, 4.0, 8001))
+    y = s1.y[1]
+    zc = [s1.t[i] for i in range(1, len(y)) if y[i-1] < 0 <= y[i]]
+    out['f1Num'] = 2*math.pi/(zc[1]-zc[0]) if len(zc) > 1 else float('nan')
+
+    # --- вкладка 4: симетричний вовчок ---
+    mt, lt, I1, I3, w3 = 0.1, 0.04, 8e-5, 4e-5, 200.0
+    mgl = mt*G*lt
+    out['Opr'] = mgl/(I3*w3)
+    out['wcrit'] = math.sqrt(4*I1*mgl)/I3
+    # точний корінь регулярної прецесії: φ̇(M₃ − I₁φ̇cos θ) = mgl
+    th0 = math.radians(30)
+    phreg = brentq(lambda p: p*(I3*w3 - I1*p*math.cos(th0)) - mgl, 0.1, 50)
+    out['phreg'] = phreg
+    # і прогін рівнянь вовчка з цим φ̇: θ мусить стояти
+    M3 = I3*w3
+    Mz = I1*phreg*math.sin(th0)**2 + M3*math.cos(th0)
+    def top(t, y):
+        th, thd = y
+        s, cc = math.sin(th), math.cos(th)
+        A2 = Mz - M3*cc
+        return [thd, -A2*(M3 - Mz*cc)/(I1*I1*s**3) + mgl*s/I1]
+    st = solve_ivp(top, [0, 2.0], [th0, 0.0], method='DOP853',
+                   rtol=1e-12, atol=1e-14, t_eval=np.linspace(0, 2.0, 2001))
+    out['thSpan'] = float(st.y[0].max() - st.y[0].min())
+    phd = (Mz - M3*np.cos(st.y[0]))/(I1*np.sin(st.y[0])**2)
+    out['phMean'] = float(phd.mean())
+
+    # --- вкладка 5: маятник Фуко, прогін рівнянь Коріоліса ---
+    OZ, ll = 7.292e-5, 10.0
+    phi = math.radians(50.45)
+    Oz = OZ*math.sin(phi)
+    out['rate'] = Oz/math.pi*180*3600
+    out['Tturn'] = 2*math.pi/Oz/3600
+    out['Tpend'] = 2*math.pi*math.sqrt(ll/G)
+    out['Tpole'] = 2*math.pi/OZ/3600
+    w02 = G/ll
+    def foucault(t, y):
+        return [y[2], y[3], -w02*y[0] + 2*Oz*y[3], -w02*y[1] - 2*Oz*y[2]]
+    T = 600.0
+    sf = solve_ivp(foucault, [0, T], [1.0, 0.0, 0.0, 0.0], method='DOP853',
+                   rtol=1e-12, atol=1e-14, t_eval=np.linspace(0, T, 60001))
+    # кут площини беремо як напрям найбільшого розмаху: головна вісь
+    # коваріаційної матриці траєкторії на останній сотні секунд
+    sel = sf.t > T-100
+    X = np.vstack([sf.y[0][sel], sf.y[1][sel]])
+    C = X@X.T
+    _, vv = np.linalg.eigh(C)
+    ang = math.degrees(math.atan2(vv[1, 1], vv[0, 1]))
+    ang = (ang + 90) % 180 - 90
+    out['turnNum'] = -ang/((T-50)/3600)
+    return out
+
+
+def page_04():
+    p = page('Theoretical-Mechanics/04-rigid-body-noninertial.html', 2.6)
+    o = {}
+    o['Ixx'] = num(p, "(function(){activate('m1');M1.pre='rect';M1.reset();"
+                      "M1.render();return M1.Ixx();})()")
+    o['Iyy'] = num(p, "M1.Iyy()")
+    o['Izz'] = num(p, "M1.Izz()")
+    o['I1'] = num(p, "M1.eig().I1")
+    o['I2'] = num(p, "M1.eig().I2")
+    o['psi'] = num(p, "((M1.eig().psi/DEG)%180+180)%180")
+    o['ang0'] = num(p, "M1.angLo(M1.eig().psi)")
+    o['gap90'] = num(p, "(function(){activate('m2');M2.th=Math.PI/2;return M2.gap();})()")
+    o['gap01'] = num(p, "M2.gap(0.1)")
+    o['det'] = num(p, "M2.det(M2.Rleft(2))")
+    o['orth'] = num(p, "M2.orthErr(M2.Rleft(2))")
+    o['I'] = [num(p, "(function(){activate('m3');M3.w0=10;M3.reset();return M3.I()[%d];})()" % i)
+              for i in range(3)]
+    o['inc'] = num(p, "M3.inc()")
+    o['f1'] = num(p, "M3.f1()")
+    o['f3'] = num(p, "M3.f3()")
+    o['drift'] = num(p, """(function(){M3.axis='2';M3.w0=10;M3.reset();
+      const h=2e-4,n=300000;let W=M3.W.slice();
+      const E0=M3.En(W),M0=M3.M2(W);let d=0;
+      for(let i=0;i<n;i++){W=rk4(0,W,h,(tt,y)=>M3.dW(y));
+        if(i%997===0) d=Math.max(d,Math.abs(M3.En(W)/E0-1),Math.abs(M3.M2(W)/M0-1));}
+      return d;})()""")
+    o['Opr'] = num(p, "(function(){activate('m4');M4.w3=200;M4.th=30*DEG;"
+                      "M4.setPre('reg');return M4.Opr();})()")
+    o['wcrit'] = num(p, "M4.wcrit()")
+    o['phreg'] = num(p, "M4.phReg(30*DEG)")
+    o['rate'] = num(p, "(function(){activate('m5');M5.phi=50.45*DEG;M5.reset();"
+                       "return M5.ratePh();})()")
+    o['Tturn'] = num(p, "M5.Tturn()")
+    o['Tpend'] = num(p, "M5.Tpend()")
+    o['Tpole'] = num(p, "(function(){M5.phi=90*DEG;const v=M5.Tturn();"
+                        "M5.phi=50.45*DEG;return v;})()")
+    o['eq'] = num(p, "(function(){M5.phi=0;const v=M5.ratePh();"
+                     "M5.phi=50.45*DEG;return v;})()")
+    p.close()
+    return o
+
+
+def main_04():
+    r, g = ref_04(), page_04()
+    chk('м1 · I_xx прямокутника 2×1', r['Ixx'], g['Ixx'], 1e-12, 'кг·м²')
+    chk('м1 · I_yy', r['Iyy'], g['Iyy'], 1e-12, 'кг·м²')
+    chk('м1 · I_zz = I_xx + I_yy', r['Izz'], g['Izz'], 1e-12, 'кг·м²')
+    chk('м1 · головні моменти (eigh проти формули)', r['I1'], g['I1'], 1e-10, 'кг·м²')
+    chk('м1 · другий головний момент', r['I2'], g['I2'], 1e-10, 'кг·м²')
+    chk('м1 · кут головної осі', r['psi'], g['psi'], 1e-6, '°')
+    note('м1 · на головній осі L ∥ ω', 0.0, g['ang0'], g['ang0'] < 1e-6, '°')
+    chk('м2 · розбіжність двох порядків при 90°',
+        r['gap90']/DEGP, g['gap90']/DEGP, 1e-6, '°')
+    chk('м2 · комутатор при θ = 0,1 рад ≈ θ²', r['gap01'], g['gap01'], 1e-4, 'рад')
+    chk('м2 · det R', r['det'], g['det'], 1e-12)
+    note('м2 · ‖RᵀR − E‖', 0.0, g['orth'], g['orth'] < 1e-12)
+    for i in range(3):
+        chk('м3 · I%d бруска' % (i+1), r['I'][i], g['I'][i], 1e-12, 'кг·м²')
+    chk('м3 · інкремент навколо середньої осі', r['inc'], g['inc'], 1e-9, 'с⁻¹')
+    note('м3 · той самий інкремент із прогону', r['inc'], r['incNum'],
+         abs(r['incNum']-r['inc']) < 5e-3, 'с⁻¹')
+    chk('м3 · частота навколо осі 1', r['f1'], g['f1'], 1e-9, 'рад/с')
+    note('м3 · та сама частота з прогону', r['f1'], r['f1Num'],
+         abs(r['f1Num']-r['f1']) < 5e-3, 'рад/с')
+    chk('м3 · частота навколо осі 3', r['f3'], g['f3'], 1e-9, 'рад/с')
+    note('м3 · дрейф E і M² за 60 с', 0.0, g['drift'], g['drift'] < 1e-6)
+    chk('м4 · Ω_пр = mgl/(I₃ω₃)', r['Opr'], g['Opr'], 1e-9, 'рад/с')
+    chk('м4 · точний корінь регулярної прецесії', r['phreg'], g['phreg'], 1e-6, 'рад/с')
+    note('м4 · при ньому θ справді стоїть', 0.0, r['thSpan']/DEGP,
+         r['thSpan'] < 1e-6, '°')
+    note('м4 · середнє φ̇ прогону проти кореня', r['phreg'], r['phMean'],
+         abs(r['phMean']-r['phreg']) < 1e-6, 'рад/с')
+    chk('м4 · поріг стійкості вертикального вовчка', r['wcrit'], g['wcrit'], 1e-6, 'рад/с')
+    chk('м5 · Ω_З·sin φ у Києві', r['rate'], g['rate'], 1e-6, '°/год')
+    chk('м5 · повний оберт площини', r['Tturn'], g['Tturn'], 1e-6, 'год')
+    chk('м5 · період маятника', r['Tpend'], g['Tpend'], 1e-9, 'с')
+    chk('м5 · повний оберт на полюсі', r['Tpole'], g['Tpole'], 1e-6, 'год')
+    note('м5 · на екваторі площина не повертається', 0.0, g['eq'],
+         abs(g['eq']) < 1e-12, '°/год')
+    note('м5 · те саме з прогону рівнянь Коріоліса', r['rate'], r['turnNum'],
+         abs(r['turnNum']-r['rate']) < 0.05, '°/год')
+
+
+DISPATCH = {'00a': main_00a, '00b': main_00b, '03': main_03, '04': main_04}
 
 if __name__ == '__main__':
     which = sys.argv[1] if len(sys.argv) > 1 else '00a'
