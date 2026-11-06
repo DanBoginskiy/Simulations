@@ -1,0 +1,39 @@
+# Збірка і тести на кожен push і pull request.
+# Публікації (GitHub Pages) тут свідомо немає — це окреме рішення.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Збірка src/ → dist/
+        run: npm run build
+      - name: Фізичні тести рушія (vitest)
+        run: npm test
+      - name: Браузер для сторінкових тестів
+        run: npx playwright install --with-deps chromium
+      - name: Сторінки й пілоти (Playwright, Chromium)
+        run: npx playwright test
+      - name: Звіт Playwright при падінні
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
